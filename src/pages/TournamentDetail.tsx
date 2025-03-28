@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -25,7 +24,7 @@ import Layout from "@/components/layout/Layout";
 import PageHeader from "@/components/shared/PageHeader";
 import TeamList from "@/components/tournament/TeamList";
 import AddTeamDialog from "@/components/tournament/AddTeamDialog";
-import { Team, Division } from "@/types/tournament";
+import { Team, Division, TournamentStatus } from "@/types/tournament";
 
 const TournamentDetail = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
@@ -78,7 +77,7 @@ const TournamentDetail = () => {
     
     const updatedTournament = {
       ...tournament,
-      status: "PUBLISHED",
+      status: "PUBLISHED" as TournamentStatus,
     };
     
     updateTournament(updatedTournament);
@@ -88,7 +87,7 @@ const TournamentDetail = () => {
     // Update tournament status and generate initial matches
     const updatedTournament = {
       ...tournament,
-      status: "IN_PROGRESS",
+      status: "IN_PROGRESS" as TournamentStatus,
     };
     
     updateTournament(updatedTournament);
