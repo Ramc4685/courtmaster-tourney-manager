@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,12 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Badminton specific colors
+				court: {
+					green: '#3ca267',
+					blue: '#1a365d',
+					line: '#ffffff',
 				}
 			},
 			borderRadius: {
@@ -84,11 +91,16 @@ export default {
 					to: {
 						height: '0'
 					}
-				}
+				},
+				'score-pulse': {
+					'0%, 100%': { transform: 'scale(1)' },
+					'50%': { transform: 'scale(1.05)' },
+				},
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'score-pulse': 'score-pulse 0.5s ease-in-out',
 			}
 		}
 	},
