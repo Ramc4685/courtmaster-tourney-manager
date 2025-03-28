@@ -52,7 +52,8 @@ const MatchCreateDialog: React.FC<MatchCreateDialogProps> = ({
     scheduledDateTime.setHours(hours, minutes, 0);
     
     // Call onCreate with the selected values
-    onCreate(team1Id, team2Id, scheduledDateTime, courtId || undefined);
+    // Only pass courtId if it's not "none" (our special value for no court)
+    onCreate(team1Id, team2Id, scheduledDateTime, courtId !== "none" ? courtId : undefined);
   };
 
   const availableTeams = currentTournament?.teams || [];
@@ -163,7 +164,7 @@ const MatchCreateDialog: React.FC<MatchCreateDialogProps> = ({
                   <SelectValue placeholder="Select Court (Optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Court Selected</SelectItem>
+                  <SelectItem value="none">No Court Selected</SelectItem>
                   {availableCourts.map((court) => (
                     <SelectItem key={court.id} value={court.id}>
                       {court.name}
