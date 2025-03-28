@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,6 +48,8 @@ const TournamentDetail = () => {
   useEffect(() => {
     // Find the tournament by ID from all tournaments if not already set
     if (tournamentId && (!currentTournament || currentTournament.id !== tournamentId)) {
+      console.log("Looking for tournament with ID:", tournamentId);
+      console.log("Available tournaments:", tournaments);
       const foundTournament = tournaments.find(t => t.id === tournamentId);
       if (foundTournament) {
         console.log(`Found tournament with ID ${tournamentId}`, foundTournament);
@@ -58,9 +61,11 @@ const TournamentDetail = () => {
           description: "The requested tournament could not be found.",
           variant: "destructive",
         });
+        // Redirect to tournaments list if no tournament is found
+        navigate("/tournaments");
       }
     }
-  }, [tournamentId, tournaments, currentTournament, setCurrentTournament, toast]);
+  }, [tournamentId, tournaments, currentTournament, setCurrentTournament, toast, navigate]);
 
   // Track if we should show the bracket tab more prominently
   const shouldHighlightBracket = currentTournament?.currentStage === "PLAYOFF_KNOCKOUT";
@@ -73,7 +78,7 @@ const TournamentDetail = () => {
   }, [shouldHighlightBracket]);
 
   const handleTeamCreate = (team: Omit<Team, "id">) => {
-    addTeam({ ...team, id: Math.random().toString(36).substring(2, 9) });
+    addTeam({ ...team, id: `team-${Date.now()}` });
     setTeamDialogOpen(false);
   };
 
@@ -82,7 +87,7 @@ const TournamentDetail = () => {
 
     const newCourt: Court = {
       ...court,
-      id: Math.random().toString(36).substring(2, 9)
+      id: `court-${Date.now()}`
     };
 
     const updatedCourts = [...currentTournament.courts, newCourt];

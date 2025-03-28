@@ -97,24 +97,25 @@ const Tournaments = () => {
           description="Create and manage your badminton tournaments"
           icon={<Trophy className="h-6 w-6 text-court-green" />}
           action={
-            user && (
-              <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
-                  onClick={handleLoadSampleData}
-                  className="flex items-center"
-                >
-                  <Database className="mr-2 h-4 w-4" />
-                  Load Sample Data
-                </Button>
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={handleLoadSampleData}
+                className="flex items-center"
+              >
+                <Database className="mr-2 h-4 w-4" />
+                Load Sample Data
+              </Button>
+              
+              {user && (
                 <Link to="/tournaments/create">
                   <Button className="bg-court-green hover:bg-court-green/90">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     New Tournament
                   </Button>
                 </Link>
-              </div>
-            )
+              )}
+            </div>
           }
         />
 
@@ -124,23 +125,21 @@ const Tournaments = () => {
             <h3 className="text-lg font-medium text-gray-900">No tournaments yet</h3>
             <p className="mt-1 text-gray-500">Get started by creating a new tournament or loading sample data.</p>
             <div className="mt-6 flex justify-center space-x-2">
-              {user && (
-                <>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleLoadSampleData}
-                  >
-                    <Database className="mr-2 h-4 w-4" />
-                    Load Sample Data
+              <Button 
+                variant="outline" 
+                onClick={handleLoadSampleData}
+              >
+                <Database className="mr-2 h-4 w-4" />
+                Load Sample Data
+              </Button>
+              
+              {user ? (
+                <Link to="/tournaments/create">
+                  <Button className="bg-court-green hover:bg-court-green/90">
+                    Create Tournament
                   </Button>
-                  <Link to="/tournaments/create">
-                    <Button className="bg-court-green hover:bg-court-green/90">
-                      Create Tournament
-                    </Button>
-                  </Link>
-                </>
-              )}
-              {!user && (
+                </Link>
+              ) : (
                 <Link to="/login">
                   <Button>
                     Log in to Create Tournaments

@@ -104,7 +104,7 @@ const TournamentCreate = () => {
       };
       
       // Save the tournament
-      createTournament(newTournament);
+      const createdTournament = createTournament(newTournament);
       
       toast({
         title: "Success",

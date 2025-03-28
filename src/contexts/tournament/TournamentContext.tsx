@@ -29,6 +29,8 @@ import { useAuth } from "@/contexts/auth/AuthContext";
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
 export const TournamentProvider = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth();
+  
   // Initialize state from localStorage if available, otherwise use empty arrays/null
   const [tournaments, setTournaments] = useState<Tournament[]>(() => {
     const storedTournaments = localStorage.getItem('tournaments');
@@ -64,6 +66,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     const { tournament, tournaments: newTournaments } = createNewTournament(tournamentData, tournaments);
     setTournaments(newTournaments);
     setCurrentTournament(tournament);
+    return tournament; // Return the created tournament
   };
 
   // Delete tournament
@@ -181,7 +184,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   const autoAssignCourtsHandler = async (): Promise<number> => {
     if (!currentTournament) {
       console.error('[ERROR] Cannot auto-assign courts: No current tournament selected.');
-      return Promise.resolve(0);
+      return 0;
     }
     
     console.log('[DEBUG] Auto-assigning courts to matches. Tournament ID:', currentTournament.id);
@@ -194,7 +197,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       console.log('[DEBUG] No courts were auto-assigned.');
     }
     
-    return Promise.resolve(assignedCount);
+    return assignedCount;
   };
 
   // Update match status
