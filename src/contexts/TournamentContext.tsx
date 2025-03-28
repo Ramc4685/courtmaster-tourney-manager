@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat, TournamentStatus, CourtStatus, TournamentStage, Group } from "@/types/tournament";
 
@@ -910,4 +911,46 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     return assignedCount;
   };
 
-  // Load
+  // Load sample data
+  const loadSampleData = () => {
+    const sampleTournament = createSampleData();
+    const updatedTournaments = [...tournaments, sampleTournament];
+    setTournaments(updatedTournaments);
+    setCurrentTournament(sampleTournament);
+  };
+
+  // Generate bracket (placeholder function)
+  const generateBracket = () => {
+    console.log("Generating bracket...");
+  };
+
+  return (
+    <TournamentContext.Provider
+      value={{
+        tournaments,
+        currentTournament,
+        setCurrentTournament,
+        createTournament,
+        updateTournament,
+        deleteTournament,
+        addTeam,
+        importTeams,
+        updateMatch,
+        updateCourt,
+        assignCourt,
+        updateMatchStatus,
+        updateMatchScore,
+        completeMatch,
+        moveTeamToDivision,
+        loadSampleData,
+        scheduleMatch,
+        generateBracket,
+        autoAssignCourts,
+        generateMultiStageTournament,
+        advanceToNextStage
+      }}
+    >
+      {children}
+    </TournamentContext.Provider>
+  );
+};
