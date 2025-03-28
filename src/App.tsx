@@ -13,6 +13,7 @@ import Tournaments from './pages/Tournaments';
 import { TournamentProvider } from './contexts/TournamentContext';
 import { AuthProvider } from './contexts/auth/AuthContext';
 import { Toaster } from './components/ui/toaster';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
   return (
@@ -27,8 +28,22 @@ function App() {
             <Route path="/scoring/:tournamentId" element={<Scoring />} />
             <Route path="/public/:tournamentId?" element={<PublicView />} />
             <Route path="/public-live/:tournamentId?" element={<PublicViewRealtime />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Admin />
+                </ProtectedRoute>
+              } 
+            />
           </Routes>
         </Router>
         <Toaster />

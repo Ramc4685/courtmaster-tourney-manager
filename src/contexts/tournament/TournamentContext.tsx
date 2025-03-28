@@ -29,8 +29,6 @@ import { useAuth } from "@/contexts/auth/AuthContext";
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
 export const TournamentProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
-  
   // Initialize state from localStorage if available, otherwise use empty arrays/null
   const [tournaments, setTournaments] = useState<Tournament[]>(() => {
     const storedTournaments = localStorage.getItem('tournaments');

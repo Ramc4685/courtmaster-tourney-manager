@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,6 +49,7 @@ const TournamentDetail = () => {
     if (tournamentId && (!currentTournament || currentTournament.id !== tournamentId)) {
       console.log("Looking for tournament with ID:", tournamentId);
       console.log("Available tournaments:", tournaments);
+      
       const foundTournament = tournaments.find(t => t.id === tournamentId);
       if (foundTournament) {
         console.log(`Found tournament with ID ${tournamentId}`, foundTournament);

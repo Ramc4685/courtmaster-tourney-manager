@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -84,27 +83,19 @@ const TournamentCreate = () => {
     }));
 
     try {
-      // Create the tournament with a specific ID format
-      const tournamentId = `tournament-${Date.now()}`;
-      const newTournament = {
-        id: tournamentId,
+      // Create the tournament using the createTournament function in context
+      const newTournament = createTournament({
         name,
         description,
         format,
-        status: "DRAFT" as TournamentStatus,  // Fixed: explicitly cast to TournamentStatus
+        status: "DRAFT" as TournamentStatus,
         teams: [],
         courts,
         startDate,
         endDate,
         divisionProgression,
-        currentStage: "INITIAL_ROUND" as const,
-        matches: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
-      // Save the tournament
-      const createdTournament = createTournament(newTournament);
+        autoAssignCourts: true,
+      });
       
       toast({
         title: "Success",
@@ -112,7 +103,7 @@ const TournamentCreate = () => {
       });
       
       // Navigate to the specific tournament detail page
-      navigate(`/tournaments/${tournamentId}`);
+      navigate(`/tournaments/${newTournament.id}`);
     } catch (error) {
       console.error("Error creating tournament:", error);
       toast({
