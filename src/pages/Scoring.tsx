@@ -1,7 +1,7 @@
 
-import React from "react";
-import { useParams } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import React, { useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { ChevronLeft, AlertTriangle, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
 import CourtSelectionPanel from "@/components/scoring/CourtSelectionPanel";
@@ -11,9 +11,13 @@ import ScheduledMatchesList from "@/components/scoring/ScheduledMatchesList";
 import ScoringSettings from "@/components/scoring/ScoringSettings";
 import ScoringConfirmationDialogs from "@/components/scoring/ScoringConfirmationDialogs";
 import { useScoringLogic } from "@/components/scoring/useScoringLogic";
+import { useTournament } from "@/contexts/TournamentContext";
 
 const Scoring = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
+  const navigate = useNavigate();
+  const { tournaments, setCurrentTournament } = useTournament();
+  
   const {
     currentTournament,
     selectedMatch,
@@ -36,12 +40,45 @@ const Scoring = () => {
     handleUpdateScoringSettings,
     handleBackToCourts
   } = useScoringLogic();
+  
+  // Set the current tournament based on the URL parameter
+  useEffect(() => {
+    if (tournamentId) {
+      const tournament = tournaments.find(t => t.id === tournamentId);
+      if (tournament) {
+        setCurrentTournament(tournament);
+      } else {
+        // Tournament not found, redirect to tournaments page
+        navigate("/tournaments");
+      }
+    }
+  }, [tournamentId, tournaments, setCurrentTournament, navigate]);
+
+  if (!tournamentId) {
+    return (
+      <Layout>
+        <div className="max-w-6xl mx-auto py-8 px-4 text-center">
+          <AlertTriangle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-3">No Tournament Selected</h2>
+          <p className="text-gray-600 mb-6">
+            Please select a tournament to access the scoring interface.
+          </p>
+          <Link to="/tournaments">
+            <Button>
+              <Trophy className="mr-2 h-4 w-4" />
+              Go to Tournaments
+            </Button>
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!currentTournament) {
     return (
       <Layout>
         <div className="max-w-6xl mx-auto">
-          <p>No tournament selected. Please select a tournament first.</p>
+          <p>Loading tournament data...</p>
         </div>
       </Layout>
     );

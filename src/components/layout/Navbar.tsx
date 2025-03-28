@@ -17,6 +17,9 @@ const Navbar: React.FC = () => {
   const { currentTournament } = useTournament();
   const { user } = useAuth();
 
+  // Create a conditionally rendered scoring link based on whether there's a current tournament
+  const scoringLink = currentTournament ? `/scoring/${currentTournament.id}` : "/tournaments";
+
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4">
@@ -41,7 +44,7 @@ const Navbar: React.FC = () => {
             <Link to="/tournaments" className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
               Tournaments
             </Link>
-            <Link to="/scoring" className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
+            <Link to={scoringLink} className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
               Scoring
             </Link>
             <Link to="/public" className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
@@ -94,7 +97,7 @@ const Navbar: React.FC = () => {
                   <Link to="/tournaments" className="text-lg font-medium">
                     Tournaments
                   </Link>
-                  <Link to="/scoring" className="text-lg font-medium">
+                  <Link to={scoringLink} className="text-lg font-medium">
                     Scoring
                   </Link>
                   <Link to="/public" className="text-lg font-medium">

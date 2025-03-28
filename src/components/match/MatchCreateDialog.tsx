@@ -51,7 +51,7 @@ const MatchCreateDialog: React.FC<MatchCreateDialogProps> = ({
     const scheduledDateTime = new Date(scheduledDate);
     scheduledDateTime.setHours(hours, minutes, 0);
     
-    // Call onCreate with the selected values
+    // Call onCreateMatch with the selected values
     // Only pass courtId if it's not "none" (our special value for no court)
     onCreateMatch(team1Id, team2Id, scheduledDateTime, courtId !== "none" ? courtId : undefined);
   };
