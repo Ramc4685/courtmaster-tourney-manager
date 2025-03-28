@@ -15,7 +15,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format as formatDate } from "date-fns"; // Fixed import with alias to avoid conflicts
 import { useTournament } from "@/contexts/TournamentContext";
-import { TournamentFormat } from "@/types/tournament";
+import { TournamentFormat, TournamentStatus } from "@/types/tournament";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/auth/AuthContext";
 import PageHeader from "@/components/shared/PageHeader";
@@ -91,7 +91,7 @@ const TournamentCreate = () => {
         name,
         description,
         format,
-        status: "DRAFT",
+        status: "DRAFT" as TournamentStatus,  // Fixed: explicitly cast to TournamentStatus
         teams: [],
         courts,
         startDate,
