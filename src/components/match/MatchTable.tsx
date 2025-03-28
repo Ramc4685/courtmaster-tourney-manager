@@ -47,7 +47,8 @@ const MatchTable: React.FC<MatchTableProps> = ({
       case "IN_PROGRESS":
         return <Badge variant="secondary">In Progress</Badge>;
       case "COMPLETED":
-        return <Badge variant="success">Completed</Badge>;
+        // Changed from "success" to "default" since "success" isn't an allowed variant
+        return <Badge variant="default">Completed</Badge>;
       case "CANCELLED":
         return <Badge variant="destructive">Cancelled</Badge>;
       default:
