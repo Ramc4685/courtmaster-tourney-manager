@@ -3,6 +3,16 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
+// Try to import the component tagger in a way that won't break builds
+let componentTagger;
+try {
+  // Using a static import pattern that Vite can handle
+  componentTagger = require("lovable-tagger")?.componentTagger;
+} catch (e) {
+  // If the import fails, set to undefined
+  componentTagger = undefined;
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
@@ -12,9 +22,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     // Only use component tagger in development mode
-    mode === 'development' && 
-    require('lovable-tagger').componentTagger && 
-    require('lovable-tagger').componentTagger(),
+    mode === 'development' && componentTagger && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
