@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division } from "@/types/tournament";
 import { createSampleData } from "@/utils/tournamentSampleData";
@@ -61,7 +60,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   }, [currentTournament]);
 
   // Create a new tournament
-  const createTournament = (tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">) => {
+  const createTournament = (tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">): Tournament => {
     console.log('[DEBUG] Creating new tournament:', tournamentData.name);
     const { tournament, tournaments: newTournaments } = createNewTournament(tournamentData, tournaments);
     setTournaments(newTournaments);

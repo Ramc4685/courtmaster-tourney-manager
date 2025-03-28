@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division } from "@/types/tournament";
 import { TournamentContextType } from "./types";
@@ -34,13 +33,15 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Create a new tournament
-  const createTournament = async (tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">) => {
+  const createTournament = async (tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">): Promise<Tournament> => {
     try {
       const newTournament = await tournamentService.createTournament(tournamentData);
       setTournaments(prev => [...prev, newTournament]);
       setCurrentTournament(newTournament);
+      return newTournament;
     } catch (error) {
       console.error("Error creating tournament:", error);
+      throw error;
     }
   };
 

@@ -5,7 +5,7 @@ export interface TournamentContextType {
   tournaments: Tournament[];
   currentTournament: Tournament | null;
   setCurrentTournament: (tournament: Tournament) => void;
-  createTournament: (tournament: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">) => void;
+  createTournament: (tournament: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">) => Tournament;
   updateTournament: (tournament: Tournament) => void;
   deleteTournament: (tournamentId: string) => void;
   addTeam: (team: Team) => void;
@@ -20,7 +20,7 @@ export interface TournamentContextType {
   loadSampleData: () => void;
   scheduleMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => void;
   generateBracket: () => void;
-  autoAssignCourts: () => Promise<number>; // Changed to return Promise<number>
+  autoAssignCourts: () => Promise<number>;
   generateMultiStageTournament: () => void;
   advanceToNextStage: () => void;
 }

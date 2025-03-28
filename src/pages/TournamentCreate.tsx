@@ -103,16 +103,7 @@ const TournamentCreate = () => {
       });
       
       // Navigate to the specific tournament detail page
-      if (createdTournament && createdTournament.id) {
-        navigate(`/tournaments/${createdTournament.id}`);
-      } else {
-        console.error("Created tournament is undefined or missing ID");
-        toast({
-          title: "Error",
-          description: "Tournament was created but ID is missing",
-          variant: "destructive",
-        });
-      }
+      navigate(`/tournaments/${createdTournament.id}`);
     } catch (error) {
       console.error("Error creating tournament:", error);
       toast({
