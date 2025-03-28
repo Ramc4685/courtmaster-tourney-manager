@@ -28,6 +28,8 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // Explicitly tell Vite how to handle directories vs files
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json']
   },
   // Build configuration optimizations for deployment
   build: {
@@ -36,7 +38,7 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['@/components/ui'],
+          ui: ['@/components/ui/button', '@/components/ui/card', '@/components/ui/select']
         }
       }
     },
