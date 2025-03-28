@@ -1,4 +1,3 @@
-
 import { Match, Team, Tournament, Division, TournamentStage, MatchStatus, ScoringSettings } from "@/types/tournament";
 import { generateId } from "./tournamentUtils";
 
@@ -37,7 +36,8 @@ export const getDefaultScoringSettings = (): ScoringSettings => {
   return {
     maxPoints: 21,
     maxSets: 3,
-    requireTwoPointLead: true
+    requireTwoPointLead: true,
+    maxTwoPointLeadScore: 30
   };
 };
 
@@ -47,15 +47,21 @@ export const isSetComplete = (
   team2Score: number, 
   scoringSettings: ScoringSettings
 ): boolean => {
-  const { maxPoints, requireTwoPointLead } = scoringSettings;
+  const { maxPoints, requireTwoPointLead, maxTwoPointLeadScore } = scoringSettings;
   
   // In badminton, a player needs to reach maxPoints (typically 21)
-  // And have a 2-point lead if requireTwoPointLead is true
-  if (requireTwoPointLead) {
+  if (!requireTwoPointLead) {
+    return team1Score >= maxPoints || team2Score >= maxPoints;
+  } else {
+    // With two-point lead rule
+    // If any player has reached the maximum cap, they win regardless of the lead
+    if (maxTwoPointLeadScore && (team1Score >= maxTwoPointLeadScore || team2Score >= maxTwoPointLeadScore)) {
+      return true;
+    }
+    
+    // Otherwise, need to win by 2 points after reaching minPoints
     return (team1Score >= maxPoints && team1Score - team2Score >= 2) || 
            (team2Score >= maxPoints && team2Score - team1Score >= 2);
-  } else {
-    return team1Score >= maxPoints || team2Score >= maxPoints;
   }
 };
 
@@ -143,3 +149,4 @@ export const updateBracketProgression = (
     updatedAt: new Date()
   };
 };
+

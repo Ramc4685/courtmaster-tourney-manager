@@ -58,11 +58,12 @@ export type TournamentFormat = "SINGLE_ELIMINATION" | "DOUBLE_ELIMINATION" | "RO
 
 export type TournamentStatus = "DRAFT" | "PUBLISHED" | "IN_PROGRESS" | "COMPLETED";
 
-// Added scoring settings to the Tournament type
+// Updated scoring settings to include maxTwoPointLeadScore
 export type ScoringSettings = {
   maxPoints: number;
   maxSets: number;
   requireTwoPointLead: boolean;
+  maxTwoPointLeadScore?: number; // Maximum score for a win when using two-point lead rule
 };
 
 export type Tournament = {

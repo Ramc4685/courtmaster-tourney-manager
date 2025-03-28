@@ -44,7 +44,7 @@ const TournamentScoringSettingsSection: React.FC<TournamentScoringSettingsSectio
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="space-y-1">
                 <p className="text-sm font-medium">Points per Set</p>
                 <p className="text-lg font-semibold">{scoringSettings.maxPoints}</p>
@@ -57,6 +57,12 @@ const TournamentScoringSettingsSection: React.FC<TournamentScoringSettingsSectio
                 <p className="text-sm font-medium">Two-Point Lead</p>
                 <p className="text-lg font-semibold">{scoringSettings.requireTwoPointLead ? "Required" : "Not Required"}</p>
               </div>
+              {scoringSettings.requireTwoPointLead && scoringSettings.maxTwoPointLeadScore && (
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Maximum Score Cap</p>
+                  <p className="text-lg font-semibold">{scoringSettings.maxTwoPointLeadScore}</p>
+                </div>
+              )}
             </div>
             <Button 
               variant="outline" 

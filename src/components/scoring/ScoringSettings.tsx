@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Trophy, Flag, Check } from "lucide-react";
+import { Trophy, Flag, Check, AlertTriangle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -50,6 +50,18 @@ const ScoringSettings: React.FC<ScoringSettingsProps> = ({
         variant: "destructive"
       });
       return;
+    }
+    
+    // Validate max two point lead score if enabled
+    if (localSettings.requireTwoPointLead && localSettings.maxTwoPointLeadScore) {
+      if (localSettings.maxTwoPointLeadScore <= localSettings.maxPoints) {
+        toast({
+          title: "Invalid settings",
+          description: "Maximum cap must be greater than points per set",
+          variant: "destructive"
+        });
+        return;
+      }
     }
     
     // Update parent state
@@ -142,6 +154,32 @@ const ScoringSettings: React.FC<ScoringSettingsProps> = ({
                 </p>
               </div>
             </div>
+            
+            {localSettings.requireTwoPointLead && (
+              <div className="space-y-2">
+                <Label htmlFor="maxTwoPointLeadScore" className="flex items-center">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Maximum Score Cap
+                </Label>
+                <div className="flex items-center space-x-4">
+                  <Input
+                    id="maxTwoPointLeadScore"
+                    type="number"
+                    value={localSettings.maxTwoPointLeadScore || 30}
+                    onChange={(e) => setLocalSettings({
+                      ...localSettings,
+                      maxTwoPointLeadScore: parseInt(e.target.value) || 30
+                    })}
+                    min={localSettings.maxPoints + 1}
+                    max={99}
+                    className="w-24"
+                  />
+                  <p className="text-sm text-gray-500">
+                    Maximum score to win regardless of lead (e.g., 30 for a 21-point game)
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
