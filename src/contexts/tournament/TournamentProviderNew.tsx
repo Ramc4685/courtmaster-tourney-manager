@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division } from "@/types/tournament";
 import { TournamentContextType } from "./types";
@@ -155,7 +156,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Auto-assign available courts to scheduled matches
-  const autoAssignCourtsHandler = async () => {
+  const autoAssignCourtsHandler = async (): Promise<number> => {
     if (!currentTournament) return 0;
     
     try {

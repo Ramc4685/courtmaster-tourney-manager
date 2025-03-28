@@ -1,5 +1,5 @@
 
-import { Tournament, Court, Match } from "@/types/tournament";
+import { Tournament, Court, Match, CourtStatus } from "@/types/tournament";
 import { tournamentService } from "./TournamentService";
 import { findMatchById, findCourtById } from "@/utils/tournamentUtils";
 
@@ -30,7 +30,7 @@ export class CourtService {
     // Update court status and current match
     const updatedCourt = {
       ...court,
-      status: "IN_USE",
+      status: "IN_USE" as CourtStatus,
       currentMatch: updatedMatch
     };
     
@@ -94,7 +94,7 @@ export class CourtService {
       // Update court status and current match
       const updatedCourt = {
         ...court,
-        status: "IN_USE",
+        status: "IN_USE" as CourtStatus,
         currentMatch: updatedMatch
       };
       

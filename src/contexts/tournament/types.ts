@@ -20,7 +20,7 @@ export interface TournamentContextType {
   loadSampleData: () => void;
   scheduleMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => void;
   generateBracket: () => void;
-  autoAssignCourts: () => number;
+  autoAssignCourts: () => Promise<number>; // Changed to return Promise<number>
   generateMultiStageTournament: () => void;
   advanceToNextStage: () => void;
 }
