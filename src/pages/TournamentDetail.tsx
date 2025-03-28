@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
@@ -15,17 +14,29 @@ import {
   CardDescription,
   CardFooter,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Trophy, Calendar, Users, Save, ArrowRight } from "lucide-react";
+import { PlusCircle, Trophy, Calendar, Users, Save, ArrowRight, Trash2, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { useTournament } from "@/contexts/TournamentContext";
 import Layout from "@/components/layout/Layout";
 import PageHeader from "@/components/shared/PageHeader";
 import TeamList from "@/components/tournament/TeamList";
 import AddTeamDialog from "@/components/tournament/AddTeamDialog";
+import ScheduleMatchDialog from "@/components/tournament/ScheduleMatchDialog";
 import MatchCard from "@/components/shared/MatchCard";
 import { Team, Division, TournamentStatus, Match, MatchStatus } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
@@ -34,8 +45,9 @@ const TournamentDetail = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { tournaments, setCurrentTournament, updateTournament } = useTournament();
+  const { tournaments, setCurrentTournament, updateTournament, deleteTournament } = useTournament();
   const [showAddTeamDialog, setShowAddTeamDialog] = useState(false);
+  const [showScheduleMatchDialog, setShowScheduleMatchDialog] = useState(false);
 
   // Find the tournament by ID
   useEffect(() => {
@@ -117,6 +129,15 @@ const TournamentDetail = () => {
     });
   };
 
+  const handleDeleteTournament = () => {
+    deleteTournament(tournament.id);
+    toast({
+      title: "Tournament deleted",
+      description: "The tournament has been deleted successfully",
+    });
+    navigate("/tournaments");
+  };
+
   // Group matches by status
   const scheduledMatches = tournament.matches.filter(m => m.status === "SCHEDULED");
   const inProgressMatches = tournament.matches.filter(m => m.status === "IN_PROGRESS");
@@ -129,32 +150,61 @@ const TournamentDetail = () => {
           title={tournament.name}
           description={tournament.description || "No description provided"}
           action={
-            tournament.status === "DRAFT" ? (
-              <Button 
-                className="bg-court-green hover:bg-court-green/90"
-                onClick={handlePublishTournament}
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Publish Tournament
-              </Button>
-            ) : tournament.status === "PUBLISHED" ? (
-              <Button 
-                className="bg-court-green hover:bg-court-green/90"
-                onClick={handleStartTournament}
-              >
-                <Trophy className="mr-2 h-4 w-4" />
-                Start Tournament
-              </Button>
-            ) : (
-              <Link to={`/scoring/${tournament.id}`}>
+            <div className="flex space-x-2">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete the tournament and all its data.
+                      This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleDeleteTournament}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              
+              {tournament.status === "DRAFT" ? (
                 <Button 
                   className="bg-court-green hover:bg-court-green/90"
+                  onClick={handlePublishTournament}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  Publish Tournament
+                </Button>
+              ) : tournament.status === "PUBLISHED" ? (
+                <Button 
+                  className="bg-court-green hover:bg-court-green/90"
+                  onClick={handleStartTournament}
                 >
                   <Trophy className="mr-2 h-4 w-4" />
-                  Go to Scoring
+                  Start Tournament
                 </Button>
-              </Link>
-            )
+              ) : (
+                <Link to={`/scoring/${tournament.id}`}>
+                  <Button 
+                    className="bg-court-green hover:bg-court-green/90"
+                  >
+                    <Trophy className="mr-2 h-4 w-4" />
+                    Go to Scoring
+                  </Button>
+                </Link>
+              )}
+            </div>
           }
         />
 
@@ -207,11 +257,22 @@ const TournamentDetail = () => {
 
           <TabsContent value="matches" className="mt-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Matches</CardTitle>
-                <CardDescription>
-                  View and manage tournament matches
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Matches</CardTitle>
+                  <CardDescription>
+                    View and manage tournament matches
+                  </CardDescription>
+                </div>
+                {tournament.status !== "DRAFT" && (
+                  <Button 
+                    onClick={() => setShowScheduleMatchDialog(true)}
+                    className="bg-court-green hover:bg-court-green/90"
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Schedule Match
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 {tournament.matches.length === 0 ? (
@@ -222,9 +283,18 @@ const TournamentDetail = () => {
                       {tournament.status === "DRAFT" 
                         ? "Publish the tournament to generate initial matches."
                         : tournament.status === "PUBLISHED" 
-                        ? "Start the tournament to begin matches."
-                        : "No matches have been created yet."}
+                        ? "Start the tournament to begin matches or schedule a match manually."
+                        : "No matches have been created yet. Click on 'Schedule Match' to create one."}
                     </p>
+                    {tournament.status !== "DRAFT" && (
+                      <Button 
+                        onClick={() => setShowScheduleMatchDialog(true)}
+                        className="mt-4 bg-court-green hover:bg-court-green/90"
+                      >
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        Schedule Match
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -332,6 +402,12 @@ const TournamentDetail = () => {
       <AddTeamDialog 
         open={showAddTeamDialog} 
         onOpenChange={setShowAddTeamDialog} 
+        tournamentId={tournament.id}
+      />
+
+      <ScheduleMatchDialog
+        open={showScheduleMatchDialog}
+        onOpenChange={setShowScheduleMatchDialog}
         tournamentId={tournament.id}
       />
     </Layout>

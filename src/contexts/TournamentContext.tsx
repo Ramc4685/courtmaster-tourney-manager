@@ -7,6 +7,7 @@ interface TournamentContextType {
   setCurrentTournament: (tournament: Tournament) => void;
   createTournament: (tournament: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches">) => void;
   updateTournament: (tournament: Tournament) => void;
+  deleteTournament: (tournamentId: string) => void;
   addTeam: (team: Team) => void;
   updateMatch: (match: Match) => void;
   updateCourt: (court: Court) => void;
@@ -16,6 +17,7 @@ interface TournamentContextType {
   completeMatch: (matchId: string) => void;
   moveTeamToDivision: (teamId: string, fromDivision: Division, toDivision: Division) => void;
   loadSampleData: () => void;
+  scheduleMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => void;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -187,6 +189,16 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     setCurrentTournament(newTournament);
   };
 
+  // Delete tournament
+  const deleteTournament = (tournamentId: string) => {
+    const updatedTournaments = tournaments.filter(t => t.id !== tournamentId);
+    setTournaments(updatedTournaments);
+    
+    if (currentTournament?.id === tournamentId) {
+      setCurrentTournament(null);
+    }
+  };
+
   // Update tournament
   const updateTournament = (tournament: Tournament) => {
     const updatedTournament = { 
@@ -212,6 +224,47 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     const updatedTournament = {
       ...currentTournament,
       teams: [...currentTournament.teams, team],
+      updatedAt: new Date()
+    };
+    
+    updateTournament(updatedTournament);
+  };
+
+  // Schedule a new match
+  const scheduleMatch = (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => {
+    if (!currentTournament) return;
+    
+    const team1 = currentTournament.teams.find(t => t.id === team1Id);
+    const team2 = currentTournament.teams.find(t => t.id === team2Id);
+    
+    if (!team1 || !team2) return;
+    
+    let courtNumber;
+    let updatedCourts = [...currentTournament.courts];
+    
+    if (courtId) {
+      const court = currentTournament.courts.find(c => c.id === courtId);
+      if (court) {
+        courtNumber = court.number;
+      }
+    }
+    
+    const newMatch: Match = {
+      id: generateId(),
+      tournamentId: currentTournament.id,
+      team1,
+      team2,
+      scores: [{ team1Score: 0, team2Score: 0 }],
+      division: "GROUP" as Division,
+      courtNumber,
+      scheduledTime,
+      status: "SCHEDULED" as MatchStatus
+    };
+    
+    const updatedTournament = {
+      ...currentTournament,
+      matches: [...currentTournament.matches, newMatch],
+      courts: updatedCourts,
       updatedAt: new Date()
     };
     
@@ -491,6 +544,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     setCurrentTournament,
     createTournament,
     updateTournament,
+    deleteTournament,
     addTeam,
     updateMatch,
     updateCourt,
@@ -499,7 +553,8 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     updateMatchScore,
     completeMatch,
     moveTeamToDivision,
-    loadSampleData
+    loadSampleData,
+    scheduleMatch
   };
 
   return (

@@ -1,10 +1,21 @@
 
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { PlusCircle, Trophy, Calendar, Users, Eye, Database } from "lucide-react";
+import { PlusCircle, Trophy, Calendar, Users, Eye, Database, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import Layout from "@/components/layout/Layout";
 import PageHeader from "@/components/shared/PageHeader";
 import { useTournament } from "@/contexts/TournamentContext";
@@ -12,7 +23,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 const Tournaments = () => {
-  const { tournaments, setCurrentTournament, loadSampleData } = useTournament();
+  const { tournaments, setCurrentTournament, loadSampleData, deleteTournament } = useTournament();
   const { toast } = useToast();
 
   // Ensure dates are properly parsed
@@ -60,6 +71,18 @@ const Tournaments = () => {
     toast({
       title: "Sample data loaded",
       description: "A sample tournament with teams and matches has been created.",
+    });
+  };
+
+  const handleDeleteTournament = (id: string, e: React.MouseEvent) => {
+    // Stop event propagation to prevent navigation
+    e.stopPropagation();
+    
+    deleteTournament(id);
+    
+    toast({
+      title: "Tournament deleted",
+      description: "The tournament has been deleted successfully",
     });
   };
 
@@ -152,20 +175,43 @@ const Tournaments = () => {
                     </Button>
                   </Link>
                   <div className="flex space-x-2">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-red-500 border-red-200 hover:bg-red-50"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete the tournament and all its data.
+                            This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={(e) => handleDeleteTournament(tournament.id, e)}
+                            className="bg-red-500 hover:bg-red-600"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    
                     <Link 
                       to={`/scoring/${tournament.id}`}
                       onClick={() => handleSelectTournament(tournament)}
                     >
                       <Button variant="outline" size="sm">
                         Scoring
-                      </Button>
-                    </Link>
-                    <Link 
-                      to={`/public/${tournament.id}`}
-                      onClick={() => handleSelectTournament(tournament)}
-                    >
-                      <Button variant="outline" size="sm">
-                        Public View
                       </Button>
                     </Link>
                   </div>
