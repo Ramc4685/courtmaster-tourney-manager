@@ -10,7 +10,7 @@ interface MatchCardProps {
 }
 
 const MatchCard: React.FC<MatchCardProps> = ({ match, onSelect, mode = "full" }) => {
-  const { team1, team2, scores, status, courtNumber, scheduledTime } = match;
+  const { team1, team2, scores, status, courtNumber, scheduledTime, division, stage } = match;
   
   const getStatusBadge = () => {
     switch (status) {
@@ -22,6 +22,42 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onSelect, mode = "full" })
         return <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Completed</span>;
       case "CANCELLED":
         return <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">Cancelled</span>;
+      default:
+        return null;
+    }
+  };
+
+  const getDivisionBadge = () => {
+    switch (division) {
+      case "DIVISION_1":
+        return <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">Division 1</span>;
+      case "DIVISION_2":
+        return <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Division 2</span>;
+      case "DIVISION_3":
+        return <span className="bg-teal-100 text-teal-800 text-xs px-2 py-1 rounded-full">Division 3</span>;
+      case "QUALIFIER_DIV1":
+        return <span className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">Div 1 Qualifier</span>;
+      case "QUALIFIER_DIV2":
+        return <span className="bg-cyan-100 text-cyan-800 text-xs px-2 py-1 rounded-full">Div 2 Qualifier</span>;
+      case "GROUP_DIV3":
+        return <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full">Div 3 Groups</span>;
+      case "INITIAL":
+        return <span className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">Initial Round</span>;
+      default:
+        return null;
+    }
+  };
+
+  const getStageBadge = () => {
+    switch (stage) {
+      case "INITIAL_ROUND":
+        return <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Initial Round</span>;
+      case "DIVISION_PLACEMENT":
+        return <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">Division Placement</span>;
+      case "PLAYOFF_KNOCKOUT":
+        return <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">Playoff Knockout</span>;
+      case "COMPLETED":
+        return <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Completed</span>;
       default:
         return null;
     }
@@ -72,8 +108,12 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onSelect, mode = "full" })
       className="match-card cursor-pointer" 
       onClick={onSelect}
     >
-      <div className="flex justify-between items-center mb-3">
-        {getStatusBadge()}
+      <div className="flex flex-wrap gap-2 justify-between items-center mb-3">
+        <div className="flex flex-wrap gap-2">
+          {getStatusBadge()}
+          {getDivisionBadge()}
+          {getStageBadge()}
+        </div>
         <div className="flex space-x-3 text-sm text-gray-500">
           {courtNumber && (
             <div className="flex items-center">
@@ -96,6 +136,9 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onSelect, mode = "full" })
             {team1Sets}
           </div>
           <span className="font-medium">{team1.name}</span>
+          {team1.initialRanking && (
+            <span className="text-xs text-gray-500">#{team1.initialRanking}</span>
+          )}
         </div>
         <span className={`text-2xl font-bold ${status === "IN_PROGRESS" ? "text-court-green" : ""}`}>
           {currentScore.team1Score}
@@ -108,6 +151,9 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onSelect, mode = "full" })
             {team2Sets}
           </div>
           <span className="font-medium">{team2.name}</span>
+          {team2.initialRanking && (
+            <span className="text-xs text-gray-500">#{team2.initialRanking}</span>
+          )}
         </div>
         <span className={`text-2xl font-bold ${status === "IN_PROGRESS" ? "text-court-green" : ""}`}>
           {currentScore.team2Score}
@@ -123,6 +169,12 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onSelect, mode = "full" })
               <span>{score.team2Score}</span>
             </div>
           ))}
+        </div>
+      )}
+      
+      {match.groupName && (
+        <div className="mt-2 text-xs text-gray-500 text-center">
+          {match.groupName}
         </div>
       )}
     </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
@@ -27,7 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Trophy, Calendar, Users, Save, ArrowRight, Trash2, Clock, FileUp, LayoutGrid, RefreshCw } from "lucide-react";
+import { PlusCircle, Trophy, Calendar, Users, Save, ArrowRight, Trash2, Clock, FileUp, LayoutGrid, RefreshCw, ArrowRightCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useTournament } from "@/contexts/TournamentContext";
 import Layout from "@/components/layout/Layout";
@@ -38,17 +39,27 @@ import ScheduleMatchDialog from "@/components/tournament/ScheduleMatchDialog";
 import ImportTeamsDialog from "@/components/tournament/ImportTeamsDialog";
 import TournamentBracket from "@/components/tournament/TournamentBracket";
 import MatchCard from "@/components/shared/MatchCard";
-import { Team, Division, TournamentStatus, Match, MatchStatus } from "@/types/tournament";
+import { Team, Division, TournamentStatus, Match, MatchStatus, TournamentStage } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
 
 const TournamentDetail = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { tournaments, setCurrentTournament, updateTournament, deleteTournament, generateBracket, autoAssignCourts } = useTournament();
+  const { 
+    tournaments, 
+    setCurrentTournament, 
+    updateTournament, 
+    deleteTournament, 
+    generateBracket, 
+    autoAssignCourts,
+    generateMultiStageTournament,
+    advanceToNextStage 
+  } = useTournament();
   const [showAddTeamDialog, setShowAddTeamDialog] = useState(false);
   const [showScheduleMatchDialog, setShowScheduleMatchDialog] = useState(false);
   const [showImportTeamsDialog, setShowImportTeamsDialog] = useState(false);
+  const [selectedDivision, setSelectedDivision] = useState<Division>("DIVISION_1");
 
   // Find the tournament by ID
   useEffect(() => {
@@ -92,11 +103,26 @@ const TournamentDetail = () => {
     }
   };
 
+  const getStageBadge = (stage: TournamentStage) => {
+    switch (stage) {
+      case "INITIAL_ROUND":
+        return <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-800">Initial Round</Badge>;
+      case "DIVISION_PLACEMENT":
+        return <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-800">Division Placement</Badge>;
+      case "PLAYOFF_KNOCKOUT":
+        return <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-800">Playoff Knockout</Badge>;
+      case "COMPLETED":
+        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-800">Completed</Badge>;
+      default:
+        return null;
+    }
+  };
+
   const handlePublishTournament = () => {
-    if (tournament.teams.length < 2) {
+    if (tournament.teams.length < 38) {
       toast({
         title: "Not enough teams",
-        description: "You need at least 2 teams to publish a tournament",
+        description: "This tournament format requires exactly 38 teams",
         variant: "destructive",
       });
       return;
@@ -116,36 +142,47 @@ const TournamentDetail = () => {
   };
 
   const handleStartTournament = () => {
-    if (tournament.teams.length < 2) {
+    if (tournament.teams.length < 38) {
       toast({
         title: "Not enough teams",
-        description: "You need at least 2 teams to start a tournament",
+        description: "This tournament format requires exactly 38 teams",
         variant: "destructive",
       });
       return;
     }
     
-    // Update tournament status
-    const updatedTournament = {
-      ...tournament,
-      status: "IN_PROGRESS" as TournamentStatus,
-    };
+    // Generate the multi-stage tournament
+    generateMultiStageTournament();
     
-    updateTournament(updatedTournament);
+    toast({
+      title: "Tournament started",
+      description: "Initial round matches have been generated",
+    });
+  };
+
+  const handleAdvanceStage = () => {
+    // Check if all matches in the current stage are completed
+    const currentStageMatches = tournament.matches.filter(
+      m => m.stage === tournament.currentStage
+    );
     
-    // Generate bracket if it's an elimination tournament
-    if (tournament.format === "SINGLE_ELIMINATION" || tournament.format === "DOUBLE_ELIMINATION") {
-      generateBracket();
+    const allCompleted = currentStageMatches.every(m => m.status === "COMPLETED");
+    
+    if (!allCompleted) {
       toast({
-        title: "Tournament started",
-        description: "The tournament bracket has been generated",
+        title: "Cannot advance stage",
+        description: "All matches in the current stage must be completed first",
+        variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Tournament started",
-        description: "The tournament is now in progress",
-      });
+      return;
     }
+    
+    advanceToNextStage();
+    
+    toast({
+      title: "Stage advanced",
+      description: `Advanced to ${tournament.currentStage === "INITIAL_ROUND" ? "Division Placement" : "Playoff Knockout"} stage`,
+    });
   };
 
   const handleDeleteTournament = () => {
@@ -173,13 +210,17 @@ const TournamentDetail = () => {
     }
   };
 
-  // Group matches by status
+  // Group matches by stage and status
+  const initialRoundMatches = tournament.matches.filter(m => m.stage === "INITIAL_ROUND");
+  const divisionPlacementMatches = tournament.matches.filter(m => m.stage === "DIVISION_PLACEMENT");
+  const playoffKnockoutMatches = tournament.matches.filter(m => m.stage === "PLAYOFF_KNOCKOUT");
+  
   const scheduledMatches = tournament.matches.filter(m => m.status === "SCHEDULED");
   const inProgressMatches = tournament.matches.filter(m => m.status === "IN_PROGRESS");
   const completedMatches = tournament.matches.filter(m => m.status === "COMPLETED");
 
-  // Check if the tournament has bracket rounds
-  const hasBracket = tournament.matches.some(m => m.bracketRound !== undefined);
+  // Check if the tournament has matches in the playoff stage
+  const hasPlayoffMatches = tournament.matches.some(m => m.stage === "PLAYOFF_KNOCKOUT");
 
   return (
     <Layout>
@@ -232,15 +273,26 @@ const TournamentDetail = () => {
                   <Trophy className="mr-2 h-4 w-4" />
                   Start Tournament
                 </Button>
-              ) : (
-                <Link to={`/scoring/${tournament.id}`}>
-                  <Button 
-                    className="bg-court-green hover:bg-court-green/90"
-                  >
-                    <Trophy className="mr-2 h-4 w-4" />
-                    Go to Scoring
-                  </Button>
-                </Link>
+              ) : tournament.status === "IN_PROGRESS" && (
+                <>
+                  {(tournament.currentStage === "INITIAL_ROUND" || tournament.currentStage === "DIVISION_PLACEMENT") && (
+                    <Button 
+                      className="bg-court-green hover:bg-court-green/90"
+                      onClick={handleAdvanceStage}
+                    >
+                      <ArrowRightCircle className="mr-2 h-4 w-4" />
+                      Advance to Next Stage
+                    </Button>
+                  )}
+                  <Link to={`/scoring/${tournament.id}`}>
+                    <Button 
+                      className="bg-court-blue hover:bg-court-blue/90"
+                    >
+                      <Trophy className="mr-2 h-4 w-4" />
+                      Go to Scoring
+                    </Button>
+                  </Link>
+                </>
               )}
             </div>
           }
@@ -258,15 +310,16 @@ const TournamentDetail = () => {
             <span>{tournament.teams.length} Teams</span>
           </div>
           {getStatusBadge(tournament.status)}
+          {tournament.currentStage && getStageBadge(tournament.currentStage)}
         </div>
 
         <Tabs defaultValue="teams" className="mt-6">
           <TabsList>
             <TabsTrigger value="teams">Teams</TabsTrigger>
+            <TabsTrigger value="stages">Stages</TabsTrigger>
             <TabsTrigger value="bracket">Bracket</TabsTrigger>
             <TabsTrigger value="matches">Matches</TabsTrigger>
             <TabsTrigger value="courts">Courts</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="teams" className="mt-4">
@@ -299,6 +352,109 @@ const TournamentDetail = () => {
               </CardHeader>
               <CardContent>
                 <TeamList teams={tournament.teams} />
+                {tournament.teams.length < 38 && tournament.status === "DRAFT" && (
+                  <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-amber-800">
+                      This tournament format requires exactly 38 teams. Currently have {tournament.teams.length} teams.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="stages" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Tournament Stages</CardTitle>
+                <CardDescription>
+                  Track progression through the tournament stages
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Initial Round */}
+                  <div className={`border rounded-lg p-6 ${tournament.currentStage === "INITIAL_ROUND" ? "border-amber-500 bg-amber-50" : ""}`}>
+                    <h3 className="text-lg font-medium flex items-center">
+                      <span className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center mr-2">1</span>
+                      Initial Round
+                    </h3>
+                    <p className="mt-2 text-gray-600">
+                      All 38 teams play one match each. Winners advance to Division 1 qualifiers or directly to Division 1.
+                      Losers move to Division 2 qualifiers or Division 3 group stage.
+                    </p>
+                    
+                    {initialRoundMatches.length > 0 && (
+                      <div className="mt-4">
+                        <div className="flex justify-between text-sm text-gray-500 mb-2">
+                          <span>Matches: {initialRoundMatches.length}</span>
+                          <span>Completed: {initialRoundMatches.filter(m => m.status === "COMPLETED").length}/{initialRoundMatches.length}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div 
+                            className="bg-amber-500 h-2.5 rounded-full" 
+                            style={{ width: `${(initialRoundMatches.filter(m => m.status === "COMPLETED").length / initialRoundMatches.length) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Division Placement */}
+                  <div className={`border rounded-lg p-6 ${tournament.currentStage === "DIVISION_PLACEMENT" ? "border-orange-500 bg-orange-50" : ""}`}>
+                    <h3 className="text-lg font-medium flex items-center">
+                      <span className="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center mr-2">2</span>
+                      Division Placement
+                    </h3>
+                    <p className="mt-2 text-gray-600">
+                      Winners #1-#13 automatically qualify for Division 1. Winners #14-#19 compete in Division 1 Qualifiers.
+                      Losers #20-#29 compete in Division 2 Qualifiers. Losers #30-#38 enter Division 3 Group Stage.
+                    </p>
+                    
+                    {divisionPlacementMatches.length > 0 && (
+                      <div className="mt-4">
+                        <div className="flex justify-between text-sm text-gray-500 mb-2">
+                          <span>Matches: {divisionPlacementMatches.length}</span>
+                          <span>Completed: {divisionPlacementMatches.filter(m => m.status === "COMPLETED").length}/{divisionPlacementMatches.length}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div 
+                            className="bg-orange-500 h-2.5 rounded-full" 
+                            style={{ width: `${(divisionPlacementMatches.filter(m => m.status === "COMPLETED").length / divisionPlacementMatches.length) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Playoff Knockout */}
+                  <div className={`border rounded-lg p-6 ${tournament.currentStage === "PLAYOFF_KNOCKOUT" ? "border-purple-500 bg-purple-50" : ""}`}>
+                    <h3 className="text-lg font-medium flex items-center">
+                      <span className="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center mr-2">3</span>
+                      Playoff Knockout
+                    </h3>
+                    <p className="mt-2 text-gray-600">
+                      Division 1: 16-team knockout. Division 2: 16-team knockout (8 losers from Div 1 Round of 16, 
+                      3 losers from Div 1 Qualifiers, 5 winners from Div 2 Qualifiers).
+                      Division 3: 8-team knockout.
+                    </p>
+                    
+                    {playoffKnockoutMatches.length > 0 && (
+                      <div className="mt-4">
+                        <div className="flex justify-between text-sm text-gray-500 mb-2">
+                          <span>Matches: {playoffKnockoutMatches.length}</span>
+                          <span>Completed: {playoffKnockoutMatches.filter(m => m.status === "COMPLETED").length}/{playoffKnockoutMatches.length}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div 
+                            className="bg-purple-500 h-2.5 rounded-full" 
+                            style={{ width: `${(playoffKnockoutMatches.filter(m => m.status === "COMPLETED").length / playoffKnockoutMatches.length) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -309,42 +465,62 @@ const TournamentDetail = () => {
                 <div>
                   <CardTitle>Tournament Bracket</CardTitle>
                   <CardDescription>
-                    View the tournament bracket and progression
+                    View the tournament brackets for each division
                   </CardDescription>
                 </div>
-                {tournament.status === "IN_PROGRESS" && (tournament.format === "SINGLE_ELIMINATION" || tournament.format === "DOUBLE_ELIMINATION") && (
-                  <Button 
-                    onClick={() => generateBracket()}
-                    variant="outline"
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Regenerate Bracket
-                  </Button>
+                {hasPlayoffMatches && (
+                  <div className="flex space-x-2">
+                    <Button 
+                      onClick={() => setSelectedDivision("DIVISION_1")}
+                      variant={selectedDivision === "DIVISION_1" ? "default" : "outline"}
+                      className={selectedDivision === "DIVISION_1" ? "bg-purple-500 hover:bg-purple-600" : ""}
+                    >
+                      Division 1
+                    </Button>
+                    <Button 
+                      onClick={() => setSelectedDivision("DIVISION_2")}
+                      variant={selectedDivision === "DIVISION_2" ? "default" : "outline"}
+                      className={selectedDivision === "DIVISION_2" ? "bg-blue-500 hover:bg-blue-600" : ""}
+                    >
+                      Division 2
+                    </Button>
+                    <Button 
+                      onClick={() => setSelectedDivision("DIVISION_3")}
+                      variant={selectedDivision === "DIVISION_3" ? "default" : "outline"}
+                      className={selectedDivision === "DIVISION_3" ? "bg-teal-500 hover:bg-teal-600" : ""}
+                    >
+                      Division 3
+                    </Button>
+                  </div>
                 )}
               </CardHeader>
               <CardContent>
-                {tournament.format !== "SINGLE_ELIMINATION" && tournament.format !== "DOUBLE_ELIMINATION" ? (
-                  <div className="text-center py-12">
-                    <LayoutGrid className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900">Bracket view not available</h3>
-                    <p className="mt-1 text-gray-500">
-                      Bracket view is only available for Single Elimination and Double Elimination tournaments.
-                    </p>
-                  </div>
-                ) : tournament.status === "DRAFT" ? (
+                {tournament.status === "DRAFT" || tournament.status === "PUBLISHED" ? (
                   <div className="text-center py-12">
                     <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900">Tournament not started</h3>
                     <p className="mt-1 text-gray-500">
-                      The bracket will be generated when the tournament is started.
+                      Brackets will be available after the playoff knockout stage begins.
+                    </p>
+                  </div>
+                ) : !hasPlayoffMatches ? (
+                  <div className="text-center py-12">
+                    <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900">Playoff stage not reached</h3>
+                    <p className="mt-1 text-gray-500">
+                      Brackets will be available after the division placement stage is completed.
                     </p>
                   </div>
                 ) : (
-                  <TournamentBracket tournament={tournament} onMatchClick={(match) => {
-                    if (match.status !== "COMPLETED") {
-                      navigate(`/scoring/${tournament.id}`);
-                    }
-                  }} />
+                  <TournamentBracket 
+                    tournament={tournament} 
+                    division={selectedDivision}
+                    onMatchClick={(match) => {
+                      if (match.status !== "COMPLETED") {
+                        navigate(`/scoring/${tournament.id}`);
+                      }
+                    }} 
+                  />
                 )}
               </CardContent>
             </Card>
@@ -441,7 +617,7 @@ const TournamentDetail = () => {
                     {completedMatches.length > 0 && (
                       <div>
                         <h3 className="text-lg font-medium mb-3">Completed</h3>
-                        <div className="grid gap-4 md:grid-cols-2">
+                        <div className="grid gap-4 md:grid-cols-2 max-h-96 overflow-y-auto">
                           {completedMatches.map(match => (
                             <div key={match.id} className="border rounded-lg p-4">
                               <MatchCard match={match} />
@@ -481,23 +657,6 @@ const TournamentDetail = () => {
                       </CardContent>
                     </Card>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Tournament Settings</CardTitle>
-                <CardDescription>
-                  Modify tournament details and settings
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Tournament settings form will go here */}
-                  <p>Settings coming soon</p>
                 </div>
               </CardContent>
             </Card>

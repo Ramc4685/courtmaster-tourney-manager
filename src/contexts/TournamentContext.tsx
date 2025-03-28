@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat, TournamentStatus, CourtStatus } from "@/types/tournament";
+import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat, TournamentStatus, CourtStatus, TournamentStage, Group } from "@/types/tournament";
 
 interface TournamentContextType {
   tournaments: Tournament[];
   currentTournament: Tournament | null;
   setCurrentTournament: (tournament: Tournament) => void;
-  createTournament: (tournament: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches">) => void;
+  createTournament: (tournament: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">) => void;
   updateTournament: (tournament: Tournament) => void;
   deleteTournament: (tournamentId: string) => void;
   addTeam: (team: Team) => void;
@@ -21,6 +21,8 @@ interface TournamentContextType {
   scheduleMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => void;
   generateBracket: () => void;
   autoAssignCourts: () => number;
+  generateMultiStageTournament: () => void;
+  advanceToNextStage: () => void;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -35,109 +37,36 @@ export const useTournament = () => {
 
 // Sample data generation helper
 const createSampleData = (): Tournament => {
-  // Sample teams
-  const teams = [
-    {
-      id: "team1",
-      name: "Eagle Smashers",
-      players: [
-        { id: "p1", name: "John Smith", email: "john@example.com" },
-        { id: "p2", name: "Lisa Wong", email: "lisa@example.com" }
-      ]
-    },
-    {
-      id: "team2",
-      name: "Phoenix Risers",
-      players: [
-        { id: "p3", name: "Mike Johnson", email: "mike@example.com" },
-        { id: "p4", name: "Sarah Chen", email: "sarah@example.com" }
-      ]
-    },
-    {
-      id: "team3",
-      name: "Falcon Duo",
-      players: [
-        { id: "p5", name: "David Park", email: "david@example.com" },
-        { id: "p6", name: "Emma Garcia", email: "emma@example.com" }
-      ]
-    },
-    {
-      id: "team4",
-      name: "Thunder Strikers",
-      players: [
-        { id: "p7", name: "James Lee", email: "james@example.com" },
-        { id: "p8", name: "Olivia Martinez", email: "olivia@example.com" }
-      ]
-    }
-  ];
+  // Sample teams - 38 teams for the specific tournament format
+  const teams: Team[] = Array.from({ length: 38 }, (_, i) => ({
+    id: `team${i + 1}`,
+    name: `Team ${i + 1}`,
+    players: [
+      { id: `p${i}a`, name: `Player ${i + 1}A` },
+      { id: `p${i}b`, name: `Player ${i + 1}B` }
+    ],
+    initialRanking: i + 1
+  }));
 
-  // Sample courts
-  const courts: Court[] = [
-    {
-      id: "court1",
-      name: "Court A",
-      number: 1,
-      status: "AVAILABLE" as CourtStatus
-    },
-    {
-      id: "court2",
-      name: "Court B",
-      number: 2,
-      status: "AVAILABLE" as CourtStatus
-    }
-  ];
+  // Sample courts - 5 courts as specified
+  const courts: Court[] = Array.from({ length: 5 }, (_, i) => ({
+    id: `court${i + 1}`,
+    name: `Court ${i + 1}`,
+    number: i + 1,
+    status: "AVAILABLE" as CourtStatus
+  }));
 
-  // Sample matches with scores
-  const matches = [
-    {
-      id: "match1",
-      tournamentId: "sampleTournament",
-      team1: teams[0],
-      team2: teams[1],
-      scores: [{ team1Score: 21, team2Score: 18 }],
-      division: "GROUP" as Division,
-      courtNumber: 1,
-      scheduledTime: new Date(new Date().getTime() + 60 * 60 * 1000), // 1 hour from now
-      status: "SCHEDULED" as MatchStatus
-    },
-    {
-      id: "match2",
-      tournamentId: "sampleTournament",
-      team1: teams[2],
-      team2: teams[3],
-      scores: [{ team1Score: 19, team2Score: 21 }, { team1Score: 21, team2Score: 15 }],
-      division: "GROUP" as Division,
-      courtNumber: 2,
-      scheduledTime: new Date(new Date().getTime() + 120 * 60 * 1000), // 2 hours from now
-      status: "IN_PROGRESS" as MatchStatus
-    },
-    {
-      id: "match3",
-      tournamentId: "sampleTournament",
-      team1: teams[0],
-      team2: teams[2],
-      scores: [{ team1Score: 21, team2Score: 18 }, { team1Score: 21, team2Score: 23 }, { team1Score: 21, team2Score: 19 }],
-      division: "GROUP" as Division,
-      scheduledTime: new Date(new Date().getTime() + 180 * 60 * 1000), // 3 hours from now
-      status: "SCHEDULED" as MatchStatus
-    }
-  ];
-
-  // Update court status and current match for in-progress match
-  // Properly type the court and set its properties
-  courts[1] = {
-    ...courts[1],
-    status: "IN_USE" as CourtStatus,
-    currentMatch: matches[1]
-  };
+  // Sample matches for initial round
+  const matches: Match[] = [];
 
   // Create sample tournament
   return {
     id: "sampleTournament",
-    name: "Summer Badminton Championship",
-    description: "Annual summer tournament featuring the region's best badminton talent",
-    format: "SINGLE_ELIMINATION" as TournamentFormat,
-    status: "IN_PROGRESS" as TournamentStatus,
+    name: "38-Team Multi-Stage Tournament",
+    description: "Multi-stage tournament with 38 teams progressing through divisions",
+    format: "MULTI_STAGE" as TournamentFormat,
+    status: "PUBLISHED" as TournamentStatus,
+    currentStage: "INITIAL_ROUND" as TournamentStage,
     teams,
     matches,
     courts,
@@ -145,7 +74,8 @@ const createSampleData = (): Tournament => {
     endDate: new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
     createdAt: new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
     updatedAt: new Date(),
-    divisionProgression: true
+    divisionProgression: true,
+    autoAssignCourts: true
   };
 };
 
@@ -178,11 +108,12 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Create a new tournament
-  const createTournament = (tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches">) => {
+  const createTournament = (tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">) => {
     const newTournament: Tournament = {
       ...tournamentData,
       id: generateId(),
       matches: [],
+      currentStage: "INITIAL_ROUND", // Default stage
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -271,7 +202,8 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       team1,
       team2,
       scores: [{ team1Score: 0, team2Score: 0 }],
-      division: "GROUP" as Division,
+      division: "INITIAL" as Division,
+      stage: currentTournament.currentStage,
       courtNumber,
       scheduledTime,
       status: "SCHEDULED" as MatchStatus
@@ -456,7 +388,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     updateTournament(updatedTournament);
   };
 
-  // Complete a match
+  // Complete a match and auto-assign court to next match
   const completeMatch = (matchId: string) => {
     if (!currentTournament) return;
     
@@ -476,18 +408,23 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     });
     
     const winner = team1Sets > team2Sets ? match.team1 : match.team2;
+    const loser = team1Sets > team2Sets ? match.team2 : match.team1;
     
     const updatedMatch = {
       ...match,
       status: "COMPLETED" as MatchStatus,
-      winner
+      winner,
+      loser
     };
     
     // Free up the court
     const updatedCourts = [...currentTournament.courts];
+    let freedCourtId = null;
+    
     if (match.courtNumber) {
       const courtIndex = updatedCourts.findIndex(c => c.number === match.courtNumber);
       if (courtIndex >= 0) {
+        freedCourtId = updatedCourts[courtIndex].id;
         updatedCourts[courtIndex] = {
           ...updatedCourts[courtIndex],
           status: "AVAILABLE" as const,
@@ -500,6 +437,21 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       m.id === matchId ? updatedMatch : m
     );
     
+    // Progress winner to next match in bracket if applicable
+    if (match.nextMatchId) {
+      const nextMatchIndex = updatedMatches.findIndex(m => m.id === match.nextMatchId);
+      if (nextMatchIndex >= 0) {
+        const nextMatch = updatedMatches[nextMatchIndex];
+        const isFirstTeam = match.bracketPosition && match.bracketPosition % 2 !== 0;
+        
+        updatedMatches[nextMatchIndex] = {
+          ...nextMatch,
+          team1: isFirstTeam ? winner : nextMatch.team1,
+          team2: !isFirstTeam ? winner : nextMatch.team2
+        };
+      }
+    }
+    
     const updatedTournament = {
       ...currentTournament,
       matches: updatedMatches,
@@ -508,6 +460,17 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     };
     
     updateTournament(updatedTournament);
+    
+    // Auto-assign freed court to next scheduled match if enabled
+    if (currentTournament.autoAssignCourts && freedCourtId) {
+      const nextScheduledMatch = currentTournament.matches.find(
+        m => m.status === "SCHEDULED" && !m.courtNumber
+      );
+      
+      if (nextScheduledMatch) {
+        assignCourt(nextScheduledMatch.id, freedCourtId);
+      }
+    }
   };
 
   // Move team to a different division based on results
@@ -534,173 +497,354 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     updateTournament(updatedTournament);
   };
 
-  // Load sample data function
-  const loadSampleData = () => {
-    const sampleTournament = createSampleData();
-    
-    // Check if sample tournament already exists
-    const existingIndex = tournaments.findIndex(t => t.id === sampleTournament.id);
-    
-    if (existingIndex >= 0) {
-      // Update existing sample tournament
-      const updatedTournaments = [...tournaments];
-      updatedTournaments[existingIndex] = sampleTournament;
-      setTournaments(updatedTournaments);
-    } else {
-      // Add new sample tournament
-      setTournaments([...tournaments, sampleTournament]);
-    }
-    
-    setCurrentTournament(sampleTournament);
-  };
-  
-  // Generate a tournament bracket
-  const generateBracket = () => {
+  // Generate the 38-team multi-stage tournament
+  const generateMultiStageTournament = () => {
     if (!currentTournament) return;
     
-    // Only generate for single or double elimination formats
-    if (currentTournament.format !== "SINGLE_ELIMINATION" && currentTournament.format !== "DOUBLE_ELIMINATION") {
+    // Need 38 teams
+    if (currentTournament.teams.length !== 38) {
+      console.warn("This tournament format requires exactly 38 teams");
       return;
     }
     
+    // Generate matches for the initial round
     const teams = [...currentTournament.teams];
+    const matches: Match[] = [];
     
-    // Need at least 2 teams to create a bracket
-    if (teams.length < 2) {
-      return;
-    }
-    
-    // For bracket generation, we need power of 2 number of slots
-    const nextPowerOf2 = Math.pow(2, Math.ceil(Math.log2(teams.length)));
-    
-    // Create "bye" placeholders if needed
-    const placeholderTeam: Team = {
-      id: "bye",
-      name: "BYE",
-      players: []
-    };
-    
-    // Seed the teams (simplified seeding)
-    teams.forEach((team, index) => {
-      team.seed = index + 1;
-    });
-    
-    // Sort teams by seed
-    teams.sort((a, b) => (a.seed || 999) - (b.seed || 999));
-    
-    // Fill with placeholders up to power of 2
-    while (teams.length < nextPowerOf2) {
-      teams.push(placeholderTeam);
-    }
-    
-    // Create the initial bracket matches
-    const bracketMatches: Match[] = [];
-    const roundCount = Math.log2(nextPowerOf2);
-    
-    // Create first round matches
-    for (let i = 0; i < nextPowerOf2 / 2; i++) {
-      // Implement proper seeding order for first round
-      let team1Index, team2Index;
+    // Initial Round: 38 teams -> 19 matches
+    for (let i = 0; i < 19; i++) {
+      const team1 = teams[i * 2];
+      const team2 = teams[i * 2 + 1];
       
-      if (currentTournament.format === "SINGLE_ELIMINATION") {
-        // Standard bracket seeding (1 vs 16, 2 vs 15, etc. for 16 teams)
-        team1Index = i;
-        team2Index = nextPowerOf2 - 1 - i;
-      } else {
-        // Simple sequential pairing
-        team1Index = i * 2;
-        team2Index = i * 2 + 1;
-      }
-      
-      // Skip matches with both teams as placeholders
-      if (teams[team1Index].id === "bye" && teams[team2Index].id === "bye") {
-        continue;
-      }
-      
-      // If one team is a bye, the other automatically advances
-      const isBye = teams[team1Index].id === "bye" || teams[team2Index].id === "bye";
-      
-      const matchId = generateId();
-      const match: Match = {
-        id: matchId,
+      matches.push({
+        id: generateId(),
         tournamentId: currentTournament.id,
-        team1: teams[team1Index],
-        team2: teams[team2Index],
+        team1,
+        team2,
         scores: [{ team1Score: 0, team2Score: 0 }],
-        division: "GROUP" as Division,
-        status: isBye ? "COMPLETED" : "SCHEDULED",
-        bracketRound: 1,
-        bracketPosition: i + 1,
-      };
-      
-      // If it's a bye match, set winner automatically
-      if (isBye) {
-        match.winner = teams[team1Index].id === "bye" ? teams[team2Index] : teams[team1Index];
-      }
-      
-      bracketMatches.push(match);
-    }
-    
-    // Create subsequent round placeholders
-    for (let round = 2; round <= roundCount; round++) {
-      const matchesInRound = Math.pow(2, roundCount - round);
-      
-      for (let i = 0; i < matchesInRound; i++) {
-        const matchId = generateId();
-        
-        bracketMatches.push({
-          id: matchId,
-          tournamentId: currentTournament.id,
-          team1: { id: "tbd", name: "TBD", players: [] },
-          team2: { id: "tbd", name: "TBD", players: [] },
-          scores: [{ team1Score: 0, team2Score: 0 }],
-          division: "GROUP" as Division,
-          status: "SCHEDULED",
-          bracketRound: round,
-          bracketPosition: i + 1,
-        });
-      }
-    }
-    
-    // Connect matches by setting nextMatchId for advancement
-    for (let round = 1; round < roundCount; round++) {
-      const currentRoundMatches = bracketMatches.filter(m => m.bracketRound === round);
-      const nextRoundMatches = bracketMatches.filter(m => m.bracketRound === round + 1);
-      
-      currentRoundMatches.forEach((match, index) => {
-        const nextMatchIndex = Math.floor(index / 2);
-        if (nextRoundMatches[nextMatchIndex]) {
-          match.nextMatchId = nextRoundMatches[nextMatchIndex].id;
-        }
+        division: "INITIAL" as Division,
+        stage: "INITIAL_ROUND" as TournamentStage,
+        status: "SCHEDULED" as MatchStatus
       });
     }
     
-    // Handle automatic advancement for bye matches
-    bracketMatches.filter(m => m.status === "COMPLETED").forEach(match => {
-      if (match.nextMatchId && match.winner) {
-        const nextMatch = bracketMatches.find(m => m.id === match.nextMatchId);
-        if (nextMatch) {
-          // Place the winner in the correct slot of the next match
-          const isUpperBracket = match.bracketPosition % 2 !== 0;
-          if (isUpperBracket) {
-            nextMatch.team1 = match.winner;
-          } else {
-            nextMatch.team2 = match.winner;
-          }
-        }
-      }
-    });
-    
-    // Update the tournament with the new bracket
     const updatedTournament = {
       ...currentTournament,
-      matches: [...currentTournament.matches.filter(m => !m.bracketRound), ...bracketMatches],
+      matches,
+      currentStage: "INITIAL_ROUND" as TournamentStage,
+      status: "IN_PROGRESS" as TournamentStatus,
       updatedAt: new Date()
     };
     
     updateTournament(updatedTournament);
+    autoAssignCourts();
   };
   
+  // Advance to the next stage based on current results
+  const advanceToNextStage = () => {
+    if (!currentTournament) return;
+    
+    switch (currentTournament.currentStage) {
+      case "INITIAL_ROUND":
+        advanceToDivisionPlacement();
+        break;
+      case "DIVISION_PLACEMENT":
+        advanceToPlayoffKnockout();
+        break;
+      default:
+        break;
+    }
+  };
+  
+  // Helper function to advance from Initial Round to Division Placement
+  const advanceToDivisionPlacement = () => {
+    if (!currentTournament) return;
+    
+    // Check if all matches in initial round are completed
+    const initialMatches = currentTournament.matches.filter(
+      m => m.stage === "INITIAL_ROUND"
+    );
+    
+    if (initialMatches.some(m => m.status !== "COMPLETED")) {
+      console.warn("Cannot advance until all initial round matches are completed");
+      return;
+    }
+    
+    // Get winners and losers from initial round
+    const winners: Team[] = [];
+    const losers: Team[] = [];
+    
+    initialMatches.forEach(match => {
+      if (match.winner) winners.push(match.winner);
+      if (match.loser) losers.push(match.loser);
+    });
+    
+    // Rank winners and losers based on original rankings
+    winners.sort((a, b) => (a.initialRanking || 999) - (b.initialRanking || 999));
+    losers.sort((a, b) => (a.initialRanking || 999) - (b.initialRanking || 999));
+    
+    const newMatches: Match[] = [];
+    
+    // Division 1 Qualifiers: #14-#19 (3 matches)
+    for (let i = 0; i < 3; i++) {
+      newMatches.push({
+        id: generateId(),
+        tournamentId: currentTournament.id,
+        team1: winners[13 + i * 2], // 14, 16, 18
+        team2: winners[14 + i * 2], // 15, 17, 19
+        scores: [{ team1Score: 0, team2Score: 0 }],
+        division: "QUALIFIER_DIV1" as Division,
+        stage: "DIVISION_PLACEMENT" as TournamentStage,
+        status: "SCHEDULED" as MatchStatus
+      });
+    }
+    
+    // Division 2 Qualifiers: #20-#29 (5 matches)
+    for (let i = 0; i < 5; i++) {
+      newMatches.push({
+        id: generateId(),
+        tournamentId: currentTournament.id,
+        team1: losers[i * 2], // 0, 2, 4, 6, 8
+        team2: losers[i * 2 + 1], // 1, 3, 5, 7, 9
+        scores: [{ team1Score: 0, team2Score: 0 }],
+        division: "QUALIFIER_DIV2" as Division,
+        stage: "DIVISION_PLACEMENT" as TournamentStage,
+        status: "SCHEDULED" as MatchStatus
+      });
+    }
+    
+    // Division 3 Group Stage: #30-#38 (3 groups of 3 teams)
+    // Set up the groups
+    const groups: Group[] = [
+      { id: generateId(), name: "Group A", teamIds: [losers[10].id, losers[11].id, losers[12].id] },
+      { id: generateId(), name: "Group B", teamIds: [losers[13].id, losers[14].id, losers[15].id] },
+      { id: generateId(), name: "Group C", teamIds: [losers[16].id, losers[17].id, losers[18].id] }
+    ];
+    
+    // Create group matches
+    groups.forEach(group => {
+      // Each group has 3 matches: team1 vs team2, team1 vs team3, team2 vs team3
+      const groupTeams = group.teamIds.map(id => 
+        losers.find(team => team.id === id)!
+      );
+      
+      // Match 1: Team 1 vs Team 2
+      newMatches.push({
+        id: generateId(),
+        tournamentId: currentTournament.id,
+        team1: groupTeams[0],
+        team2: groupTeams[1],
+        scores: [{ team1Score: 0, team2Score: 0 }],
+        division: "GROUP_DIV3" as Division,
+        stage: "DIVISION_PLACEMENT" as TournamentStage,
+        status: "SCHEDULED" as MatchStatus,
+        groupName: group.name
+      });
+      
+      // Match 2: Team 1 vs Team 3
+      newMatches.push({
+        id: generateId(),
+        tournamentId: currentTournament.id,
+        team1: groupTeams[0],
+        team2: groupTeams[2],
+        scores: [{ team1Score: 0, team2Score: 0 }],
+        division: "GROUP_DIV3" as Division,
+        stage: "DIVISION_PLACEMENT" as TournamentStage,
+        status: "SCHEDULED" as MatchStatus,
+        groupName: group.name
+      });
+      
+      // Match 3: Team 2 vs Team 3
+      newMatches.push({
+        id: generateId(),
+        tournamentId: currentTournament.id,
+        team1: groupTeams[1],
+        team2: groupTeams[2],
+        scores: [{ team1Score: 0, team2Score: 0 }],
+        division: "GROUP_DIV3" as Division,
+        stage: "DIVISION_PLACEMENT" as TournamentStage,
+        status: "SCHEDULED" as MatchStatus,
+        groupName: group.name
+      });
+    });
+    
+    const updatedTournament = {
+      ...currentTournament,
+      matches: [...currentTournament.matches, ...newMatches],
+      currentStage: "DIVISION_PLACEMENT" as TournamentStage,
+      updatedAt: new Date()
+    };
+    
+    updateTournament(updatedTournament);
+    autoAssignCourts();
+  };
+  
+  // Helper function to advance from Division Placement to Playoff Knockout
+  const advanceToPlayoffKnockout = () => {
+    if (!currentTournament) return;
+    
+    // Check if all matches in division placement are completed
+    const divisionPlacementMatches = currentTournament.matches.filter(
+      m => m.stage === "DIVISION_PLACEMENT"
+    );
+    
+    if (divisionPlacementMatches.some(m => m.status !== "COMPLETED")) {
+      console.warn("Cannot advance until all division placement matches are completed");
+      return;
+    }
+    
+    // Get winners and losers from division qualifiers
+    const div1QualifierMatches = currentTournament.matches.filter(
+      m => m.division === "QUALIFIER_DIV1" && m.stage === "DIVISION_PLACEMENT"
+    );
+    
+    const div2QualifierMatches = currentTournament.matches.filter(
+      m => m.division === "QUALIFIER_DIV2" && m.stage === "DIVISION_PLACEMENT"
+    );
+    
+    const div3GroupMatches = currentTournament.matches.filter(
+      m => m.division === "GROUP_DIV3" && m.stage === "DIVISION_PLACEMENT"
+    );
+    
+    // Collect teams for each division
+    const div1Teams: Team[] = [];
+    const div2Teams: Team[] = [];
+    const div3Teams: Team[] = [];
+    
+    // First 13 winners from initial round go to Division 1
+    const initialMatches = currentTournament.matches.filter(
+      m => m.stage === "INITIAL_ROUND"
+    );
+    
+    const initialWinners = initialMatches
+      .map(m => m.winner)
+      .filter((w): w is Team => !!w)
+      .sort((a, b) => (a.initialRanking || 999) - (b.initialRanking || 999));
+    
+    // Add top 13 winners to Division 1
+    for (let i = 0; i < 13; i++) {
+      div1Teams.push(initialWinners[i]);
+    }
+    
+    // Add winners from Division 1 qualifiers to Division 1
+    div1QualifierMatches.forEach(match => {
+      if (match.winner) div1Teams.push(match.winner);
+    });
+    
+    // Add losers from Division 1 qualifiers to Division 2
+    div1QualifierMatches.forEach(match => {
+      if (match.loser) div2Teams.push(match.loser);
+    });
+    
+    // Add winners from Division 2 qualifiers to Division 2
+    div2QualifierMatches.forEach(match => {
+      if (match.winner) div2Teams.push(match.winner);
+    });
+    
+    // Add losers from Division 2 qualifiers to Division 3
+    div2QualifierMatches.forEach(match => {
+      if (match.loser) div3Teams.push(match.loser);
+    });
+    
+    // Calculate winners of each Division 3 group (most wins)
+    const groupResults = new Map<string, Map<string, number>>(); // Group -> Team -> Wins
+    
+    div3GroupMatches.forEach(match => {
+      if (!match.groupName || !match.winner) return;
+      
+      if (!groupResults.has(match.groupName)) {
+        groupResults.set(match.groupName, new Map<string, number>());
+      }
+      
+      const teamWins = groupResults.get(match.groupName)!;
+      const currentWins = teamWins.get(match.winner.id) || 0;
+      teamWins.set(match.winner.id, currentWins + 1);
+    });
+    
+    // Get group winners
+    groupResults.forEach((teamWins, groupName) => {
+      let maxWins = 0;
+      let groupWinner: string | null = null;
+      
+      teamWins.forEach((wins, teamId) => {
+        if (wins > maxWins) {
+          maxWins = wins;
+          groupWinner = teamId;
+        }
+      });
+      
+      if (groupWinner) {
+        const winner = currentTournament.teams.find(t => t.id === groupWinner);
+        if (winner) div3Teams.push(winner);
+      }
+    });
+    
+    // Create the knockout brackets
+    const newMatches: Match[] = [];
+    
+    // Division 1: 16-team knockout (Round of 16)
+    for (let i = 0; i < 8; i++) {
+      newMatches.push({
+        id: generateId(),
+        tournamentId: currentTournament.id,
+        team1: div1Teams[i],
+        team2: div1Teams[15 - i],
+        scores: [{ team1Score: 0, team2Score: 0 }],
+        division: "DIVISION_1" as Division,
+        stage: "PLAYOFF_KNOCKOUT" as TournamentStage,
+        bracketRound: 1,
+        bracketPosition: i + 1,
+        status: "SCHEDULED" as MatchStatus
+      });
+    }
+    
+    // Division 2: 16-team knockout (Round of 16)
+    for (let i = 0; i < 8; i++) {
+      const match: Match = {
+        id: generateId(),
+        tournamentId: currentTournament.id,
+        team1: div2Teams[i],
+        team2: div2Teams[15 - i],
+        scores: [{ team1Score: 0, team2Score: 0 }],
+        division: "DIVISION_2" as Division,
+        stage: "PLAYOFF_KNOCKOUT" as TournamentStage,
+        bracketRound: 1,
+        bracketPosition: i + 1,
+        status: "SCHEDULED" as MatchStatus
+      };
+      
+      newMatches.push(match);
+    }
+    
+    // Division 3: 8-team knockout (Quarterfinals)
+    for (let i = 0; i < 4; i++) {
+      const match: Match = {
+        id: generateId(),
+        tournamentId: currentTournament.id,
+        team1: div3Teams[i],
+        team2: div3Teams[7 - i],
+        scores: [{ team1Score: 0, team2Score: 0 }],
+        division: "DIVISION_3" as Division,
+        stage: "PLAYOFF_KNOCKOUT" as TournamentStage,
+        bracketRound: 1,
+        bracketPosition: i + 1,
+        status: "SCHEDULED" as MatchStatus
+      };
+      
+      newMatches.push(match);
+    }
+    
+    const updatedTournament = {
+      ...currentTournament,
+      matches: [...currentTournament.matches, ...newMatches],
+      currentStage: "PLAYOFF_KNOCKOUT" as TournamentStage,
+      updatedAt: new Date()
+    };
+    
+    updateTournament(updatedTournament);
+    autoAssignCourts();
+  };
+
   // Auto-assign available courts to scheduled matches
   const autoAssignCourts = () => {
     if (!currentTournament) return 0;
@@ -766,32 +910,4 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     return assignedCount;
   };
 
-  // Complete a match
-  const value = {
-    tournaments,
-    currentTournament,
-    setCurrentTournament,
-    createTournament,
-    updateTournament,
-    deleteTournament,
-    addTeam,
-    importTeams,
-    updateMatch,
-    updateCourt,
-    assignCourt,
-    updateMatchStatus,
-    updateMatchScore,
-    completeMatch,
-    moveTeamToDivision,
-    loadSampleData,
-    scheduleMatch,
-    generateBracket,
-    autoAssignCourts
-  };
-
-  return (
-    <TournamentContext.Provider value={value}>
-      {children}
-    </TournamentContext.Provider>
-  );
-};
+  // Load
