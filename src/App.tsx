@@ -8,6 +8,7 @@ import { TournamentProvider } from "@/contexts/TournamentContext";
 import Index from "./pages/Index";
 import Tournaments from "./pages/Tournaments";
 import TournamentCreate from "./pages/TournamentCreate";
+import TournamentDetail from "./pages/TournamentDetail";
 import Scoring from "./pages/Scoring";
 import PublicView from "./pages/PublicView";
 import NotFound from "./pages/NotFound";
@@ -25,7 +26,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/tournaments/create" element={<TournamentCreate />} />
-            <Route path="/tournaments/:tournamentId" element={<Tournaments />} />
+            <Route path="/tournaments/:tournamentId" element={<TournamentDetail />} />
             <Route path="/scoring" element={<Scoring />} />
             <Route path="/scoring/:tournamentId" element={<Scoring />} />
             <Route path="/public" element={<PublicView />} />

@@ -115,7 +115,7 @@ const Tournaments = () => {
                   >
                     <Button variant="ghost" size="sm">
                       <Eye className="h-4 w-4 mr-1" />
-                      View
+                      View Details
                     </Button>
                   </Link>
                   <div className="flex space-x-2">
