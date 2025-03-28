@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { Tournament, Match, Court, Team, MatchStatus, Division } from "@/types/tournament";
+import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat, TournamentStatus } from "@/types/tournament";
 
 interface TournamentContextType {
   tournaments: Tournament[];
@@ -16,6 +15,7 @@ interface TournamentContextType {
   updateMatchScore: (matchId: string, team1Score: number, team2Score: number) => void;
   completeMatch: (matchId: string) => void;
   moveTeamToDivision: (teamId: string, fromDivision: Division, toDivision: Division) => void;
+  loadSampleData: () => void;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -26,6 +26,118 @@ export const useTournament = () => {
     throw new Error("useTournament must be used within a TournamentProvider");
   }
   return context;
+};
+
+// Sample data generation helper
+const createSampleData = (): Tournament => {
+  // Sample teams
+  const teams = [
+    {
+      id: "team1",
+      name: "Eagle Smashers",
+      players: [
+        { id: "p1", name: "John Smith", email: "john@example.com" },
+        { id: "p2", name: "Lisa Wong", email: "lisa@example.com" }
+      ]
+    },
+    {
+      id: "team2",
+      name: "Phoenix Risers",
+      players: [
+        { id: "p3", name: "Mike Johnson", email: "mike@example.com" },
+        { id: "p4", name: "Sarah Chen", email: "sarah@example.com" }
+      ]
+    },
+    {
+      id: "team3",
+      name: "Falcon Duo",
+      players: [
+        { id: "p5", name: "David Park", email: "david@example.com" },
+        { id: "p6", name: "Emma Garcia", email: "emma@example.com" }
+      ]
+    },
+    {
+      id: "team4",
+      name: "Thunder Strikers",
+      players: [
+        { id: "p7", name: "James Lee", email: "james@example.com" },
+        { id: "p8", name: "Olivia Martinez", email: "olivia@example.com" }
+      ]
+    }
+  ];
+
+  // Sample courts
+  const courts = [
+    {
+      id: "court1",
+      name: "Court A",
+      number: 1,
+      status: "AVAILABLE" as const
+    },
+    {
+      id: "court2",
+      name: "Court B",
+      number: 2,
+      status: "AVAILABLE" as const
+    }
+  ];
+
+  // Sample matches with scores
+  const matches = [
+    {
+      id: "match1",
+      tournamentId: "sampleTournament",
+      team1: teams[0],
+      team2: teams[1],
+      scores: [{ team1Score: 21, team2Score: 18 }],
+      division: "GROUP" as Division,
+      courtNumber: 1,
+      scheduledTime: new Date(new Date().getTime() + 60 * 60 * 1000), // 1 hour from now
+      status: "SCHEDULED" as MatchStatus
+    },
+    {
+      id: "match2",
+      tournamentId: "sampleTournament",
+      team1: teams[2],
+      team2: teams[3],
+      scores: [{ team1Score: 19, team2Score: 21 }, { team1Score: 21, team2Score: 15 }],
+      division: "GROUP" as Division,
+      courtNumber: 2,
+      scheduledTime: new Date(new Date().getTime() + 120 * 60 * 1000), // 2 hours from now
+      status: "IN_PROGRESS" as MatchStatus
+    },
+    {
+      id: "match3",
+      tournamentId: "sampleTournament",
+      team1: teams[0],
+      team2: teams[2],
+      scores: [{ team1Score: 21, team2Score: 18 }, { team1Score: 21, team2Score: 23 }, { team1Score: 21, team2Score: 19 }],
+      division: "GROUP" as Division,
+      scheduledTime: new Date(new Date().getTime() + 180 * 60 * 1000), // 3 hours from now
+      status: "SCHEDULED" as MatchStatus
+    }
+  ];
+
+  // Update court status and current match for in-progress match
+  courts[1].status = "IN_USE";
+  courts[1].currentMatch = matches[1];
+
+  // Create sample tournament
+  return {
+    id: "sampleTournament",
+    name: "Summer Badminton Championship",
+    description: "Annual summer tournament featuring the region's best badminton talent",
+    format: "SINGLE_ELIMINATION" as TournamentFormat,
+    status: "IN_PROGRESS" as TournamentStatus,
+    teams,
+    matches,
+    courts,
+    startDate: new Date(),
+    endDate: new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+    createdAt: new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+    updatedAt: new Date(),
+    divisionProgression: true
+  };
 };
 
 export const TournamentProvider = ({ children }: { children: ReactNode }) => {
@@ -349,6 +461,26 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     updateTournament(updatedTournament);
   };
 
+  // Load sample data function
+  const loadSampleData = () => {
+    const sampleTournament = createSampleData();
+    
+    // Check if sample tournament already exists
+    const existingIndex = tournaments.findIndex(t => t.id === sampleTournament.id);
+    
+    if (existingIndex >= 0) {
+      // Update existing sample tournament
+      const updatedTournaments = [...tournaments];
+      updatedTournaments[existingIndex] = sampleTournament;
+      setTournaments(updatedTournaments);
+    } else {
+      // Add new sample tournament
+      setTournaments([...tournaments, sampleTournament]);
+    }
+    
+    setCurrentTournament(sampleTournament);
+  };
+
   const value = {
     tournaments,
     currentTournament,
@@ -362,7 +494,8 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     updateMatchStatus,
     updateMatchScore,
     completeMatch,
-    moveTeamToDivision
+    moveTeamToDivision,
+    loadSampleData
   };
 
   return (

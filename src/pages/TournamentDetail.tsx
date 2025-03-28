@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Tabs,
   TabsContent,
@@ -13,19 +13,21 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Trophy, Calendar, Users, Save } from "lucide-react";
+import { PlusCircle, Trophy, Calendar, Users, Save, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { useTournament } from "@/contexts/TournamentContext";
 import Layout from "@/components/layout/Layout";
 import PageHeader from "@/components/shared/PageHeader";
 import TeamList from "@/components/tournament/TeamList";
 import AddTeamDialog from "@/components/tournament/AddTeamDialog";
-import { Team, Division, TournamentStatus } from "@/types/tournament";
+import MatchCard from "@/components/shared/MatchCard";
+import { Team, Division, TournamentStatus, Match, MatchStatus } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
 
 const TournamentDetail = () => {
@@ -79,7 +81,11 @@ const TournamentDetail = () => {
 
   const handlePublishTournament = () => {
     if (tournament.teams.length < 2) {
-      alert("You need at least 2 teams to publish a tournament");
+      toast({
+        title: "Not enough teams",
+        description: "You need at least 2 teams to publish a tournament",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -89,6 +95,11 @@ const TournamentDetail = () => {
     };
     
     updateTournament(updatedTournament);
+    
+    toast({
+      title: "Tournament published",
+      description: "The tournament has been published successfully",
+    });
   };
 
   const handleStartTournament = () => {
@@ -99,7 +110,17 @@ const TournamentDetail = () => {
     };
     
     updateTournament(updatedTournament);
+    
+    toast({
+      title: "Tournament started",
+      description: "The tournament is now in progress",
+    });
   };
+
+  // Group matches by status
+  const scheduledMatches = tournament.matches.filter(m => m.status === "SCHEDULED");
+  const inProgressMatches = tournament.matches.filter(m => m.status === "IN_PROGRESS");
+  const completedMatches = tournament.matches.filter(m => m.status === "COMPLETED");
 
   return (
     <Layout>
@@ -124,7 +145,16 @@ const TournamentDetail = () => {
                 <Trophy className="mr-2 h-4 w-4" />
                 Start Tournament
               </Button>
-            ) : null
+            ) : (
+              <Link to={`/scoring/${tournament.id}`}>
+                <Button 
+                  className="bg-court-green hover:bg-court-green/90"
+                >
+                  <Trophy className="mr-2 h-4 w-4" />
+                  Go to Scoring
+                </Button>
+              </Link>
+            )
           }
         />
 
@@ -197,9 +227,53 @@ const TournamentDetail = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {/* Match list will go here */}
-                    <p>Matches will be displayed here once tournament begins</p>
+                  <div className="space-y-6">
+                    {inProgressMatches.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-medium mb-3">In Progress</h3>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {inProgressMatches.map(match => (
+                            <div key={match.id} className="border rounded-lg p-4">
+                              <MatchCard match={match} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {scheduledMatches.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-medium mb-3">Scheduled</h3>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {scheduledMatches.map(match => (
+                            <div key={match.id} className="border rounded-lg p-4">
+                              <MatchCard match={match} />
+                              <div className="mt-3 flex justify-end">
+                                <Link to={`/scoring/${tournament.id}`}>
+                                  <Button size="sm" className="bg-court-green hover:bg-court-green/90">
+                                    Start Scoring
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                  </Button>
+                                </Link>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {completedMatches.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-medium mb-3">Completed</h3>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {completedMatches.map(match => (
+                            <div key={match.id} className="border rounded-lg p-4">
+                              <MatchCard match={match} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

@@ -1,7 +1,7 @@
 
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { PlusCircle, Trophy, Calendar, Users, Eye } from "lucide-react";
+import { PlusCircle, Trophy, Calendar, Users, Eye, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 const Tournaments = () => {
-  const { tournaments, setCurrentTournament } = useTournament();
+  const { tournaments, setCurrentTournament, loadSampleData } = useTournament();
   const { toast } = useToast();
 
   // Ensure dates are properly parsed
@@ -55,6 +55,14 @@ const Tournaments = () => {
     setCurrentTournament(tournament);
   };
 
+  const handleLoadSampleData = () => {
+    loadSampleData();
+    toast({
+      title: "Sample data loaded",
+      description: "A sample tournament with teams and matches has been created.",
+    });
+  };
+
   return (
     <Layout>
       <div className="max-w-6xl mx-auto">
@@ -62,12 +70,22 @@ const Tournaments = () => {
           title="Tournaments"
           description="Create and manage your badminton tournaments"
           action={
-            <Link to="/tournaments/create">
-              <Button className="bg-court-green hover:bg-court-green/90">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                New Tournament
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={handleLoadSampleData}
+                className="flex items-center"
+              >
+                <Database className="mr-2 h-4 w-4" />
+                Load Sample Data
               </Button>
-            </Link>
+              <Link to="/tournaments/create">
+                <Button className="bg-court-green hover:bg-court-green/90">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  New Tournament
+                </Button>
+              </Link>
+            </div>
           }
         />
 
@@ -75,8 +93,15 @@ const Tournaments = () => {
           <div className="text-center py-12">
             <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900">No tournaments yet</h3>
-            <p className="mt-1 text-gray-500">Get started by creating a new tournament.</p>
-            <div className="mt-6">
+            <p className="mt-1 text-gray-500">Get started by creating a new tournament or loading sample data.</p>
+            <div className="mt-6 flex justify-center space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={handleLoadSampleData}
+              >
+                <Database className="mr-2 h-4 w-4" />
+                Load Sample Data
+              </Button>
               <Link to="/tournaments/create">
                 <Button className="bg-court-green hover:bg-court-green/90">
                   Create Tournament
