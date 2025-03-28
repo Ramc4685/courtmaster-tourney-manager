@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { PlusCircle, Trophy, Calendar, Users, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,17 @@ import Layout from "@/components/layout/Layout";
 import PageHeader from "@/components/shared/PageHeader";
 import { useTournament } from "@/contexts/TournamentContext";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 const Tournaments = () => {
   const { tournaments, setCurrentTournament } = useTournament();
+  const { toast } = useToast();
+
+  // Ensure dates are properly parsed
+  useEffect(() => {
+    // This is only for logging purposes to help debug
+    console.log("Current tournaments in context:", tournaments);
+  }, [tournaments]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {

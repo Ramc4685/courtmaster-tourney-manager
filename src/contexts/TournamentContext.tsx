@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division } from "@/types/tournament";
 
 interface TournamentContextType {
@@ -29,8 +29,27 @@ export const useTournament = () => {
 };
 
 export const TournamentProvider = ({ children }: { children: ReactNode }) => {
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [currentTournament, setCurrentTournament] = useState<Tournament | null>(null);
+  // Initialize state from localStorage if available, otherwise use empty arrays/null
+  const [tournaments, setTournaments] = useState<Tournament[]>(() => {
+    const storedTournaments = localStorage.getItem('tournaments');
+    return storedTournaments ? JSON.parse(storedTournaments) : [];
+  });
+  
+  const [currentTournament, setCurrentTournament] = useState<Tournament | null>(() => {
+    const storedCurrentTournament = localStorage.getItem('currentTournament');
+    return storedCurrentTournament ? JSON.parse(storedCurrentTournament) : null;
+  });
+
+  // Save to localStorage whenever tournaments or currentTournament change
+  useEffect(() => {
+    localStorage.setItem('tournaments', JSON.stringify(tournaments));
+  }, [tournaments]);
+
+  useEffect(() => {
+    if (currentTournament) {
+      localStorage.setItem('currentTournament', JSON.stringify(currentTournament));
+    }
+  }, [currentTournament]);
 
   // Generate unique ID
   const generateId = () => {
@@ -47,7 +66,8 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       updatedAt: new Date(),
     };
     
-    setTournaments([...tournaments, newTournament]);
+    const updatedTournaments = [...tournaments, newTournament];
+    setTournaments(updatedTournaments);
     setCurrentTournament(newTournament);
   };
 
@@ -58,9 +78,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       updatedAt: new Date() 
     };
     
-    setTournaments(
-      tournaments.map(t => t.id === tournament.id ? updatedTournament : t)
+    const updatedTournaments = tournaments.map(t => 
+      t.id === tournament.id ? updatedTournament : t
     );
+    
+    setTournaments(updatedTournaments);
     
     if (currentTournament?.id === tournament.id) {
       setCurrentTournament(updatedTournament);

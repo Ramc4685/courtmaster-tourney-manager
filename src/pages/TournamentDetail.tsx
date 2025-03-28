@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -25,10 +26,12 @@ import PageHeader from "@/components/shared/PageHeader";
 import TeamList from "@/components/tournament/TeamList";
 import AddTeamDialog from "@/components/tournament/AddTeamDialog";
 import { Team, Division, TournamentStatus } from "@/types/tournament";
+import { useToast } from "@/hooks/use-toast";
 
 const TournamentDetail = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { tournaments, setCurrentTournament, updateTournament } = useTournament();
   const [showAddTeamDialog, setShowAddTeamDialog] = useState(false);
 
@@ -38,9 +41,14 @@ const TournamentDetail = () => {
     if (tournament) {
       setCurrentTournament(tournament);
     } else {
+      toast({
+        title: "Tournament not found",
+        description: "Redirecting to tournaments list",
+        variant: "destructive",
+      });
       navigate("/tournaments");
     }
-  }, [tournamentId, tournaments, setCurrentTournament, navigate]);
+  }, [tournamentId, tournaments, setCurrentTournament, navigate, toast]);
 
   const tournament = tournaments.find((t) => t.id === tournamentId);
 
