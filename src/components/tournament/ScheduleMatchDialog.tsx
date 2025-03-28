@@ -178,7 +178,10 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
             <form onSubmit={handleSubmit} className="space-y-4 py-2">
               <div className="space-y-2">
                 <Label htmlFor="division">Division</Label>
-                <Select value={selectedDivision} onValueChange={setSelectedDivision}>
+                <Select 
+                  value={selectedDivision} 
+                  onValueChange={(value: string) => setSelectedDivision(value as Division)}
+                >
                   <SelectTrigger id="division">
                     <SelectValue placeholder="Select division" />
                   </SelectTrigger>
@@ -296,10 +299,13 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
             <div className="space-y-4 py-2">
               <div className="space-y-2">
                 <Label htmlFor="auto-division">Division for Auto-Scheduling</Label>
-                <Select value={selectedDivision} onValueChange={(value) => {
-                  setSelectedDivision(value as Division);
-                  generateSuggestedPairs();
-                }}>
+                <Select 
+                  value={selectedDivision} 
+                  onValueChange={(value: string) => {
+                    setSelectedDivision(value as Division);
+                    generateSuggestedPairs();
+                  }}
+                >
                   <SelectTrigger id="auto-division">
                     <SelectValue placeholder="Select division" />
                   </SelectTrigger>
