@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { 
@@ -16,7 +17,7 @@ import { useTournament } from "@/contexts/TournamentContext";
 import Layout from "@/components/layout/Layout";
 import PageHeader from "@/components/shared/PageHeader";
 import MatchCard from "@/components/shared/MatchCard";
-import EnhancedCourtCard from "@/components/shared/EnhancedCourtCard";
+import CourtCard from "@/components/shared/CourtCard";
 import ScoringSettings from "@/components/scoring/ScoringSettings";
 import { Match } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
@@ -378,7 +379,7 @@ const Scoring = () => {
           <TabsContent value="courts">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {currentTournament.courts.map((court) => (
-                <EnhancedCourtCard key={court.id} court={court} detailed />
+                <CourtCard key={court.id} court={court} detailed />
               ))}
             </div>
           </TabsContent>

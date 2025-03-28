@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { RefreshCw, Award, Clock, Calendar } from "lucide-react";
@@ -8,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTournament } from "@/contexts/TournamentContext";
 import Layout from "@/components/layout/Layout";
 import MatchCard from "@/components/shared/MatchCard";
-import EnhancedCourtCard from "@/components/shared/EnhancedCourtCard";
+import CourtCard from "@/components/shared/CourtCard";
 import { Match, Division } from "@/types/tournament";
 import { format } from "date-fns";
 
@@ -175,7 +176,7 @@ const PublicView = () => {
           <TabsContent value="courts">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {currentTournament.courts.map((court) => (
-                <EnhancedCourtCard key={court.id} court={court} detailed />
+                <CourtCard key={court.id} court={court} detailed />
               ))}
             </div>
           </TabsContent>
