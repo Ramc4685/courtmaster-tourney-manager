@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +16,7 @@ import MatchCreateDialog from "@/components/match/MatchCreateDialog";
 import { Court, Match, Team } from "@/types/tournament";
 import { renderMatchesTab } from "@/utils/tournamentComponentHelper";
 import { useAuth } from "@/contexts/auth/AuthContext";
+import ScoreEntrySection from "@/components/tournament/score-entry/ScoreEntrySection";
 
 const TournamentDetail = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
@@ -160,6 +162,12 @@ const TournamentDetail = () => {
               onGenerateMultiStageTournament={generateMultiStageTournament}
               onScheduleDialogOpen={() => setScheduleDialogOpen(true)}
               onAdvanceToNextStage={advanceToNextStage}
+            />
+            
+            {/* Add the new Score Entry Section */}
+            <ScoreEntrySection 
+              matches={currentTournament.matches} 
+              onMatchUpdate={updateMatch} 
             />
           </TabsContent>
 
