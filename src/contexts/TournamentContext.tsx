@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat, TournamentStatus } from "@/types/tournament";
+import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat, TournamentStatus, CourtStatus } from "@/types/tournament";
 
 interface TournamentContextType {
   tournaments: Tournament[];
@@ -67,18 +67,18 @@ const createSampleData = (): Tournament => {
   ];
 
   // Sample courts
-  const courts = [
+  const courts: Court[] = [
     {
       id: "court1",
       name: "Court A",
       number: 1,
-      status: "AVAILABLE" as const
+      status: "AVAILABLE" as CourtStatus
     },
     {
       id: "court2",
       name: "Court B",
       number: 2,
-      status: "AVAILABLE" as const
+      status: "AVAILABLE" as CourtStatus
     }
   ];
 
@@ -119,8 +119,12 @@ const createSampleData = (): Tournament => {
   ];
 
   // Update court status and current match for in-progress match
-  courts[1].status = "IN_USE";
-  courts[1].currentMatch = matches[1];
+  // Properly type the court and set its properties
+  courts[1] = {
+    ...courts[1],
+    status: "IN_USE" as CourtStatus,
+    currentMatch: matches[1]
+  };
 
   // Create sample tournament
   return {
