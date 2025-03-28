@@ -1,5 +1,5 @@
 
-import { Tournament, Match, MatchStatus } from "@/types/tournament";
+import { Tournament, Match, MatchStatus, CourtStatus } from "@/types/tournament";
 import { findMatchById, findCourtByNumber, updateMatchInTournament } from "@/utils/tournamentUtils";
 import { determineMatchWinnerAndLoser, updateBracketProgression, getDefaultScoringSettings } from "@/utils/matchUtils";
 
@@ -60,7 +60,7 @@ export const updateMatchStatusInTournament = (
     if (courtToUpdate) {
       const updatedCourt = {
         ...courtToUpdate,
-        status: "AVAILABLE",
+        status: "AVAILABLE" as CourtStatus,
         currentMatch: undefined
       };
       
@@ -132,7 +132,7 @@ export const completeMatchInTournament = (
       freedCourtId = updatedTournament.courts[courtIndex].id;
       updatedTournament.courts[courtIndex] = {
         ...updatedTournament.courts[courtIndex],
-        status: "AVAILABLE",
+        status: "AVAILABLE" as CourtStatus,
         currentMatch: undefined
       };
     }
@@ -174,7 +174,7 @@ export const completeMatchInTournament = (
         // Update the court status and current match
         const updatedCourt = {
           ...court,
-          status: "IN_USE",
+          status: "IN_USE" as CourtStatus,
           currentMatch: matchWithCourt
         };
         
