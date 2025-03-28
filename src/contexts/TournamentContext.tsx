@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat, TournamentStatus, CourtStatus, TournamentStage, Group } from "@/types/tournament";
 
@@ -887,7 +888,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     
     // Division 2: 16-team knockout (Round of 16)
     for (let i = 0; i < 8; i++) {
-      const match: Match = {
+      newMatches.push({
         id: generateId(),
         tournamentId: currentTournament.id,
         team1: div2Teams[i],
@@ -896,3 +897,83 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         division: "DIVISION_2" as Division,
         stage: "PLAYOFF_KNOCKOUT" as TournamentStage,
         bracketRound: 1,
+        bracketPosition: i + 1,
+        status: "SCHEDULED" as MatchStatus
+      });
+    }
+    
+    // Division 3: 8-team knockout (Quarter Finals)
+    for (let i = 0; i < 4; i++) {
+      newMatches.push({
+        id: generateId(),
+        tournamentId: currentTournament.id,
+        team1: div3Teams[i],
+        team2: div3Teams[7 - i],
+        scores: [{ team1Score: 0, team2Score: 0 }],
+        division: "DIVISION_3" as Division,
+        stage: "PLAYOFF_KNOCKOUT" as TournamentStage,
+        bracketRound: 1,
+        bracketPosition: i + 1,
+        status: "SCHEDULED" as MatchStatus
+      });
+    }
+    
+    const updatedTournament = {
+      ...currentTournament,
+      matches: [...currentTournament.matches, ...newMatches],
+      currentStage: "PLAYOFF_KNOCKOUT" as TournamentStage,
+      updatedAt: new Date()
+    };
+    
+    updateTournament(updatedTournament);
+    autoAssignCourts();
+  };
+  
+  // Generate bracket based on match results
+  const generateBracket = () => {
+    if (!currentTournament) return;
+    
+    // Placeholder for real bracket generation logic
+    console.log("Generating bracket...");
+    // This would typically create a tournament bracket based on seeding
+    // and add it to the matches array
+  };
+  
+  // Load sample data
+  const loadSampleData = () => {
+    const sampleData = createSampleData();
+    setCurrentTournament(sampleData);
+    setTournaments(prev => [...prev, sampleData]);
+  };
+  
+  // Return the context provider with all methods and state
+  return (
+    <TournamentContext.Provider
+      value={{
+        tournaments,
+        currentTournament,
+        setCurrentTournament,
+        createTournament,
+        updateTournament,
+        deleteTournament,
+        addTeam,
+        importTeams,
+        updateMatch,
+        updateCourt,
+        assignCourt,
+        updateMatchStatus,
+        updateMatchScore,
+        completeMatch,
+        moveTeamToDivision,
+        loadSampleData,
+        scheduleMatch,
+        generateBracket,
+        autoAssignCourts,
+        generateMultiStageTournament,
+        advanceToNextStage
+      }}
+    >
+      {children}
+    </TournamentContext.Provider>
+  );
+};
