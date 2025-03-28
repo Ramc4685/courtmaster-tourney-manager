@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { 
@@ -111,13 +112,13 @@ const Scoring = () => {
         ? Math.min(scoringSettings.maxPoints + 10, currentScore.team1Score + 1) // Allow going beyond maxPoints for win by 2
         : Math.max(0, currentScore.team1Score - 1);
       
-      updateMatchScore(selectedMatch.id, updatedScore, currentScore.team2Score);
+      updateMatchScore(selectedMatch.id, updatedScore, currentScore.team2Score, currentSet);
     } else {
       updatedScore = increment 
         ? Math.min(scoringSettings.maxPoints + 10, currentScore.team2Score + 1) // Allow going beyond maxPoints for win by 2
         : Math.max(0, currentScore.team2Score - 1);
       
-      updateMatchScore(selectedMatch.id, currentScore.team1Score, updatedScore);
+      updateMatchScore(selectedMatch.id, currentScore.team1Score, updatedScore, currentSet);
     }
 
     // Update our local selected match to reflect the new score
@@ -183,7 +184,7 @@ const Scoring = () => {
       return;
     }
     
-    updateMatchScore(selectedMatch.id, 0, 0);
+    updateMatchScore(selectedMatch.id, 0, 0, newSetIndex);
     
     // Update our local selected match to reflect the new set
     const updatedMatch = {
