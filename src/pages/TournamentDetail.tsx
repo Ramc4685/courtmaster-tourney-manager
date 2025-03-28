@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTournament } from "@/contexts/TournamentContext";
 import Layout from "@/components/layout/Layout";
@@ -15,9 +15,12 @@ import TeamsTab from "@/components/tournament/tabs/TeamsTab";
 import MatchesTab from "@/components/tournament/tabs/MatchesTab";
 import CourtsTab from "@/components/tournament/tabs/CourtsTab";
 import BracketTab from "@/components/tournament/tabs/BracketTab";
+import { Button } from "@/components/ui/button";
+import { Clipboard, Award } from "lucide-react";
 
 const TournamentDetail = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
+  const navigate = useNavigate();
   const { 
     currentTournament, 
     setCurrentTournament, 
@@ -37,12 +40,23 @@ const TournamentDetail = () => {
   const [courtDialogOpen, setCourtDialogOpen] = useState(false);
   const [matchDialogOpen, setMatchDialogOpen] = useState(false);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     if (tournamentId && currentTournament?.id === tournamentId) {
       setCurrentTournament(currentTournament);
     }
   }, [tournamentId, currentTournament, setCurrentTournament]);
+
+  // Track if we should show the bracket tab more prominently
+  const shouldHighlightBracket = currentTournament?.currentStage === "PLAYOFF_KNOCKOUT";
+  
+  // Auto-switch to bracket tab when tournament advances to playoff stage
+  useEffect(() => {
+    if (shouldHighlightBracket) {
+      setActiveTab("bracket");
+    }
+  }, [shouldHighlightBracket]);
 
   const handleTeamCreate = (team: Omit<Team, "id">) => {
     addTeam({ ...team, id: Math.random().toString(36).substring(2, 9) });
@@ -76,6 +90,12 @@ const TournamentDetail = () => {
     if (!currentTournament) return;
     autoAssignCourts();
   };
+  
+  const handleGoToScoring = () => {
+    if (tournamentId) {
+      navigate(`/scoring/${tournamentId}`);
+    }
+  };
 
   if (!currentTournament) {
     return (
@@ -95,19 +115,38 @@ const TournamentDetail = () => {
       <ScheduleMatchDialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen} tournamentId={currentTournament.id} />
 
       <div className="max-w-6xl mx-auto pb-12">
-        <TournamentHeader 
-          tournament={currentTournament}
-          updateTournament={updateTournament}
-          deleteTournament={deleteTournament}
-        />
+        <div className="flex justify-between items-start mb-6">
+          <TournamentHeader 
+            tournament={currentTournament}
+            updateTournament={updateTournament}
+            deleteTournament={deleteTournament}
+          />
+          
+          <div className="flex gap-2">
+            <Button onClick={handleGoToScoring} className="bg-court-green hover:bg-court-green/90">
+              <Clipboard className="mr-2 h-4 w-4" />
+              Scoring Interface
+            </Button>
+            
+            {shouldHighlightBracket && (
+              <Button onClick={() => setActiveTab("bracket")} variant="outline">
+                <Award className="mr-2 h-4 w-4" />
+                View Brackets
+              </Button>
+            )}
+          </div>
+        </div>
 
-        <Tabs defaultValue="overview" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="teams">Teams</TabsTrigger>
             <TabsTrigger value="matches">Matches</TabsTrigger>
             <TabsTrigger value="courts">Courts</TabsTrigger>
-            <TabsTrigger value="bracket">Bracket</TabsTrigger>
+            <TabsTrigger value="bracket" className={shouldHighlightBracket ? "bg-amber-100 text-amber-900" : ""}>
+              Bracket
+              {shouldHighlightBracket && " 🏆"}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">

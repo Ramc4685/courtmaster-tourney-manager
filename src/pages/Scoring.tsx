@@ -47,14 +47,22 @@ const Scoring = () => {
     );
   }
 
+  // Filter matches by different statuses
   const scheduledMatches = currentTournament.matches.filter(
     (match) => match.status === "SCHEDULED"
   );
+  
+  const inProgressMatches = currentTournament.matches.filter(
+    (match) => match.status === "IN_PROGRESS"
+  );
+  
+  // Combine both for listing - in progress first, then scheduled
+  const displayMatches = [...inProgressMatches, ...scheduledMatches];
 
   return (
     <Layout>
       <div className="max-w-6xl mx-auto">
-        <ScoringHeader onSettingsOpen={() => setSettingsOpen(true)} />
+        <ScoringHeader onSettingsOpen={() => setSettingsOpen(true)} tournamentId={tournamentId} />
 
         {activeView === "courts" ? (
           <div className="mt-6">
@@ -66,9 +74,11 @@ const Scoring = () => {
             />
             
             <div className="mt-8">
-              <h2 className="text-2xl font-bold mb-4">Scheduled Matches</h2>
+              <h2 className="text-2xl font-bold mb-4">
+                {inProgressMatches.length > 0 ? "In Progress & Scheduled Matches" : "Scheduled Matches"}
+              </h2>
               <ScheduledMatchesList 
-                matches={scheduledMatches}
+                matches={displayMatches}
                 onStartMatch={handleStartMatch}
               />
             </div>
