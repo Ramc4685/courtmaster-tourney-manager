@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division } from "@/types/tournament";
 import { createSampleData } from "@/utils/tournamentSampleData";
@@ -137,8 +136,9 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Auto-assign available courts to scheduled matches
-  const autoAssignCourtsHandler = () => {
-    if (!currentTournament) return 0;
+  // Updated to return Promise<number> to match the interface
+  const autoAssignCourtsHandler = async (): Promise<number> => {
+    if (!currentTournament) return Promise.resolve(0);
     
     const { tournament: updatedTournament, assignedCount } = autoAssignCourts(currentTournament);
     
@@ -146,7 +146,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       updateTournament(updatedTournament);
     }
     
-    return assignedCount;
+    return Promise.resolve(assignedCount);
   };
 
   // Update match status
