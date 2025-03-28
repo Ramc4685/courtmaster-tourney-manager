@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, FormEvent } from "react";
 import { Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Team, Division } from "@/types/tournament";
 import { DialogFooter } from "@/components/ui/dialog";
 
+interface FormData {
+  team1Id: string;
+  team2Id: string;
+  courtId: string;
+  scheduledDate: string;
+  scheduledTime: string;
+}
+
 interface ManualScheduleTabProps {
   tournament: any;
   selectedDivision: Division;
   onDivisionChange: (value: Division) => void;
-  onScheduleMatch: (e: React.FormEvent) => void;
+  onScheduleMatch: (formData: FormData) => void;
   onCancel: () => void;
 }
 
@@ -31,17 +39,19 @@ const ManualScheduleTab: React.FC<ManualScheduleTabProps> = ({
   );
   const [scheduledTime, setScheduledTime] = useState<string>("12:00");
 
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    onScheduleMatch({
+      team1Id,
+      team2Id,
+      courtId,
+      scheduledDate,
+      scheduledTime,
+    });
+  };
+
   return (
-    <form onSubmit={(e) => {
-      e.preventDefault();
-      onScheduleMatch({
-        team1Id,
-        team2Id,
-        courtId,
-        scheduledDate,
-        scheduledTime,
-      });
-    }} className="space-y-4 py-2">
+    <form onSubmit={handleSubmit} className="space-y-4 py-2">
       <div className="space-y-2">
         <Label htmlFor="division">Division</Label>
         <Select 

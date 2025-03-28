@@ -9,6 +9,14 @@ import { Division, Team } from "@/types/tournament";
 import ManualScheduleTab from "./schedule/ManualScheduleTab";
 import AutoScheduleTab from "./schedule/AutoScheduleTab";
 
+interface FormData {
+  team1Id: string;
+  team2Id: string;
+  courtId: string;
+  scheduledDate: string;
+  scheduledTime: string;
+}
+
 interface ScheduleMatchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -92,13 +100,7 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
     }
   }, [open, selectedDivision, currentTournament]);
 
-  const handleSubmit = (formData: {
-    team1Id: string;
-    team2Id: string;
-    courtId: string;
-    scheduledDate: string;
-    scheduledTime: string;
-  }) => {
+  const handleSubmit = (formData: FormData) => {
     const { team1Id, team2Id, courtId, scheduledDate, scheduledTime } = formData;
 
     if (team1Id === team2Id) {
