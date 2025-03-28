@@ -30,7 +30,8 @@ import PageHeader from "@/components/shared/PageHeader";
 import MatchCard from "@/components/shared/MatchCard";
 import CourtCard from "@/components/shared/CourtCard";
 import ScoringSettings from "@/components/scoring/ScoringSettings";
-import { Match, ScoringSettings as ScoringSettingsType } from "@/types/tournament";
+import CourtSelectionPanel from "@/components/scoring/CourtSelectionPanel";
+import { Match, Court, ScoringSettings as ScoringSettingsType } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
 import { isSetComplete, isMatchComplete, getDefaultScoringSettings } from "@/utils/matchUtils";
 
@@ -39,8 +40,10 @@ const Scoring = () => {
   const { currentTournament, updateMatchScore, updateMatchStatus, completeMatch, updateTournament } = useTournament();
   const { toast } = useToast();
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const [currentSet, setCurrentSet] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [activeView, setActiveView] = useState<"courts" | "scoring">("courts");
   
   // Get scoring settings from tournament or use defaults
   const [scoringSettings, setScoringSettings] = useState<ScoringSettingsType>(
@@ -79,6 +82,14 @@ const Scoring = () => {
   const handleSelectMatch = (match: Match) => {
     setSelectedMatch(match);
     setCurrentSet(match.scores.length > 0 ? match.scores.length - 1 : 0);
+    setActiveView("scoring");
+  };
+
+  const handleSelectCourt = (court: Court) => {
+    setSelectedCourt(court);
+    if (court.currentMatch) {
+      handleSelectMatch(court.currentMatch);
+    }
   };
 
   const handleScoreChange = (team: "team1" | "team2", increment: boolean) => {
@@ -158,6 +169,7 @@ const Scoring = () => {
       description: "The match has been marked as complete."
     });
     setSelectedMatch(null);
+    setActiveView("courts");
   };
 
   const handleNewSet = () => {
@@ -203,6 +215,10 @@ const Scoring = () => {
     }
   };
 
+  const handleBackToCourts = () => {
+    setActiveView("courts");
+  };
+
   // Determine the winner information for the confirmation dialog
   const getSetWinnerInfo = () => {
     if (!selectedMatch) return { team: "", score: "" };
@@ -245,199 +261,184 @@ const Scoring = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue="live" className="mt-6">
-          <TabsList className="mb-4">
-            <TabsTrigger value="live">Live Scoring</TabsTrigger>
-            <TabsTrigger value="courts">Court View</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="live">
-            <div className="grid md:grid-cols-3 gap-6">
-              {/* Match List */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg">In Progress</h3>
-                {inProgressMatches.length === 0 ? (
-                  <p className="text-gray-500">No matches in progress</p>
-                ) : (
-                  <div className="space-y-3">
-                    {inProgressMatches.map((match) => (
-                      <div 
-                        key={match.id}
-                        onClick={() => handleSelectMatch(match)}
-                        className={`cursor-pointer ${selectedMatch?.id === match.id ? 'ring-2 ring-court-green rounded-lg' : ''}`}
-                      >
-                        <MatchCard match={match} mode="compact" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <h3 className="font-semibold text-lg mt-6">Scheduled</h3>
+        {activeView === "courts" ? (
+          <div className="mt-6">
+            <h2 className="text-2xl font-bold mb-4">Select a Court</h2>
+            <CourtSelectionPanel 
+              courts={currentTournament.courts}
+              onCourtSelect={handleSelectCourt}
+              onMatchStart={handleSelectMatch}
+            />
+            
+            <div className="mt-8">
+              <h2 className="text-2xl font-bold mb-4">Scheduled Matches</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {scheduledMatches.length === 0 ? (
-                  <p className="text-gray-500">No scheduled matches</p>
+                  <p className="text-gray-500">No scheduled matches available</p>
                 ) : (
-                  <div className="space-y-3">
-                    {scheduledMatches.map((match) => (
-                      <div key={match.id} className="flex flex-col">
+                  scheduledMatches.map((match) => (
+                    <Card key={match.id} className="overflow-hidden">
+                      <CardContent className="p-4">
                         <MatchCard match={match} mode="compact" />
+                      </CardContent>
+                      <CardFooter className="bg-gray-50 px-4 py-3 flex justify-end">
                         <Button 
                           size="sm"
-                          className="mt-2 w-full bg-court-green hover:bg-court-green/90"
+                          className="bg-court-green hover:bg-court-green/90"
                           onClick={() => handleStartMatch(match)}
                         >
                           Start Match
                         </Button>
+                      </CardFooter>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-6">
+            <Button 
+              variant="outline" 
+              className="mb-4" 
+              onClick={handleBackToCourts}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" /> Back to Courts
+            </Button>
+            
+            {selectedMatch && (
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold text-lg">
+                      Scoring: Court {selectedMatch.courtNumber || "Not Assigned"}
+                    </h3>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setNewSetDialogOpen(true)}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-1" />
+                        New Set
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCompleteMatchDialogOpen(true)}
+                      >
+                        <Check className="h-4 w-4 mr-1" />
+                        Complete
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Match Teams */}
+                  <div className="flex justify-between items-center mb-6">
+                    <div className="font-medium">{selectedMatch.team1.name}</div>
+                    <div className="text-sm text-gray-500">vs</div>
+                    <div className="font-medium text-right">{selectedMatch.team2.name}</div>
+                  </div>
+
+                  {/* Set Navigation */}
+                  {selectedMatch.scores.length > 1 && (
+                    <div className="flex justify-center items-center space-x-2 mb-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCurrentSet(Math.max(0, currentSet - 1))}
+                        disabled={currentSet === 0}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm font-medium">
+                        Set {currentSet + 1} of {selectedMatch.scores.length}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCurrentSet(Math.min(selectedMatch.scores.length - 1, currentSet + 1))}
+                        disabled={currentSet === selectedMatch.scores.length - 1}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Team 1 Scoring */}
+                  <div className="border rounded-lg p-4 mb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-medium text-lg">{selectedMatch.team1.name}</h4>
+                      <div className="flex items-center space-x-3">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="rounded-full h-8 w-8"
+                          onClick={() => handleScoreChange("team1", false)}
+                        >
+                          <MinusCircle className="h-4 w-4" />
+                        </Button>
+                        <span className="text-3xl font-bold">
+                          {selectedMatch.scores[currentSet]?.team1Score || 0}
+                        </span>
+                        <Button
+                          className="bg-court-green hover:bg-court-green/90 rounded-full h-10 w-10"
+                          size="icon"
+                          onClick={() => handleScoreChange("team1", true)}
+                        >
+                          <PlusCircle className="h-6 w-6" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Team 2 Scoring */}
+                  <div className="border rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-medium text-lg">{selectedMatch.team2.name}</h4>
+                      <div className="flex items-center space-x-3">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="rounded-full h-8 w-8"
+                          onClick={() => handleScoreChange("team2", false)}
+                        >
+                          <MinusCircle className="h-4 w-4" />
+                        </Button>
+                        <span className="text-3xl font-bold">
+                          {selectedMatch.scores[currentSet]?.team2Score || 0}
+                        </span>
+                        <Button
+                          className="bg-court-green hover:bg-court-green/90 rounded-full h-10 w-10"
+                          size="icon"
+                          onClick={() => handleScoreChange("team2", true)}
+                        >
+                          <PlusCircle className="h-6 w-6" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="bg-gray-50 px-6 py-3">
+                  <div className="w-full flex flex-wrap justify-center gap-2">
+                    {selectedMatch.scores.map((score, index) => (
+                      <div 
+                        key={index}
+                        className={`px-3 py-1 rounded-full text-sm ${
+                          currentSet === index 
+                            ? 'bg-court-green text-white' 
+                            : 'bg-gray-200 text-gray-700'
+                        }`}
+                      >
+                        Set {index + 1}: {score.team1Score}-{score.team2Score}
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-
-              {/* Scoring Interface */}
-              <div className="md:col-span-2">
-                {selectedMatch ? (
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold text-lg">
-                          Scoring: Court {selectedMatch.courtNumber || "Not Assigned"}
-                        </h3>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setNewSetDialogOpen(true)}
-                          >
-                            <RefreshCw className="h-4 w-4 mr-1" />
-                            New Set
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCompleteMatchDialogOpen(true)}
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Complete
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Set Navigation */}
-                      {selectedMatch.scores.length > 1 && (
-                        <div className="flex justify-center items-center space-x-2 mb-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setCurrentSet(Math.max(0, currentSet - 1))}
-                            disabled={currentSet === 0}
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <span className="text-sm font-medium">
-                            Set {currentSet + 1} of {selectedMatch.scores.length}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setCurrentSet(Math.min(selectedMatch.scores.length - 1, currentSet + 1))}
-                            disabled={currentSet === selectedMatch.scores.length - 1}
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Team 1 Scoring */}
-                      <div className="border rounded-lg p-4 mb-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-medium text-lg">{selectedMatch.team1.name}</h4>
-                          <div className="flex items-center space-x-3">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="rounded-full h-8 w-8"
-                              onClick={() => handleScoreChange("team1", false)}
-                            >
-                              <MinusCircle className="h-4 w-4" />
-                            </Button>
-                            <span className="text-3xl font-bold">
-                              {selectedMatch.scores[currentSet]?.team1Score || 0}
-                            </span>
-                            <Button
-                              className="bg-court-green hover:bg-court-green/90 rounded-full h-10 w-10"
-                              size="icon"
-                              onClick={() => handleScoreChange("team1", true)}
-                            >
-                              <PlusCircle className="h-6 w-6" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Team 2 Scoring */}
-                      <div className="border rounded-lg p-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-medium text-lg">{selectedMatch.team2.name}</h4>
-                          <div className="flex items-center space-x-3">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="rounded-full h-8 w-8"
-                              onClick={() => handleScoreChange("team2", false)}
-                            >
-                              <MinusCircle className="h-4 w-4" />
-                            </Button>
-                            <span className="text-3xl font-bold">
-                              {selectedMatch.scores[currentSet]?.team2Score || 0}
-                            </span>
-                            <Button
-                              className="bg-court-green hover:bg-court-green/90 rounded-full h-10 w-10"
-                              size="icon"
-                              onClick={() => handleScoreChange("team2", true)}
-                            >
-                              <PlusCircle className="h-6 w-6" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="bg-gray-50 px-6 py-3">
-                      <div className="w-full flex flex-wrap justify-center gap-2">
-                        {selectedMatch.scores.map((score, index) => (
-                          <div 
-                            key={index}
-                            className={`px-3 py-1 rounded-full text-sm ${
-                              currentSet === index 
-                                ? 'bg-court-green text-white' 
-                                : 'bg-gray-200 text-gray-700'
-                            }`}
-                          >
-                            Set {index + 1}: {score.team1Score}-{score.team2Score}
-                          </div>
-                        ))}
-                      </div>
-                    </CardFooter>
-                  </Card>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full min-h-[300px] border rounded-lg bg-gray-50">
-                    <p className="text-gray-500 mb-3">No match selected</p>
-                    <p className="text-gray-500 text-sm max-w-xs text-center">
-                      Select a match from the list or start a scheduled match to begin scoring
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="courts">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {currentTournament.courts.map((court) => (
-                <CourtCard key={court.id} court={court} detailed />
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+                </CardFooter>
+              </Card>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Scoring Settings Dialog */}

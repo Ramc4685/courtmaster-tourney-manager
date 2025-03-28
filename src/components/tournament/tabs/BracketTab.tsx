@@ -9,8 +9,10 @@ interface BracketTabProps {
 
 const BracketTab: React.FC<BracketTabProps> = ({ tournament }) => {
   return (
-    <div className="overflow-x-auto">
-      <TournamentBracket tournament={tournament} />
+    <div className="overflow-x-auto w-full">
+      <div className="min-w-[1000px]">
+        <TournamentBracket tournament={tournament} />
+      </div>
     </div>
   );
 };
