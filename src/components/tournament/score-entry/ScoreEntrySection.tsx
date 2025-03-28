@@ -119,7 +119,7 @@ const ScoreEntrySection: React.FC<ScoreEntrySectionProps> = ({ matches, onMatchU
             </label>
             <div className="flex flex-wrap gap-2">
               <Select value={selectedMatchId} onValueChange={handleMatchSelect}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger>
                   <SelectValue placeholder="Select a match" />
                 </SelectTrigger>
                 <SelectContent>
