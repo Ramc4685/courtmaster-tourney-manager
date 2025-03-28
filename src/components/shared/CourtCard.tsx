@@ -1,20 +1,16 @@
 
-// Since this is a read-only file, we cannot modify it directly.
-// We'll need to create a new enhanced version that we can use where needed
-
-<lov-write file_path="src/components/shared/EnhancedCourtCard.tsx">
 import React from "react";
 import { Court } from "@/types/tournament";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { Clock, Calendar } from "lucide-react";
 
-interface EnhancedCourtCardProps {
+interface CourtCardProps {
   court: Court;
   detailed?: boolean;
 }
 
-const EnhancedCourtCard: React.FC<EnhancedCourtCardProps> = ({ court, detailed = false }) => {
+const CourtCard: React.FC<CourtCardProps> = ({ court, detailed = false }) => {
   const { name, number, status, currentMatch } = court;
   
   const getStatusColor = () => {
@@ -121,4 +117,4 @@ const EnhancedCourtCard: React.FC<EnhancedCourtCardProps> = ({ court, detailed =
   );
 };
 
-export default EnhancedCourtCard;
+export default CourtCard;
