@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division } from "@/types/tournament";
 import { TournamentContextType } from "./types";
@@ -32,12 +33,24 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     loadInitialData();
   }, []);
 
-  // Create a new tournament
-  const createTournament = async (tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">): Promise<Tournament> => {
+  // Create a new tournament - updated to return Tournament directly instead of Promise<Tournament>
+  const createTournament = (tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">): Tournament => {
     try {
-      const newTournament = await tournamentService.createTournament(tournamentData);
+      // Since we need to return a Tournament directly (not a Promise), we'll create it synchronously
+      // This matches the type definition in TournamentContextType
+      const newTournament = tournamentService.createTournamentSync(tournamentData);
+      
+      // Update state asynchronously (this doesn't affect our return value)
       setTournaments(prev => [...prev, newTournament]);
       setCurrentTournament(newTournament);
+      
+      // Asynchronously save to service (not affecting our return)
+      tournamentService.saveTournaments([...tournaments, newTournament])
+        .catch(error => console.error("Error saving tournaments:", error));
+      
+      tournamentService.saveCurrentTournament(newTournament)
+        .catch(error => console.error("Error saving current tournament:", error));
+      
       return newTournament;
     } catch (error) {
       console.error("Error creating tournament:", error);

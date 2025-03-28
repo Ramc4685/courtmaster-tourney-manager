@@ -32,7 +32,20 @@ export class TournamentService {
     }
   }
 
-  // Create a new tournament
+  // NEW SYNCHRONOUS METHOD: Create a tournament synchronously
+  createTournamentSync(tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">): Tournament {
+    // This is a synchronous version that returns the tournament object directly
+    return {
+      id: generateId(),
+      ...tournamentData,
+      matches: [],
+      currentStage: "INITIAL_ROUND",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+
+  // Create a new tournament (async version)
   async createTournament(tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">): Promise<Tournament> {
     const newTournament: Tournament = {
       id: generateId(),
