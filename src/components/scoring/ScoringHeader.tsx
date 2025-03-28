@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { Settings, Award, Broadcast } from "lucide-react";
+import { Settings, Award, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +41,7 @@ const ScoringHeader: React.FC<ScoringHeaderProps> = ({
             
             <Button variant="outline" asChild>
               <Link to={`/public/${tournamentId}`}>
-                <Broadcast className="h-4 w-4 mr-2" />
+                <Radio className="h-4 w-4 mr-2" />
                 Live View
               </Link>
             </Button>
