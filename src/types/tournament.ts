@@ -34,11 +34,13 @@ export type Match = {
   winner?: Team;
 };
 
+export type CourtStatus = "AVAILABLE" | "IN_USE" | "MAINTENANCE";
+
 export type Court = {
   id: string;
   name: string;
   number: number;
-  status: "AVAILABLE" | "IN_USE" | "MAINTENANCE";
+  status: CourtStatus;
   currentMatch?: Match;
 };
 

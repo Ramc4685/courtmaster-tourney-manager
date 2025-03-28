@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Court } from "@/types/tournament";
+import { Court, CourtStatus } from "@/types/tournament";
 import { Clock } from "lucide-react";
 
 interface CourtCardProps {
