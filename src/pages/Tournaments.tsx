@@ -21,16 +21,19 @@ import PageHeader from "@/components/shared/PageHeader";
 import { useTournament } from "@/contexts/TournamentContext";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/auth/AuthContext";
 
 const Tournaments = () => {
   const { tournaments, setCurrentTournament, loadSampleData, deleteTournament } = useTournament();
   const { toast } = useToast();
+  const { user } = useAuth(); // Get the current authenticated user
 
   // Ensure dates are properly parsed
   useEffect(() => {
     // This is only for logging purposes to help debug
     console.log("Current tournaments in context:", tournaments);
-  }, [tournaments]);
+    console.log("Current authenticated user:", user);
+  }, [tournaments, user]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -92,23 +95,26 @@ const Tournaments = () => {
         <PageHeader
           title="Tournaments"
           description="Create and manage your badminton tournaments"
+          icon={<Trophy className="h-6 w-6 text-court-green" />}
           action={
-            <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={handleLoadSampleData}
-                className="flex items-center"
-              >
-                <Database className="mr-2 h-4 w-4" />
-                Load Sample Data
-              </Button>
-              <Link to="/tournaments/create">
-                <Button className="bg-court-green hover:bg-court-green/90">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  New Tournament
+            user && (
+              <div className="flex space-x-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleLoadSampleData}
+                  className="flex items-center"
+                >
+                  <Database className="mr-2 h-4 w-4" />
+                  Load Sample Data
                 </Button>
-              </Link>
-            </div>
+                <Link to="/tournaments/create">
+                  <Button className="bg-court-green hover:bg-court-green/90">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    New Tournament
+                  </Button>
+                </Link>
+              </div>
+            )
           }
         />
 
@@ -118,18 +124,29 @@ const Tournaments = () => {
             <h3 className="text-lg font-medium text-gray-900">No tournaments yet</h3>
             <p className="mt-1 text-gray-500">Get started by creating a new tournament or loading sample data.</p>
             <div className="mt-6 flex justify-center space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={handleLoadSampleData}
-              >
-                <Database className="mr-2 h-4 w-4" />
-                Load Sample Data
-              </Button>
-              <Link to="/tournaments/create">
-                <Button className="bg-court-green hover:bg-court-green/90">
-                  Create Tournament
-                </Button>
-              </Link>
+              {user && (
+                <>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleLoadSampleData}
+                  >
+                    <Database className="mr-2 h-4 w-4" />
+                    Load Sample Data
+                  </Button>
+                  <Link to="/tournaments/create">
+                    <Button className="bg-court-green hover:bg-court-green/90">
+                      Create Tournament
+                    </Button>
+                  </Link>
+                </>
+              )}
+              {!user && (
+                <Link to="/login">
+                  <Button>
+                    Log in to Create Tournaments
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         ) : (

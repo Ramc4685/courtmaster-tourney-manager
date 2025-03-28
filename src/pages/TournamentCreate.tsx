@@ -10,18 +10,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, PlusCircle } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format as formatDate } from "date-fns"; // Fixed import with alias to avoid conflicts
 import { useTournament } from "@/contexts/TournamentContext";
-import Layout from "@/components/layout/Layout";
 import { TournamentFormat } from "@/types/tournament";
+import Layout from "@/components/layout/Layout";
+import { useAuth } from "@/contexts/auth/AuthContext";
+import PageHeader from "@/components/shared/PageHeader";
 
 const TournamentCreate = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { createTournament } = useTournament();
+  const { user } = useAuth(); // Get the current user from auth context
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -32,6 +35,16 @@ const TournamentCreate = () => {
   const [courtCount, setCourtCount] = useState(2);
 
   const handleCreateTournament = () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to create a tournament",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+
     if (!name.trim()) {
       toast({
         title: "Error",
@@ -82,11 +95,16 @@ const TournamentCreate = () => {
   return (
     <Layout>
       <div className="max-w-3xl mx-auto">
+        <PageHeader 
+          title="Create New Tournament" 
+          description="Set up your badminton tournament details"
+          icon={<PlusCircle className="h-6 w-6 text-court-green" />}
+        />
         <Card>
           <CardHeader>
-            <CardTitle>Create New Tournament</CardTitle>
+            <CardTitle>Tournament Details</CardTitle>
             <CardDescription>
-              Set up your badminton tournament details and format
+              Configure your tournament settings and format
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">

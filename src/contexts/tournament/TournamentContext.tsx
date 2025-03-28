@@ -24,6 +24,7 @@ import {
   completeMatchInTournament
 } from "./matchOperations";
 import { realtimeTournamentService } from "@/services/realtime/RealtimeTournamentService";
+import { useAuth } from "@/contexts/auth/AuthContext";
 
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
