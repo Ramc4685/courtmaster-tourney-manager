@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,18 @@ const TournamentCreate = () => {
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [courtCount, setCourtCount] = useState(2);
+
+  // Check if the user is authenticated when the component mounts
+  useEffect(() => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to create a tournament",
+        variant: "destructive",
+      });
+      navigate('/login');
+    }
+  }, [user, toast, navigate]);
 
   const handleCreateTournament = () => {
     if (!user) {
@@ -71,26 +83,60 @@ const TournamentCreate = () => {
       status: "AVAILABLE" as const,
     }));
 
-    // Create the tournament
-    createTournament({
-      name,
-      description,
-      format,
-      status: "DRAFT",
-      teams: [],
-      courts,
-      startDate,
-      endDate,
-      divisionProgression,
-    });
-
-    toast({
-      title: "Success",
-      description: "Tournament created successfully",
-    });
-
-    navigate("/tournaments");
+    try {
+      // Create the tournament with a specific ID format
+      const tournamentId = `tournament-${Date.now()}`;
+      const newTournament = {
+        id: tournamentId,
+        name,
+        description,
+        format,
+        status: "DRAFT",
+        teams: [],
+        courts,
+        startDate,
+        endDate,
+        divisionProgression,
+        currentStage: "INITIAL_ROUND" as const,
+        matches: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      // Save the tournament
+      createTournament(newTournament);
+      
+      toast({
+        title: "Success",
+        description: "Tournament created successfully",
+      });
+      
+      // Navigate to the specific tournament detail page
+      navigate(`/tournaments/${tournamentId}`);
+    } catch (error) {
+      console.error("Error creating tournament:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create tournament. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
+
+  // If not authenticated, don't render the form
+  if (!user) {
+    return (
+      <Layout>
+        <div className="max-w-3xl mx-auto text-center py-12">
+          <h2 className="text-xl font-semibold">Authentication Required</h2>
+          <p className="mt-2">Please log in to create a tournament.</p>
+          <Button className="mt-4" onClick={() => navigate('/login')}>
+            Log In
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

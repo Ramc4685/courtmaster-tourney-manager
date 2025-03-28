@@ -8,6 +8,8 @@ import PublicView from './pages/PublicView';
 import PublicViewRealtime from './pages/PublicViewRealtime';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
+import TournamentCreate from './pages/TournamentCreate';
+import Tournaments from './pages/Tournaments';
 import { TournamentProvider } from './contexts/TournamentContext';
 import { AuthProvider } from './contexts/auth/AuthContext';
 import { Toaster } from './components/ui/toaster';
@@ -19,7 +21,9 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/tournament/:tournamentId" element={<TournamentDetail />} />
+            <Route path="/tournaments" element={<Tournaments />} />
+            <Route path="/tournaments/create" element={<TournamentCreate />} />
+            <Route path="/tournaments/:tournamentId" element={<TournamentDetail />} />
             <Route path="/scoring/:tournamentId" element={<Scoring />} />
             <Route path="/public/:tournamentId?" element={<PublicView />} />
             <Route path="/public-live/:tournamentId?" element={<PublicViewRealtime />} />

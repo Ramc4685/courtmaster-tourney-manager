@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,11 +16,14 @@ import CourtsTab from "@/components/tournament/tabs/CourtsTab";
 import BracketTab from "@/components/tournament/tabs/BracketTab";
 import { Button } from "@/components/ui/button";
 import { Clipboard, Award } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const TournamentDetail = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { 
+    tournaments,
     currentTournament, 
     setCurrentTournament, 
     updateTournament, 
@@ -43,10 +45,22 @@ const TournamentDetail = () => {
   const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
-    if (tournamentId && currentTournament?.id === tournamentId) {
-      setCurrentTournament(currentTournament);
+    // Find the tournament by ID from all tournaments if not already set
+    if (tournamentId && (!currentTournament || currentTournament.id !== tournamentId)) {
+      const foundTournament = tournaments.find(t => t.id === tournamentId);
+      if (foundTournament) {
+        console.log(`Found tournament with ID ${tournamentId}`, foundTournament);
+        setCurrentTournament(foundTournament);
+      } else {
+        console.error(`Tournament with ID ${tournamentId} not found`);
+        toast({
+          title: "Tournament Not Found",
+          description: "The requested tournament could not be found.",
+          variant: "destructive",
+        });
+      }
     }
-  }, [tournamentId, currentTournament, setCurrentTournament]);
+  }, [tournamentId, tournaments, currentTournament, setCurrentTournament, toast]);
 
   // Track if we should show the bracket tab more prominently
   const shouldHighlightBracket = currentTournament?.currentStage === "PLAYOFF_KNOCKOUT";
@@ -100,8 +114,12 @@ const TournamentDetail = () => {
   if (!currentTournament) {
     return (
       <Layout>
-        <div className="max-w-6xl mx-auto">
-          <p>Tournament not found. Please select a tournament first.</p>
+        <div className="max-w-6xl mx-auto text-center py-12">
+          <h2 className="text-xl font-semibold mb-4">Tournament not found</h2>
+          <p className="mb-6">The tournament you're looking for doesn't exist or you need to select a tournament first.</p>
+          <Button onClick={() => navigate("/tournaments")}>
+            Go to Tournaments
+          </Button>
         </div>
       </Layout>
     );
