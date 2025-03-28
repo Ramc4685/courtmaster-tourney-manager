@@ -101,46 +101,37 @@ export const createDivisionPlacementMatches = (tournament: Tournament): Match[] 
     );
     
     // Match 1: Team 1 vs Team 2
-    newMatches.push(createMatch(
+    const match1 = createMatch(
       tournament.id,
       groupTeams[0],
       groupTeams[1],
       "GROUP_DIV3" as Division,
-      "DIVISION_PLACEMENT" as TournamentStage,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      group.name
-    ));
+      "DIVISION_PLACEMENT" as TournamentStage
+    );
+    match1.groupName = group.name;
+    newMatches.push(match1);
     
     // Match 2: Team 1 vs Team 3
-    newMatches.push(createMatch(
+    const match2 = createMatch(
       tournament.id,
       groupTeams[0],
       groupTeams[2],
       "GROUP_DIV3" as Division,
-      "DIVISION_PLACEMENT" as TournamentStage,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      group.name
-    ));
+      "DIVISION_PLACEMENT" as TournamentStage
+    );
+    match2.groupName = group.name;
+    newMatches.push(match2);
     
     // Match 3: Team 2 vs Team 3
-    newMatches.push(createMatch(
+    const match3 = createMatch(
       tournament.id,
       groupTeams[1],
       groupTeams[2],
       "GROUP_DIV3" as Division,
-      "DIVISION_PLACEMENT" as TournamentStage,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      group.name
-    ));
+      "DIVISION_PLACEMENT" as TournamentStage
+    );
+    match3.groupName = group.name;
+    newMatches.push(match3);
   });
   
   return newMatches;
@@ -251,47 +242,44 @@ export const createPlayoffKnockoutMatches = (tournament: Tournament): Match[] =>
   
   // Division 1: 16-team knockout (Round of 16)
   for (let i = 0; i < 8; i++) {
-    newMatches.push(createMatch(
+    const match = createMatch(
       tournament.id,
       div1Teams[i],
       div1Teams[15 - i],
       "DIVISION_1" as Division,
-      "PLAYOFF_KNOCKOUT" as TournamentStage,
-      undefined,
-      undefined,
-      1,
-      i + 1
-    ));
+      "PLAYOFF_KNOCKOUT" as TournamentStage
+    );
+    match.bracketRound = 1;
+    match.bracketPosition = i + 1;
+    newMatches.push(match);
   }
   
   // Division 2: 16-team knockout (Round of 16)
   for (let i = 0; i < 8; i++) {
-    newMatches.push(createMatch(
+    const match = createMatch(
       tournament.id,
       div2Teams[i],
       div2Teams[15 - i],
       "DIVISION_2" as Division,
-      "PLAYOFF_KNOCKOUT" as TournamentStage,
-      undefined,
-      undefined,
-      1,
-      i + 1
-    ));
+      "PLAYOFF_KNOCKOUT" as TournamentStage
+    );
+    match.bracketRound = 1;
+    match.bracketPosition = i + 1;
+    newMatches.push(match);
   }
   
   // Division 3: 8-team knockout (Quarter Finals)
   for (let i = 0; i < 4; i++) {
-    newMatches.push(createMatch(
+    const match = createMatch(
       tournament.id,
       div3Teams[i],
       div3Teams[7 - i],
       "DIVISION_3" as Division,
-      "PLAYOFF_KNOCKOUT" as TournamentStage,
-      undefined,
-      undefined,
-      1,
-      i + 1
-    ));
+      "PLAYOFF_KNOCKOUT" as TournamentStage
+    );
+    match.bracketRound = 1;
+    match.bracketPosition = i + 1;
+    newMatches.push(match);
   }
   
   return newMatches;
