@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { RefreshCw, Award, Clock, Calendar } from "lucide-react";
@@ -19,6 +18,15 @@ const PublicView = () => {
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [refreshing, setRefreshing] = useState(false);
   const [displayTournament, setDisplayTournament] = useState<any>(null);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    // In a real app, you would fetch the latest data here
+    setTimeout(() => {
+      setLastRefreshed(new Date());
+      setRefreshing(false);
+    }, 500);
+  };
 
   useEffect(() => {
     // If tournamentId is provided, find that specific tournament
@@ -107,15 +115,6 @@ const PublicView = () => {
       default:
         return division;
     }
-  };
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    // In a real app, you would fetch the latest data here
-    setTimeout(() => {
-      setLastRefreshed(new Date());
-      setRefreshing(false);
-    }, 500);
   };
 
   const getStatusLabel = (status: string) => {
