@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentStage, ScoringSettings } from "@/types/tournament";
 import { createSampleData } from "@/utils/tournamentSampleData";
@@ -283,9 +284,14 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     
     // Determine winner based on scores
     const result = determineMatchWinnerAndLoser(match, scoringSettings);
-    if (!result) return;
+    if (!result) {
+      console.error("Unable to determine winner and loser for match:", matchId);
+      return;
+    }
     
     const { winner, loser } = result;
+    
+    console.log(`Match ${matchId} completed. Winner: ${winner.name}, Loser: ${loser.name}`);
     
     const updatedMatch = {
       ...match,
@@ -314,16 +320,17 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       m.id === matchId ? updatedMatch : m
     );
     
-    // Progress winner to next match in bracket if applicable
+    // Update the tournament with the completed match first
     updatedTournament = {
       ...updatedTournament,
       matches: updatedMatches,
       updatedAt: new Date()
     };
     
-    if (match.nextMatchId) {
-      updatedTournament = updateBracketProgression(updatedTournament, updatedMatch, winner);
-    }
+    // Now update bracket progression with the winner
+    updatedTournament = updateBracketProgression(updatedTournament, updatedMatch, winner);
+    
+    console.log("Tournament updated with match completion and bracket progression");
     
     updateTournament(updatedTournament);
     

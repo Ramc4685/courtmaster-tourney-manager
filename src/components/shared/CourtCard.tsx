@@ -67,7 +67,9 @@ const CourtCard: React.FC<CourtCardProps> = ({ court, detailed = false }) => {
                   ? "bg-green-100 text-green-800 animate-pulse" 
                   : currentMatch.status === "SCHEDULED"
                     ? "bg-blue-100 text-blue-800"
-                    : "bg-gray-100 text-gray-800"
+                    : currentMatch.status === "COMPLETED"
+                      ? "bg-purple-100 text-purple-800"
+                      : "bg-gray-100 text-gray-800"
               }`}>
                 {getMatchStatusDisplay(currentMatch.status)}
               </span>
@@ -120,6 +122,12 @@ const CourtCard: React.FC<CourtCardProps> = ({ court, detailed = false }) => {
                       </span>
                     ))}
                   </div>
+                </div>
+              )}
+              
+              {currentMatch.status === "COMPLETED" && currentMatch.winner && (
+                <div className="mt-2 text-xs text-court-green font-medium">
+                  Winner: {currentMatch.winner.name}
                 </div>
               )}
             </div>

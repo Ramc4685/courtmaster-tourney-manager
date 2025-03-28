@@ -126,20 +126,20 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({
                             match.status === "IN_PROGRESS" ? "bg-yellow-100 text-yellow-800" :
                             "bg-gray-100 text-gray-800"
                           )}>
-                            {match.status}
+                            {match.status === "SCHEDULED" ? "Not Started" : match.status}
                           </div>
                         </div>
                         <div className="p-2">
                           <TeamSlot
                             team={match.team1}
-                            isWinner={match.winner?.id === match.team1.id}
-                            score={match.scores?.[0]?.team1Score}
+                            isWinner={match.status === "COMPLETED" && match.winner?.id === match.team1.id}
+                            score={match.scores.length > 0 ? match.scores[match.scores.length - 1].team1Score : undefined}
                           />
                           <div className="my-1 border-t border-gray-100"></div>
                           <TeamSlot
                             team={match.team2}
-                            isWinner={match.winner?.id === match.team2.id}
-                            score={match.scores?.[0]?.team2Score}
+                            isWinner={match.status === "COMPLETED" && match.winner?.id === match.team2.id}
+                            score={match.scores.length > 0 ? match.scores[match.scores.length - 1].team2Score : undefined}
                           />
                         </div>
                       </>

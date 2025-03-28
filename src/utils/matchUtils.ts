@@ -113,13 +113,63 @@ export const updateBracketProgression = (
   completedMatch: Match, 
   winner: Team
 ): Tournament => {
-  if (!completedMatch.nextMatchId) return tournament;
+  if (!completedMatch.nextMatchId) {
+    // Look for the next round match based on bracketRound and bracketPosition
+    if (completedMatch.bracketRound && completedMatch.bracketPosition) {
+      const nextRound = completedMatch.bracketRound + 1;
+      const nextPosition = Math.ceil(completedMatch.bracketPosition / 2);
+      
+      const nextMatch = tournament.matches.find(m => 
+        m.bracketRound === nextRound && 
+        m.bracketPosition === nextPosition &&
+        m.division === completedMatch.division
+      );
+      
+      if (nextMatch) {
+        // Update the winner's completed match to point to the next match
+        const updatedCompletedMatch = {
+          ...completedMatch,
+          nextMatchId: nextMatch.id
+        };
+        
+        // Determine whether the winner goes to team1 or team2 slot in the next match
+        let updatedNextMatch: Match;
+        
+        // If the completed match's bracketPosition is odd, winner goes to team1, otherwise team2
+        if (completedMatch.bracketPosition % 2 === 1) {
+          updatedNextMatch = {
+            ...nextMatch,
+            team1: winner
+          };
+        } else {
+          updatedNextMatch = {
+            ...nextMatch,
+            team2: winner
+          };
+        }
+        
+        // Update both matches in the tournament
+        const updatedMatches = tournament.matches.map(m => {
+          if (m.id === completedMatch.id) return updatedCompletedMatch;
+          if (m.id === nextMatch.id) return updatedNextMatch;
+          return m;
+        });
+        
+        return {
+          ...tournament,
+          matches: updatedMatches,
+          updatedAt: new Date()
+        };
+      }
+    }
+    
+    return tournament;
+  }
 
   const nextMatch = findMatchById(tournament, completedMatch.nextMatchId);
   if (!nextMatch) return tournament;
 
   // Determine whether the winner goes to team1 or team2 slot in the next match
-  // This depends on the bracket position logic
   let updatedNextMatch: Match;
 
   // Simple logic: If the completed match is in an odd bracket position,
