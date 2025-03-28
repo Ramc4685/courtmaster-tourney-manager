@@ -1,7 +1,8 @@
 
 import React from "react";
 import { Match } from "@/types/tournament";
-import { MapPin, Clock } from "lucide-react";
+import { MapPin, Clock, Calendar } from "lucide-react";
+import { format } from "date-fns";
 
 interface MatchCardProps {
   match: Match;
@@ -90,14 +91,22 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onSelect, mode = "full" })
             </span>
           </div>
         </div>
-        <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+        <div className="flex flex-wrap justify-between items-center mt-2 text-xs text-gray-500 gap-1">
           {getStatusBadge()}
-          {courtNumber && (
-            <div className="flex items-center">
-              <MapPin size={12} className="mr-1" />
-              <span>Court {courtNumber}</span>
-            </div>
-          )}
+          <div className="flex items-center space-x-2">
+            {courtNumber && (
+              <div className="flex items-center">
+                <MapPin size={12} className="mr-1" />
+                <span>Court {courtNumber}</span>
+              </div>
+            )}
+            {scheduledTime && (
+              <div className="flex items-center">
+                <Clock size={12} className="mr-1" />
+                <span>{format(new Date(scheduledTime), "h:mm a")}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -124,7 +133,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onSelect, mode = "full" })
           {scheduledTime && (
             <div className="flex items-center">
               <Clock size={14} className="mr-1" />
-              <span>{new Date(scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>{format(new Date(scheduledTime), "h:mm a")}</span>
             </div>
           )}
         </div>
@@ -169,6 +178,13 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onSelect, mode = "full" })
               <span>{score.team2Score}</span>
             </div>
           ))}
+        </div>
+      )}
+      
+      {scheduledTime && (
+        <div className="mt-3 pt-2 border-t border-gray-100 text-xs text-gray-500 flex items-center justify-center">
+          <Calendar size={12} className="mr-1" />
+          <span>{format(new Date(scheduledTime), "MMMM d, yyyy")}</span>
         </div>
       )}
       

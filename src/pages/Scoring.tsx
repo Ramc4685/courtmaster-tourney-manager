@@ -16,7 +16,7 @@ import { useTournament } from "@/contexts/TournamentContext";
 import Layout from "@/components/layout/Layout";
 import PageHeader from "@/components/shared/PageHeader";
 import MatchCard from "@/components/shared/MatchCard";
-import CourtCard from "@/components/shared/CourtCard";
+import EnhancedCourtCard from "@/components/shared/EnhancedCourtCard";
 import ScoringSettings from "@/components/scoring/ScoringSettings";
 import { Match } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
@@ -57,20 +57,44 @@ const Scoring = () => {
   const handleScoreChange = (team: "team1" | "team2", increment: boolean) => {
     if (!selectedMatch) return;
 
-    let currentScore = selectedMatch.scores[currentSet] || { team1Score: 0, team2Score: 0 };
+    // Make sure we have the latest match from context
+    const latestMatch = currentTournament.matches.find(m => m.id === selectedMatch.id);
+    if (!latestMatch) return;
+
+    let scores = [...latestMatch.scores];
+    if (scores.length === 0) {
+      scores = [{ team1Score: 0, team2Score: 0 }];
+    }
+    
+    let currentScore = scores[currentSet] || { team1Score: 0, team2Score: 0 };
     let updatedScore;
     
     if (team === "team1") {
       updatedScore = increment 
-        ? Math.min(maxPoints, currentScore.team1Score + 1)
+        ? Math.min(maxPoints + 10, currentScore.team1Score + 1) // Allow going beyond maxPoints for win by 2
         : Math.max(0, currentScore.team1Score - 1);
+      
       updateMatchScore(selectedMatch.id, updatedScore, currentScore.team2Score);
     } else {
       updatedScore = increment 
-        ? Math.min(maxPoints, currentScore.team2Score + 1)
+        ? Math.min(maxPoints + 10, currentScore.team2Score + 1) // Allow going beyond maxPoints for win by 2
         : Math.max(0, currentScore.team2Score - 1);
+      
       updateMatchScore(selectedMatch.id, currentScore.team1Score, updatedScore);
     }
+
+    // Update our local selected match to reflect the new score
+    const updatedMatch = {
+      ...selectedMatch,
+      scores: selectedMatch.scores.map((s, idx) => 
+        idx === currentSet 
+          ? team === "team1" 
+            ? { ...s, team1Score: updatedScore } 
+            : { ...s, team2Score: updatedScore }
+          : s
+      )
+    };
+    setSelectedMatch(updatedMatch);
 
     // Check if this set is complete based on maxPoints
     const updatedCurrentScore = {
@@ -85,10 +109,8 @@ const Scoring = () => {
         updatedCurrentScore.team2Score - updatedCurrentScore.team1Score >= 2)) {
       
       // If we've reached maxSets, complete the match
-      const team1Sets = selectedMatch.scores.filter(s => s.team1Score > s.team2Score).length + 
-        (updatedCurrentScore.team1Score > updatedCurrentScore.team2Score ? 1 : 0);
-      const team2Sets = selectedMatch.scores.filter(s => s.team2Score > s.team1Score).length + 
-        (updatedCurrentScore.team2Score > updatedCurrentScore.team1Score ? 1 : 0);
+      const team1Sets = updatedMatch.scores.filter(s => s.team1Score > s.team2Score).length;
+      const team2Sets = updatedMatch.scores.filter(s => s.team2Score > s.team1Score).length;
       
       if (team1Sets >= Math.ceil(maxSets/2) || team2Sets >= Math.ceil(maxSets/2)) {
         toast({
@@ -139,6 +161,14 @@ const Scoring = () => {
     }
     
     updateMatchScore(selectedMatch.id, 0, 0);
+    
+    // Update our local selected match to reflect the new set
+    const updatedMatch = {
+      ...selectedMatch,
+      scores: [...selectedMatch.scores, { team1Score: 0, team2Score: 0 }]
+    };
+    setSelectedMatch(updatedMatch);
+    
     setCurrentSet(newSetIndex);
     toast({
       title: "New set started",
@@ -348,7 +378,7 @@ const Scoring = () => {
           <TabsContent value="courts">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {currentTournament.courts.map((court) => (
-                <CourtCard key={court.id} court={court} detailed />
+                <EnhancedCourtCard key={court.id} court={court} detailed />
               ))}
             </div>
           </TabsContent>

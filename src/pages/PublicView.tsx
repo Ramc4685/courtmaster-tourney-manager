@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { RefreshCw, Award } from "lucide-react";
+import { RefreshCw, Award, Clock, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { useTournament } from "@/contexts/TournamentContext";
 import Layout from "@/components/layout/Layout";
 import MatchCard from "@/components/shared/MatchCard";
-import CourtCard from "@/components/shared/CourtCard";
+import EnhancedCourtCard from "@/components/shared/EnhancedCourtCard";
 import { Match, Division } from "@/types/tournament";
+import { format } from "date-fns";
 
 const PublicView = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
@@ -47,7 +47,17 @@ const PublicView = () => {
 
   const upcomingMatches = currentTournament.matches.filter(
     (match) => match.status === "SCHEDULED"
-  );
+  ).sort((a, b) => {
+    // Sort by scheduled time if available
+    if (a.scheduledTime && b.scheduledTime) {
+      return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
+    } else if (a.scheduledTime) {
+      return -1;
+    } else if (b.scheduledTime) {
+      return 1;
+    }
+    return 0;
+  });
 
   const groupByDivision = (matches: Match[]) => {
     return matches.reduce((groups, match) => {
@@ -62,14 +72,20 @@ const PublicView = () => {
 
   const getDivisionLabel = (division: string) => {
     switch (division) {
-      case "GROUP":
-        return "Group Stage";
-      case "DIV1":
+      case "GROUP_DIV3":
+        return "Division 3 - Group Stage";
+      case "DIVISION_1":
         return "Division 1";
-      case "DIV2":
+      case "DIVISION_2":
         return "Division 2";
-      case "DIV3":
+      case "DIVISION_3":
         return "Division 3";
+      case "QUALIFIER_DIV1":
+        return "Division 1 - Qualifiers";
+      case "QUALIFIER_DIV2":
+        return "Division 2 - Qualifiers";
+      case "INITIAL":
+        return "Initial Round";
       default:
         return division;
     }
@@ -95,7 +111,17 @@ const PublicView = () => {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {divMatches.map((match) => (
-            <MatchCard key={match.id} match={match} />
+            <div key={match.id} className="border rounded-lg p-4">
+              <MatchCard key={match.id} match={match} />
+              {match.scheduledTime && (
+                <div className="mt-2 text-sm text-gray-500 flex items-center">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  <span>{format(new Date(match.scheduledTime), "MMM d, yyyy")}</span>
+                  <Clock className="h-4 w-4 ml-3 mr-1" />
+                  <span>{format(new Date(match.scheduledTime), "h:mm a")}</span>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </div>
@@ -149,7 +175,7 @@ const PublicView = () => {
           <TabsContent value="courts">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {currentTournament.courts.map((court) => (
-                <CourtCard key={court.id} court={court} />
+                <EnhancedCourtCard key={court.id} court={court} detailed />
               ))}
             </div>
           </TabsContent>

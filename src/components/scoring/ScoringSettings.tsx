@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Trophy, Flag } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -24,12 +24,23 @@ const ScoringSettings: React.FC<ScoringSettingsProps> = ({
   maxSets,
   setMaxSets
 }) => {
+  // Use local state to track changes before submitting
+  const [localMaxPoints, setLocalMaxPoints] = useState(maxPoints);
+  const [localMaxSets, setLocalMaxSets] = useState(maxSets);
+  
+  // Reset local state when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      setLocalMaxPoints(maxPoints);
+      setLocalMaxSets(maxSets);
+    }
+  }, [open, maxPoints, maxSets]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Basic validation
-    if (maxPoints < 1 || maxSets < 1) {
+    if (localMaxPoints < 1 || localMaxSets < 1) {
       toast({
         title: "Invalid settings",
         description: "Points per game and sets per match must be at least 1",
@@ -37,6 +48,10 @@ const ScoringSettings: React.FC<ScoringSettingsProps> = ({
       });
       return;
     }
+    
+    // Update parent state
+    setMaxPoints(localMaxPoints);
+    setMaxSets(localMaxSets);
     
     toast({
       title: "Settings saved",
@@ -67,8 +82,8 @@ const ScoringSettings: React.FC<ScoringSettingsProps> = ({
                 <Input
                   id="maxPoints"
                   type="number"
-                  value={maxPoints}
-                  onChange={(e) => setMaxPoints(parseInt(e.target.value) || 21)}
+                  value={localMaxPoints}
+                  onChange={(e) => setLocalMaxPoints(parseInt(e.target.value) || 21)}
                   min={1}
                   max={99}
                   className="w-24"
@@ -88,14 +103,14 @@ const ScoringSettings: React.FC<ScoringSettingsProps> = ({
                 <Input
                   id="maxSets"
                   type="number"
-                  value={maxSets}
-                  onChange={(e) => setMaxSets(parseInt(e.target.value) || 3)}
+                  value={localMaxSets}
+                  onChange={(e) => setLocalMaxSets(parseInt(e.target.value) || 3)}
                   min={1}
                   max={9}
                   className="w-24"
                 />
                 <p className="text-sm text-gray-500">
-                  Best of {maxSets} sets to win a match
+                  Best of {localMaxSets} sets to win a match
                 </p>
               </div>
             </div>

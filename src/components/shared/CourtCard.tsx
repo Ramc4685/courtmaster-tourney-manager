@@ -1,119 +1,124 @@
 
-import React from "react";
-import { Court, CourtStatus } from "@/types/tournament";
-import { Clock, Users, Award } from "lucide-react";
+// Since this is a read-only file, we cannot modify it directly.
+// We'll need to create a new enhanced version that we can use where needed
 
-interface CourtCardProps {
+<lov-write file_path="src/components/shared/EnhancedCourtCard.tsx">
+import React from "react";
+import { Court } from "@/types/tournament";
+import { Card, CardContent } from "@/components/ui/card";
+import { format } from "date-fns";
+import { Clock, Calendar } from "lucide-react";
+
+interface EnhancedCourtCardProps {
   court: Court;
   detailed?: boolean;
 }
 
-const CourtCard: React.FC<CourtCardProps> = ({ court, detailed = false }) => {
+const EnhancedCourtCard: React.FC<EnhancedCourtCardProps> = ({ court, detailed = false }) => {
   const { name, number, status, currentMatch } = court;
-
+  
   const getStatusColor = () => {
     switch (status) {
       case "AVAILABLE":
-        return "bg-green-500";
+        return "bg-court-green";
       case "IN_USE":
-        return "bg-red-500";
+        return "bg-amber-500";
       case "MAINTENANCE":
-        return "bg-yellow-500";
+        return "bg-gray-400";
       default:
-        return "bg-gray-500";
+        return "bg-gray-200";
     }
   };
 
   return (
-    <div className="court-card border rounded-lg p-4 bg-gray-100">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="font-bold text-lg">{name || `Court ${number}`}</h3>
-        <span className={`${getStatusColor()} text-white text-xs px-2 py-1 rounded-full`}>
-          {status}
-        </span>
-      </div>
-      
-      {currentMatch ? (
-        <div className="bg-white rounded p-3 mt-2">
-          <div className="flex flex-col space-y-1">
-            <div className="flex justify-between items-center">
-              <span className="font-medium">{currentMatch.team1.name}</span>
-              <span className="live-score text-court-blue text-xl font-bold">
-                {currentMatch.scores.length > 0 
-                  ? currentMatch.scores[currentMatch.scores.length - 1].team1Score 
-                  : 0}
+    <Card className="overflow-hidden">
+      <div className={`h-2 ${getStatusColor()}`} />
+      <CardContent className="p-4">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="font-semibold">{name}</h3>
+          <span className={`text-sm px-2 py-0.5 rounded-full ${
+            status === "AVAILABLE" 
+              ? "bg-green-100 text-green-800" 
+              : status === "IN_USE" 
+                ? "bg-amber-100 text-amber-800" 
+                : "bg-gray-100 text-gray-800"
+          }`}>
+            {status}
+          </span>
+        </div>
+        
+        {currentMatch ? (
+          <div className="mt-3 border-t pt-3">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="font-medium text-sm">Current Match</h4>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                currentMatch.status === "IN_PROGRESS" 
+                  ? "bg-green-100 text-green-800 animate-pulse" 
+                  : "bg-blue-100 text-blue-800"
+              }`}>
+                {currentMatch.status}
               </span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="font-medium">{currentMatch.team2.name}</span>
-              <span className="live-score text-court-blue text-xl font-bold">
-                {currentMatch.scores.length > 0 
-                  ? currentMatch.scores[currentMatch.scores.length - 1].team2Score 
-                  : 0}
-              </span>
-            </div>
-          </div>
-          
-          {detailed && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <div className="flex flex-col space-y-2">
-                {currentMatch.division && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Award size={14} className="mr-1" />
-                    <span>
-                      {currentMatch.division.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                )}
-                
-                {currentMatch.team1.players && currentMatch.team2.players && (
-                  <div className="flex items-start text-sm text-gray-600">
-                    <Users size={14} className="mr-1 mt-1" />
-                    <div className="flex flex-col">
-                      <span>
-                        {currentMatch.team1.players.map(p => p.name).join(', ')}
-                      </span>
-                      <span>vs</span>
-                      <span>
-                        {currentMatch.team2.players.map(p => p.name).join(', ')}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                
-                {currentMatch.scheduledTime && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Clock size={14} className="mr-1" />
-                    <span>
-                      {new Date(currentMatch.scheduledTime).toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit',
-                        hour12: true 
-                      })}
-                    </span>
-                  </div>
-                )}
-                
-                {currentMatch.scores.length > 1 && (
-                  <div className="flex items-center space-x-2 mt-1">
-                    {currentMatch.scores.slice(0, -1).map((score, idx) => (
-                      <div key={idx} className="bg-gray-100 px-2 py-0.5 rounded text-xs">
-                        {score.team1Score}-{score.team2Score}
-                      </div>
-                    ))}
-                  </div>
+            
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">{currentMatch.team1.name}</span>
+                {currentMatch.scores.length > 0 && (
+                  <span className="font-bold text-sm">
+                    {currentMatch.scores[currentMatch.scores.length - 1].team1Score}
+                  </span>
                 )}
               </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">{currentMatch.team2.name}</span>
+                {currentMatch.scores.length > 0 && (
+                  <span className="font-bold text-sm">
+                    {currentMatch.scores[currentMatch.scores.length - 1].team2Score}
+                  </span>
+                )}
+              </div>
+              
+              {detailed && currentMatch.scheduledTime && (
+                <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                  <div className="flex items-center">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    <span>{format(new Date(currentMatch.scheduledTime), "MMM d")}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="h-3 w-3 mr-1" />
+                    <span>{format(new Date(currentMatch.scheduledTime), "h:mm a")}</span>
+                  </div>
+                </div>
+              )}
+              
+              {detailed && currentMatch.division && (
+                <div className="mt-1 text-xs text-gray-500">
+                  Division: {currentMatch.division.replace("_", " ")}
+                </div>
+              )}
+              
+              {detailed && currentMatch.scores.length > 1 && (
+                <div className="mt-2 text-xs flex items-center space-x-2">
+                  <span className="text-gray-500">Sets:</span>
+                  <div className="flex space-x-1">
+                    {currentMatch.scores.map((score, idx) => (
+                      <span key={idx} className="bg-gray-100 rounded px-1">
+                        {score.team1Score}-{score.team2Score}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="bg-white rounded p-3 mt-2 flex items-center justify-center h-24">
-          <p className="text-gray-500">No match scheduled</p>
-        </div>
-      )}
-    </div>
+          </div>
+        ) : (
+          <div className="mt-3 text-sm text-gray-500">
+            No match currently scheduled
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
-export default CourtCard;
+export default EnhancedCourtCard;
