@@ -48,13 +48,19 @@ export const useRealtimeScoring = (initialMatch: Match | null) => {
 
   // Update match with new data and publish to real-time service
   const updateMatchData = (updatedMatch: Match) => {
+    // Ensure updatedAt is set when updating a match
+    const matchWithTimestamp = {
+      ...updatedMatch,
+      updatedAt: new Date()
+    };
+    
     // Update the match in our state
-    setMatch(updatedMatch);
+    setMatch(matchWithTimestamp);
 
     // Update the match in the tournament
     if (currentTournament) {
       const updatedMatches = currentTournament.matches.map(m => 
-        m.id === updatedMatch.id ? updatedMatch : m
+        m.id === matchWithTimestamp.id ? matchWithTimestamp : m
       );
       
       const updatedTournament = {

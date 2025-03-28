@@ -42,6 +42,7 @@ export type Match = {
   bracketPosition?: number; // Position within the round
   nextMatchId?: string; // ID of the next match (for advancement)
   groupName?: string; // For group matches (e.g., "Group A")
+  updatedAt?: Date; // Added updatedAt field for tracking when the match was last updated
 };
 
 export type CourtStatus = "AVAILABLE" | "IN_USE" | "MAINTENANCE";
