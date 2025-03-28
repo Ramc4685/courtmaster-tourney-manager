@@ -1,14 +1,15 @@
 
-import React, { useState } from "react";
-import { Calendar } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Calendar, ArrowRight, Wand2 } from "lucide-react";
 import { format } from "date-fns";
 import { useTournament } from "@/contexts/TournamentContext";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Team } from "@/types/tournament";
+import { Team, Division, TournamentStage } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ScheduleMatchDialogProps {
   open: boolean;
@@ -30,6 +31,70 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
     format(new Date(), "yyyy-MM-dd")
   );
   const [scheduledTime, setScheduledTime] = useState<string>("12:00");
+  const [selectedDivision, setSelectedDivision] = useState<Division>("INITIAL");
+  const [suggestedPairs, setSuggestedPairs] = useState<{ team1: Team; team2: Team }[]>([]);
+
+  useEffect(() => {
+    // Set the appropriate division based on the tournament's current stage
+    if (currentTournament) {
+      switch (currentTournament.currentStage) {
+        case "INITIAL_ROUND":
+          setSelectedDivision("INITIAL");
+          break;
+        case "DIVISION_PLACEMENT":
+          setSelectedDivision("QUALIFIER_DIV1");
+          break;
+        case "PLAYOFF_KNOCKOUT":
+          setSelectedDivision("DIVISION_1");
+          break;
+        default:
+          setSelectedDivision("INITIAL");
+      }
+    }
+  }, [currentTournament]);
+
+  // Generate suggested team pairs based on current tournament stage and division
+  const generateSuggestedPairs = () => {
+    if (!currentTournament) return;
+
+    const scheduledMatchTeamIds = currentTournament.matches
+      .map(match => [match.team1.id, match.team2.id])
+      .flat();
+
+    // Get teams that aren't already in matches for the selected division and stage
+    const availableTeams = currentTournament.teams.filter(team => 
+      !scheduledMatchTeamIds.includes(team.id) ||
+      !currentTournament.matches.some(
+        m => (m.team1.id === team.id || m.team2.id === team.id) && 
+             m.division === selectedDivision &&
+             m.stage === currentTournament.currentStage
+      )
+    );
+
+    // Sort teams by initial ranking if available
+    const sortedTeams = [...availableTeams].sort((a, b) => 
+      (a.initialRanking || 999) - (b.initialRanking || 999)
+    );
+
+    // Generate pairs based on sorted rankings
+    const pairs: { team1: Team; team2: Team }[] = [];
+    for (let i = 0; i < sortedTeams.length - 1; i += 2) {
+      if (i + 1 < sortedTeams.length) {
+        pairs.push({
+          team1: sortedTeams[i],
+          team2: sortedTeams[i + 1]
+        });
+      }
+    }
+
+    setSuggestedPairs(pairs);
+  };
+
+  useEffect(() => {
+    if (open && currentTournament) {
+      generateSuggestedPairs();
+    }
+  }, [open, selectedDivision, currentTournament]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +125,23 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
     onOpenChange(false);
   };
 
+  const scheduleAutoMatch = (team1: Team, team2: Team) => {
+    // Use the current date and time plus 1 hour for scheduling
+    const scheduledDateTime = new Date();
+    scheduledDateTime.setHours(scheduledDateTime.getHours() + 1);
+    
+    // Schedule the match
+    scheduleMatch(team1.id, team2.id, scheduledDateTime);
+    
+    toast({
+      title: "Match auto-scheduled",
+      description: `${team1.name} vs ${team2.name} has been scheduled`,
+    });
+    
+    // Refresh suggested pairs
+    generateSuggestedPairs();
+  };
+
   const resetForm = () => {
     setTeam1Id("");
     setTeam2Id("");
@@ -82,107 +164,209 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Schedule Match</DialogTitle>
           <DialogDescription>
-            Create a new match between two teams
+            Create or auto-schedule matches between teams
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="team1">Team 1</Label>
-            <Select value={team1Id} onValueChange={setTeam1Id} required>
-              <SelectTrigger id="team1">
-                <SelectValue placeholder="Select team 1" />
-              </SelectTrigger>
-              <SelectContent>
-                {currentTournament.teams.map((team: Team) => (
-                  <SelectItem key={team.id} value={team.id}>
-                    {team.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <Tabs defaultValue="manual" className="w-full">
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="manual">Manual Schedule</TabsTrigger>
+            <TabsTrigger value="auto">Auto Schedule</TabsTrigger>
+          </TabsList>
 
-          <div className="space-y-2">
-            <Label htmlFor="team2">Team 2</Label>
-            <Select value={team2Id} onValueChange={setTeam2Id} required>
-              <SelectTrigger id="team2">
-                <SelectValue placeholder="Select team 2" />
-              </SelectTrigger>
-              <SelectContent>
-                {currentTournament.teams.map((team: Team) => (
-                  <SelectItem 
-                    key={team.id} 
-                    value={team.id}
-                    disabled={team.id === team1Id}
-                  >
-                    {team.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="court">Court (Optional)</Label>
-            <Select value={courtId} onValueChange={setCourtId}>
-              <SelectTrigger id="court">
-                <SelectValue placeholder="Select court" />
-              </SelectTrigger>
-              <SelectContent>
-                {currentTournament.courts
-                  .filter((court) => court.status === "AVAILABLE")
-                  .map((court) => (
-                    <SelectItem key={court.id} value={court.id}>
-                      {court.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <div className="relative">
-                <Calendar className="absolute left-2 top-3 h-4 w-4 text-gray-500" />
-                <input
-                  type="date"
-                  id="date"
-                  value={scheduledDate}
-                  onChange={(e) => setScheduledDate(e.target.value)}
-                  className="pl-8 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  required
-                />
+          <TabsContent value="manual">
+            <form onSubmit={handleSubmit} className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="division">Division</Label>
+                <Select value={selectedDivision} onValueChange={setSelectedDivision}>
+                  <SelectTrigger id="division">
+                    <SelectValue placeholder="Select division" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="INITIAL">Initial Round</SelectItem>
+                    <SelectItem value="QUALIFIER_DIV1">Division 1 Qualifier</SelectItem>
+                    <SelectItem value="QUALIFIER_DIV2">Division 2 Qualifier</SelectItem>
+                    <SelectItem value="GROUP_DIV3">Division 3 Group</SelectItem>
+                    <SelectItem value="DIVISION_1">Division 1</SelectItem>
+                    <SelectItem value="DIVISION_2">Division 2</SelectItem>
+                    <SelectItem value="DIVISION_3">Division 3</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="time">Time</Label>
-              <input
-                type="time"
-                id="time"
-                value={scheduledTime}
-                onChange={(e) => setScheduledTime(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                required
-              />
-            </div>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="team1">Team 1</Label>
+                <Select value={team1Id} onValueChange={setTeam1Id} required>
+                  <SelectTrigger id="team1">
+                    <SelectValue placeholder="Select team 1" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currentTournament.teams.map((team: Team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <DialogFooter className="pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" className="bg-court-green hover:bg-court-green/90">
-              Schedule Match
-            </Button>
-          </DialogFooter>
-        </form>
+              <div className="space-y-2">
+                <Label htmlFor="team2">Team 2</Label>
+                <Select value={team2Id} onValueChange={setTeam2Id} required>
+                  <SelectTrigger id="team2">
+                    <SelectValue placeholder="Select team 2" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currentTournament.teams.map((team: Team) => (
+                      <SelectItem 
+                        key={team.id} 
+                        value={team.id}
+                        disabled={team.id === team1Id}
+                      >
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="court">Court (Optional)</Label>
+                <Select value={courtId} onValueChange={setCourtId}>
+                  <SelectTrigger id="court">
+                    <SelectValue placeholder="Select court" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currentTournament.courts
+                      .filter((court) => court.status === "AVAILABLE")
+                      .map((court) => (
+                        <SelectItem key={court.id} value={court.id}>
+                          {court.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date">Date</Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-2 top-3 h-4 w-4 text-gray-500" />
+                    <input
+                      type="date"
+                      id="date"
+                      value={scheduledDate}
+                      onChange={(e) => setScheduledDate(e.target.value)}
+                      className="pl-8 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="time">Time</Label>
+                  <input
+                    type="time"
+                    id="time"
+                    value={scheduledTime}
+                    onChange={(e) => setScheduledTime(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    required
+                  />
+                </div>
+              </div>
+
+              <DialogFooter className="pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-court-green hover:bg-court-green/90">
+                  Schedule Match
+                </Button>
+              </DialogFooter>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="auto">
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="auto-division">Division for Auto-Scheduling</Label>
+                <Select value={selectedDivision} onValueChange={(value) => {
+                  setSelectedDivision(value as Division);
+                  generateSuggestedPairs();
+                }}>
+                  <SelectTrigger id="auto-division">
+                    <SelectValue placeholder="Select division" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="INITIAL">Initial Round</SelectItem>
+                    <SelectItem value="QUALIFIER_DIV1">Division 1 Qualifier</SelectItem>
+                    <SelectItem value="QUALIFIER_DIV2">Division 2 Qualifier</SelectItem>
+                    <SelectItem value="GROUP_DIV3">Division 3 Group</SelectItem>
+                    <SelectItem value="DIVISION_1">Division 1</SelectItem>
+                    <SelectItem value="DIVISION_2">Division 2</SelectItem>
+                    <SelectItem value="DIVISION_3">Division 3</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="mt-4">
+                <h4 className="text-sm font-medium mb-2">Suggested Matches:</h4>
+                {suggestedPairs.length > 0 ? (
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {suggestedPairs.map((pair, index) => (
+                      <div key={index} className="flex items-center justify-between border rounded-md p-3">
+                        <div className="flex-1">
+                          <p className="font-medium">{pair.team1.name}</p>
+                          <p className="text-xs text-gray-500">Rank: {pair.team1.initialRanking || 'N/A'}</p>
+                        </div>
+                        <ArrowRight className="h-4 w-4 mx-2 text-gray-400" />
+                        <div className="flex-1">
+                          <p className="font-medium">{pair.team2.name}</p>
+                          <p className="text-xs text-gray-500">Rank: {pair.team2.initialRanking || 'N/A'}</p>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          className="ml-2 bg-court-green hover:bg-court-green/90"
+                          onClick={() => scheduleAutoMatch(pair.team1, pair.team2)}
+                        >
+                          Schedule
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 border rounded-md">
+                    <p className="text-gray-500">No suggested matches available for this division</p>
+                    <Button
+                      className="mt-4"
+                      variant="outline"
+                      onClick={generateSuggestedPairs}
+                    >
+                      <Wand2 className="h-4 w-4 mr-2" />
+                      Refresh Suggestions
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Close
+                </Button>
+              </DialogFooter>
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
