@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Match } from "@/types/tournament";
 import { MapPin, Clock, Calendar } from "lucide-react";
@@ -55,6 +54,11 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onSelect, mode = "full" })
   };
 
   const getStageBadge = () => {
+    // Don't show stage badge if division is INITIAL to avoid duplication
+    if (division === "INITIAL" && stage === "INITIAL_ROUND") {
+      return null;
+    }
+    
     switch (stage) {
       case "INITIAL_ROUND":
         return <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Initial Round</span>;
