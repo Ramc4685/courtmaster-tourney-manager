@@ -80,8 +80,10 @@ const Scoring = () => {
   );
 
   const handleSelectMatch = (match: Match) => {
-    setSelectedMatch(match);
-    setCurrentSet(match.scores.length > 0 ? match.scores.length - 1 : 0);
+    // Get the latest version of the match from the tournament
+    const latestMatch = currentTournament.matches.find(m => m.id === match.id) || match;
+    setSelectedMatch(latestMatch);
+    setCurrentSet(latestMatch.scores.length > 0 ? latestMatch.scores.length - 1 : 0);
     setActiveView("scoring");
   };
 
@@ -104,44 +106,40 @@ const Scoring = () => {
       scores = [{ team1Score: 0, team2Score: 0 }];
     }
     
-    let currentScore = scores[currentSet] || { team1Score: 0, team2Score: 0 };
-    let updatedScore;
+    const currentScore = scores[currentSet] || { team1Score: 0, team2Score: 0 };
+    let team1Score = currentScore.team1Score;
+    let team2Score = currentScore.team2Score;
     
     if (team === "team1") {
-      updatedScore = increment 
-        ? Math.min(scoringSettings.maxPoints + 10, currentScore.team1Score + 1) // Allow going beyond maxPoints for win by 2
-        : Math.max(0, currentScore.team1Score - 1);
-      
-      updateMatchScore(selectedMatch.id, updatedScore, currentScore.team2Score, currentSet);
+      team1Score = increment 
+        ? Math.min(scoringSettings.maxPoints + 10, team1Score + 1) // Allow going beyond maxPoints for win by 2
+        : Math.max(0, team1Score - 1);
     } else {
-      updatedScore = increment 
-        ? Math.min(scoringSettings.maxPoints + 10, currentScore.team2Score + 1) // Allow going beyond maxPoints for win by 2
-        : Math.max(0, currentScore.team2Score - 1);
-      
-      updateMatchScore(selectedMatch.id, currentScore.team1Score, updatedScore, currentSet);
+      team2Score = increment 
+        ? Math.min(scoringSettings.maxPoints + 10, team2Score + 1) // Allow going beyond maxPoints for win by 2
+        : Math.max(0, team2Score - 1);
     }
+    
+    // Call the updateMatchScore with all required parameters
+    updateMatchScore(selectedMatch.id, currentSet, team1Score, team2Score);
 
-    // Update our local selected match to reflect the new score
+    // Update our local selected match to reflect the new score immediately
+    const updatedScores = [...selectedMatch.scores];
+    if (updatedScores.length <= currentSet) {
+      while (updatedScores.length <= currentSet) {
+        updatedScores.push({ team1Score: 0, team2Score: 0 });
+      }
+    }
+    updatedScores[currentSet] = { team1Score, team2Score };
+    
     const updatedMatch = {
       ...selectedMatch,
-      scores: selectedMatch.scores.map((s, idx) => 
-        idx === currentSet 
-          ? team === "team1" 
-            ? { ...s, team1Score: updatedScore } 
-            : { ...s, team2Score: updatedScore }
-          : s
-      )
+      scores: updatedScores
     };
     setSelectedMatch(updatedMatch);
 
     // Check if this set is complete based on badminton rules
-    const updatedCurrentScore = {
-      team1Score: team === "team1" ? updatedScore : currentScore.team1Score,
-      team2Score: team === "team2" ? updatedScore : currentScore.team2Score
-    };
-    
-    // Check if set is complete according to badminton rules
-    if (isSetComplete(updatedCurrentScore.team1Score, updatedCurrentScore.team2Score, scoringSettings)) {
+    if (isSetComplete(team1Score, team2Score, scoringSettings)) {
       // Check if match is complete (e.g., best of 3 sets with 2 sets won)
       if (isMatchComplete(updatedMatch, scoringSettings)) {
         setCompleteMatchDialogOpen(true);
@@ -153,6 +151,15 @@ const Scoring = () => {
   };
 
   const handleStartMatch = (match: Match) => {
+    if (!match.courtNumber) {
+      toast({
+        title: "Court assignment required",
+        description: "A match must be assigned to a court before it can start.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     updateMatchStatus(match.id, "IN_PROGRESS");
     handleSelectMatch(match);
     toast({
@@ -184,16 +191,20 @@ const Scoring = () => {
       return;
     }
     
-    updateMatchScore(selectedMatch.id, 0, 0, newSetIndex);
+    // Initialize a new set with 0-0 score
+    updateMatchScore(selectedMatch.id, newSetIndex, 0, 0);
     
     // Update our local selected match to reflect the new set
+    const updatedScores = [...selectedMatch.scores, { team1Score: 0, team2Score: 0 }];
     const updatedMatch = {
       ...selectedMatch,
-      scores: [...selectedMatch.scores, { team1Score: 0, team2Score: 0 }]
+      scores: updatedScores
     };
     setSelectedMatch(updatedMatch);
     
     setCurrentSet(newSetIndex);
+    setNewSetDialogOpen(false);
+    
     toast({
       title: "New set started",
       description: `Set ${newSetIndex + 1} has been started.`

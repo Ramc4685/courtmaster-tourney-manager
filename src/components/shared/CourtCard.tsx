@@ -26,6 +26,21 @@ const CourtCard: React.FC<CourtCardProps> = ({ court, detailed = false }) => {
     }
   };
 
+  const getMatchStatusDisplay = (status: string) => {
+    switch (status) {
+      case "SCHEDULED":
+        return "Not Started";
+      case "IN_PROGRESS":
+        return "In Progress";
+      case "COMPLETED":
+        return "Completed";
+      case "CANCELLED":
+        return "Cancelled";
+      default:
+        return status;
+    }
+  };
+
   return (
     <Card className="overflow-hidden">
       <div className={`h-2 ${getStatusColor()}`} />
@@ -50,9 +65,11 @@ const CourtCard: React.FC<CourtCardProps> = ({ court, detailed = false }) => {
               <span className={`text-xs px-2 py-0.5 rounded-full ${
                 currentMatch.status === "IN_PROGRESS" 
                   ? "bg-green-100 text-green-800 animate-pulse" 
-                  : "bg-blue-100 text-blue-800"
+                  : currentMatch.status === "SCHEDULED"
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-gray-100 text-gray-800"
               }`}>
-                {currentMatch.status}
+                {getMatchStatusDisplay(currentMatch.status)}
               </span>
             </div>
             

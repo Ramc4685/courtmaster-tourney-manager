@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Match } from "@/types/tournament";
 import { MapPin, Clock, Calendar } from "lucide-react";
@@ -168,7 +169,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onSelect, mode = "full" })
         </span>
       </div>
       
-      {scores.length > 1 && (
+      {scores.length > 0 && (
         <div className="flex justify-center space-x-4 mt-3 text-sm text-gray-500">
           {scores.map((score, index) => (
             <div key={index} className="flex space-x-1">
