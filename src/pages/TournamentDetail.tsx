@@ -204,7 +204,7 @@ const TournamentDetail = () => {
       <TeamCreateDialog
         open={addTeamDialogOpen}
         onOpenChange={setAddTeamDialogOpen}
-        onCreateTeam={handleAddTeam}
+        onCreate={handleAddTeam}
       />
 
       <ImportTeamsDialog
@@ -216,7 +216,7 @@ const TournamentDetail = () => {
       <CourtCreateDialog
         open={addCourtDialogOpen}
         onOpenChange={setAddCourtDialogOpen}
-        onCreateCourt={handleAddCourt}
+        onCreate={handleAddCourt}
       />
 
       <MatchCreateDialog
