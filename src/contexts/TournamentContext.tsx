@@ -20,7 +20,7 @@ interface TournamentContextType {
   updateCourt: (court: Court) => void;
   assignCourt: (matchId: string, courtId: string) => void;
   updateMatchStatus: (matchId: string, status: MatchStatus) => void;
-  updateMatchScore: (matchId: string, team1Score: number, team2Score: number) => void;
+  updateMatchScore: (matchId: string, setIndex: number, team1Score: number, team2Score: number) => void;
   completeMatch: (matchId: string) => void;
   moveTeamToDivision: (teamId: string, fromDivision: Division, toDivision: Division) => void;
   loadSampleData: () => void;
@@ -239,28 +239,34 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     updateTournament(updatedTournament);
   };
 
-  // Update match score
-  const updateMatchScore = (matchId: string, team1Score: number, team2Score: number) => {
+  // Update match score - modified to accept setIndex parameter
+  const updateMatchScore = (matchId: string, setIndex: number, team1Score: number, team2Score: number) => {
     if (!currentTournament) return;
     
+    console.log(`Updating match ${matchId} score at set ${setIndex}: ${team1Score}-${team2Score}`);
+    
     const match = findMatchById(currentTournament, matchId);
-    if (!match) return;
+    if (!match) {
+      console.error("Match not found:", matchId);
+      return;
+    }
     
     const updatedScores = [...match.scores];
-    const currentSetIndex = updatedScores.length - 1;
     
-    if (currentSetIndex < 0 || updatedScores[currentSetIndex].team1Score >= 21 || updatedScores[currentSetIndex].team2Score >= 21) {
-      // Start a new set if needed
-      updatedScores.push({ team1Score, team2Score });
-    } else {
-      // Update current set
-      updatedScores[currentSetIndex] = { team1Score, team2Score };
+    // Ensure we have enough sets
+    while (updatedScores.length <= setIndex) {
+      updatedScores.push({ team1Score: 0, team2Score: 0 });
     }
+    
+    // Update the score at the specified index
+    updatedScores[setIndex] = { team1Score, team2Score };
     
     const updatedMatch = {
       ...match,
       scores: updatedScores
     };
+    
+    console.log("Updated match scores:", updatedScores);
     
     updateMatch(updatedMatch);
   };

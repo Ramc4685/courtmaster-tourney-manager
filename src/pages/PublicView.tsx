@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { RefreshCw, Award, Clock, Calendar } from "lucide-react";
@@ -15,9 +14,26 @@ import { format } from "date-fns";
 
 const PublicView = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
-  const { currentTournament } = useTournament();
+  const { currentTournament, tournaments } = useTournament();
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [refreshing, setRefreshing] = useState(false);
+  const [displayTournament, setDisplayTournament] = useState<any>(null);
+
+  useEffect(() => {
+    // If tournamentId is provided, find that specific tournament
+    if (tournamentId) {
+      const tournament = tournaments.find(t => t.id === tournamentId);
+      if (tournament) {
+        setDisplayTournament(tournament);
+        return;
+      }
+    }
+    
+    // Otherwise use the current tournament
+    if (currentTournament) {
+      setDisplayTournament(currentTournament);
+    }
+  }, [tournamentId, currentTournament, tournaments]);
 
   useEffect(() => {
     // Auto-refresh every 30 seconds
@@ -28,7 +44,7 @@ const PublicView = () => {
     return () => clearInterval(interval);
   }, []);
 
-  if (!currentTournament) {
+  if (!displayTournament) {
     return (
       <Layout>
         <div className="max-w-6xl mx-auto">
@@ -38,15 +54,15 @@ const PublicView = () => {
     );
   }
 
-  const inProgressMatches = currentTournament.matches.filter(
+  const inProgressMatches = displayTournament.matches.filter(
     (match) => match.status === "IN_PROGRESS"
   );
 
-  const completedMatches = currentTournament.matches.filter(
+  const completedMatches = displayTournament.matches.filter(
     (match) => match.status === "COMPLETED"
   );
 
-  const upcomingMatches = currentTournament.matches.filter(
+  const upcomingMatches = displayTournament.matches.filter(
     (match) => match.status === "SCHEDULED"
   ).sort((a, b) => {
     // Sort by scheduled time if available
@@ -134,7 +150,7 @@ const PublicView = () => {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">{currentTournament.name}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">{displayTournament.name}</h1>
             <p className="text-gray-500">
               Live Tournament Updates
             </p>
@@ -175,7 +191,7 @@ const PublicView = () => {
 
           <TabsContent value="courts">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {currentTournament.courts.map((court) => (
+              {displayTournament.courts.map((court) => (
                 <CourtCard key={court.id} court={court} detailed />
               ))}
             </div>
