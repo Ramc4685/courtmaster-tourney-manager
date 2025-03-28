@@ -10,6 +10,7 @@ export type Team = {
   id: string;
   name: string;
   players: Player[];
+  seed?: number; // For tournament seeding
 };
 
 export type Division = "GROUP" | "DIV1" | "DIV2" | "DIV3";
@@ -32,6 +33,9 @@ export type Match = {
   scheduledTime?: Date;
   status: MatchStatus;
   winner?: Team;
+  bracketRound?: number; // The round in the bracket (1, 2, 3, etc.)
+  bracketPosition?: number; // Position within the round
+  nextMatchId?: string; // ID of the next match (for advancement)
 };
 
 export type CourtStatus = "AVAILABLE" | "IN_USE" | "MAINTENANCE";
@@ -62,4 +66,5 @@ export type Tournament = {
   createdAt: Date;
   updatedAt: Date;
   divisionProgression?: boolean; // Whether to use the division progression system
+  autoAssignCourts?: boolean; // Whether to automatically assign available courts to scheduled matches
 };

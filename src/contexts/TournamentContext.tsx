@@ -9,6 +9,7 @@ interface TournamentContextType {
   updateTournament: (tournament: Tournament) => void;
   deleteTournament: (tournamentId: string) => void;
   addTeam: (team: Team) => void;
+  importTeams: (teams: Team[]) => void;
   updateMatch: (match: Match) => void;
   updateCourt: (court: Court) => void;
   assignCourt: (matchId: string, courtId: string) => void;
@@ -18,6 +19,8 @@ interface TournamentContextType {
   moveTeamToDivision: (teamId: string, fromDivision: Division, toDivision: Division) => void;
   loadSampleData: () => void;
   scheduleMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => void;
+  generateBracket: () => void;
+  autoAssignCourts: () => void;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -224,6 +227,19 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     const updatedTournament = {
       ...currentTournament,
       teams: [...currentTournament.teams, team],
+      updatedAt: new Date()
+    };
+    
+    updateTournament(updatedTournament);
+  };
+
+  // Import multiple teams at once
+  const importTeams = (teams: Team[]) => {
+    if (!currentTournament) return;
+    
+    const updatedTournament = {
+      ...currentTournament,
+      teams: [...currentTournament.teams, ...teams],
       updatedAt: new Date()
     };
     
@@ -537,7 +553,220 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     
     setCurrentTournament(sampleTournament);
   };
+  
+  // Generate a tournament bracket
+  const generateBracket = () => {
+    if (!currentTournament) return;
+    
+    // Only generate for single or double elimination formats
+    if (currentTournament.format !== "SINGLE_ELIMINATION" && currentTournament.format !== "DOUBLE_ELIMINATION") {
+      return;
+    }
+    
+    const teams = [...currentTournament.teams];
+    
+    // Need at least 2 teams to create a bracket
+    if (teams.length < 2) {
+      return;
+    }
+    
+    // For bracket generation, we need power of 2 number of slots
+    const nextPowerOf2 = Math.pow(2, Math.ceil(Math.log2(teams.length)));
+    
+    // Create "bye" placeholders if needed
+    const placeholderTeam: Team = {
+      id: "bye",
+      name: "BYE",
+      players: []
+    };
+    
+    // Seed the teams (simplified seeding)
+    teams.forEach((team, index) => {
+      team.seed = index + 1;
+    });
+    
+    // Sort teams by seed
+    teams.sort((a, b) => (a.seed || 999) - (b.seed || 999));
+    
+    // Fill with placeholders up to power of 2
+    while (teams.length < nextPowerOf2) {
+      teams.push(placeholderTeam);
+    }
+    
+    // Create the initial bracket matches
+    const bracketMatches: Match[] = [];
+    const roundCount = Math.log2(nextPowerOf2);
+    
+    // Create first round matches
+    for (let i = 0; i < nextPowerOf2 / 2; i++) {
+      // Implement proper seeding order for first round
+      let team1Index, team2Index;
+      
+      if (currentTournament.format === "SINGLE_ELIMINATION") {
+        // Standard bracket seeding (1 vs 16, 2 vs 15, etc. for 16 teams)
+        team1Index = i;
+        team2Index = nextPowerOf2 - 1 - i;
+      } else {
+        // Simple sequential pairing
+        team1Index = i * 2;
+        team2Index = i * 2 + 1;
+      }
+      
+      // Skip matches with both teams as placeholders
+      if (teams[team1Index].id === "bye" && teams[team2Index].id === "bye") {
+        continue;
+      }
+      
+      // If one team is a bye, the other automatically advances
+      const isBye = teams[team1Index].id === "bye" || teams[team2Index].id === "bye";
+      
+      const matchId = generateId();
+      const match: Match = {
+        id: matchId,
+        tournamentId: currentTournament.id,
+        team1: teams[team1Index],
+        team2: teams[team2Index],
+        scores: [{ team1Score: 0, team2Score: 0 }],
+        division: "GROUP" as Division,
+        status: isBye ? "COMPLETED" : "SCHEDULED",
+        bracketRound: 1,
+        bracketPosition: i + 1,
+      };
+      
+      // If it's a bye match, set winner automatically
+      if (isBye) {
+        match.winner = teams[team1Index].id === "bye" ? teams[team2Index] : teams[team1Index];
+      }
+      
+      bracketMatches.push(match);
+    }
+    
+    // Create subsequent round placeholders
+    for (let round = 2; round <= roundCount; round++) {
+      const matchesInRound = Math.pow(2, roundCount - round);
+      
+      for (let i = 0; i < matchesInRound; i++) {
+        const matchId = generateId();
+        
+        bracketMatches.push({
+          id: matchId,
+          tournamentId: currentTournament.id,
+          team1: { id: "tbd", name: "TBD", players: [] },
+          team2: { id: "tbd", name: "TBD", players: [] },
+          scores: [{ team1Score: 0, team2Score: 0 }],
+          division: "GROUP" as Division,
+          status: "SCHEDULED",
+          bracketRound: round,
+          bracketPosition: i + 1,
+        });
+      }
+    }
+    
+    // Connect matches by setting nextMatchId for advancement
+    for (let round = 1; round < roundCount; round++) {
+      const currentRoundMatches = bracketMatches.filter(m => m.bracketRound === round);
+      const nextRoundMatches = bracketMatches.filter(m => m.bracketRound === round + 1);
+      
+      currentRoundMatches.forEach((match, index) => {
+        const nextMatchIndex = Math.floor(index / 2);
+        if (nextRoundMatches[nextMatchIndex]) {
+          match.nextMatchId = nextRoundMatches[nextMatchIndex].id;
+        }
+      });
+    }
+    
+    // Handle automatic advancement for bye matches
+    bracketMatches.filter(m => m.status === "COMPLETED").forEach(match => {
+      if (match.nextMatchId && match.winner) {
+        const nextMatch = bracketMatches.find(m => m.id === match.nextMatchId);
+        if (nextMatch) {
+          // Place the winner in the correct slot of the next match
+          const isUpperBracket = match.bracketPosition % 2 !== 0;
+          if (isUpperBracket) {
+            nextMatch.team1 = match.winner;
+          } else {
+            nextMatch.team2 = match.winner;
+          }
+        }
+      }
+    });
+    
+    // Update the tournament with the new bracket
+    const updatedTournament = {
+      ...currentTournament,
+      matches: [...currentTournament.matches.filter(m => !m.bracketRound), ...bracketMatches],
+      updatedAt: new Date()
+    };
+    
+    updateTournament(updatedTournament);
+  };
+  
+  // Auto-assign available courts to scheduled matches
+  const autoAssignCourts = () => {
+    if (!currentTournament) return;
+    
+    const availableCourts = currentTournament.courts.filter(c => c.status === "AVAILABLE");
+    const scheduledMatches = currentTournament.matches.filter(
+      m => m.status === "SCHEDULED" && !m.courtNumber
+    );
+    
+    // Sort matches by scheduled time
+    scheduledMatches.sort((a, b) => {
+      if (!a.scheduledTime) return 1;
+      if (!b.scheduledTime) return -1;
+      return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
+    });
+    
+    // Assign courts to as many matches as possible
+    const updatedCourts = [...currentTournament.courts];
+    const updatedMatches = [...currentTournament.matches];
+    
+    let assignedCount = 0;
+    
+    for (let i = 0; i < Math.min(availableCourts.length, scheduledMatches.length); i++) {
+      const court = availableCourts[i];
+      const match = scheduledMatches[i];
+      
+      // Update the match
+      const matchIndex = updatedMatches.findIndex(m => m.id === match.id);
+      if (matchIndex >= 0) {
+        updatedMatches[matchIndex] = {
+          ...match,
+          courtNumber: court.number
+        };
+      }
+      
+      // Update the court
+      const courtIndex = updatedCourts.findIndex(c => c.id === court.id);
+      if (courtIndex >= 0) {
+        updatedCourts[courtIndex] = {
+          ...court,
+          status: "IN_USE" as CourtStatus,
+          currentMatch: {
+            ...match,
+            courtNumber: court.number
+          }
+        };
+      }
+      
+      assignedCount++;
+    }
+    
+    if (assignedCount > 0) {
+      const updatedTournament = {
+        ...currentTournament,
+        courts: updatedCourts,
+        matches: updatedMatches,
+        updatedAt: new Date()
+      };
+      
+      updateTournament(updatedTournament);
+    }
+    
+    return assignedCount;
+  };
 
+  // Complete a match
   const value = {
     tournaments,
     currentTournament,
@@ -546,6 +775,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     updateTournament,
     deleteTournament,
     addTeam,
+    importTeams,
     updateMatch,
     updateCourt,
     assignCourt,
@@ -554,7 +784,9 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     completeMatch,
     moveTeamToDivision,
     loadSampleData,
-    scheduleMatch
+    scheduleMatch,
+    generateBracket,
+    autoAssignCourts
   };
 
   return (

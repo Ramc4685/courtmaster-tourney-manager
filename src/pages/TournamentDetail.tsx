@@ -26,10 +26,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Trophy, Calendar, Users, Save, ArrowRight, Trash2, Clock } from "lucide-react";
+import { PlusCircle, Trophy, Calendar, Users, Save, ArrowRight, Trash2, Clock, FileUp, LayoutGrid, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { useTournament } from "@/contexts/TournamentContext";
 import Layout from "@/components/layout/Layout";
@@ -37,6 +35,8 @@ import PageHeader from "@/components/shared/PageHeader";
 import TeamList from "@/components/tournament/TeamList";
 import AddTeamDialog from "@/components/tournament/AddTeamDialog";
 import ScheduleMatchDialog from "@/components/tournament/ScheduleMatchDialog";
+import ImportTeamsDialog from "@/components/tournament/ImportTeamsDialog";
+import TournamentBracket from "@/components/tournament/TournamentBracket";
 import MatchCard from "@/components/shared/MatchCard";
 import { Team, Division, TournamentStatus, Match, MatchStatus } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
@@ -45,9 +45,10 @@ const TournamentDetail = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { tournaments, setCurrentTournament, updateTournament, deleteTournament } = useTournament();
+  const { tournaments, setCurrentTournament, updateTournament, deleteTournament, generateBracket, autoAssignCourts } = useTournament();
   const [showAddTeamDialog, setShowAddTeamDialog] = useState(false);
   const [showScheduleMatchDialog, setShowScheduleMatchDialog] = useState(false);
+  const [showImportTeamsDialog, setShowImportTeamsDialog] = useState(false);
 
   // Find the tournament by ID
   useEffect(() => {
@@ -115,7 +116,16 @@ const TournamentDetail = () => {
   };
 
   const handleStartTournament = () => {
-    // Update tournament status and generate initial matches
+    if (tournament.teams.length < 2) {
+      toast({
+        title: "Not enough teams",
+        description: "You need at least 2 teams to start a tournament",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Update tournament status
     const updatedTournament = {
       ...tournament,
       status: "IN_PROGRESS" as TournamentStatus,
@@ -123,10 +133,19 @@ const TournamentDetail = () => {
     
     updateTournament(updatedTournament);
     
-    toast({
-      title: "Tournament started",
-      description: "The tournament is now in progress",
-    });
+    // Generate bracket if it's an elimination tournament
+    if (tournament.format === "SINGLE_ELIMINATION" || tournament.format === "DOUBLE_ELIMINATION") {
+      generateBracket();
+      toast({
+        title: "Tournament started",
+        description: "The tournament bracket has been generated",
+      });
+    } else {
+      toast({
+        title: "Tournament started",
+        description: "The tournament is now in progress",
+      });
+    }
   };
 
   const handleDeleteTournament = () => {
@@ -138,10 +157,29 @@ const TournamentDetail = () => {
     navigate("/tournaments");
   };
 
+  const handleAutoAssignCourts = () => {
+    const assignedCount = autoAssignCourts();
+    
+    if (assignedCount > 0) {
+      toast({
+        title: "Courts assigned",
+        description: `Automatically assigned ${assignedCount} court(s) to scheduled matches`,
+      });
+    } else {
+      toast({
+        title: "No courts assigned",
+        description: "No available courts or scheduled matches without courts found",
+      });
+    }
+  };
+
   // Group matches by status
   const scheduledMatches = tournament.matches.filter(m => m.status === "SCHEDULED");
   const inProgressMatches = tournament.matches.filter(m => m.status === "IN_PROGRESS");
   const completedMatches = tournament.matches.filter(m => m.status === "COMPLETED");
+
+  // Check if the tournament has bracket rounds
+  const hasBracket = tournament.matches.some(m => m.bracketRound !== undefined);
 
   return (
     <Layout>
@@ -225,6 +263,7 @@ const TournamentDetail = () => {
         <Tabs defaultValue="teams" className="mt-6">
           <TabsList>
             <TabsTrigger value="teams">Teams</TabsTrigger>
+            <TabsTrigger value="bracket">Bracket</TabsTrigger>
             <TabsTrigger value="matches">Matches</TabsTrigger>
             <TabsTrigger value="courts">Courts</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -240,17 +279,73 @@ const TournamentDetail = () => {
                   </CardDescription>
                 </div>
                 {tournament.status === "DRAFT" && (
-                  <Button 
-                    onClick={() => setShowAddTeamDialog(true)}
-                    className="bg-court-green hover:bg-court-green/90"
-                  >
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Add Team
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button 
+                      onClick={() => setShowImportTeamsDialog(true)}
+                      variant="outline"
+                    >
+                      <FileUp className="h-4 w-4 mr-2" />
+                      Import Teams
+                    </Button>
+                    <Button 
+                      onClick={() => setShowAddTeamDialog(true)}
+                      className="bg-court-green hover:bg-court-green/90"
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Add Team
+                    </Button>
+                  </div>
                 )}
               </CardHeader>
               <CardContent>
                 <TeamList teams={tournament.teams} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="bracket" className="mt-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Tournament Bracket</CardTitle>
+                  <CardDescription>
+                    View the tournament bracket and progression
+                  </CardDescription>
+                </div>
+                {tournament.status === "IN_PROGRESS" && (tournament.format === "SINGLE_ELIMINATION" || tournament.format === "DOUBLE_ELIMINATION") && (
+                  <Button 
+                    onClick={() => generateBracket()}
+                    variant="outline"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Regenerate Bracket
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent>
+                {tournament.format !== "SINGLE_ELIMINATION" && tournament.format !== "DOUBLE_ELIMINATION" ? (
+                  <div className="text-center py-12">
+                    <LayoutGrid className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900">Bracket view not available</h3>
+                    <p className="mt-1 text-gray-500">
+                      Bracket view is only available for Single Elimination and Double Elimination tournaments.
+                    </p>
+                  </div>
+                ) : tournament.status === "DRAFT" ? (
+                  <div className="text-center py-12">
+                    <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900">Tournament not started</h3>
+                    <p className="mt-1 text-gray-500">
+                      The bracket will be generated when the tournament is started.
+                    </p>
+                  </div>
+                ) : (
+                  <TournamentBracket tournament={tournament} onMatchClick={(match) => {
+                    if (match.status !== "COMPLETED") {
+                      navigate(`/scoring/${tournament.id}`);
+                    }
+                  }} />
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -264,15 +359,26 @@ const TournamentDetail = () => {
                     View and manage tournament matches
                   </CardDescription>
                 </div>
-                {tournament.status !== "DRAFT" && (
-                  <Button 
-                    onClick={() => setShowScheduleMatchDialog(true)}
-                    className="bg-court-green hover:bg-court-green/90"
-                  >
-                    <Clock className="h-4 w-4 mr-2" />
-                    Schedule Match
-                  </Button>
-                )}
+                <div className="flex space-x-2">
+                  {tournament.status !== "DRAFT" && (
+                    <>
+                      <Button 
+                        onClick={handleAutoAssignCourts}
+                        variant="outline"
+                      >
+                        <LayoutGrid className="h-4 w-4 mr-2" />
+                        Auto-Assign Courts
+                      </Button>
+                      <Button 
+                        onClick={() => setShowScheduleMatchDialog(true)}
+                        className="bg-court-green hover:bg-court-green/90"
+                      >
+                        <Clock className="h-4 w-4 mr-2" />
+                        Schedule Match
+                      </Button>
+                    </>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {tournament.matches.length === 0 ? (
@@ -408,6 +514,12 @@ const TournamentDetail = () => {
       <ScheduleMatchDialog
         open={showScheduleMatchDialog}
         onOpenChange={setShowScheduleMatchDialog}
+        tournamentId={tournament.id}
+      />
+
+      <ImportTeamsDialog
+        open={showImportTeamsDialog}
+        onOpenChange={setShowImportTeamsDialog}
         tournamentId={tournament.id}
       />
     </Layout>
