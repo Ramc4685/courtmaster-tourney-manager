@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Calendar, ArrowRight, Wand2, Clock } from "lucide-react";
 import { format, addMinutes } from "date-fns";
@@ -160,15 +159,7 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
 
     // Get all available courts
     const availableCourts = currentTournament.courts.filter(c => c.status === "AVAILABLE");
-    if (availableCourts.length === 0) {
-      toast({
-        title: "No courts available",
-        description: "There are no available courts to schedule matches.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    
     // Parse the starting date and time
     const baseDateTime = new Date(`${autoScheduleDate}T${autoScheduleTime}`);
     
@@ -195,16 +186,19 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
       
       // Calculate match time - add match duration minutes for each group of matches
       // This is just an estimate for when courts might be available
-      const groupIndex = Math.floor(i / availableCourts.length);
+      const groupIndex = Math.floor(i / (availableCourts.length || 1));
       const matchTime = new Date(baseDateTime);
-      matchTime.setMinutes(matchTime.getMinutes() + (groupIndex * matchDuration));
+      matchTime.setMinutes(matchTime.getMinutes() + (groupIndex * matchDuration) + (i * 5));
       
+      // Don't assign a court for these matches
       scheduleMatch(team1.id, team2.id, matchTime);
       scheduledCount++;
     }
     
-    // Auto-assign courts for upcoming matches
-    autoAssignCourts();
+    // Auto-assign courts for upcoming matches if courts are available
+    if (availableCourts.length > 0) {
+      autoAssignCourts();
+    }
     
     toast({
       title: "Bulk scheduling complete",

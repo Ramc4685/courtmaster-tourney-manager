@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { 
@@ -7,7 +6,8 @@ import {
   Check, 
   RefreshCw, 
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  Settings 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -17,13 +17,19 @@ import Layout from "@/components/layout/Layout";
 import PageHeader from "@/components/shared/PageHeader";
 import MatchCard from "@/components/shared/MatchCard";
 import CourtCard from "@/components/shared/CourtCard";
+import ScoringSettings from "@/components/scoring/ScoringSettings";
 import { Match } from "@/types/tournament";
+import { useToast } from "@/hooks/use-toast";
 
 const Scoring = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const { currentTournament, updateMatchScore, updateMatchStatus, completeMatch } = useTournament();
+  const { toast } = useToast();
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [currentSet, setCurrentSet] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [maxPoints, setMaxPoints] = useState(21);
+  const [maxSets, setMaxSets] = useState(3);
 
   if (!currentTournament) {
     return (
@@ -56,42 +62,103 @@ const Scoring = () => {
     
     if (team === "team1") {
       updatedScore = increment 
-        ? Math.min(30, currentScore.team1Score + 1)
+        ? Math.min(maxPoints, currentScore.team1Score + 1)
         : Math.max(0, currentScore.team1Score - 1);
       updateMatchScore(selectedMatch.id, updatedScore, currentScore.team2Score);
     } else {
       updatedScore = increment 
-        ? Math.min(30, currentScore.team2Score + 1)
+        ? Math.min(maxPoints, currentScore.team2Score + 1)
         : Math.max(0, currentScore.team2Score - 1);
       updateMatchScore(selectedMatch.id, currentScore.team1Score, updatedScore);
+    }
+
+    // Check if this set is complete based on maxPoints
+    const updatedCurrentScore = {
+      team1Score: team === "team1" ? updatedScore : currentScore.team1Score,
+      team2Score: team === "team2" ? updatedScore : currentScore.team2Score
+    };
+    
+    // Check if either team has reached maxPoints and has a 2-point lead
+    if ((updatedCurrentScore.team1Score >= maxPoints && 
+        updatedCurrentScore.team1Score - updatedCurrentScore.team2Score >= 2) || 
+        (updatedCurrentScore.team2Score >= maxPoints && 
+        updatedCurrentScore.team2Score - updatedCurrentScore.team1Score >= 2)) {
+      
+      // If we've reached maxSets, complete the match
+      const team1Sets = selectedMatch.scores.filter(s => s.team1Score > s.team2Score).length + 
+        (updatedCurrentScore.team1Score > updatedCurrentScore.team2Score ? 1 : 0);
+      const team2Sets = selectedMatch.scores.filter(s => s.team2Score > s.team1Score).length + 
+        (updatedCurrentScore.team2Score > updatedCurrentScore.team1Score ? 1 : 0);
+      
+      if (team1Sets >= Math.ceil(maxSets/2) || team2Sets >= Math.ceil(maxSets/2)) {
+        toast({
+          title: "Match complete",
+          description: "Maximum sets reached. Match will be marked as complete."
+        });
+        handleCompleteMatch();
+      } else {
+        // Otherwise, start a new set
+        toast({
+          title: "Set complete",
+          description: "Starting a new set."
+        });
+        handleNewSet();
+      }
     }
   };
 
   const handleStartMatch = (match: Match) => {
     updateMatchStatus(match.id, "IN_PROGRESS");
     handleSelectMatch(match);
+    toast({
+      title: "Match started",
+      description: "The match has been started and is now in progress."
+    });
   };
 
   const handleCompleteMatch = () => {
     if (!selectedMatch) return;
     completeMatch(selectedMatch.id);
+    toast({
+      title: "Match completed",
+      description: "The match has been marked as complete."
+    });
     setSelectedMatch(null);
   };
 
   const handleNewSet = () => {
     if (!selectedMatch) return;
     const newSetIndex = selectedMatch.scores.length;
+    
+    if (newSetIndex >= maxSets) {
+      toast({
+        title: "Maximum sets reached",
+        description: `This match is limited to ${maxSets} sets.`
+      });
+      return;
+    }
+    
     updateMatchScore(selectedMatch.id, 0, 0);
     setCurrentSet(newSetIndex);
+    toast({
+      title: "New set started",
+      description: `Set ${newSetIndex + 1} has been started.`
+    });
   };
 
   return (
     <Layout>
       <div className="max-w-6xl mx-auto">
-        <PageHeader
-          title="Scoring Interface"
-          description="Manage live scoring for tournament matches"
-        />
+        <div className="flex justify-between items-center">
+          <PageHeader
+            title="Scoring Interface"
+            description="Manage live scoring for tournament matches"
+          />
+          <Button variant="outline" onClick={() => setSettingsOpen(true)} className="mr-2">
+            <Settings className="h-4 w-4 mr-2" />
+            Scoring Settings
+          </Button>
+        </div>
 
         <Tabs defaultValue="live" className="mt-6">
           <TabsList className="mb-4">
@@ -112,7 +179,7 @@ const Scoring = () => {
                       <div 
                         key={match.id}
                         onClick={() => handleSelectMatch(match)}
-                        className={`cursor-pointer ${selectedMatch?.id === match.id ? 'ring-2 ring-court-green' : ''}`}
+                        className={`cursor-pointer ${selectedMatch?.id === match.id ? 'ring-2 ring-court-green rounded-lg' : ''}`}
                       >
                         <MatchCard match={match} mode="compact" />
                       </div>
@@ -281,12 +348,22 @@ const Scoring = () => {
           <TabsContent value="courts">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {currentTournament.courts.map((court) => (
-                <CourtCard key={court.id} court={court} />
+                <CourtCard key={court.id} court={court} detailed />
               ))}
             </div>
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Scoring Settings Dialog */}
+      <ScoringSettings 
+        open={settingsOpen} 
+        onOpenChange={setSettingsOpen}
+        maxPoints={maxPoints}
+        setMaxPoints={setMaxPoints}
+        maxSets={maxSets}
+        setMaxSets={setMaxSets}
+      />
     </Layout>
   );
 };
