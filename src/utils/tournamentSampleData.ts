@@ -1,5 +1,6 @@
 
-import { Tournament, Team, Court, CourtStatus, TournamentFormat, TournamentStatus, TournamentStage } from "@/types/tournament";
+import { Tournament, Team, Court, CourtStatus, TournamentFormat, TournamentStatus, TournamentStage, ScoringSettings } from "@/types/tournament";
+import { getDefaultScoringSettings } from "./matchUtils";
 
 // Sample data generation helper
 export const createSampleData = (): Tournament => {
@@ -22,7 +23,7 @@ export const createSampleData = (): Tournament => {
     status: "AVAILABLE" as CourtStatus
   }));
 
-  // Create sample tournament
+  // Create sample tournament with badminton scoring settings
   return {
     id: "sampleTournament",
     name: "38-Team Multi-Stage Tournament",
@@ -38,6 +39,7 @@ export const createSampleData = (): Tournament => {
     createdAt: new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
     updatedAt: new Date(),
     divisionProgression: true,
-    autoAssignCourts: true
+    autoAssignCourts: true,
+    scoringSettings: getDefaultScoringSettings() // Add default badminton scoring settings
   };
 };

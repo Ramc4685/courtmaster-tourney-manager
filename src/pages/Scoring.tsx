@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { 
   PlusCircle, 
@@ -29,23 +30,33 @@ import PageHeader from "@/components/shared/PageHeader";
 import MatchCard from "@/components/shared/MatchCard";
 import CourtCard from "@/components/shared/CourtCard";
 import ScoringSettings from "@/components/scoring/ScoringSettings";
-import { Match } from "@/types/tournament";
+import { Match, ScoringSettings as ScoringSettingsType } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
+import { isSetComplete, isMatchComplete, getDefaultScoringSettings } from "@/utils/matchUtils";
 
 const Scoring = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
-  const { currentTournament, updateMatchScore, updateMatchStatus, completeMatch } = useTournament();
+  const { currentTournament, updateMatchScore, updateMatchStatus, completeMatch, updateTournament } = useTournament();
   const { toast } = useToast();
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [currentSet, setCurrentSet] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [maxPoints, setMaxPoints] = useState(21);
-  const [maxSets, setMaxSets] = useState(3);
+  
+  // Get scoring settings from tournament or use defaults
+  const [scoringSettings, setScoringSettings] = useState<ScoringSettingsType>(
+    currentTournament?.scoringSettings || getDefaultScoringSettings()
+  );
+  
+  // Update scoring settings when tournament changes
+  useEffect(() => {
+    if (currentTournament?.scoringSettings) {
+      setScoringSettings(currentTournament.scoringSettings);
+    }
+  }, [currentTournament]);
   
   // Confirmation dialogs
   const [newSetDialogOpen, setNewSetDialogOpen] = useState(false);
   const [completeMatchDialogOpen, setCompleteMatchDialogOpen] = useState(false);
-  const [pendingScore, setPendingScore] = useState<{team: "team1" | "team2", increment: boolean} | null>(null);
 
   if (!currentTournament) {
     return (
@@ -87,13 +98,13 @@ const Scoring = () => {
     
     if (team === "team1") {
       updatedScore = increment 
-        ? Math.min(maxPoints + 10, currentScore.team1Score + 1) // Allow going beyond maxPoints for win by 2
+        ? Math.min(scoringSettings.maxPoints + 10, currentScore.team1Score + 1) // Allow going beyond maxPoints for win by 2
         : Math.max(0, currentScore.team1Score - 1);
       
       updateMatchScore(selectedMatch.id, updatedScore, currentScore.team2Score);
     } else {
       updatedScore = increment 
-        ? Math.min(maxPoints + 10, currentScore.team2Score + 1) // Allow going beyond maxPoints for win by 2
+        ? Math.min(scoringSettings.maxPoints + 10, currentScore.team2Score + 1) // Allow going beyond maxPoints for win by 2
         : Math.max(0, currentScore.team2Score - 1);
       
       updateMatchScore(selectedMatch.id, currentScore.team1Score, updatedScore);
@@ -112,26 +123,19 @@ const Scoring = () => {
     };
     setSelectedMatch(updatedMatch);
 
-    // Check if this set is complete based on maxPoints
+    // Check if this set is complete based on badminton rules
     const updatedCurrentScore = {
       team1Score: team === "team1" ? updatedScore : currentScore.team1Score,
       team2Score: team === "team2" ? updatedScore : currentScore.team2Score
     };
     
-    // Check if either team has reached maxPoints and has a 2-point lead
-    if ((updatedCurrentScore.team1Score >= maxPoints && 
-        updatedCurrentScore.team1Score - updatedCurrentScore.team2Score >= 2) || 
-        (updatedCurrentScore.team2Score >= maxPoints && 
-        updatedCurrentScore.team2Score - updatedCurrentScore.team1Score >= 2)) {
-      
-      // If we've reached maxSets, ask for confirmation to complete the match
-      const team1Sets = updatedMatch.scores.filter(s => s.team1Score > s.team2Score).length;
-      const team2Sets = updatedMatch.scores.filter(s => s.team2Score > s.team1Score).length;
-      
-      if (team1Sets >= Math.ceil(maxSets/2) || team2Sets >= Math.ceil(maxSets/2)) {
+    // Check if set is complete according to badminton rules
+    if (isSetComplete(updatedCurrentScore.team1Score, updatedCurrentScore.team2Score, scoringSettings)) {
+      // Check if match is complete (e.g., best of 3 sets with 2 sets won)
+      if (isMatchComplete(updatedMatch, scoringSettings)) {
         setCompleteMatchDialogOpen(true);
       } else {
-        // Otherwise, ask for confirmation to start a new set
+        // Ask for confirmation to start a new set
         setNewSetDialogOpen(true);
       }
     }
@@ -160,10 +164,10 @@ const Scoring = () => {
     if (!selectedMatch) return;
     const newSetIndex = selectedMatch.scores.length;
     
-    if (newSetIndex >= maxSets) {
+    if (newSetIndex >= scoringSettings.maxSets) {
       toast({
         title: "Maximum sets reached",
-        description: `This match is limited to ${maxSets} sets.`
+        description: `This match is limited to ${scoringSettings.maxSets} sets.`
       });
       return;
     }
@@ -182,6 +186,21 @@ const Scoring = () => {
       title: "New set started",
       description: `Set ${newSetIndex + 1} has been started.`
     });
+  };
+  
+  const handleUpdateScoringSettings = (newSettings: ScoringSettingsType) => {
+    // Update local state
+    setScoringSettings(newSettings);
+    
+    // Update tournament settings
+    if (currentTournament) {
+      const updatedTournament = {
+        ...currentTournament,
+        scoringSettings: newSettings,
+        updatedAt: new Date()
+      };
+      updateTournament(updatedTournament);
+    }
   };
 
   // Determine the winner information for the confirmation dialog
@@ -425,10 +444,10 @@ const Scoring = () => {
       <ScoringSettings 
         open={settingsOpen} 
         onOpenChange={setSettingsOpen}
-        maxPoints={maxPoints}
-        setMaxPoints={setMaxPoints}
-        maxSets={maxSets}
-        setMaxSets={setMaxSets}
+        settings={scoringSettings}
+        onSettingsChange={handleUpdateScoringSettings}
+        title="Badminton Scoring Settings"
+        description="Configure badminton match scoring rules"
       />
 
       {/* New Set Confirmation Dialog */}

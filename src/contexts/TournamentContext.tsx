@@ -1,9 +1,8 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentStage } from "@/types/tournament";
+import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentStage, ScoringSettings } from "@/types/tournament";
 import { createSampleData } from "@/utils/tournamentSampleData";
 import { generateId, findMatchById, findCourtByNumber, updateMatchInTournament } from "@/utils/tournamentUtils";
-import { determineMatchWinnerAndLoser, updateBracketProgression } from "@/utils/matchUtils";
+import { determineMatchWinnerAndLoser, updateBracketProgression, getDefaultScoringSettings } from "@/utils/matchUtils";
 import { createInitialRoundMatches, createDivisionPlacementMatches, createPlayoffKnockoutMatches } from "@/utils/tournamentProgressionUtils";
 import { assignCourtToMatch, autoAssignCourts } from "@/utils/courtUtils";
 import { createMatch } from "@/utils/matchUtils";
@@ -273,8 +272,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     const match = findMatchById(currentTournament, matchId);
     if (!match) return;
     
+    // Get scoring settings from tournament or use defaults
+    const scoringSettings = currentTournament.scoringSettings || getDefaultScoringSettings();
+    
     // Determine winner based on scores
-    const result = determineMatchWinnerAndLoser(match);
+    const result = determineMatchWinnerAndLoser(match, scoringSettings);
     if (!result) return;
     
     const { winner, loser } = result;

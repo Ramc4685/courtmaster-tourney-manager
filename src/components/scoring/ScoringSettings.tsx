@@ -1,46 +1,49 @@
 
-import React, { useState } from "react";
-import { Trophy, Flag } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Trophy, Flag, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
+import { ScoringSettings as ScoringSettingsType } from "@/types/tournament";
+import { getDefaultScoringSettings } from "@/utils/matchUtils";
 
 interface ScoringSettingsProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  maxPoints: number;
-  setMaxPoints: (points: number) => void;
-  maxSets: number;
-  setMaxSets: (sets: number) => void;
+  settings: ScoringSettingsType;
+  onSettingsChange: (settings: ScoringSettingsType) => void;
+  title?: string;
+  description?: string;
 }
 
 const ScoringSettings: React.FC<ScoringSettingsProps> = ({
   open,
   onOpenChange,
-  maxPoints,
-  setMaxPoints,
-  maxSets,
-  setMaxSets
+  settings,
+  onSettingsChange,
+  title = "Scoring Settings",
+  description = "Configure match scoring rules"
 }) => {
   // Use local state to track changes before submitting
-  const [localMaxPoints, setLocalMaxPoints] = useState(maxPoints);
-  const [localMaxSets, setLocalMaxSets] = useState(maxSets);
+  const [localSettings, setLocalSettings] = useState<ScoringSettingsType>(
+    settings || getDefaultScoringSettings()
+  );
   
   // Reset local state when dialog opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
-      setLocalMaxPoints(maxPoints);
-      setLocalMaxSets(maxSets);
+      setLocalSettings(settings || getDefaultScoringSettings());
     }
-  }, [open, maxPoints, maxSets]);
+  }, [open, settings]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Basic validation
-    if (localMaxPoints < 1 || localMaxSets < 1) {
+    if (localSettings.maxPoints < 1 || localSettings.maxSets < 1) {
       toast({
         title: "Invalid settings",
         description: "Points per game and sets per match must be at least 1",
@@ -50,8 +53,7 @@ const ScoringSettings: React.FC<ScoringSettingsProps> = ({
     }
     
     // Update parent state
-    setMaxPoints(localMaxPoints);
-    setMaxSets(localMaxSets);
+    onSettingsChange(localSettings);
     
     toast({
       title: "Settings saved",
@@ -65,9 +67,9 @@ const ScoringSettings: React.FC<ScoringSettingsProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Scoring Settings</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Configure match scoring rules
+            {description}
           </DialogDescription>
         </DialogHeader>
 
@@ -82,14 +84,17 @@ const ScoringSettings: React.FC<ScoringSettingsProps> = ({
                 <Input
                   id="maxPoints"
                   type="number"
-                  value={localMaxPoints}
-                  onChange={(e) => setLocalMaxPoints(parseInt(e.target.value) || 21)}
+                  value={localSettings.maxPoints}
+                  onChange={(e) => setLocalSettings({
+                    ...localSettings,
+                    maxPoints: parseInt(e.target.value) || 21
+                  })}
                   min={1}
                   max={99}
                   className="w-24"
                 />
                 <p className="text-sm text-gray-500">
-                  Points needed to win a set (requires 2-point lead)
+                  Points needed to win a set
                 </p>
               </div>
             </div>
@@ -103,14 +108,37 @@ const ScoringSettings: React.FC<ScoringSettingsProps> = ({
                 <Input
                   id="maxSets"
                   type="number"
-                  value={localMaxSets}
-                  onChange={(e) => setLocalMaxSets(parseInt(e.target.value) || 3)}
+                  value={localSettings.maxSets}
+                  onChange={(e) => setLocalSettings({
+                    ...localSettings,
+                    maxSets: parseInt(e.target.value) || 3
+                  })}
                   min={1}
                   max={9}
                   className="w-24"
                 />
                 <p className="text-sm text-gray-500">
-                  Best of {localMaxSets} sets to win a match
+                  Best of {localSettings.maxSets} sets to win a match
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="twoPointLead" className="flex items-center">
+                <Check className="h-4 w-4 mr-2" />
+                Two-Point Lead Required
+              </Label>
+              <div className="flex items-center space-x-4">
+                <Switch
+                  id="twoPointLead"
+                  checked={localSettings.requireTwoPointLead}
+                  onCheckedChange={(checked) => setLocalSettings({
+                    ...localSettings,
+                    requireTwoPointLead: checked
+                  })}
+                />
+                <p className="text-sm text-gray-500">
+                  Player must win by 2 points (standard badminton rule)
                 </p>
               </div>
             </div>
@@ -120,7 +148,7 @@ const ScoringSettings: React.FC<ScoringSettingsProps> = ({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">
+            <Button type="submit" className="bg-court-green hover:bg-court-green/90">
               Save Settings
             </Button>
           </DialogFooter>

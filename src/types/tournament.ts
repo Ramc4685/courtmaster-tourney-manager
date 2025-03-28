@@ -58,6 +58,13 @@ export type TournamentFormat = "SINGLE_ELIMINATION" | "DOUBLE_ELIMINATION" | "RO
 
 export type TournamentStatus = "DRAFT" | "PUBLISHED" | "IN_PROGRESS" | "COMPLETED";
 
+// Added scoring settings to the Tournament type
+export type ScoringSettings = {
+  maxPoints: number;
+  maxSets: number;
+  requireTwoPointLead: boolean;
+};
+
 export type Tournament = {
   id: string;
   name: string;
@@ -74,6 +81,7 @@ export type Tournament = {
   updatedAt: Date;
   divisionProgression?: boolean; // Whether to use the division progression system
   autoAssignCourts?: boolean; // Whether to automatically assign available courts to scheduled matches
+  scoringSettings?: ScoringSettings; // Added scoring settings
 };
 
 // Groups for Division 3 group stage
