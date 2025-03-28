@@ -163,12 +163,6 @@ const TournamentDetail = () => {
               onScheduleDialogOpen={() => setScheduleDialogOpen(true)}
               onAdvanceToNextStage={advanceToNextStage}
             />
-            
-            {/* Add the new Score Entry Section */}
-            <ScoreEntrySection 
-              matches={currentTournament.matches} 
-              onMatchUpdate={updateMatch} 
-            />
           </TabsContent>
 
           <TabsContent value="teams" className="py-4">
@@ -180,6 +174,13 @@ const TournamentDetail = () => {
           </TabsContent>
 
           <TabsContent value="matches" className="py-4">
+            {/* Add the Score Entry Section before the matches table */}
+            <ScoreEntrySection 
+              matches={currentTournament.matches} 
+              onMatchUpdate={updateMatch} 
+            />
+            
+            {/* Render the matches tab */}
             {renderMatchesTab(
               currentTournament.matches,
               currentTournament.teams,

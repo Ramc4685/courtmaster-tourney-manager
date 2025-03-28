@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Match, Team } from "@/types/tournament";
-import { Edit, Save, Plus, Trash } from "lucide-react";
+import { Edit, Save, Plus, Trash, ClipboardEdit } from "lucide-react";
 import { determineMatchWinnerAndLoser, getDefaultScoringSettings } from "@/utils/matchUtils";
 
 interface ManualResultEntryProps {
@@ -82,8 +82,13 @@ const ManualResultEntry: React.FC<ManualResultEntryProps> = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Edit className="h-4 w-4 mr-1" /> Enter Result
+        <Button 
+          variant={match.status === "IN_PROGRESS" ? "default" : "outline"} 
+          size="sm" 
+          className={match.status === "IN_PROGRESS" ? "bg-court-green hover:bg-court-green/90" : ""}
+        >
+          <ClipboardEdit className="h-4 w-4 mr-1" /> 
+          {match.status === "COMPLETED" ? "Edit Result" : "Enter Score"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -140,7 +145,7 @@ const ManualResultEntry: React.FC<ManualResultEntryProps> = ({
         </div>
         
         <DialogFooter>
-          <Button onClick={handleComplete}>
+          <Button onClick={handleComplete} className="bg-court-green hover:bg-court-green/90">
             <Save className="h-4 w-4 mr-1" /> Save Result
           </Button>
         </DialogFooter>
