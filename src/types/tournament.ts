@@ -84,6 +84,11 @@ export type Tournament = {
   divisionProgression?: boolean; // Whether to use the division progression system
   autoAssignCourts?: boolean; // Whether to automatically assign available courts to scheduled matches
   scoringSettings?: ScoringSettings; // Added scoring settings
+  
+  // New properties for future Firebase/external database integration
+  ownerId?: string; // For user authentication and ownership
+  isPublic?: boolean; // Whether the tournament is publicly visible
+  metadata?: Record<string, any>; // For custom metadata and future extensibility
 };
 
 // Groups for Division 3 group stage

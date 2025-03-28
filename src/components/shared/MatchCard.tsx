@@ -29,6 +29,11 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onSelect, mode = "full" })
   };
 
   const getDivisionBadge = () => {
+    // Don't show division badge if it's INITIAL and stage is INITIAL_ROUND to avoid duplication
+    if (division === "INITIAL" && stage === "INITIAL_ROUND") {
+      return null;
+    }
+    
     switch (division) {
       case "DIVISION_1":
         return <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">Division 1</span>;
