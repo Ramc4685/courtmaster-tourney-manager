@@ -4,6 +4,7 @@ import { Tournament, Match } from '@/types/tournament';
 import { useTournament } from '@/contexts/TournamentContext';
 import { realtimeTournamentService } from '@/services/realtime/RealtimeTournamentService';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth/AuthContext';
 
 /**
  * A hook that combines the TournamentContext with real-time updates.
@@ -14,10 +15,12 @@ export const useRealtimeTournamentUpdates = (tournamentId?: string) => {
   const [inProgressMatches, setInProgressMatches] = useState<Match[]>([]);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const { toast } = useToast();
+  const { user, isAdmin } = useAuth();
 
   useEffect(() => {
     console.log(`[DEBUG] useRealtimeTournamentUpdates: Initializing with tournamentId=${tournamentId || 'undefined'}`);
     console.log(`[DEBUG] useRealtimeTournamentUpdates: Current tournament ID=${currentTournament?.id || 'null'}`);
+    console.log(`[DEBUG] useRealtimeTournamentUpdates: Current user=${user?.email || 'not logged in'}`);
     
     if (!tournamentId) {
       console.log(`[DEBUG] useRealtimeTournamentUpdates: No tournamentId provided, skipping subscriptions`);
@@ -98,12 +101,37 @@ export const useRealtimeTournamentUpdates = (tournamentId?: string) => {
       }
       setIsSubscribed(false);
     };
-  }, [tournamentId, currentTournament, updateTournament, toast]);
+  }, [tournamentId, currentTournament, updateTournament, toast, user]);
 
   // Function to publish updates to other clients
+  // Added permission check to ensure only authorized users can update
   const publishTournamentUpdate = (tournament: Tournament) => {
-    console.log(`[DEBUG] useRealtimeTournamentUpdates: Manually publishing tournament update for ${tournament.id}`);
+    console.log(`[DEBUG] useRealtimeTournamentUpdates: Attempting to publish tournament update for ${tournament.id}`);
+    
+    // Only allow updates if user is logged in and is admin of the tournament
+    if (!user) {
+      console.log(`[DEBUG] useRealtimeTournamentUpdates: Publishing failed - user not logged in`);
+      toast({
+        title: "Permission Denied",
+        description: "You must be logged in to make changes.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    if (!isAdmin(tournament.id)) {
+      console.log(`[DEBUG] useRealtimeTournamentUpdates: Publishing failed - user lacks permission`);
+      toast({
+        title: "Permission Denied",
+        description: "You don't have permission to update this tournament.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    console.log(`[DEBUG] useRealtimeTournamentUpdates: Publishing tournament update for ${tournament.id}`);
     realtimeTournamentService.publishTournamentUpdate(tournament);
+    return true;
   };
 
   return {

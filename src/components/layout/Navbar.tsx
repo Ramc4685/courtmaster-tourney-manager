@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { MenuIcon, Trophy, User, Settings } from "lucide-react";
+import { LogIn, MenuIcon, Trophy, User } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -9,9 +9,13 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useTournament } from "@/contexts/TournamentContext";
+import { useAuth } from "@/contexts/auth/AuthContext";
+import UserMenu from "@/components/auth/UserMenu";
+import AuthDialog from "@/components/auth/AuthDialog";
 
 const Navbar: React.FC = () => {
   const { currentTournament } = useTournament();
+  const { user } = useAuth();
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -43,24 +47,36 @@ const Navbar: React.FC = () => {
             <Link to="/public" className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
               Public View
             </Link>
-            <Link to="/admin" className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
-              Admin
-            </Link>
+            {user && user.role === 'admin' && (
+              <Link to="/admin" className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
+                Admin
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center space-x-2">
-            <Link to="/profile">
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <User className="h-5 w-5" />
-                <span className="sr-only">Profile</span>
-              </Button>
-            </Link>
-            <Link to="/settings">
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Settings className="h-5 w-5" />
-                <span className="sr-only">Settings</span>
-              </Button>
-            </Link>
+            {user ? (
+              // Show user menu if logged in
+              <UserMenu />
+            ) : (
+              // Show login button if not logged in
+              <AuthDialog>
+                <Button variant="outline" size="sm" className="hidden md:flex">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Sign In
+                </Button>
+              </AuthDialog>
+            )}
+
+            {/* Show profile link if logged in */}
+            {user && (
+              <Link to="/profile" className="hidden md:block">
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <User className="h-5 w-5" />
+                  <span className="sr-only">Profile</span>
+                </Button>
+              </Link>
+            )}
 
             {/* Mobile Menu */}
             <Sheet>
@@ -84,9 +100,25 @@ const Navbar: React.FC = () => {
                   <Link to="/public" className="text-lg font-medium">
                     Public View
                   </Link>
-                  <Link to="/admin" className="text-lg font-medium">
-                    Admin
-                  </Link>
+                  
+                  {user && user.role === 'admin' && (
+                    <Link to="/admin" className="text-lg font-medium">
+                      Admin
+                    </Link>
+                  )}
+                  
+                  {user ? (
+                    <Link to="/profile" className="text-lg font-medium">
+                      Profile
+                    </Link>
+                  ) : (
+                    <AuthDialog>
+                      <Button className="w-full">
+                        <LogIn className="h-4 w-4 mr-2" />
+                        Sign In
+                      </Button>
+                    </AuthDialog>
+                  )}
                 </nav>
               </SheetContent>
             </Sheet>
