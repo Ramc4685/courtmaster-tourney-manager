@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
-import { Calendar, ArrowRight, Wand2 } from "lucide-react";
-import { format } from "date-fns";
+import { Calendar, ArrowRight, Wand2, Clock } from "lucide-react";
+import { format, addMinutes } from "date-fns";
 import { useTournament } from "@/contexts/TournamentContext";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Team, Division, TournamentStage } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 
 interface ScheduleMatchDialogProps {
   open: boolean;
@@ -22,7 +23,7 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
   onOpenChange,
   tournamentId,
 }) => {
-  const { currentTournament, scheduleMatch } = useTournament();
+  const { currentTournament, scheduleMatch, autoAssignCourts } = useTournament();
   const { toast } = useToast();
   const [team1Id, setTeam1Id] = useState<string>("");
   const [team2Id, setTeam2Id] = useState<string>("");
@@ -33,6 +34,11 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
   const [scheduledTime, setScheduledTime] = useState<string>("12:00");
   const [selectedDivision, setSelectedDivision] = useState<Division>("INITIAL");
   const [suggestedPairs, setSuggestedPairs] = useState<{ team1: Team; team2: Team }[]>([]);
+  const [autoScheduleDate, setAutoScheduleDate] = useState<string>(
+    format(new Date(), "yyyy-MM-dd")
+  );
+  const [autoScheduleTime, setAutoScheduleTime] = useState<string>("12:00");
+  const [matchDuration, setMatchDuration] = useState<number>(60); // Default match duration in minutes
 
   useEffect(() => {
     // Set the appropriate division based on the tournament's current stage
@@ -76,15 +82,15 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
       (a.initialRanking || 999) - (b.initialRanking || 999)
     );
 
-    // Generate pairs based on sorted rankings
+    // Generate pairs based on sorted rankings (highest vs lowest)
     const pairs: { team1: Team; team2: Team }[] = [];
-    for (let i = 0; i < sortedTeams.length - 1; i += 2) {
-      if (i + 1 < sortedTeams.length) {
-        pairs.push({
-          team1: sortedTeams[i],
-          team2: sortedTeams[i + 1]
-        });
-      }
+    const halfLength = Math.floor(sortedTeams.length / 2);
+    
+    for (let i = 0; i < halfLength; i++) {
+      pairs.push({
+        team1: sortedTeams[i], // Top ranked team
+        team2: sortedTeams[sortedTeams.length - 1 - i] // Bottom ranked team
+      });
     }
 
     setSuggestedPairs(pairs);
@@ -142,6 +148,76 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
     generateSuggestedPairs();
   };
 
+  const scheduleAllMatches = () => {
+    if (!currentTournament || suggestedPairs.length === 0) {
+      toast({
+        title: "No matches to schedule",
+        description: "There are no available matches to schedule.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Get all available courts
+    const availableCourts = currentTournament.courts.filter(c => c.status === "AVAILABLE");
+    if (availableCourts.length === 0) {
+      toast({
+        title: "No courts available",
+        description: "There are no available courts to schedule matches.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Parse the starting date and time
+    const baseDateTime = new Date(`${autoScheduleDate}T${autoScheduleTime}`);
+    
+    // Schedule as many matches as possible
+    let scheduledCount = 0;
+    const maxInitialMatches = Math.min(availableCourts.length, suggestedPairs.length);
+    
+    // First, schedule matches on all available courts
+    for (let i = 0; i < maxInitialMatches; i++) {
+      const { team1, team2 } = suggestedPairs[i];
+      const courtId = availableCourts[i].id;
+      
+      // Calculate match time (staggered by 5 minutes to prevent exact same time)
+      const matchTime = new Date(baseDateTime);
+      matchTime.setMinutes(matchTime.getMinutes() + (i * 5));
+      
+      scheduleMatch(team1.id, team2.id, matchTime, courtId);
+      scheduledCount++;
+    }
+    
+    // Then, create additional scheduled matches that will be assigned to courts as they become available
+    for (let i = maxInitialMatches; i < suggestedPairs.length; i++) {
+      const { team1, team2 } = suggestedPairs[i];
+      
+      // Calculate match time - add match duration minutes for each group of matches
+      // This is just an estimate for when courts might be available
+      const groupIndex = Math.floor(i / availableCourts.length);
+      const matchTime = new Date(baseDateTime);
+      matchTime.setMinutes(matchTime.getMinutes() + (groupIndex * matchDuration));
+      
+      scheduleMatch(team1.id, team2.id, matchTime);
+      scheduledCount++;
+    }
+    
+    // Auto-assign courts for upcoming matches
+    autoAssignCourts();
+    
+    toast({
+      title: "Bulk scheduling complete",
+      description: `Successfully scheduled ${scheduledCount} matches.`,
+    });
+    
+    // Refresh suggested pairs
+    generateSuggestedPairs();
+    
+    // Close the dialog
+    onOpenChange(false);
+  };
+
   const resetForm = () => {
     setTeam1Id("");
     setTeam2Id("");
@@ -168,7 +244,7 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="manual" className="w-full">
+        <Tabs defaultValue="auto" className="w-full">
           <TabsList className="grid grid-cols-2 mb-4">
             <TabsTrigger value="manual">Manual Schedule</TabsTrigger>
             <TabsTrigger value="auto">Auto Schedule</TabsTrigger>
@@ -321,11 +397,59 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
                 </Select>
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="auto-date">Start Date</Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-2 top-3 h-4 w-4 text-gray-500" />
+                    <input
+                      type="date"
+                      id="auto-date"
+                      value={autoScheduleDate}
+                      onChange={(e) => setAutoScheduleDate(e.target.value)}
+                      className="pl-8 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="auto-time">Start Time</Label>
+                  <input
+                    type="time"
+                    id="auto-time"
+                    value={autoScheduleTime}
+                    onChange={(e) => setAutoScheduleTime(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="match-duration">Match Duration (minutes)</Label>
+                <div className="relative">
+                  <Clock className="absolute left-2 top-3 h-4 w-4 text-gray-500" />
+                  <Input
+                    id="match-duration"
+                    type="number"
+                    value={matchDuration}
+                    onChange={(e) => setMatchDuration(parseInt(e.target.value) || 60)}
+                    className="pl-8"
+                    min={30}
+                    max={180}
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  This helps schedule future matches when courts become available
+                </p>
+              </div>
+
               <div className="mt-4">
-                <h4 className="text-sm font-medium mb-2">Suggested Matches:</h4>
+                <h4 className="text-sm font-medium mb-2">Suggested Matches ({suggestedPairs.length}):</h4>
                 {suggestedPairs.length > 0 ? (
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                    {suggestedPairs.map((pair, index) => (
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {suggestedPairs.slice(0, 5).map((pair, index) => (
                       <div key={index} className="flex items-center justify-between border rounded-md p-3">
                         <div className="flex-1">
                           <p className="font-medium">{pair.team1.name}</p>
@@ -336,15 +460,13 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
                           <p className="font-medium">{pair.team2.name}</p>
                           <p className="text-xs text-gray-500">Rank: {pair.team2.initialRanking || 'N/A'}</p>
                         </div>
-                        <Button 
-                          size="sm" 
-                          className="ml-2 bg-court-green hover:bg-court-green/90"
-                          onClick={() => scheduleAutoMatch(pair.team1, pair.team2)}
-                        >
-                          Schedule
-                        </Button>
                       </div>
                     ))}
+                    {suggestedPairs.length > 5 && (
+                      <p className="text-center text-sm text-gray-500 py-2">
+                        And {suggestedPairs.length - 5} more matches...
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8 border rounded-md">
@@ -361,13 +483,32 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
                 )}
               </div>
 
+              <div className="mt-6">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm">
+                    Available Courts: <span className="font-medium">{currentTournament.courts.filter(c => c.status === "AVAILABLE").length}</span>
+                  </p>
+                  <p className="text-sm">
+                    Matches to Schedule: <span className="font-medium">{suggestedPairs.length}</span>
+                  </p>
+                </div>
+              </div>
+
               <DialogFooter className="pt-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => onOpenChange(false)}
                 >
-                  Close
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-court-green hover:bg-court-green/90"
+                  onClick={scheduleAllMatches}
+                  disabled={suggestedPairs.length === 0}
+                >
+                  <Wand2 className="h-4 w-4 mr-2" />
+                  Auto Schedule All Matches
                 </Button>
               </DialogFooter>
             </div>
