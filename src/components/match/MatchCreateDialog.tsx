@@ -24,13 +24,13 @@ import { useTournament } from "@/contexts/TournamentContext";
 interface MatchCreateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreate: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => void;
+  onCreateMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => void;
 }
 
 const MatchCreateDialog: React.FC<MatchCreateDialogProps> = ({
   open,
   onOpenChange,
-  onCreate
+  onCreateMatch
 }) => {
   const { currentTournament } = useTournament();
   const [team1Id, setTeam1Id] = useState("");
@@ -53,7 +53,7 @@ const MatchCreateDialog: React.FC<MatchCreateDialogProps> = ({
     
     // Call onCreate with the selected values
     // Only pass courtId if it's not "none" (our special value for no court)
-    onCreate(team1Id, team2Id, scheduledDateTime, courtId !== "none" ? courtId : undefined);
+    onCreateMatch(team1Id, team2Id, scheduledDateTime, courtId !== "none" ? courtId : undefined);
   };
 
   const availableTeams = currentTournament?.teams || [];

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -211,6 +210,7 @@ const TournamentDetail = () => {
         open={importTeamsDialogOpen}
         onOpenChange={setImportTeamsDialogOpen}
         onImportTeams={handleImportTeams}
+        tournamentId={currentTournament.id}
       />
 
       <CourtCreateDialog

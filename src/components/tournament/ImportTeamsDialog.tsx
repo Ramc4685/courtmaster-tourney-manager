@@ -13,12 +13,14 @@ import { FileUp, AlertCircle } from "lucide-react";
 interface ImportTeamsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onImportTeams: (teams: Omit<Team, "id">[]) => void;
   tournamentId: string;
 }
 
 const ImportTeamsDialog: React.FC<ImportTeamsDialogProps> = ({
   open,
   onOpenChange,
+  onImportTeams,
   tournamentId,
 }) => {
   const { toast } = useToast();
@@ -124,7 +126,7 @@ const ImportTeamsDialog: React.FC<ImportTeamsDialogProps> = ({
     }
     
     try {
-      importTeams(teams);
+      onImportTeams(teams);
       
       toast({
         title: "Teams imported",
