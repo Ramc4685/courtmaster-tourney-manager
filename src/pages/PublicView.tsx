@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { RefreshCw, Award, Clock, Calendar } from "lucide-react";
@@ -117,6 +118,21 @@ const PublicView = () => {
     }, 500);
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "SCHEDULED":
+        return "Not Started";
+      case "IN_PROGRESS":
+        return "In Progress";
+      case "COMPLETED":
+        return "Completed";
+      case "CANCELLED":
+        return "Cancelled";
+      default:
+        return status;
+    }
+  };
+
   const renderMatchesByDivision = (matches: Match[]) => {
     const grouped = groupByDivision(matches);
     
@@ -130,14 +146,19 @@ const PublicView = () => {
           {divMatches.map((match) => (
             <div key={match.id} className="border rounded-lg p-4">
               <MatchCard key={match.id} match={match} />
-              {match.scheduledTime && (
-                <div className="mt-2 text-sm text-gray-500 flex items-center">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  <span>{format(new Date(match.scheduledTime), "MMM d, yyyy")}</span>
-                  <Clock className="h-4 w-4 ml-3 mr-1" />
-                  <span>{format(new Date(match.scheduledTime), "h:mm a")}</span>
-                </div>
-              )}
+              <div className="mt-2 flex justify-between">
+                {match.scheduledTime && (
+                  <div className="text-sm text-gray-500 flex items-center">
+                    <Calendar className="h-4 w-4 mr-1" />
+                    <span>{format(new Date(match.scheduledTime), "MMM d, yyyy")}</span>
+                    <Clock className="h-4 w-4 ml-3 mr-1" />
+                    <span>{format(new Date(match.scheduledTime), "h:mm a")}</span>
+                  </div>
+                )}
+                <Badge variant={match.status === "IN_PROGRESS" ? "secondary" : "outline"}>
+                  {getStatusLabel(match.status)}
+                </Badge>
+              </div>
             </div>
           ))}
         </div>

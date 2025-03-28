@@ -286,6 +286,8 @@ const Scoring = () => {
                           size="sm"
                           className="bg-court-green hover:bg-court-green/90"
                           onClick={() => handleStartMatch(match)}
+                          disabled={!match.courtNumber}
+                          title={!match.courtNumber ? "Assign a court first" : "Start match"}
                         >
                           Start Match
                         </Button>

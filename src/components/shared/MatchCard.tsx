@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Match } from "@/types/tournament";
 import { MapPin, Clock, Calendar } from "lucide-react";
@@ -16,9 +15,9 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onSelect, mode = "full" })
   const getStatusBadge = () => {
     switch (status) {
       case "SCHEDULED":
-        return <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Scheduled</span>;
+        return <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Not Started</span>;
       case "IN_PROGRESS":
-        return <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full animate-pulse">Live</span>;
+        return <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full animate-pulse">In Progress</span>;
       case "COMPLETED":
         return <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Completed</span>;
       case "CANCELLED":
