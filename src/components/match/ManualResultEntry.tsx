@@ -57,7 +57,7 @@ const ManualResultEntry: React.FC<ManualResultEntryProps> = ({
 
   const handleComplete = () => {
     // Use the scoring settings from the tournament or default
-    const scoringSettings = match.tournament?.scoringSettings || getDefaultScoringSettings();
+    const scoringSettings = getDefaultScoringSettings();
     
     // Create updated match with new scores
     const updatedMatch = {

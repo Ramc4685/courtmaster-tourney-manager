@@ -31,7 +31,9 @@ const TournamentDetail = () => {
     updateMatch,
     assignCourt,
     scheduleMatch,
-    autoAssignCourts
+    autoAssignCourts,
+    generateMultiStageTournament,
+    advanceToNextStage
   } = useTournament();
 
   const [activeTab, setActiveTab] = useState("overview");
@@ -39,6 +41,7 @@ const TournamentDetail = () => {
   const [importTeamsDialogOpen, setImportTeamsDialogOpen] = useState(false);
   const [addCourtDialogOpen, setAddCourtDialogOpen] = useState(false);
   const [addMatchDialogOpen, setAddMatchDialogOpen] = useState(false);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
 
   useEffect(() => {
     // Set the current tournament based on the URL parameter if it's not already set
@@ -63,17 +66,25 @@ const TournamentDetail = () => {
     );
   }
 
-  const handleAddTeam = (team: Team) => {
+  const handleAddTeam = (newTeam: Omit<Team, "id">) => {
+    const team = { ...newTeam, id: crypto.randomUUID() } as Team;
     addTeam(team);
     setAddTeamDialogOpen(false);
   };
 
-  const handleImportTeams = (teams: Team[]) => {
+  const handleImportTeams = (newTeams: Omit<Team, "id">[]) => {
+    const teams = newTeams.map(team => ({ ...team, id: crypto.randomUUID() } as Team));
     importTeams(teams);
     setImportTeamsDialogOpen(false);
   };
 
-  const handleAddCourt = (court: Court) => {
+  const handleAddCourt = (newCourt: Omit<Court, "id" | "status">) => {
+    const court = { 
+      ...newCourt, 
+      id: crypto.randomUUID(),
+      status: "AVAILABLE" 
+    } as Court;
+    
     const updatedTournament = {
       ...currentTournament,
       courts: [...currentTournament.courts, court]
@@ -96,6 +107,32 @@ const TournamentDetail = () => {
     }
   };
 
+  const handleTeamUpdate = (team: Team) => {
+    const updatedTeams = currentTournament.teams.map(t => 
+      t.id === team.id ? team : t
+    );
+    
+    const updatedTournament = {
+      ...currentTournament,
+      teams: updatedTeams
+    };
+    
+    updateTournament(updatedTournament);
+  };
+
+  const handleCourtUpdate = (court: Court) => {
+    const updatedCourts = currentTournament.courts.map(c => 
+      c.id === court.id ? court : c
+    );
+    
+    const updatedTournament = {
+      ...currentTournament,
+      courts: updatedCourts
+    };
+    
+    updateTournament(updatedTournament);
+  };
+
   const isUserAdmin = user ? user.role === 'admin' : false;
 
   return (
@@ -103,8 +140,8 @@ const TournamentDetail = () => {
       <div className="container mx-auto py-6 space-y-8">
         <TournamentHeader
           tournament={currentTournament}
-          onAddTeamClick={() => setAddTeamDialogOpen(true)}
-          onImportTeamsClick={() => setImportTeamsDialogOpen(true)}
+          updateTournament={updateTournament}
+          deleteTournament={() => {}} // This will be implemented later
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -120,15 +157,18 @@ const TournamentDetail = () => {
             <OverviewTab
               tournament={currentTournament}
               onUpdateTournament={updateTournament}
+              onAutoAssignCourts={handleAutoSchedule}
+              onGenerateMultiStageTournament={generateMultiStageTournament}
+              onScheduleDialogOpen={() => setScheduleDialogOpen(true)}
+              onAdvanceToNextStage={advanceToNextStage}
             />
           </TabsContent>
 
           <TabsContent value="teams" className="py-4">
             <TeamsTab
               teams={currentTournament.teams}
+              onTeamUpdate={handleTeamUpdate}
               onAddTeamClick={() => setAddTeamDialogOpen(true)}
-              onImportTeamsClick={() => setImportTeamsDialogOpen(true)}
-              isAdmin={isUserAdmin}
             />
           </TabsContent>
 
@@ -147,8 +187,8 @@ const TournamentDetail = () => {
           <TabsContent value="courts" className="py-4">
             <CourtsTab
               courts={currentTournament.courts}
+              onCourtUpdate={handleCourtUpdate}
               onAddCourtClick={() => setAddCourtDialogOpen(true)}
-              isAdmin={isUserAdmin}
             />
           </TabsContent>
 
@@ -164,27 +204,25 @@ const TournamentDetail = () => {
       <TeamCreateDialog
         open={addTeamDialogOpen}
         onOpenChange={setAddTeamDialogOpen}
-        onSubmit={handleAddTeam}
+        onCreateTeam={handleAddTeam}
       />
 
       <ImportTeamsDialog
         open={importTeamsDialogOpen}
         onOpenChange={setImportTeamsDialogOpen}
-        onImport={handleImportTeams}
+        onImportTeams={handleImportTeams}
       />
 
       <CourtCreateDialog
         open={addCourtDialogOpen}
         onOpenChange={setAddCourtDialogOpen}
-        onSubmit={handleAddCourt}
+        onCreateCourt={handleAddCourt}
       />
 
       <MatchCreateDialog
         open={addMatchDialogOpen}
         onOpenChange={setAddMatchDialogOpen}
-        teams={currentTournament.teams}
-        courts={currentTournament.courts}
-        onSubmit={handleCreateMatch}
+        onCreateMatch={handleCreateMatch}
       />
     </Layout>
   );
