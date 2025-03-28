@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { 
@@ -8,11 +7,22 @@ import {
   RefreshCw, 
   ChevronLeft, 
   ChevronRight,
-  Settings 
+  Settings,
+  AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useTournament } from "@/contexts/TournamentContext";
 import Layout from "@/components/layout/Layout";
 import PageHeader from "@/components/shared/PageHeader";
@@ -31,6 +41,11 @@ const Scoring = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [maxPoints, setMaxPoints] = useState(21);
   const [maxSets, setMaxSets] = useState(3);
+  
+  // Confirmation dialogs
+  const [newSetDialogOpen, setNewSetDialogOpen] = useState(false);
+  const [completeMatchDialogOpen, setCompleteMatchDialogOpen] = useState(false);
+  const [pendingScore, setPendingScore] = useState<{team: "team1" | "team2", increment: boolean} | null>(null);
 
   if (!currentTournament) {
     return (
@@ -109,23 +124,15 @@ const Scoring = () => {
         (updatedCurrentScore.team2Score >= maxPoints && 
         updatedCurrentScore.team2Score - updatedCurrentScore.team1Score >= 2)) {
       
-      // If we've reached maxSets, complete the match
+      // If we've reached maxSets, ask for confirmation to complete the match
       const team1Sets = updatedMatch.scores.filter(s => s.team1Score > s.team2Score).length;
       const team2Sets = updatedMatch.scores.filter(s => s.team2Score > s.team1Score).length;
       
       if (team1Sets >= Math.ceil(maxSets/2) || team2Sets >= Math.ceil(maxSets/2)) {
-        toast({
-          title: "Match complete",
-          description: "Maximum sets reached. Match will be marked as complete."
-        });
-        handleCompleteMatch();
+        setCompleteMatchDialogOpen(true);
       } else {
-        // Otherwise, start a new set
-        toast({
-          title: "Set complete",
-          description: "Starting a new set."
-        });
-        handleNewSet();
+        // Otherwise, ask for confirmation to start a new set
+        setNewSetDialogOpen(true);
       }
     }
   };
@@ -175,6 +182,34 @@ const Scoring = () => {
       title: "New set started",
       description: `Set ${newSetIndex + 1} has been started.`
     });
+  };
+
+  // Determine the winner information for the confirmation dialog
+  const getSetWinnerInfo = () => {
+    if (!selectedMatch) return { team: "", score: "" };
+    
+    const currentScores = selectedMatch.scores[currentSet];
+    if (!currentScores) return { team: "", score: "" };
+    
+    const winningTeam = currentScores.team1Score > currentScores.team2Score ? 
+      selectedMatch.team1.name : selectedMatch.team2.name;
+    
+    const score = `${currentScores.team1Score}-${currentScores.team2Score}`;
+    
+    return { team: winningTeam, score };
+  };
+
+  // Determine the match winner information for the confirmation dialog
+  const getMatchWinnerInfo = () => {
+    if (!selectedMatch) return { team: "", sets: "" };
+    
+    const team1Sets = selectedMatch.scores.filter(s => s.team1Score > s.team2Score).length;
+    const team2Sets = selectedMatch.scores.filter(s => s.team2Score > s.team1Score).length;
+    
+    const winningTeam = team1Sets > team2Sets ? selectedMatch.team1.name : selectedMatch.team2.name;
+    const sets = `${team1Sets}-${team2Sets}`;
+    
+    return { team: winningTeam, sets };
   };
 
   return (
@@ -252,7 +287,7 @@ const Scoring = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={handleNewSet}
+                            onClick={() => setNewSetDialogOpen(true)}
                           >
                             <RefreshCw className="h-4 w-4 mr-1" />
                             New Set
@@ -260,7 +295,7 @@ const Scoring = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={handleCompleteMatch}
+                            onClick={() => setCompleteMatchDialogOpen(true)}
                           >
                             <Check className="h-4 w-4 mr-1" />
                             Complete
@@ -395,6 +430,43 @@ const Scoring = () => {
         maxSets={maxSets}
         setMaxSets={setMaxSets}
       />
+
+      {/* New Set Confirmation Dialog */}
+      <AlertDialog open={newSetDialogOpen} onOpenChange={setNewSetDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>End Current Set?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {getSetWinnerInfo().team} has won the set with a score of {getSetWinnerInfo().score}. 
+              Do you want to end this set and start a new one?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleNewSet}>Yes, End Set</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Complete Match Confirmation Dialog */}
+      <AlertDialog open={completeMatchDialogOpen} onOpenChange={setCompleteMatchDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2" />
+              Complete Match?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {getMatchWinnerInfo().team} has won the match {getMatchWinnerInfo().sets} sets. 
+              Are you sure you want to mark this match as complete? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCompleteMatch}>Yes, Complete Match</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };

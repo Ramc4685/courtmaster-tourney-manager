@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat, TournamentStatus, CourtStatus, TournamentStage, Group } from "@/types/tournament";
 
@@ -178,7 +177,72 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     updateTournament(updatedTournament);
   };
 
-  // Schedule a new match
+  // Auto-assign available courts to scheduled matches - Fixed to handle all matches
+  const autoAssignCourts = () => {
+    if (!currentTournament) return 0;
+    
+    const availableCourts = currentTournament.courts.filter(c => c.status === "AVAILABLE");
+    const scheduledMatches = currentTournament.matches.filter(
+      m => m.status === "SCHEDULED" && !m.courtNumber
+    );
+    
+    // Sort matches by scheduled time
+    scheduledMatches.sort((a, b) => {
+      if (!a.scheduledTime) return 1;
+      if (!b.scheduledTime) return -1;
+      return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
+    });
+    
+    // Get a copy of the tournament to work with
+    const updatedTournament = { ...currentTournament };
+    let assignedCount = 0;
+    
+    // Process each match that needs a court
+    for (let i = 0; i < scheduledMatches.length; i++) {
+      const match = scheduledMatches[i];
+      
+      // See if there's an available court
+      const availableCourtIndex = updatedTournament.courts.findIndex(c => c.status === "AVAILABLE");
+      
+      if (availableCourtIndex >= 0) {
+        // We found an available court
+        const court = updatedTournament.courts[availableCourtIndex];
+        
+        // Update the match with court number
+        const matchIndex = updatedTournament.matches.findIndex(m => m.id === match.id);
+        if (matchIndex >= 0) {
+          updatedTournament.matches[matchIndex] = {
+            ...updatedTournament.matches[matchIndex],
+            courtNumber: court.number
+          };
+        }
+        
+        // Update the court status
+        updatedTournament.courts[availableCourtIndex] = {
+          ...court,
+          status: "IN_USE" as CourtStatus,
+          currentMatch: {
+            ...match,
+            courtNumber: court.number
+          }
+        };
+        
+        assignedCount++;
+      } else {
+        // No more courts available, we're done
+        break;
+      }
+    }
+    
+    if (assignedCount > 0) {
+      updatedTournament.updatedAt = new Date();
+      updateTournament(updatedTournament);
+    }
+    
+    return assignedCount;
+  };
+
+  // Schedule a new match with date and time
   const scheduleMatch = (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => {
     if (!currentTournament) return;
     
@@ -194,6 +258,14 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       const court = currentTournament.courts.find(c => c.id === courtId);
       if (court) {
         courtNumber = court.number;
+        // Update court status if a court is assigned
+        const courtIndex = updatedCourts.findIndex(c => c.id === courtId);
+        if (courtIndex >= 0) {
+          updatedCourts[courtIndex] = {
+            ...updatedCourts[courtIndex],
+            status: "IN_USE" as CourtStatus
+          };
+        }
       }
     }
     
@@ -498,7 +570,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     updateTournament(updatedTournament);
   };
 
-  // Generate the 38-team multi-stage tournament
+  // Generate the 38-team multi-stage tournament with scheduled times
   const generateMultiStageTournament = () => {
     if (!currentTournament) return;
     
@@ -508,14 +580,26 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
-    // Generate matches for the initial round
-    const teams = [...currentTournament.teams];
+    // Sort teams by ranking before creating matches
+    const teams = [...currentTournament.teams].sort((a, b) => 
+      (a.initialRanking || 999) - (b.initialRanking || 999)
+    );
+    
     const matches: Match[] = [];
+    
+    // Create a start time - default to tournament start date, or now if not set
+    const startTime = currentTournament.startDate || new Date();
+    let currentMatchTime = new Date(startTime);
     
     // Initial Round: 38 teams -> 19 matches
     for (let i = 0; i < 19; i++) {
-      const team1 = teams[i * 2];
-      const team2 = teams[i * 2 + 1];
+      // Seed the teams: 1 vs 38, 2 vs 37, etc.
+      const team1 = teams[i];
+      const team2 = teams[teams.length - 1 - i];
+      
+      // Set match time and increment for next match (30 min per match)
+      const scheduledTime = new Date(currentMatchTime);
+      currentMatchTime.setMinutes(currentMatchTime.getMinutes() + 30);
       
       matches.push({
         id: generateId(),
@@ -525,7 +609,8 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         scores: [{ team1Score: 0, team2Score: 0 }],
         division: "INITIAL" as Division,
         stage: "INITIAL_ROUND" as TournamentStage,
-        status: "SCHEDULED" as MatchStatus
+        status: "SCHEDULED" as MatchStatus,
+        scheduledTime
       });
     }
     
@@ -538,7 +623,8 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     };
     
     updateTournament(updatedTournament);
-    autoAssignCourts();
+    // Auto-assign courts after creating matches
+    setTimeout(() => autoAssignCourts(), 100);
   };
   
   // Advance to the next stage based on current results
@@ -810,147 +896,3 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         division: "DIVISION_2" as Division,
         stage: "PLAYOFF_KNOCKOUT" as TournamentStage,
         bracketRound: 1,
-        bracketPosition: i + 1,
-        status: "SCHEDULED" as MatchStatus
-      };
-      
-      newMatches.push(match);
-    }
-    
-    // Division 3: 8-team knockout (Quarterfinals)
-    for (let i = 0; i < 4; i++) {
-      const match: Match = {
-        id: generateId(),
-        tournamentId: currentTournament.id,
-        team1: div3Teams[i],
-        team2: div3Teams[7 - i],
-        scores: [{ team1Score: 0, team2Score: 0 }],
-        division: "DIVISION_3" as Division,
-        stage: "PLAYOFF_KNOCKOUT" as TournamentStage,
-        bracketRound: 1,
-        bracketPosition: i + 1,
-        status: "SCHEDULED" as MatchStatus
-      };
-      
-      newMatches.push(match);
-    }
-    
-    const updatedTournament = {
-      ...currentTournament,
-      matches: [...currentTournament.matches, ...newMatches],
-      currentStage: "PLAYOFF_KNOCKOUT" as TournamentStage,
-      updatedAt: new Date()
-    };
-    
-    updateTournament(updatedTournament);
-    autoAssignCourts();
-  };
-
-  // Auto-assign available courts to scheduled matches
-  const autoAssignCourts = () => {
-    if (!currentTournament) return 0;
-    
-    const availableCourts = currentTournament.courts.filter(c => c.status === "AVAILABLE");
-    const scheduledMatches = currentTournament.matches.filter(
-      m => m.status === "SCHEDULED" && !m.courtNumber
-    );
-    
-    // Sort matches by scheduled time
-    scheduledMatches.sort((a, b) => {
-      if (!a.scheduledTime) return 1;
-      if (!b.scheduledTime) return -1;
-      return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
-    });
-    
-    // Assign courts to as many matches as possible
-    const updatedCourts = [...currentTournament.courts];
-    const updatedMatches = [...currentTournament.matches];
-    
-    let assignedCount = 0;
-    
-    for (let i = 0; i < Math.min(availableCourts.length, scheduledMatches.length); i++) {
-      const court = availableCourts[i];
-      const match = scheduledMatches[i];
-      
-      // Update the match
-      const matchIndex = updatedMatches.findIndex(m => m.id === match.id);
-      if (matchIndex >= 0) {
-        updatedMatches[matchIndex] = {
-          ...match,
-          courtNumber: court.number
-        };
-      }
-      
-      // Update the court
-      const courtIndex = updatedCourts.findIndex(c => c.id === court.id);
-      if (courtIndex >= 0) {
-        updatedCourts[courtIndex] = {
-          ...court,
-          status: "IN_USE" as CourtStatus,
-          currentMatch: {
-            ...match,
-            courtNumber: court.number
-          }
-        };
-      }
-      
-      assignedCount++;
-    }
-    
-    if (assignedCount > 0) {
-      const updatedTournament = {
-        ...currentTournament,
-        courts: updatedCourts,
-        matches: updatedMatches,
-        updatedAt: new Date()
-      };
-      
-      updateTournament(updatedTournament);
-    }
-    
-    return assignedCount;
-  };
-
-  // Load sample data
-  const loadSampleData = () => {
-    const sampleTournament = createSampleData();
-    const updatedTournaments = [...tournaments, sampleTournament];
-    setTournaments(updatedTournaments);
-    setCurrentTournament(sampleTournament);
-  };
-
-  // Generate bracket (placeholder function)
-  const generateBracket = () => {
-    console.log("Generating bracket...");
-  };
-
-  return (
-    <TournamentContext.Provider
-      value={{
-        tournaments,
-        currentTournament,
-        setCurrentTournament,
-        createTournament,
-        updateTournament,
-        deleteTournament,
-        addTeam,
-        importTeams,
-        updateMatch,
-        updateCourt,
-        assignCourt,
-        updateMatchStatus,
-        updateMatchScore,
-        completeMatch,
-        moveTeamToDivision,
-        loadSampleData,
-        scheduleMatch,
-        generateBracket,
-        autoAssignCourts,
-        generateMultiStageTournament,
-        advanceToNextStage
-      }}
-    >
-      {children}
-    </TournamentContext.Provider>
-  );
-};
