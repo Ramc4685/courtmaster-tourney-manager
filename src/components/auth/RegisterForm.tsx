@@ -48,7 +48,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   const onSubmit = async (data: RegisterFormValues) => {
     console.log('[DEBUG] RegisterForm: Submitting registration form', data.email);
     const { confirmPassword, ...userData } = data;
-    const success = await register(userData);
+    // Ensure userData has all required properties explicitly
+    const registerData = {
+      name: userData.name,
+      email: userData.email,
+      password: userData.password
+    };
+    const success = await register(registerData);
     if (success && onSuccess) {
       onSuccess();
     }

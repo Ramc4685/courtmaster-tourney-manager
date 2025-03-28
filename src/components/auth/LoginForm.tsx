@@ -40,7 +40,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
   const onSubmit = async (data: LoginFormValues) => {
     console.log('[DEBUG] LoginForm: Submitting login form', data.email);
-    const success = await login(data);
+    // Ensure data has required properties by explicitly creating a UserCredentials object
+    const credentials = {
+      email: data.email,
+      password: data.password
+    };
+    const success = await login(credentials);
     if (success && onSuccess) {
       onSuccess();
     }
