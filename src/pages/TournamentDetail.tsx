@@ -160,8 +160,7 @@ const TournamentDetail = () => {
   const handleAutoAssignCourts = () => {
     const assignedCount = autoAssignCourts();
     
-    // Check if assignedCount is defined before comparing
-    if (assignedCount && assignedCount > 0) {
+    if (assignedCount > 0) {
       toast({
         title: "Courts assigned",
         description: `Automatically assigned ${assignedCount} court(s) to scheduled matches`,

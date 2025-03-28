@@ -20,7 +20,7 @@ interface TournamentContextType {
   loadSampleData: () => void;
   scheduleMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => void;
   generateBracket: () => void;
-  autoAssignCourts: () => void;
+  autoAssignCourts: () => number;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -703,7 +703,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   
   // Auto-assign available courts to scheduled matches
   const autoAssignCourts = () => {
-    if (!currentTournament) return;
+    if (!currentTournament) return 0;
     
     const availableCourts = currentTournament.courts.filter(c => c.status === "AVAILABLE");
     const scheduledMatches = currentTournament.matches.filter(
