@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Pencil, Plus, Trash2, Calendar, Terminal } from "lucide-react";
+import { Pencil, Plus, Trash2, Calendar, Terminal, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -17,6 +16,7 @@ import TournamentBracket from "@/components/tournament/TournamentBracket";
 import TeamCreateDialog from "@/components/team/TeamCreateDialog";
 import CourtCreateDialog from "@/components/court/CourtCreateDialog";
 import MatchCreateDialog from "@/components/match/MatchCreateDialog";
+import ScheduleMatchDialog from "@/components/tournament/ScheduleMatchDialog";
 import { Team, Court, Match, TournamentStatus, TournamentFormat } from "@/types/tournament";
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from "@/components/ui/calendar"
@@ -50,11 +50,14 @@ const TournamentDetail = () => {
     updateMatch, 
     assignCourt, 
     scheduleMatch,
-    autoAssignCourts 
+    autoAssignCourts, 
+    advanceToNextStage,
+    generateMultiStageTournament
   } = useTournament();
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
   const [courtDialogOpen, setCourtDialogOpen] = useState(false);
   const [matchDialogOpen, setMatchDialogOpen] = useState(false);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [tournamentName, setTournamentName] = useState("");
   const [tournamentDescription, setTournamentDescription] = useState("");
@@ -176,6 +179,33 @@ const TournamentDetail = () => {
     navigate("/tournaments");
   };
 
+  const handleAdvanceToNextStage = () => {
+    if (!currentTournament) return;
+    advanceToNextStage();
+    toast({
+      title: "Tournament Advanced",
+      description: `Advanced to ${getNextStageName(currentTournament.currentStage)}`,
+    });
+  };
+
+  const getNextStageName = (currentStage: string) => {
+    switch (currentStage) {
+      case "INITIAL_ROUND": return "Division Placement";
+      case "DIVISION_PLACEMENT": return "Playoff Knockout";
+      case "PLAYOFF_KNOCKOUT": return "Completed";
+      default: return "Next Stage";
+    }
+  };
+
+  const handleGenerateMultiStageTournament = () => {
+    if (!currentTournament) return;
+    generateMultiStageTournament();
+    toast({
+      title: "Tournament Generated",
+      description: "Multi-stage tournament has been generated",
+    });
+  };
+
   if (!currentTournament) {
     return (
       <Layout>
@@ -191,6 +221,7 @@ const TournamentDetail = () => {
       <TeamCreateDialog open={teamDialogOpen} onOpenChange={setTeamDialogOpen} onCreate={handleTeamCreate} />
       <CourtCreateDialog open={courtDialogOpen} onOpenChange={setCourtDialogOpen} onCreate={handleCourtCreate} />
       <MatchCreateDialog open={matchDialogOpen} onOpenChange={setMatchDialogOpen} onCreate={handleMatchCreate} />
+      <ScheduleMatchDialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen} tournamentId={currentTournament.id} />
 
       <div className="max-w-6xl mx-auto pb-12">
         <div className="flex justify-between items-start flex-wrap mb-6">
@@ -361,11 +392,11 @@ const TournamentDetail = () => {
                     </div>
                     <div>
                       <p className="text-sm font-medium">Start Date</p>
-                      <p>{format(currentTournament.startDate, 'PPP')}</p>
+                      <p>{currentTournament.startDate ? format(new Date(currentTournament.startDate), 'PPP') : 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium">End Date</p>
-                      <p>{currentTournament.endDate ? format(currentTournament.endDate, 'PPP') : 'N/A'}</p>
+                      <p>{currentTournament.endDate ? format(new Date(currentTournament.endDate), 'PPP') : 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium">Auto-Assign Courts</p>
@@ -385,6 +416,24 @@ const TournamentDetail = () => {
                     <Terminal className="h-4 w-4 mr-2" />
                     Auto-Assign Courts to Matches
                   </Button>
+                  
+                  {/* Generate and Auto Schedule buttons */}
+                  <div className="grid grid-cols-2 gap-2 mt-4">
+                    <Button 
+                      onClick={handleGenerateMultiStageTournament}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Generate Tournament
+                    </Button>
+                    <Button 
+                      onClick={() => setScheduleDialogOpen(true)}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Clock className="h-4 w-4 mr-2" />
+                      Auto Schedule
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -401,9 +450,9 @@ const TournamentDetail = () => {
                 <CardDescription>Track the progress of the tournament</CardDescription>
               </CardHeader>
               <CardContent>
-                <p>Current Stage: {currentTournament.currentStage}</p>
+                <p className="mb-4">Current Stage: {currentTournament.currentStage}</p>
                 {currentTournament.status !== "COMPLETED" && currentTournament.status !== "DRAFT" && (
-                  <Button>Advance to Next Stage</Button>
+                  <Button onClick={handleAdvanceToNextStage}>Advance to Next Stage</Button>
                 )}
               </CardContent>
             </Card>
@@ -426,10 +475,16 @@ const TournamentDetail = () => {
           <TabsContent value="matches" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-semibold">Matches</h2>
-              <Button onClick={() => setMatchDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Schedule Match
-              </Button>
+              <div className="space-x-2">
+                <Button onClick={() => setMatchDialogOpen(true)} variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Schedule One Match
+                </Button>
+                <Button onClick={() => setScheduleDialogOpen(true)}>
+                  <Clock className="h-4 w-4 mr-2" />
+                  Auto Schedule
+                </Button>
+              </div>
             </div>
             <MatchTable
               matches={currentTournament.matches}
