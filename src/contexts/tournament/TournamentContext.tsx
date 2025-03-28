@@ -22,6 +22,7 @@ import {
   updateMatchStatusInTournament,
   completeMatchInTournament
 } from "./matchOperations";
+import { realtimeTournamentService } from "@/services/realtime/RealtimeTournamentService";
 
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
@@ -37,7 +38,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     return storedCurrentTournament ? JSON.parse(storedCurrentTournament) : null;
   });
 
-  // Save to localStorage whenever tournaments or currentTournament change
+  // Save to localStorage and publish updates to real-time service whenever tournaments or currentTournament change
   useEffect(() => {
     localStorage.setItem('tournaments', JSON.stringify(tournaments));
   }, [tournaments]);
@@ -45,6 +46,8 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (currentTournament) {
       localStorage.setItem('currentTournament', JSON.stringify(currentTournament));
+      // Publish to real-time service
+      realtimeTournamentService.publishTournamentUpdate(currentTournament);
     }
   }, [currentTournament]);
 
@@ -82,6 +85,9 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     if (currentTournament?.id === tournament.id) {
       setCurrentTournament(updatedTournament);
     }
+    
+    // Publish to real-time service
+    realtimeTournamentService.publishTournamentUpdate(updatedTournament);
   };
 
   // Add team to current tournament
