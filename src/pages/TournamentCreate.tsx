@@ -84,7 +84,7 @@ const TournamentCreate = () => {
 
     try {
       // Create the tournament using the createTournament function in context
-      const newTournament = createTournament({
+      const createdTournament = createTournament({
         name,
         description,
         format,
@@ -103,7 +103,16 @@ const TournamentCreate = () => {
       });
       
       // Navigate to the specific tournament detail page
-      navigate(`/tournaments/${newTournament.id}`);
+      if (createdTournament && createdTournament.id) {
+        navigate(`/tournaments/${createdTournament.id}`);
+      } else {
+        console.error("Created tournament is undefined or missing ID");
+        toast({
+          title: "Error",
+          description: "Tournament was created but ID is missing",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error("Error creating tournament:", error);
       toast({

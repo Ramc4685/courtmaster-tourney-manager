@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { PlusCircle, Trophy, Calendar, Users, Eye, Database, Trash2 } from "lucide-react";
