@@ -14,11 +14,14 @@ import { useRealtimeTournamentUpdates } from "@/hooks/useRealtimeTournamentUpdat
 
 const PublicViewRealtime = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
+  console.log(`[DEBUG] PublicViewRealtime: Initializing with tournamentId=${tournamentId || 'undefined'}`);
+  
   const { currentTournament, inProgressMatches, isSubscribed } = useRealtimeTournamentUpdates(tournamentId);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = () => {
+    console.log(`[DEBUG] PublicViewRealtime: Manual refresh requested`);
     setRefreshing(true);
     setLastRefreshed(new Date());
     setTimeout(() => setRefreshing(false), 500);
@@ -27,11 +30,15 @@ const PublicViewRealtime = () => {
   // Update last refreshed time when we get new data
   useEffect(() => {
     if (currentTournament) {
+      console.log(`[DEBUG] PublicViewRealtime: Data refreshed at ${new Date().toISOString()}`);
+      console.log(`[DEBUG] PublicViewRealtime: Current tournament: ${currentTournament.name}, matches: ${currentTournament.matches.length}`);
+      console.log(`[DEBUG] PublicViewRealtime: In-progress matches: ${inProgressMatches.length}`);
       setLastRefreshed(new Date());
     }
   }, [currentTournament, inProgressMatches]);
 
   if (!currentTournament) {
+    console.log(`[DEBUG] PublicViewRealtime: No tournament selected`);
     return (
       <Layout>
         <div className="max-w-6xl mx-auto">
@@ -41,9 +48,12 @@ const PublicViewRealtime = () => {
     );
   }
 
+  console.log(`[DEBUG] PublicViewRealtime: Rendering tournament ${currentTournament.id}. Subscription status: ${isSubscribed ? 'Active' : 'Inactive'}`);
+  
   const completedMatches = currentTournament.matches.filter(
     (match) => match.status === "COMPLETED"
   );
+  console.log(`[DEBUG] PublicViewRealtime: Completed matches: ${completedMatches.length}`);
 
   const upcomingMatches = currentTournament.matches.filter(
     (match) => match.status === "SCHEDULED"
@@ -58,6 +68,7 @@ const PublicViewRealtime = () => {
     }
     return 0;
   });
+  console.log(`[DEBUG] PublicViewRealtime: Upcoming matches: ${upcomingMatches.length}`);
 
   const groupByDivision = (matches: Match[]) => {
     return matches.reduce((groups, match) => {
@@ -108,6 +119,8 @@ const PublicViewRealtime = () => {
 
   const renderMatchesByDivision = (matches: Match[]) => {
     const grouped = groupByDivision(matches);
+    console.log(`[DEBUG] PublicViewRealtime: Grouped matches by division:`, 
+                Object.entries(grouped).map(([div, matches]) => `${div}: ${matches.length}`));
     
     return Object.entries(grouped).map(([division, divMatches]) => (
       <div key={division} className="mb-6">
