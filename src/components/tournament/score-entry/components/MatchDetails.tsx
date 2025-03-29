@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Match } from "@/types/tournament";
+import { Match, Court } from "@/types/tournament";
 import { Button } from "@/components/ui/button";
 import { PlayCircle } from "lucide-react";
 import ManualResultEntry from "@/components/match/ManualResultEntry";
@@ -9,7 +9,7 @@ import ManualCourtAssignment from "@/components/match/ManualCourtAssignment";
 
 interface MatchDetailsProps {
   match: Match;
-  courts: any[];
+  courts: Court[];
   onStartMatch: (matchId: string) => void;
   onMatchUpdate: (match: Match) => void;
   onCourtAssign: (matchId: string, courtId: string) => void;
@@ -45,24 +45,27 @@ const MatchDetails: React.FC<MatchDetailsProps> = ({
         </div>
       </div>
       
-      <div className="flex flex-wrap gap-2">
+      {/* Improved button layout with grid for consistent sizing */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
         {match.status === "SCHEDULED" && (
           <Button 
             onClick={() => onStartMatch(match.id)}
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 w-full"
           >
-            <PlayCircle className="h-4 w-4 mr-1" />
+            <PlayCircle className="h-4 w-4 mr-2" />
             Start Match
           </Button>
         )}
+        
         <ManualResultEntry
           match={match}
           onComplete={onMatchUpdate}
         />
+        
         {match.status === "IN_PROGRESS" && (
           <DeferMatch match={match} />
         )}
+        
         <ManualCourtAssignment 
           match={match}
           courts={courts}

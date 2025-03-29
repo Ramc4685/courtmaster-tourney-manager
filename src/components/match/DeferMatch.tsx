@@ -44,8 +44,12 @@ const DeferMatch: React.FC<DeferMatchProps> = ({ match }) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100">
-          <Clock className="h-4 w-4 mr-1" /> Defer Match
+        <Button 
+          variant="outline" 
+          className="border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 w-full"
+        >
+          <Clock className="h-4 w-4 mr-2" /> 
+          Defer Match
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">

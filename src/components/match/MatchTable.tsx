@@ -136,7 +136,7 @@ const MatchTable: React.FC<MatchTableProps> = ({
                     )}
                   </TableCell>
                   <TableCell>
-                    {match.scheduledTime ? format(match.scheduledTime, "PPp") : "Not scheduled"}
+                    {match.scheduledTime ? format(new Date(match.scheduledTime), "PPp") : "Not scheduled"}
                   </TableCell>
                   <TableCell>
                     {match.status === "COMPLETED" ? 
@@ -145,7 +145,7 @@ const MatchTable: React.FC<MatchTableProps> = ({
                     }
                   </TableCell>
                   <TableCell>{match.division}</TableCell>
-                  <TableCell className="text-right space-x-2">
+                  <TableCell className="text-right">
                     {match.status === "SCHEDULED" && (
                       <div className="flex justify-end gap-2">
                         {!match.courtNumber && (
@@ -159,7 +159,7 @@ const MatchTable: React.FC<MatchTableProps> = ({
                           </Button>
                         )}
                         
-                        {/* New Start Game Button */}
+                        {/* Start Game Button */}
                         {onStartMatch && (
                           noAvailableCourts && !match.courtNumber ? (
                             <Tooltip>

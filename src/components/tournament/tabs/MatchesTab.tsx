@@ -40,6 +40,7 @@ const MatchesTab: React.FC<MatchesTabProps> = ({
 
   const availableCourts = courts.filter(court => court.status === "AVAILABLE");
   const scheduledMatches = matches.filter(match => match.status === "SCHEDULED" && !match.courtNumber);
+  const noAvailableCourts = availableCourts.length === 0;
 
   const handleQuickAssign = (match: Match) => {
     setSelectedMatch(match);
@@ -52,6 +53,12 @@ const MatchesTab: React.FC<MatchesTabProps> = ({
       setQuickAssignOpen(false);
       setSelectedMatch(null);
       setSelectedCourtId("");
+    }
+  };
+
+  const handleStartMatch = (matchId: string) => {
+    if (onStartMatch) {
+      onStartMatch(matchId, noAvailableCourts);
     }
   };
 
@@ -71,33 +78,46 @@ const MatchesTab: React.FC<MatchesTabProps> = ({
         </div>
       </div>
 
-      {scheduledMatches.length > 0 && availableCourts.length > 0 && (
+      {scheduledMatches.length > 0 && (
         <div className="bg-gray-50 p-4 rounded-lg mb-4">
           <h3 className="text-sm font-medium mb-2">Quick Court Assignment</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {scheduledMatches.slice(0, 3).map(match => (
-              <div key={match.id} className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm">
-                <div className="truncate">
+              <div key={match.id} className="flex flex-col bg-white p-3 rounded-md shadow-sm">
+                <div className="truncate mb-2">
                   <span className="text-sm font-medium">{match.team1.name} vs {match.team2.name}</span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-auto">
                   <Button 
                     size="sm" 
                     variant="outline"
                     onClick={() => handleQuickAssign(match)}
+                    className="flex-1"
                   >
                     Assign Court
                   </Button>
                   {onStartMatch && (
-                    <Button 
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onStartMatch(match.id)}
-                      className="bg-green-50 border-green-200 hover:bg-green-100 text-green-700"
-                    >
-                      <Play className="h-3 w-3 mr-1" />
-                      Start
-                    </Button>
+                    noAvailableCourts ? (
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleStartMatch(match.id)}
+                        className="bg-amber-50 border-amber-200 hover:bg-amber-100 text-amber-700 flex-1"
+                      >
+                        <Play className="h-3 w-3 mr-1" />
+                        Start Game
+                      </Button>
+                    ) : (
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleStartMatch(match.id)}
+                        className="bg-green-50 border-green-200 hover:bg-green-100 text-green-700 flex-1"
+                      >
+                        <Play className="h-3 w-3 mr-1" />
+                        Start
+                      </Button>
+                    )
                   )}
                 </div>
               </div>
