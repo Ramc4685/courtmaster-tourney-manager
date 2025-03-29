@@ -6,50 +6,95 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ScoringSettings } from "@/types/tournament";
 
+// Updated interface to support both ways of using the component
 interface TournamentScoringFormProps {
-  scoringSettings: ScoringSettings;
-  onSettingsChange: (settings: ScoringSettings) => void;
+  // Original props for backward compatibility
+  scoringSettings?: ScoringSettings;
+  onSettingsChange?: (settings: ScoringSettings) => void;
+  
+  // Individual props (used in TournamentCreate.tsx)
+  maxPoints?: number;
+  maxSets?: number;
+  requireTwoPointLead?: boolean;
+  maxTwoPointLeadScore?: number;
+  onMaxPointsChange?: (value: number) => void;
+  onMaxSetsChange?: (value: number) => void;
+  onRequireTwoPointLeadChange?: (value: boolean) => void;
+  onMaxTwoPointLeadScoreChange?: (value: number) => void;
 }
 
-const TournamentScoringForm: React.FC<TournamentScoringFormProps> = ({ 
-  scoringSettings,
-  onSettingsChange
-}) => {
-  // Handle input changes
+const TournamentScoringForm: React.FC<TournamentScoringFormProps> = (props) => {
+  // Determine which prop set to use (individual or object-based)
+  const isUsingIndividualProps = props.maxPoints !== undefined;
+  
+  // Get values from appropriate prop source
+  const maxPoints = isUsingIndividualProps 
+    ? props.maxPoints 
+    : props.scoringSettings?.maxPoints ?? 21;
+    
+  const maxSets = isUsingIndividualProps 
+    ? props.maxSets 
+    : props.scoringSettings?.maxSets ?? 3;
+    
+  const requireTwoPointLead = isUsingIndividualProps 
+    ? props.requireTwoPointLead 
+    : props.scoringSettings?.requireTwoPointLead ?? true;
+    
+  const maxTwoPointLeadScore = isUsingIndividualProps 
+    ? props.maxTwoPointLeadScore 
+    : props.scoringSettings?.maxTwoPointLeadScore;
+
+  // Handle input changes based on prop pattern
   const handleMaxPointsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     if (!isNaN(value) && value > 0) {
-      onSettingsChange({
-        ...scoringSettings,
-        maxPoints: value
-      });
+      if (isUsingIndividualProps && props.onMaxPointsChange) {
+        props.onMaxPointsChange(value);
+      } else if (props.onSettingsChange && props.scoringSettings) {
+        props.onSettingsChange({
+          ...props.scoringSettings,
+          maxPoints: value
+        });
+      }
     }
   };
 
   const handleMaxSetsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     if (!isNaN(value) && value > 0) {
-      onSettingsChange({
-        ...scoringSettings,
-        maxSets: value
-      });
+      if (isUsingIndividualProps && props.onMaxSetsChange) {
+        props.onMaxSetsChange(value);
+      } else if (props.onSettingsChange && props.scoringSettings) {
+        props.onSettingsChange({
+          ...props.scoringSettings,
+          maxSets: value
+        });
+      }
     }
   };
 
   const handleTwoPointLeadChange = (checked: boolean) => {
-    onSettingsChange({
-      ...scoringSettings,
-      requireTwoPointLead: checked
-    });
+    if (isUsingIndividualProps && props.onRequireTwoPointLeadChange) {
+      props.onRequireTwoPointLeadChange(checked);
+    } else if (props.onSettingsChange && props.scoringSettings) {
+      props.onSettingsChange({
+        ...props.scoringSettings,
+        requireTwoPointLead: checked
+      });
+    }
   };
 
   const handleMaxTwoPointLeadScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     if (!isNaN(value) && value > 0) {
-      onSettingsChange({
-        ...scoringSettings,
-        maxTwoPointLeadScore: value
-      });
+      if (isUsingIndividualProps && props.onMaxTwoPointLeadScoreChange) {
+        props.onMaxTwoPointLeadScoreChange(value);
+      } else if (props.onSettingsChange && props.scoringSettings) {
+        props.onSettingsChange({
+          ...props.scoringSettings,
+          maxTwoPointLeadScore: value
+        });
+      }
     }
   };
 
@@ -66,7 +111,7 @@ const TournamentScoringForm: React.FC<TournamentScoringFormProps> = ({
               id="maxPoints"
               type="number"
               min="1"
-              value={scoringSettings.maxPoints}
+              value={maxPoints}
               onChange={handleMaxPointsChange}
             />
           </div>
@@ -77,7 +122,7 @@ const TournamentScoringForm: React.FC<TournamentScoringFormProps> = ({
               id="maxSets"
               type="number"
               min="1"
-              value={scoringSettings.maxSets}
+              value={maxSets}
               onChange={handleMaxSetsChange}
             />
           </div>
@@ -86,13 +131,13 @@ const TournamentScoringForm: React.FC<TournamentScoringFormProps> = ({
         <div className="flex items-center space-x-2">
           <Switch
             id="requireTwoPointLead"
-            checked={scoringSettings.requireTwoPointLead}
+            checked={requireTwoPointLead}
             onCheckedChange={handleTwoPointLeadChange}
           />
           <Label htmlFor="requireTwoPointLead">Require Two-Point Lead to Win</Label>
         </div>
         
-        {scoringSettings.requireTwoPointLead && (
+        {requireTwoPointLead && (
           <div className="space-y-2">
             <Label htmlFor="maxTwoPointLeadScore">
               Maximum Score (when Two-Point Lead Required)
@@ -100,8 +145,8 @@ const TournamentScoringForm: React.FC<TournamentScoringFormProps> = ({
             <Input
               id="maxTwoPointLeadScore"
               type="number"
-              min={scoringSettings.maxPoints + 1}
-              value={scoringSettings.maxTwoPointLeadScore || scoringSettings.maxPoints + 10}
+              min={maxPoints + 1}
+              value={maxTwoPointLeadScore || maxPoints + 10}
               onChange={handleMaxTwoPointLeadScoreChange}
             />
             <p className="text-sm text-muted-foreground">
