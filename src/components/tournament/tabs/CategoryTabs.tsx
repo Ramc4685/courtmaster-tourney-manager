@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { TournamentCategory, Tournament } from "@/types/tournament";
+import { Button } from "@/components/ui/button";
+import { TournamentCategory, Tournament, TournamentFormat } from "@/types/tournament";
 import BracketTab from "./BracketTab";
 import MatchesTab from "./MatchesTab";
 import { useMediaQuery } from "@/hooks/use-mobile";
@@ -20,7 +21,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
   console.log("Active tab:", activeTab);
   
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const { updateMatch, assignCourt } = useTournament();
+  const { updateMatch, assignCourt, loadCategoryDemoData } = useTournament();
   
   const isMobile = useMediaQuery("(max-width: 768px)");
 
@@ -65,6 +66,14 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
     teams: categoryTeams
   };
 
+  // Handle loading sample data for this category
+  const handleLoadSampleData = () => {
+    if (!currentCategory) return;
+    // Use the category's format if available, otherwise the tournament format
+    const format = currentCategory.format || tournament.format;
+    loadCategoryDemoData(tournament.id, currentCategory.id, format);
+  };
+
   // For mobile view, use a dropdown instead of tabs
   if (isMobile) {
     return (
@@ -81,6 +90,17 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
             ))}
           </SelectContent>
         </Select>
+
+        {/* Demo data button */}
+        {categoryTeams.length === 0 && (
+          <Button 
+            onClick={handleLoadSampleData} 
+            variant="outline" 
+            className="w-full mt-2"
+          >
+            Load Demo Data for {currentCategory?.name}
+          </Button>
+        )}
 
         <div className="pt-4">
           {activeTab === "bracket" && currentCategory && (
@@ -115,6 +135,21 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
   return (
     <div className="space-y-4">
       <Card className="p-4">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-lg font-medium">Categories</h3>
+          
+          {/* Demo data button - only show if no teams for this category */}
+          {categoryTeams.length === 0 && (
+            <Button 
+              onClick={handleLoadSampleData} 
+              variant="outline" 
+              size="sm"
+            >
+              Load Demo Data
+            </Button>
+          )}
+        </div>
+        
         <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
           <TabsList className="grid" style={{ 
             gridTemplateColumns: `repeat(${Math.min(tournament.categories.length, 5)}, minmax(0, 1fr))` 

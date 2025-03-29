@@ -1,4 +1,3 @@
-
 import { Tournament, Team, Match, Division, TournamentStage, CourtStatus, CategoryType, MatchStatus } from "@/types/tournament";
 import { generateId } from "@/utils/tournamentUtils";
 
