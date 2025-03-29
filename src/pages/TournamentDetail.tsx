@@ -181,11 +181,18 @@ const TournamentDetail = () => {
           </TabsContent>
 
           <TabsContent value="teams" className="py-4">
-            <TeamsTab
-              teams={currentTournament.teams}
-              onTeamUpdate={handleTeamUpdate}
-              onAddTeamClick={() => setAddTeamDialogOpen(true)}
-            />
+            {hasCategoriesEnabled ? (
+              <CategoryTabs 
+                tournament={currentTournament}
+                activeTab={activeTab}
+              />
+            ) : (
+              <TeamsTab
+                teams={currentTournament.teams}
+                onTeamUpdate={handleTeamUpdate}
+                onAddTeamClick={() => setAddTeamDialogOpen(true)}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="matches" className="py-4">

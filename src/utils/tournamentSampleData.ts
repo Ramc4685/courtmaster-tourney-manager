@@ -4,6 +4,7 @@
 import { Tournament, Team, Match, Division, TournamentStage, MatchStatus, TournamentFormat, TournamentCategory, CategoryType, CourtStatus } from "@/types/tournament";
 import { generateId } from "./tournamentUtils";
 
+// Create the base tournament structure
 export const createSampleData = (): Tournament => {
   const id = generateId();
   const categories = [
@@ -47,7 +48,7 @@ export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
   return tournament;
 };
 
-// Create sample data for a specific category - improved with better logging and team generation
+// Create sample data for a specific category
 export const getCategoryDemoData = (format: TournamentFormat, category: TournamentCategory) => {
   try {
     console.log(`Generating demo data for category ${category.name} with format ${format}`);
@@ -97,116 +98,16 @@ export const getCategoryDemoData = (format: TournamentFormat, category: Tourname
       });
     }
     
-    // Create sample matches based on format
+    // Create format-specific matches
     if (format === "ROUND_ROBIN") {
-      // Round robin - everyone plays against everyone
-      let matchCount = 0;
-      for (let i = 0; i < teams.length; i++) {
-        for (let j = i + 1; j < teams.length; j++) {
-          matchCount++;
-          matches.push({
-            id: `match-${category.id.substring(0, 4)}-${i}-${j}`,
-            tournamentId: "sample",
-            team1: teams[i],
-            team2: teams[j],
-            scores: [],
-            division: "INITIAL" as Division,
-            stage: "INITIAL_ROUND" as TournamentStage,
-            status: "SCHEDULED" as MatchStatus,
-            scheduledTime: new Date(Date.now() + (matchCount * 3600000)), // Each match 1 hour apart
-            category: category
-          });
-        }
-      }
+      createRoundRobinMatches(teams, matches, category);
     } else if (format === "SINGLE_ELIMINATION") {
-      // Create a simple bracket
-      // First round (4 matches)
-      for (let i = 0; i < 4; i++) {
-        matches.push({
-          id: `match-${category.id.substring(0, 4)}-r1-${i}`,
-          tournamentId: "sample",
-          team1: teams[i * 2],
-          team2: teams[i * 2 + 1],
-          scores: [],
-          division: "INITIAL" as Division,
-          stage: "INITIAL_ROUND" as TournamentStage,
-          status: "SCHEDULED" as MatchStatus,
-          bracketRound: 1,
-          bracketPosition: i,
-          nextMatchId: `match-${category.id.substring(0, 4)}-r2-${Math.floor(i/2)}`,
-          scheduledTime: new Date(Date.now() + (i * 3600000)),
-          category: category
-        });
-      }
-      
-      // Second round (2 matches)
-      for (let i = 0; i < 2; i++) {
-        matches.push({
-          id: `match-${category.id.substring(0, 4)}-r2-${i}`,
-          tournamentId: "sample",
-          team1: { id: "TBD", name: "TBD", players: [] },
-          team2: { id: "TBD", name: "TBD", players: [] },
-          scores: [],
-          division: "INITIAL" as Division,
-          stage: "INITIAL_ROUND" as TournamentStage,
-          status: "SCHEDULED" as MatchStatus,
-          bracketRound: 2,
-          bracketPosition: i,
-          nextMatchId: `match-${category.id.substring(0, 4)}-r3-0`,
-          scheduledTime: new Date(Date.now() + (4 * 3600000) + (i * 3600000)),
-          category: category
-        });
-      }
-      
-      // Final match
-      matches.push({
-        id: `match-${category.id.substring(0, 4)}-r3-0`,
-        tournamentId: "sample",
-        team1: { id: "TBD", name: "TBD", players: [] },
-        team2: { id: "TBD", name: "TBD", players: [] },
-        scores: [],
-        division: "INITIAL" as Division,
-        stage: "INITIAL_ROUND" as TournamentStage,
-        status: "SCHEDULED" as MatchStatus,
-        bracketRound: 3,
-        bracketPosition: 0,
-        scheduledTime: new Date(Date.now() + (6 * 3600000)),
-        category: category
-      });
+      createSingleEliminationMatches(teams, matches, category);
     } else if (format === "DOUBLE_ELIMINATION") {
-      // Create basic double elimination matches
-      for (let i = 0; i < 4; i++) {
-        matches.push({
-          id: `match-${category.id.substring(0, 4)}-winners-r1-${i}`,
-          tournamentId: "sample",
-          team1: teams[i * 2],
-          team2: teams[i * 2 + 1],
-          scores: [],
-          division: "INITIAL" as Division,
-          stage: "INITIAL_ROUND" as TournamentStage,
-          status: "SCHEDULED" as MatchStatus,
-          bracketRound: 1,
-          bracketPosition: i,
-          scheduledTime: new Date(Date.now() + (i * 3600000)),
-          category: category
-        });
-      }
+      createDoubleEliminationMatches(teams, matches, category);
     } else {
-      // MULTI_STAGE or other formats - create some basic matches
-      for (let i = 0; i < 4; i++) {
-        matches.push({
-          id: `match-${category.id.substring(0, 4)}-${i}`,
-          tournamentId: "sample",
-          team1: teams[i * 2],
-          team2: teams[i * 2 + 1],
-          scores: [],
-          division: "INITIAL" as Division,
-          stage: "INITIAL_ROUND" as TournamentStage,
-          status: "SCHEDULED" as MatchStatus,
-          scheduledTime: new Date(Date.now() + (i * 3600000)),
-          category: category
-        });
-      }
+      // Default to multi-stage or other formats
+      createBasicMatches(teams, matches, category);
     }
     
     console.log(`Generated ${teams.length} teams and ${matches.length} matches for ${category.name}`);
@@ -217,6 +118,180 @@ export const getCategoryDemoData = (format: TournamentFormat, category: Tourname
     return { teams: [], matches: [] };
   }
 };
+
+// Create round robin matches where everyone plays against everyone
+function createRoundRobinMatches(teams: Team[], matches: Match[], category: TournamentCategory) {
+  let matchCount = 0;
+  for (let i = 0; i < teams.length; i++) {
+    for (let j = i + 1; j < teams.length; j++) {
+      matchCount++;
+      matches.push({
+        id: `match-${category.id.substring(0, 4)}-${i}-${j}`,
+        tournamentId: "sample",
+        team1: teams[i],
+        team2: teams[j],
+        scores: [],
+        division: "INITIAL" as Division,
+        stage: "INITIAL_ROUND" as TournamentStage,
+        status: "SCHEDULED" as MatchStatus,
+        scheduledTime: new Date(Date.now() + (matchCount * 3600000)), // Each match 1 hour apart
+        category: category
+      });
+    }
+  }
+}
+
+// Create a single elimination bracket
+function createSingleEliminationMatches(teams: Team[], matches: Match[], category: TournamentCategory) {
+  // First round (4 matches)
+  for (let i = 0; i < 4; i++) {
+    matches.push({
+      id: `match-${category.id.substring(0, 4)}-r1-${i}`,
+      tournamentId: "sample",
+      team1: teams[i * 2],
+      team2: teams[i * 2 + 1],
+      scores: [],
+      division: "INITIAL" as Division,
+      stage: "INITIAL_ROUND" as TournamentStage,
+      status: "SCHEDULED" as MatchStatus,
+      bracketRound: 1,
+      bracketPosition: i,
+      nextMatchId: `match-${category.id.substring(0, 4)}-r2-${Math.floor(i/2)}`,
+      scheduledTime: new Date(Date.now() + (i * 3600000)),
+      category: category
+    });
+  }
+  
+  // Second round (2 matches)
+  for (let i = 0; i < 2; i++) {
+    matches.push({
+      id: `match-${category.id.substring(0, 4)}-r2-${i}`,
+      tournamentId: "sample",
+      team1: { id: "TBD", name: "TBD", players: [] },
+      team2: { id: "TBD", name: "TBD", players: [] },
+      scores: [],
+      division: "INITIAL" as Division,
+      stage: "INITIAL_ROUND" as TournamentStage,
+      status: "SCHEDULED" as MatchStatus,
+      bracketRound: 2,
+      bracketPosition: i,
+      nextMatchId: `match-${category.id.substring(0, 4)}-r3-0`,
+      scheduledTime: new Date(Date.now() + (4 * 3600000) + (i * 3600000)),
+      category: category
+    });
+  }
+  
+  // Final match
+  matches.push({
+    id: `match-${category.id.substring(0, 4)}-r3-0`,
+    tournamentId: "sample",
+    team1: { id: "TBD", name: "TBD", players: [] },
+    team2: { id: "TBD", name: "TBD", players: [] },
+    scores: [],
+    division: "INITIAL" as Division,
+    stage: "INITIAL_ROUND" as TournamentStage,
+    status: "SCHEDULED" as MatchStatus,
+    bracketRound: 3,
+    bracketPosition: 0,
+    scheduledTime: new Date(Date.now() + (6 * 3600000)),
+    category: category
+  });
+}
+
+// Create double elimination matches (winners and losers brackets)
+function createDoubleEliminationMatches(teams: Team[], matches: Match[], category: TournamentCategory) {
+  // Winners bracket - first round (4 matches)
+  for (let i = 0; i < 4; i++) {
+    matches.push({
+      id: `match-${category.id.substring(0, 4)}-w-r1-${i}`,
+      tournamentId: "sample",
+      team1: teams[i * 2],
+      team2: teams[i * 2 + 1],
+      scores: [],
+      division: "INITIAL" as Division,
+      stage: "INITIAL_ROUND" as TournamentStage,
+      status: "SCHEDULED" as MatchStatus,
+      bracketRound: 1,
+      bracketPosition: i,
+      groupName: "Winners Bracket",
+      scheduledTime: new Date(Date.now() + (i * 3600000)),
+      category: category
+    });
+  }
+  
+  // Winners bracket - second round (2 matches)
+  for (let i = 0; i < 2; i++) {
+    matches.push({
+      id: `match-${category.id.substring(0, 4)}-w-r2-${i}`,
+      tournamentId: "sample",
+      team1: { id: "TBD", name: "TBD", players: [] },
+      team2: { id: "TBD", name: "TBD", players: [] },
+      scores: [],
+      division: "INITIAL" as Division,
+      stage: "INITIAL_ROUND" as TournamentStage,
+      status: "SCHEDULED" as MatchStatus,
+      bracketRound: 2,
+      bracketPosition: i,
+      groupName: "Winners Bracket",
+      scheduledTime: new Date(Date.now() + (4 * 3600000) + (i * 3600000)),
+      category: category
+    });
+  }
+  
+  // Losers bracket - first round (2 matches)
+  for (let i = 0; i < 2; i++) {
+    matches.push({
+      id: `match-${category.id.substring(0, 4)}-l-r1-${i}`,
+      tournamentId: "sample",
+      team1: { id: "TBD", name: "TBD", players: [] },
+      team2: { id: "TBD", name: "TBD", players: [] },
+      scores: [],
+      division: "INITIAL" as Division,
+      stage: "INITIAL_ROUND" as TournamentStage,
+      status: "SCHEDULED" as MatchStatus,
+      bracketRound: 1,
+      bracketPosition: i,
+      groupName: "Losers Bracket",
+      scheduledTime: new Date(Date.now() + (6 * 3600000) + (i * 3600000)),
+      category: category
+    });
+  }
+  
+  // Finals
+  matches.push({
+    id: `match-${category.id.substring(0, 4)}-finals`,
+    tournamentId: "sample",
+    team1: { id: "TBD", name: "TBD", players: [] },
+    team2: { id: "TBD", name: "TBD", players: [] },
+    scores: [],
+    division: "INITIAL" as Division,
+    stage: "INITIAL_ROUND" as TournamentStage,
+    status: "SCHEDULED" as MatchStatus,
+    bracketRound: 3,
+    bracketPosition: 0,
+    groupName: "Finals",
+    scheduledTime: new Date(Date.now() + (8 * 3600000)),
+    category: category
+  });
+}
+
+// Create basic matches for multi-stage or other formats
+function createBasicMatches(teams: Team[], matches: Match[], category: TournamentCategory) {
+  for (let i = 0; i < 4; i++) {
+    matches.push({
+      id: `match-${category.id.substring(0, 4)}-${i}`,
+      tournamentId: "sample",
+      team1: teams[i * 2],
+      team2: teams[i * 2 + 1],
+      scores: [],
+      division: "INITIAL" as Division,
+      stage: "INITIAL_ROUND" as TournamentStage,
+      status: "SCHEDULED" as MatchStatus,
+      scheduledTime: new Date(Date.now() + (i * 3600000)),
+      category: category
+    });
+  }
+}
 
 // Helper to get team name prefix based on category
 function getTeamNamePrefixByCategory(category: TournamentCategory): string {

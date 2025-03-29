@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTournament } from "@/contexts/TournamentContext";
 import { useToast } from "@/hooks/use-toast";
 import TournamentScoringForm from "@/components/tournament/TournamentScoringForm";
-import { Tournament, TournamentCategory, TournamentFormat } from "@/types/tournament";
+import { TournamentCategory, TournamentFormat } from "@/types/tournament";
 import TournamentCategorySection from "@/components/tournament/TournamentCategorySection";
 import { createDefaultCategories } from "@/utils/categoryUtils";
 
@@ -36,7 +36,7 @@ const TournamentCreate = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<TournamentCategory[]>(createDefaultCategories());
-  // Default format for the tournament is MULTI_STAGE, but each category can have its own format
+  // Default format is MULTI_STAGE (no longer showing in UI but used as fallback)
   const defaultFormat: TournamentFormat = "MULTI_STAGE";
 
   const form = useForm<FormValues>({
@@ -57,7 +57,7 @@ const TournamentCreate = () => {
     try {
       console.log("Creating tournament with categories:", categories);
       
-      // Create the tournament first with default format
+      // Create the tournament using the default format
       const newTournament = createTournament({
         name: values.name,
         description: values.description,
@@ -84,6 +84,7 @@ const TournamentCreate = () => {
         // Process demo data loading with delay to ensure tournament is created first
         setTimeout(() => {
           categoriesToLoadDemoData.forEach(category => {
+            // Use category-specific format or fallback to default
             const categoryFormat = category.format || defaultFormat;
             console.log(`Loading demo data for category ${category.name} with format ${categoryFormat}`);
             loadCategoryDemoData(newTournament.id, category.id, categoryFormat);

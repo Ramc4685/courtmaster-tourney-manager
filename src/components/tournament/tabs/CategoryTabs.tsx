@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { TournamentCategory, Tournament, TournamentFormat } from "@/types/tournament";
 import BracketTab from "./BracketTab";
 import MatchesTab from "./MatchesTab";
+import TeamsTab from "./TeamsTab";
 import { useMediaQuery } from "@/hooks/use-mobile";
 import ScoreEntrySection from "@/components/tournament/score-entry/ScoreEntrySection";
 import { useTournament } from "@/contexts/TournamentContext";
@@ -21,7 +22,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
   console.log("Active tab:", activeTab);
   
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const { updateMatch, assignCourt, loadCategoryDemoData } = useTournament();
+  const { updateMatch, assignCourt, loadCategoryDemoData, updateTournament } = useTournament();
   
   const isMobile = useMediaQuery("(max-width: 768px)");
 
@@ -74,6 +75,20 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
     loadCategoryDemoData(tournament.id, currentCategory.id, format);
   };
 
+  // Handle team updates
+  const handleTeamUpdate = (team) => {
+    const updatedTeams = tournament.teams.map(t => 
+      t.id === team.id ? team : t
+    );
+    
+    const updatedTournament = {
+      ...tournament,
+      teams: updatedTeams
+    };
+    
+    updateTournament(updatedTournament);
+  };
+
   // For mobile view, use a dropdown instead of tabs
   if (isMobile) {
     return (
@@ -106,6 +121,14 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
           {activeTab === "bracket" && currentCategory && (
             <BracketTab 
               tournament={filteredTournament}
+              category={currentCategory}
+            />
+          )}
+          {activeTab === "teams" && currentCategory && (
+            <TeamsTab 
+              teams={categoryTeams}
+              onTeamUpdate={handleTeamUpdate}
+              onAddTeamClick={() => {}}
               category={currentCategory}
             />
           )}
@@ -167,6 +190,14 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
         {activeTab === "bracket" && currentCategory && (
           <BracketTab 
             tournament={filteredTournament}
+            category={currentCategory}
+          />
+        )}
+        {activeTab === "teams" && currentCategory && (
+          <TeamsTab 
+            teams={categoryTeams}
+            onTeamUpdate={handleTeamUpdate}
+            onAddTeamClick={() => {}}
             category={currentCategory}
           />
         )}
