@@ -29,7 +29,7 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, enableDemoMode } = useAuth();
   const [loginError, setLoginError] = useState<string | null>(null);
 
   const form = useForm<LoginFormValues>({
@@ -65,6 +65,46 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     } catch (error) {
       console.error('[ERROR] LoginForm: Error during login', error);
       setLoginError(error instanceof Error ? error.message : 'An error occurred during login');
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setLoginError(null);
+    console.log('[DEBUG] LoginForm: Using demo login');
+    
+    try {
+      // Use the demo credentials
+      const success = await login({
+        email: 'demo@example.com',
+        password: 'demo123'
+      });
+      
+      if (success && onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('[ERROR] LoginForm: Error during demo login', error);
+      setLoginError(error instanceof Error ? error.message : 'An error occurred during demo login');
+    }
+  };
+
+  const handleAdminDemoLogin = async () => {
+    setLoginError(null);
+    console.log('[DEBUG] LoginForm: Using admin demo login');
+    
+    try {
+      // Use the admin demo credentials
+      const success = await login({
+        email: 'admin@example.com',
+        password: 'demo123'
+      });
+      
+      if (success && onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('[ERROR] LoginForm: Error during admin demo login', error);
+      setLoginError(error instanceof Error ? error.message : 'An error occurred during admin demo login');
     }
   };
 
@@ -113,6 +153,27 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             </span>
           )}
         </Button>
+        
+        <div className="flex gap-2 mt-4">
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="flex-1" 
+            onClick={handleDemoLogin}
+            disabled={isLoading}
+          >
+            Demo Login
+          </Button>
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="flex-1" 
+            onClick={handleAdminDemoLogin}
+            disabled={isLoading}
+          >
+            Admin Demo
+          </Button>
+        </div>
       </form>
     </Form>
   );

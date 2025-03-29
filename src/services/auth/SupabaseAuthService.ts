@@ -1,12 +1,33 @@
-
 import { supabase } from '@/lib/supabase';
 import { User, UserCredentials, TournamentUserRole } from '@/types/user';
 
 export class SupabaseAuthService {
   private tournamentRoles: TournamentUserRole[] = [];
+  private demoMode: boolean = false;
   
+  // Enable/disable demo mode
+  public enableDemoMode(enable: boolean = true): void {
+    this.demoMode = enable;
+    console.log(`[DEBUG] SupabaseAuthService: Demo mode ${enable ? 'enabled' : 'disabled'}`);
+  }
+  
+  // Check if we're in demo mode
+  public isDemoMode(): boolean {
+    return this.demoMode;
+  }
+
   async getCurrentUser(): Promise<User | null> {
     try {
+      // If in demo mode, return a demo user
+      if (this.demoMode) {
+        const demoUser = localStorage.getItem('demo_user');
+        if (demoUser) {
+          console.log('[DEBUG] SupabaseAuthService: Returning demo user from localStorage');
+          return JSON.parse(demoUser);
+        }
+        return null;
+      }
+
       const { data } = await supabase.auth.getSession();
       
       if (!data.session) {
@@ -42,13 +63,36 @@ export class SupabaseAuthService {
 
   async login(credentials: UserCredentials): Promise<User | null> {
     try {
+      // Check for demo credentials
+      if (this.demoMode || (credentials.email === 'demo@example.com' && credentials.password === 'demo123')) {
+        console.log('[DEBUG] SupabaseAuthService: Using demo login');
+        this.demoMode = true; // Automatically enable demo mode when using demo credentials
+        
+        // Create a demo user
+        const demoUser: User = {
+          id: 'demo-user-id',
+          email: credentials.email,
+          name: 'Demo User',
+          createdAt: new Date().toISOString(),
+          isVerified: true,
+          role: credentials.email.includes('admin') ? 'admin' : 'user',
+        };
+        
+        // Store demo user in localStorage
+        localStorage.setItem('demo_user', JSON.stringify(demoUser));
+        console.log('[DEBUG] SupabaseAuthService: Demo login successful');
+        return demoUser;
+      }
+      
+      // Regular Supabase login
+      console.log('[DEBUG] SupabaseAuthService: Attempting Supabase login');
       const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
       });
       
       if (error) {
-        console.error('Login error:', error.message);
+        console.error('[ERROR] SupabaseAuthService: Login error:', error.message);
         throw new Error(error.message);
       }
       
@@ -73,7 +117,7 @@ export class SupabaseAuthService {
         role: (profile?.role as "admin" | "user") || 'user',
       };
     } catch (error) {
-      console.error('Error during login:', error);
+      console.error('[ERROR] SupabaseAuthService: Error during login:', error);
       throw error;
     }
   }
@@ -116,13 +160,21 @@ export class SupabaseAuthService {
 
   async logout(): Promise<void> {
     try {
+      // Handle demo logout
+      if (this.demoMode) {
+        console.log('[DEBUG] SupabaseAuthService: Demo logout');
+        localStorage.removeItem('demo_user');
+        return;
+      }
+      
+      // Regular Supabase logout
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Logout error:', error.message);
+        console.error('[ERROR] SupabaseAuthService: Logout error:', error.message);
         throw new Error(error.message);
       }
     } catch (error) {
-      console.error('Error during logout:', error);
+      console.error('[ERROR] SupabaseAuthService: Error during logout:', error);
       throw error;
     }
   }
@@ -184,14 +236,28 @@ export class SupabaseAuthService {
     }
   }
 
-  // Check if a user has admin rights (owner or admin) for a tournament
+  // Role checking functions
   isTournamentAdmin(userId: string, tournamentId: string): boolean {
+    // In demo mode, allow admin access to demo admin
+    if (this.demoMode && userId === 'demo-user-id') {
+      const demoUser = localStorage.getItem('demo_user');
+      if (demoUser) {
+        const user = JSON.parse(demoUser);
+        if (user.role === 'admin') return true;
+      }
+    }
+    
     return this.hasRole(userId, tournamentId, 'owner') || 
            this.hasRole(userId, tournamentId, 'admin');
   }
 
-  // Check if a user has a specific role for a tournament
   hasRole(userId: string, tournamentId: string, role: 'owner' | 'admin' | 'participant'): boolean {
+    // In demo mode, grant roles to demo user
+    if (this.demoMode && userId === 'demo-user-id') {
+      // For simplicity, in demo mode the demo user has all roles for all tournaments
+      return true;
+    }
+    
     // First check in-memory cache
     if (this.tournamentRoles.some(
       tr => tr.userId === userId && tr.tournamentId === tournamentId && tr.role === role
