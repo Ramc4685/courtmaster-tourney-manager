@@ -14,6 +14,7 @@ import { TournamentProvider } from './contexts/TournamentContext';
 import { AuthProvider } from './contexts/auth/AuthContext';
 import { Toaster } from './components/ui/toaster';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import { Analytics } from "@vercel/analytics/react";
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
           </Routes>
         </Router>
         <Toaster />
+        <Analytics />
       </TournamentProvider>
     </AuthProvider>
   );

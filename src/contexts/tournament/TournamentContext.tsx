@@ -24,6 +24,8 @@ import {
 } from "./matchOperations";
 import { realtimeTournamentService } from "@/services/realtime/RealtimeTournamentService";
 import { useAuth } from "@/contexts/auth/AuthContext";
+import { assignTournamentSeeding } from "./tournamentOperations";
+import { assignPlayerSeeding } from "@/utils/tournamentProgressionUtils";
 
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
@@ -274,6 +276,24 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     updateTournament(updatedTournament);
   };
 
+  const assignSeeding = (tournamentId: string) => {
+    console.log('[DEBUG] Assigning seeding to players in tournament. ID:', tournamentId);
+    const updatedTournament = assignTournamentSeeding(tournamentId, tournaments);
+    
+    if (updatedTournament) {
+      setTournaments(prev => prev.map(t => 
+        t.id === updatedTournament.id ? updatedTournament : t
+      ));
+      
+      if (currentTournament?.id === tournamentId) {
+        setCurrentTournament(updatedTournament);
+      }
+      
+      // Publish to real-time service
+      realtimeTournamentService.publishTournamentUpdate(updatedTournament);
+    }
+  };
+  
   // Generate the 38-team multi-stage tournament with scheduled times
   const generateMultiStageTournament = () => {
     if (!currentTournament) {
@@ -282,7 +302,12 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     }
     
     console.log('[DEBUG] Generating multi-stage tournament. Tournament ID:', currentTournament.id);
-    const updatedTournament = generateMultiStage(currentTournament);
+    // First, ensure proper seeding is applied
+    const seededTournament = assignPlayerSeeding(currentTournament);
+    console.log('[DEBUG] Applied seeding to players (1-38) before generating tournament.');
+    
+    // Then generate the tournament with matches
+    const updatedTournament = generateMultiStage(seededTournament);
     updateTournament(updatedTournament);
     
     // Auto-assign courts after creating matches
@@ -342,6 +367,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   return (
     <TournamentContext.Provider
       value={{
+        // Keep existing properties
         tournaments,
         currentTournament,
         setCurrentTournament,
@@ -362,7 +388,10 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         generateBracket,
         autoAssignCourts: autoAssignCourtsHandler,
         generateMultiStageTournament,
-        advanceToNextStage
+        advanceToNextStage,
+        
+        // Add the new seeding functionality
+        assignSeeding
       }}
     >
       {children}

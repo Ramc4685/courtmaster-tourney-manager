@@ -1,10 +1,9 @@
-
-import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentStage, ScoringSettings } from "@/types/tournament";
+import { Tournament, Match, Court, Team, MatchStatus, Division } from "@/types/tournament";
 
 export interface TournamentContextType {
   tournaments: Tournament[];
   currentTournament: Tournament | null;
-  setCurrentTournament: (tournament: Tournament) => void;
+  setCurrentTournament: (tournament: Tournament | null) => void;
   createTournament: (tournament: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">) => Tournament;
   updateTournament: (tournament: Tournament) => void;
   deleteTournament: (tournamentId: string) => void;
@@ -23,4 +22,7 @@ export interface TournamentContextType {
   autoAssignCourts: () => Promise<number>;
   generateMultiStageTournament: () => void;
   advanceToNextStage: () => void;
+  
+  // Add new seeding functionality
+  assignSeeding: (tournamentId: string) => void;
 }

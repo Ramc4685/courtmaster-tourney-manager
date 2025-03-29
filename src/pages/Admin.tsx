@@ -2,10 +2,12 @@
 import React from 'react';
 import Layout from '@/components/layout/Layout';
 import { Shield } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageHeader from '@/components/shared/PageHeader';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import UserManagement from '@/components/admin/UserManagement';
+import TournamentManagement from '@/components/admin/TournamentManagement';
+import SystemSettings from '@/components/admin/SystemSettings';
 
 const AdminPage: React.FC = () => {
   return (
@@ -28,78 +30,20 @@ const AdminPage: React.FC = () => {
             
             <TabsContent value="overview">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle>Total Users</CardTitle>
-                    <CardDescription>Active registered users</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-bold">2</p>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle>Active Tournaments</CardTitle>
-                    <CardDescription>Currently running tournaments</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-bold">0</p>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle>Total Matches</CardTitle>
-                    <CardDescription>Matches played across all tournaments</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-bold">0</p>
-                  </CardContent>
-                </Card>
+                <UserManagement />
               </div>
             </TabsContent>
             
             <TabsContent value="users">
-              <Card>
-                <CardHeader>
-                  <CardTitle>User Management</CardTitle>
-                  <CardDescription>View and manage system users</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    User management will be implemented in a future update.
-                  </p>
-                </CardContent>
-              </Card>
+              <UserManagement />
             </TabsContent>
             
             <TabsContent value="tournaments">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tournament Management</CardTitle>
-                  <CardDescription>View and manage all tournaments</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Tournament management will be implemented in a future update.
-                  </p>
-                </CardContent>
-              </Card>
+              <TournamentManagement />
             </TabsContent>
             
             <TabsContent value="settings">
-              <Card>
-                <CardHeader>
-                  <CardTitle>System Settings</CardTitle>
-                  <CardDescription>Configure global system settings</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    System settings will be implemented in a future update.
-                  </p>
-                </CardContent>
-              </Card>
+              <SystemSettings />
             </TabsContent>
           </Tabs>
         </div>

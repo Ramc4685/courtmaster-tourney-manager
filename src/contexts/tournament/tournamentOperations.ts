@@ -1,8 +1,7 @@
-
 import { Tournament, Team, Match, Division, TournamentStage } from "@/types/tournament";
 import { generateId, updateMatchInTournament } from "@/utils/tournamentUtils";
 import { createMatch } from "@/utils/matchUtils";
-import { createInitialRoundMatches } from "@/utils/tournamentProgressionUtils";
+import { createInitialRoundMatches, assignPlayerSeeding } from "@/utils/tournamentProgressionUtils";
 import { autoAssignCourts } from "@/utils/courtUtils";
 
 // Create a new tournament
@@ -122,10 +121,15 @@ export const generateMultiStageTournament = (currentTournament: Tournament): Tou
     return currentTournament;
   }
   
-  const matches = createInitialRoundMatches(currentTournament);
+  // First, apply proper seeding to all players (1-38)
+  const seededTournament = assignPlayerSeeding(currentTournament);
+  console.log("[DEBUG] Applied seeding 1-38 to all players for multi-stage tournament");
+  
+  // Then create matches based on seeding
+  const matches = createInitialRoundMatches(seededTournament);
   
   return {
-    ...currentTournament,
+    ...seededTournament,
     matches,
     currentStage: "INITIAL_ROUND",
     status: "IN_PROGRESS",
@@ -155,4 +159,16 @@ export const moveTeamToDivision = (
     matches: updatedMatches,
     updatedAt: new Date()
   };
+};
+
+// Add new function to assign or update seeding
+export const assignTournamentSeeding = (tournamentId: string, tournaments: Tournament[]): Tournament | null => {
+  const tournament = tournaments.find(t => t.id === tournamentId);
+  if (!tournament) return null;
+  
+  // Apply seeding based on initial ranking
+  const seededTournament = assignPlayerSeeding(tournament);
+  console.log(`[DEBUG] Assigned or updated seeding for ${seededTournament.teams.length} players in tournament ${tournamentId}`);
+  
+  return seededTournament;
 };
