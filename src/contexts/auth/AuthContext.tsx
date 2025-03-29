@@ -1,8 +1,9 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { User, UserCredentials } from '@/types/user';
-import { authService } from '@/services/auth/AuthService';
+import { supabaseAuthService } from '@/services/auth/SupabaseAuthService';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextProps {
   user: User | null;
@@ -24,13 +25,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
 
-  // Check for existing user session on mount
+  // Check for existing user session on mount and set up auth state change listener
   useEffect(() => {
-    console.log('[DEBUG] AuthContext: Checking for existing user session');
-    const currentUser = authService.getCurrentUser();
-    setUser(currentUser);
-    setIsLoading(false);
-    console.log('[DEBUG] AuthContext: User session check completed', currentUser?.email || 'No user');
+    console.log('[DEBUG] AuthContext: Setting up auth state listener');
+    
+    // First set up the auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log(`[DEBUG] AuthContext: Auth state changed: ${event}`, session?.user?.email || 'No user');
+        
+        setIsLoading(true);
+        
+        if (session?.user) {
+          try {
+            // Instead of making a separate call, just get user data from supabaseAuthService
+            const currentUser = await supabaseAuthService.getCurrentUser();
+            console.log('[DEBUG] AuthContext: User session found', currentUser);
+            setUser(currentUser);
+          } catch (error) {
+            console.error('[ERROR] AuthContext: Error fetching user data:', error);
+            setUser(null);
+          }
+        } else {
+          console.log('[DEBUG] AuthContext: No session found, user is logged out');
+          setUser(null);
+        }
+        
+        setIsLoading(false);
+      }
+    );
+    
+    // Then check for existing session
+    const checkCurrentSession = async () => {
+      try {
+        const currentUser = await supabaseAuthService.getCurrentUser();
+        console.log('[DEBUG] AuthContext: Initial session check completed', currentUser?.email || 'No user');
+        setUser(currentUser);
+      } catch (error) {
+        console.error('[ERROR] AuthContext: Error checking current session:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkCurrentSession();
+    
+    // Cleanup subscription when the component unmounts
+    return () => {
+      console.log('[DEBUG] AuthContext: Cleaning up auth state listener');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = useCallback(async (credentials: UserCredentials): Promise<boolean> => {
@@ -38,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      const loggedInUser = await authService.login(credentials);
+      const loggedInUser = await supabaseAuthService.login(credentials);
       
       if (loggedInUser) {
         setUser(loggedInUser);
@@ -57,11 +101,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('[DEBUG] AuthContext: Login failed - invalid credentials');
         return false;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[ERROR] AuthContext: Login error', error);
       toast({
         title: "Login error",
-        description: "An unexpected error occurred. Please try again.",
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
       return false;
@@ -75,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      const registeredUser = await authService.register(userData);
+      const registeredUser = await supabaseAuthService.register(userData);
       
       if (registeredUser) {
         setUser(registeredUser);
@@ -94,11 +138,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('[DEBUG] AuthContext: Registration failed - email already exists');
         return false;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[ERROR] AuthContext: Registration error', error);
       toast({
         title: "Registration error",
-        description: "An unexpected error occurred. Please try again.",
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
       return false;
@@ -107,39 +151,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [toast]);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     console.log('[DEBUG] AuthContext: Logging out user');
-    authService.logout();
-    setUser(null);
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
-    });
+    setIsLoading(true);
+    
+    try {
+      await supabaseAuthService.logout();
+      setUser(null);
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (error: any) {
+      console.error('[ERROR] AuthContext: Logout error', error);
+      toast({
+        title: "Logout error",
+        description: error.message || "An error occurred during logout.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }, [toast]);
 
   // Role checking functions
   const isAdmin = useCallback((tournamentId: string): boolean => {
     if (!user) return false;
-    return authService.isTournamentAdmin(user.id, tournamentId);
+    return supabaseAuthService.isTournamentAdmin(user.id, tournamentId);
   }, [user]);
 
   const isOwner = useCallback((tournamentId: string): boolean => {
     if (!user) return false;
-    return authService.hasRole(user.id, tournamentId, 'owner');
+    return supabaseAuthService.hasRole(user.id, tournamentId, 'owner');
   }, [user]);
 
   const isParticipant = useCallback((tournamentId: string): boolean => {
     if (!user) return false;
-    return authService.hasRole(user.id, tournamentId, 'participant');
+    return supabaseAuthService.hasRole(user.id, tournamentId, 'participant');
   }, [user]);
 
   // Role management functions
   const addTournamentRole = useCallback((userId: string, tournamentId: string, role: 'owner' | 'admin' | 'participant'): boolean => {
-    return authService.addTournamentRole(userId, tournamentId, role);
+    return supabaseAuthService.addTournamentRole(userId, tournamentId, role);
   }, []);
 
   const removeTournamentRole = useCallback((userId: string, tournamentId: string, role: 'owner' | 'admin' | 'participant'): boolean => {
-    return authService.removeTournamentRole(userId, tournamentId, role);
+    return supabaseAuthService.removeTournamentRole(userId, tournamentId, role);
   }, []);
 
   const value = {
