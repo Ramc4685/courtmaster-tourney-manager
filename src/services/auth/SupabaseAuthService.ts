@@ -27,7 +27,8 @@ export class SupabaseAuthService {
       
       return {
         id: data.session.user.id,
-        email: profile.email || data.session.user.email || '',
+        // Use auth user's email if profile email doesn't exist
+        email: data.session.user.email || '',
         name: profile.name || data.session.user.email?.split('@')[0] || '',
         createdAt: profile.created_at || data.session.user.created_at || new Date().toISOString(),
         isVerified: data.session.user.email_confirmed_at !== null,
@@ -64,7 +65,8 @@ export class SupabaseAuthService {
       
       return {
         id: data.user.id,
-        email: profile?.email || data.user.email || '',
+        // Use auth user's email instead of profile email
+        email: data.user.email || '',
         name: profile?.name || data.user.email?.split('@')[0] || '',
         createdAt: profile?.created_at || data.user.created_at || new Date().toISOString(),
         isVerified: data.user.email_confirmed_at !== null,
