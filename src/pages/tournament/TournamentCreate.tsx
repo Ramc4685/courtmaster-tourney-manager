@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -5,7 +6,8 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -30,6 +32,7 @@ const formSchema = z.object({
   endDate: z.date().optional(),
   divisionProgression: z.boolean().default(false),
   autoAssignCourts: z.boolean().default(false),
+  numCourts: z.number().min(1).max(20).default(4),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -50,6 +53,7 @@ const TournamentCreate: React.FC = () => {
       endDate: undefined,
       divisionProgression: false,
       autoAssignCourts: false,
+      numCourts: 4,
     },
   });
 
@@ -58,9 +62,20 @@ const TournamentCreate: React.FC = () => {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate network request
 
+      // Generate courts based on numCourts value
+      const courts = Array.from({ length: values.numCourts }, (_, index) => ({
+        id: crypto.randomUUID(),
+        name: `Court ${index + 1}`,
+        number: index + 1,
+        status: "AVAILABLE"
+      }));
+
       const tournament = createTournament({
         ...values,
         categories: categories,
+        status: "DRAFT", // Add required properties
+        teams: [],      // Add required empty array
+        courts: courts  // Add courts based on numCourts
       });
 
       navigate(`/tournaments/${tournament.id}`);
@@ -170,6 +185,25 @@ const TournamentCreate: React.FC = () => {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="numCourts"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Number of Courts</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={20}
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="flex items-center space-x-2">
                 <FormField
                   control={form.control}
@@ -208,7 +242,8 @@ const TournamentCreate: React.FC = () => {
               </div>
               <TournamentCategorySection
                 categories={categories}
-                setCategories={setCategories}
+                onCategoriesChange={setCategories}
+                parentFormat={form.watch("format") as TournamentFormat}
               />
               <CardFooter>
                 <Button type="submit" disabled={isSubmitting}>
