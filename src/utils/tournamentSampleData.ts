@@ -1,199 +1,137 @@
-
-import { Tournament, TournamentFormat, TournamentCategory, Match, Team } from "@/types/tournament";
-import { createSampleData as generateSampleData, createSampleTeams, createSampleCourts, createSampleTournament } from "./sampleDataGenerator";
+import { Tournament, Team, Match, TournamentFormat, TournamentCategory } from "@/types/tournament";
 import { generateId } from "./tournamentUtils";
 import { TournamentFormatService } from "@/services/tournament/formats/TournamentFormatService";
 
-// Create general sample data
-export const createSampleData = (): Tournament => {
-  return generateSampleData();
+// Function to create sample teams
+export const createSampleTeams = (count: number = 8): Team[] => {
+  const teams: Team[] = [];
+  for (let i = 1; i <= count; i++) {
+    teams.push({
+      id: generateId(),
+      name: `Team ${i}`,
+      players: [
+        { id: generateId(), name: `Player ${i}A` },
+        { id: generateId(), name: `Player ${i}B` },
+      ],
+    });
+  }
+  return teams;
 };
 
-// Get sample data by format
-export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
-  const sampleTournament = createSampleTournament(format);
-  const sampleTeams = createSampleTeams(sampleTournament.categories);
-  const sampleCourts = createSampleCourts();
-  
-  // Generate matches based on format
-  let sampleMatches: Match[] = [];
-  
-  // Generate matches for each category using the appropriate format handler
-  sampleTournament.categories.forEach(category => {
-    // Get teams for this category
-    const categoryTeams = sampleTeams.filter(team => 
-      team.category && team.category.id === category.id
-    );
-    
-    if (categoryTeams.length >= 2) {
-      // Use the category format if available, otherwise use the tournament format
-      const formatToUse = category.format || format;
-      
-      // Generate matches using the format handler
-      const formatMatches = TournamentFormatService.generateMatchesForCategory(
-        formatToUse,
-        categoryTeams,
-        category
-      );
-      
-      // Update tournament ID in all matches
-      const matchesWithCorrectTournamentId = formatMatches.map(match => ({
-        ...match,
-        tournamentId: sampleTournament.id
-      }));
-      
-      sampleMatches = [...sampleMatches, ...matchesWithCorrectTournamentId];
+// Function to create sample matches
+export const createSampleMatches = (teams: Team[], tournamentId: string): Match[] => {
+  const matches: Match[] = [];
+  for (let i = 0; i < teams.length; i += 2) {
+    if (teams[i + 1]) {
+      matches.push({
+        id: generateId(),
+        tournamentId: tournamentId,
+        team1: teams[i],
+        team2: teams[i + 1],
+        scores: [],
+        division: "INITIAL",
+        stage: "INITIAL_ROUND",
+        status: "SCHEDULED",
+        category: {
+          id: "default",
+          name: "Default",
+          type: "CUSTOM"
+        }
+      });
     }
-  });
-  
+  }
+  return matches;
+};
+
+// Function to create sample data
+export const createSampleData = (): Tournament => {
+  const teams = createSampleTeams();
+  const tournamentId = generateId();
+  const matches = createSampleMatches(teams, tournamentId);
+
   return {
-    ...sampleTournament,
-    teams: sampleTeams,
-    courts: sampleCourts,
-    matches: sampleMatches
+    id: tournamentId,
+    name: "Sample Tournament",
+    format: "SINGLE_ELIMINATION",
+    status: "DRAFT",
+    currentStage: "INITIAL_ROUND",
+    teams: teams,
+    matches: matches,
+    courts: [],
+    startDate: new Date(),
+    endDate: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    categories: [{
+      id: "default",
+      name: "Default",
+      type: "CUSTOM"
+    }]
   };
 };
 
-// Generate demo data for a specific category and format
-export const getCategoryDemoData = (
-  format: TournamentFormat,
-  category: TournamentCategory
-): { teams: Team[], matches: Match[] } => {
-  console.log(`Generating demo data for category ${category.name} with format ${format}`);
-  
-  // Generate category-specific team names based on category type
-  const teamNames = generateTeamNamesForCategory(category, 8);
-  
-  // Create teams
-  const teams: Team[] = teamNames.map((name, index) => {
-    // Create 1-2 players based on if it's singles or doubles
-    const isSingles = 
-      category.type === "MENS_SINGLES" || 
-      category.type === "WOMENS_SINGLES";
-    
-    const playerCount = isSingles ? 1 : 2;
-    
-    const players = Array(playerCount).fill(0).map((_, i) => ({
-      id: generateId(),
-      name: generatePlayerName(category, index * playerCount + i)
-    }));
-    
-    return {
-      id: `team-${category.id}-${index + 1}`,
-      name,
-      players,
-      seed: index + 1,
-      category: category
-    };
+// Function to get sample data by format
+export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
+  const teams = createSampleTeams();
+  const tournamentId = generateId();
+  const matches = TournamentFormatService.generateMatchesForCategory(format, teams, {
+    id: "default",
+    name: "Default",
+    type: "CUSTOM"
   });
+
+  return {
+    id: tournamentId,
+    name: `Sample ${format.replace(/_/g, ' ')} Tournament`,
+    format: format,
+    status: "DRAFT",
+    currentStage: "INITIAL_ROUND",
+    teams: teams,
+    matches: matches,
+    courts: [],
+    startDate: new Date(),
+    endDate: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    categories: [{
+      id: "default",
+      name: "Default",
+      type: "CUSTOM"
+    }]
+  };
+};
+
+// Add to the existing imports and code
+// This function needs to be exported if it isn't already
+import { Team as TeamType, Match as MatchType, TournamentCategory as TournamentCategoryType } from "@/types/tournament";
+
+export const getCategoryDemoData = (format: TournamentFormat, category: TournamentCategoryType) => {
+  console.log(`Generating demo data for ${category.name} with format ${format}`);
   
-  // Generate matches using the format handler
-  const matches = TournamentFormatService.generateMatchesForCategory(
-    format,
-    teams,
-    category
-  );
+  // Generate 8-16 teams for the category depending on format
+  const teamCount = format === "ROUND_ROBIN" ? 8 : format === "SWISS" ? 12 : 16;
+  
+  // Generate unique team names for this category
+  const teams: TeamType[] = [];
+  for (let i = 0; i < teamCount; i++) {
+    const teamName = `${category.name} Team ${i + 1}`;
+    teams.push({
+      id: generateId(),
+      name: teamName,
+      players: [{
+        id: generateId(),
+        name: `Player ${i * 2 + 1}`,
+      }, {
+        id: generateId(),
+        name: `Player ${i * 2 + 2}`,
+      }],
+      category: category
+    });
+  }
+  
+  // Get the format handler and generate matches
+  const formatHandler = TournamentFormatService.getFormatHandler(format);
+  const matches = formatHandler.generateMatches(teams, category);
   
   return { teams, matches };
 };
-
-// Helper function to generate realistic team names based on category
-function generateTeamNamesForCategory(category: TournamentCategory, count: number): string[] {
-  const names: string[] = [];
-  
-  // Base names for different category types
-  const mensNames = [
-    "Thunder Hawks", "Royal Eagles", "Power Smashers", "Ace Masters", 
-    "Swift Strikes", "Elite Shuttlers", "Victory Kings", "Rapid Rackets"
-  ];
-  
-  const womensNames = [
-    "Fierce Phoenixes", "Star Strikers", "Swift Swans", "Power Queens", 
-    "Rapid Ravens", "Elite Angels", "Victory Valkyries", "Ace Amazons"
-  ];
-  
-  const mixedNames = [
-    "Dynamic Duo", "Perfect Pair", "Twin Tigers", "Sync Stars", 
-    "Match Masters", "Rally Royals", "Double Dynamite", "Unity Force"
-  ];
-  
-  // Select appropriate names based on category type
-  let baseNames: string[] = [];
-  
-  switch (category.type) {
-    case "MENS_SINGLES":
-    case "MENS_DOUBLES":
-      baseNames = mensNames;
-      break;
-    case "WOMENS_SINGLES":
-    case "WOMENS_DOUBLES":
-      baseNames = womensNames;
-      break;
-    case "MIXED_DOUBLES":
-      baseNames = mixedNames;
-      break;
-    case "CUSTOM":
-    default:
-      // For custom categories, mix all names
-      baseNames = [...mensNames, ...womensNames, ...mixedNames];
-      break;
-  }
-  
-  // Generate unique names
-  for (let i = 0; i < count; i++) {
-    const nameIndex = i % baseNames.length;
-    names.push(baseNames[nameIndex]);
-  }
-  
-  return names;
-}
-
-// Helper function to generate player names based on category
-function generatePlayerName(category: TournamentCategory, index: number): string {
-  // Men's first names
-  const mensFirstNames = [
-    "James", "John", "Robert", "Michael", "William", "David", "Richard", "Thomas",
-    "Charles", "Daniel", "Matthew", "Anthony", "Mark", "Donald", "Steven", "Andrew"
-  ];
-  
-  // Women's first names
-  const womensFirstNames = [
-    "Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica",
-    "Sarah", "Karen", "Nancy", "Lisa", "Margaret", "Betty", "Sandra", "Ashley"
-  ];
-  
-  // Last names
-  const lastNames = [
-    "Smith", "Johnson", "Williams", "Jones", "Brown", "Davis", "Miller", "Wilson",
-    "Moore", "Taylor", "Anderson", "Thomas", "Jackson", "White", "Harris", "Martin"
-  ];
-  
-  // Select first name based on category type
-  let firstName = "";
-  let lastName = lastNames[index % lastNames.length];
-  
-  switch (category.type) {
-    case "MENS_SINGLES":
-    case "MENS_DOUBLES":
-      firstName = mensFirstNames[index % mensFirstNames.length];
-      break;
-    case "WOMENS_SINGLES":
-    case "WOMENS_DOUBLES":
-      firstName = womensFirstNames[index % womensFirstNames.length];
-      break;
-    case "MIXED_DOUBLES":
-      // For mixed doubles, alternate between men's and women's names
-      firstName = index % 2 === 0 
-        ? mensFirstNames[Math.floor(index / 2) % mensFirstNames.length]
-        : womensFirstNames[Math.floor(index / 2) % womensFirstNames.length];
-      break;
-    case "CUSTOM":
-    default:
-      // For custom categories, use a mix
-      const allFirstNames = [...mensFirstNames, ...womensFirstNames];
-      firstName = allFirstNames[index % allFirstNames.length];
-      break;
-  }
-  
-  return `${firstName} ${lastName}`;
-}

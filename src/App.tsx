@@ -10,7 +10,7 @@ import Index from './pages/Index'; // Import Index directly to prevent issues wi
 
 // Lazy-loaded components for better performance
 const Tournaments = lazyWithRetry(() => import('./pages/Tournaments'));
-const TournamentCreate = lazyWithRetry(() => import('./pages/tournament/TournamentCreate'));
+const TournamentCreate = lazyWithRetry(() => import('./pages/TournamentCreate')); // Ensure this points to the correct file
 const TournamentDetail = lazyWithRetry(() => import('./pages/TournamentDetail'));
 const PublicView = lazyWithRetry(() => import('./pages/PublicView'));
 const Public = lazyWithRetry(() => import('./pages/Public'));
