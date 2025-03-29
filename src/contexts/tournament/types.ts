@@ -30,6 +30,6 @@ export interface TournamentContextType {
   removeCategory: (categoryId: string) => void;
   updateCategory: (category: TournamentCategory) => void;
   
-  // New operation for loading demo data for a specific category
-  loadCategoryDemoData: (categoryId: string, format: TournamentFormat) => void;
+  // Updated to include tournamentId
+  loadCategoryDemoData: (tournamentId: string, categoryId: string, format: TournamentFormat) => void;
 }

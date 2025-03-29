@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -93,7 +94,7 @@ const TournamentCreate = () => {
         setTimeout(() => {
           categoriesToLoadDemoData.forEach(category => {
             console.log(`Loading demo data for category ${category.name} with format ${category.format || values.format}`);
-            loadCategoryDemoData(category.id, category.format || values.format as TournamentFormat);
+            loadCategoryDemoData(newTournament.id, category.id, category.format || values.format as TournamentFormat);
           });
         }, 100);
       }

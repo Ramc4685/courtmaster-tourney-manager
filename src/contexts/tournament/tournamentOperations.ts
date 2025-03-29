@@ -1,154 +1,149 @@
+import { Tournament, Team, Match, Division, TournamentStage, CourtStatus, CategoryType } from "@/types/tournament";
+import { generateId } from "@/utils/tournamentUtils";
 
-import { Tournament, Team, TournamentFormat, Division, TournamentStage, TournamentCategory, MatchStatus } from '@/types/tournament';
-import { generateId } from '@/utils/tournamentUtils';
-import { createDefaultCategories } from '@/utils/categoryUtils';
-
+// Creates a new tournament
 export const createNewTournament = (
   tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">,
   tournaments: Tournament[]
-) => {
-  // Ensure the tournament has default categories if none are provided
-  const categories = tournamentData.categories?.length > 0 
-    ? tournamentData.categories 
-    : createDefaultCategories();
-  
-  const tournament: Tournament = {
+): { tournament: Tournament; tournaments: Tournament[] } => {
+  const newTournament: Tournament = {
     id: generateId(),
-    ...tournamentData,
-    categories, // Add categories
-    matches: [],
-    currentStage: "INITIAL_ROUND",
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
+    matches: [],
+    currentStage: "INITIAL_ROUND" as TournamentStage,
+    ...tournamentData,
   };
-  
-  return { tournament, tournaments: [...tournaments, tournament] };
+
+  const updatedTournaments = [...tournaments, newTournament];
+  return { tournament: newTournament, tournaments: updatedTournaments };
 };
 
+// Deletes a tournament
 export const deleteTournament = (
   tournamentId: string,
   tournaments: Tournament[],
   currentTournament: Tournament | null
 ): { tournaments: Tournament[]; currentTournament: Tournament | null } => {
   const updatedTournaments = tournaments.filter(t => t.id !== tournamentId);
-  const updatedCurrentTournament = currentTournament?.id === tournamentId ? null : currentTournament;
-  
+  const updatedCurrentTournament = currentTournament && currentTournament.id === tournamentId ? null : currentTournament;
+
   return { tournaments: updatedTournaments, currentTournament: updatedCurrentTournament };
 };
 
-export const addTeamToTournament = (team: Team, currentTournament: Tournament): Tournament => {
+// Adds a team to a tournament
+export const addTeamToTournament = (team: Team, tournament: Tournament): Tournament => {
+  const updatedTeams = [...tournament.teams, team];
+
   return {
-    ...currentTournament,
-    teams: [...currentTournament.teams, team],
+    ...tournament,
+    teams: updatedTeams,
     updatedAt: new Date()
   };
 };
 
-export const importTeamsToTournament = (teams: Team[], currentTournament: Tournament): Tournament => {
+// Imports teams to a tournament
+export const importTeamsToTournament = (teams: Team[], tournament: Tournament): Tournament => {
+  const updatedTeams = [...tournament.teams, ...teams];
+
   return {
-    ...currentTournament,
-    teams: [...currentTournament.teams, ...teams],
+    ...tournament,
+    teams: updatedTeams,
     updatedAt: new Date()
   };
 };
 
+// Assigns seeding to teams in a tournament
+export const assignTournamentSeeding = (tournamentId: string, tournaments: Tournament[]): Tournament | undefined => {
+  const tournament = tournaments.find(t => t.id === tournamentId);
+  if (!tournament) return undefined;
+
+  // Basic seeding logic (can be expanded)
+  const seededTeams = [...tournament.teams].sort((a, b) => (a.initialRanking || 0) - (b.initialRanking || 0));
+  const updatedTournament: Tournament = { ...tournament, teams: seededTeams };
+
+  return updatedTournament;
+};
+
+// Moves a team to a different division
+export const moveTeamToDivision = (teamId: string, fromDivision: Division, toDivision: Division, tournament: Tournament): Tournament => {
+  // Implementation would go here
+  console.log(`Moving team ${teamId} from ${fromDivision} to ${toDivision}`);
+  return tournament;
+};
+
+// Generates a multi-stage tournament
+export const generateMultiStageTournament = (tournament: Tournament): Tournament => {
+  // Implementation would go here
+  console.log("Generating multi-stage tournament");
+  return tournament;
+};
+
+// Updated function to handle categoryId
 export const scheduleMatchInTournament = (
-  team1Id: string,
-  team2Id: string,
-  scheduledTime: Date,
-  currentTournament: Tournament,
+  team1Id: string, 
+  team2Id: string, 
+  scheduledTime: Date, 
+  tournament: Tournament, 
   courtId?: string,
   categoryId?: string
 ): Tournament => {
-  const team1 = currentTournament.teams.find(team => team.id === team1Id);
-  const team2 = currentTournament.teams.find(team => team.id === team2Id);
-
+  // Find the teams
+  const team1 = tournament.teams.find(t => t.id === team1Id);
+  const team2 = tournament.teams.find(t => t.id === team2Id);
+  
   if (!team1 || !team2) {
-    console.error('One or both teams not found in tournament');
-    return currentTournament;
-  }
-
-  // Determine category from the categoryId parameter or from the teams
-  let category: TournamentCategory | undefined;
-  
-  if (categoryId) {
-    category = currentTournament.categories.find(c => c.id === categoryId);
-  } else {
-    category = team1.category || team2.category || currentTournament.categories[0];
+    console.error("One or both teams not found");
+    return tournament;
   }
   
-  if (!category) {
-    console.error('No category found for match');
-    return currentTournament;
-  }
-
-  const newMatch = {
+  // Find the court if provided
+  const court = courtId ? tournament.courts.find(c => c.id === courtId) : undefined;
+  
+  // Find the category if provided
+  const category = categoryId 
+    ? tournament.categories.find(c => c.id === categoryId) 
+    : undefined;
+  
+  // Create a new match
+  const newMatch: Match = {
     id: generateId(),
-    tournamentId: currentTournament.id,
-    team1: team1,
-    team2: team2,
+    tournamentId: tournament.id,
+    team1,
+    team2,
     scores: [],
     division: "INITIAL" as Division,
     stage: "INITIAL_ROUND" as TournamentStage,
-    scheduledTime: scheduledTime,
+    courtNumber: court?.number,
+    scheduledTime,
     status: "SCHEDULED" as MatchStatus,
-    courtNumber: courtId ? parseInt(courtId.split('-')[1]) : undefined,
-    updatedAt: new Date(),
-    category: category
-  };
-
-  return {
-    ...currentTournament,
-    matches: [...currentTournament.matches, newMatch],
-    updatedAt: new Date()
-  };
-};
-
-export const generateMultiStageTournament = (currentTournament: Tournament): Tournament => {
-  // Placeholder for actual multi-stage tournament generation logic
-  // This would involve creating matches for initial rounds, division placement, and playoff knockout stages
-  return {
-    ...currentTournament,
-    updatedAt: new Date()
-  };
-};
-
-export const moveTeamToDivision = (teamId: string, fromDivision: Division, toDivision: Division, currentTournament: Tournament): Tournament => {
-  // Placeholder for actual team division movement logic
-  return {
-    ...currentTournament,
-    updatedAt: new Date()
-  };
-};
-
-// Add tournament seeding assignment
-export const assignTournamentSeeding = (tournamentId: string, tournaments: Tournament[]) => {
-  const tournament = tournaments.find(t => t.id === tournamentId);
-  if (!tournament) return null;
-  
-  // Assign seeding by categories
-  const updatedTeams = [...tournament.teams];
-  
-  // Group teams by category
-  const teamsByCategory: Record<string, Team[]> = {};
-  for (const team of updatedTeams) {
-    const categoryId = team.category?.id || 'uncategorized';
-    if (!teamsByCategory[categoryId]) {
-      teamsByCategory[categoryId] = [];
+    category: category || { 
+      id: "default", 
+      name: "Default", 
+      type: "CUSTOM" as CategoryType 
     }
-    teamsByCategory[categoryId].push(team);
-  }
+  };
   
-  // Assign seeding within each category group
-  for (const categoryId in teamsByCategory) {
-    const teams = teamsByCategory[categoryId];
-    teams.forEach((team, index) => {
-      team.seed = index + 1;
-    });
+  // Assign the court if provided
+  if (court) {
+    // Update court status
+    const updatedCourts = tournament.courts.map(c => 
+      c.id === court.id 
+        ? { ...c, status: "IN_USE" as CourtStatus, currentMatch: newMatch } 
+        : c
+    );
+    
+    return {
+      ...tournament,
+      matches: [...tournament.matches, newMatch],
+      courts: updatedCourts,
+      updatedAt: new Date()
+    };
   }
   
   return {
     ...tournament,
-    teams: updatedTeams
+    matches: [...tournament.matches, newMatch],
+    updatedAt: new Date()
   };
 };

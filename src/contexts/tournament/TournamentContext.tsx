@@ -353,13 +353,18 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Update loadCategoryDemoData to use the selected format
-  const loadCategoryDemoData = (categoryId: string, format: TournamentFormat) => {
-    if (!currentTournament) return;
+  const loadCategoryDemoData = (tournamentId: string, categoryId: string, format: TournamentFormat) => {
+    // Find the tournament
+    const tournament = tournaments.find(t => t.id === tournamentId);
+    if (!tournament) {
+      console.error('[ERROR] Tournament not found:', tournamentId);
+      return;
+    }
     
-    console.log(`[DEBUG] Loading demo data for category ID ${categoryId} with format ${format}`);
+    console.log(`[DEBUG] Loading demo data for category ID ${categoryId} with format ${format} in tournament ${tournamentId}`);
     
-    // Find the category in the current tournament
-    const category = currentTournament.categories.find(c => c.id === categoryId);
+    // Find the category in the tournament
+    const category = tournament.categories.find(c => c.id === categoryId);
     if (!category) {
       console.error('[ERROR] Category not found:', categoryId);
       return;
@@ -377,13 +382,18 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     
     // Update tournament with new teams and matches for this category
     const updatedTournament = {
-      ...currentTournament,
-      teams: [...currentTournament.teams, ...teams],
-      matches: [...currentTournament.matches, ...matches],
+      ...tournament,
+      teams: [...tournament.teams, ...teams],
+      matches: [...tournament.matches, ...matches],
       updatedAt: new Date()
     };
     
     updateTournament(updatedTournament);
+    
+    // If this is the current tournament, also update that
+    if (currentTournament && currentTournament.id === tournamentId) {
+      setCurrentTournament(updatedTournament);
+    }
   };
 
   return (

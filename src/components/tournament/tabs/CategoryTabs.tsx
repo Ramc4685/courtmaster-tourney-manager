@@ -5,7 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import { TournamentCategory, Tournament } from "@/types/tournament";
 import BracketTab from "./BracketTab";
+import MatchesTab from "./MatchesTab";
 import { useMediaQuery } from "@/hooks/use-mobile";
+import ScoreEntrySection from "@/components/tournament/score-entry/ScoreEntrySection";
+import { useTournament } from "@/contexts/TournamentContext";
 
 interface CategoryTabsProps {
   tournament: Tournament;
@@ -17,6 +20,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
   console.log("Active tab:", activeTab);
   
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const { updateMatch, assignCourt } = useTournament();
   
   const isMobile = useMediaQuery("(max-width: 768px)");
 
@@ -85,6 +89,23 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
               category={currentCategory}
             />
           )}
+          {activeTab === "matches" && currentCategory && (
+            <>
+              <ScoreEntrySection 
+                matches={categoryMatches} 
+                onMatchUpdate={updateMatch} 
+              />
+              <MatchesTab 
+                matches={categoryMatches}
+                teams={categoryTeams}
+                courts={tournament.courts}
+                onMatchUpdate={updateMatch}
+                onAssignCourt={assignCourt}
+                onAddMatchClick={() => {}}
+                onAutoScheduleClick={() => {}}
+              />
+            </>
+          )}
         </div>
       </div>
     );
@@ -113,6 +134,23 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
             tournament={filteredTournament}
             category={currentCategory}
           />
+        )}
+        {activeTab === "matches" && currentCategory && (
+          <>
+            <ScoreEntrySection 
+              matches={categoryMatches} 
+              onMatchUpdate={updateMatch} 
+            />
+            <MatchesTab 
+              matches={categoryMatches}
+              teams={categoryTeams}
+              courts={tournament.courts}
+              onMatchUpdate={updateMatch}
+              onAssignCourt={assignCourt}
+              onAddMatchClick={() => {}}
+              onAutoScheduleClick={() => {}}
+            />
+          </>
         )}
       </div>
     </div>

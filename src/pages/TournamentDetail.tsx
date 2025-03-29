@@ -109,7 +109,7 @@ const TournamentDetail = () => {
       : undefined;
     
     // If a category is found or we're not using categories yet, schedule the match
-    scheduleMatch(team1Id, team2Id, time, courtId);
+    scheduleMatch(team1Id, team2Id, time, courtId, categoryId);
     setAddMatchDialogOpen(false);
   };
 
@@ -149,6 +149,7 @@ const TournamentDetail = () => {
   };
 
   const isUserAdmin = user ? user.role === 'admin' : false;
+  const hasCategoriesEnabled = currentTournament.categories && currentTournament.categories.length > 0;
 
   return (
     <Layout>
@@ -188,21 +189,28 @@ const TournamentDetail = () => {
           </TabsContent>
 
           <TabsContent value="matches" className="py-4">
-            {/* Add the Score Entry Section before the matches table */}
-            <ScoreEntrySection 
-              matches={currentTournament.matches} 
-              onMatchUpdate={updateMatch} 
-            />
-            
-            {/* Render the matches tab */}
-            {renderMatchesTab(
-              currentTournament.matches,
-              currentTournament.teams,
-              currentTournament.courts,
-              updateMatch,
-              assignCourt,
-              () => setAddMatchDialogOpen(true),
-              handleAutoSchedule
+            {hasCategoriesEnabled ? (
+              <CategoryTabs 
+                tournament={currentTournament}
+                activeTab={activeTab}
+              />
+            ) : (
+              <>
+                <ScoreEntrySection 
+                  matches={currentTournament.matches} 
+                  onMatchUpdate={updateMatch} 
+                />
+                
+                {renderMatchesTab(
+                  currentTournament.matches,
+                  currentTournament.teams,
+                  currentTournament.courts,
+                  updateMatch,
+                  assignCourt,
+                  () => setAddMatchDialogOpen(true),
+                  handleAutoSchedule
+                )}
+              </>
             )}
           </TabsContent>
 
@@ -215,7 +223,7 @@ const TournamentDetail = () => {
           </TabsContent>
 
           <TabsContent value="bracket" className="py-4">
-            {currentTournament.categories.length > 0 ? (
+            {hasCategoriesEnabled ? (
               <CategoryTabs 
                 tournament={currentTournament}
                 activeTab={activeTab}
