@@ -1,3 +1,4 @@
+
 import { Tournament, Team, Division, TournamentStage, MatchStatus, Match, TournamentCategory } from "@/types/tournament";
 import { generateId } from "./tournamentUtils";
 
@@ -113,4 +114,176 @@ export const assignPlayerSeeding = (tournament: Tournament): Tournament => {
     teams: updatedTeams,
     updatedAt: new Date()
   };
+};
+
+// Function to create division placement matches
+export const createDivisionPlacementMatches = (tournament: Tournament): Match[] => {
+  // Get all teams that should participate in division placement
+  const teamsForPlacement = [...tournament.teams];
+  const newMatches: Match[] = [];
+  
+  // Sort teams by their performance in initial rounds if applicable
+  // For simplicity, we'll use their seed or just do a basic pairing
+  
+  // Group teams by category
+  const teamsByCategory: Record<string, Team[]> = {};
+  
+  for (const team of teamsForPlacement) {
+    const categoryId = team.category?.id || 'uncategorized';
+    if (!teamsByCategory[categoryId]) {
+      teamsByCategory[categoryId] = [];
+    }
+    teamsByCategory[categoryId].push(team);
+  }
+  
+  // Create matches for each category
+  Object.entries(teamsByCategory).forEach(([categoryId, teams]) => {
+    // Find the corresponding category object
+    const category = tournament.categories.find(c => c.id === categoryId) || tournament.categories[0];
+    
+    // Create matches by pairing teams
+    for (let i = 0; i < teams.length; i += 2) {
+      const team1 = teams[i];
+      const team2 = teams[i + 1];
+      
+      // If we have an odd number of teams, the last team might not have an opponent
+      if (team1 && team2) {
+        const divisionMatch: Match = {
+          id: generateId(),
+          tournamentId: tournament.id,
+          team1: team1,
+          team2: team2,
+          scores: [],
+          division: "INITIAL" as Division,
+          stage: "DIVISION_PLACEMENT" as TournamentStage,
+          status: "SCHEDULED" as MatchStatus,
+          courtNumber: undefined,
+          category: category,
+          updatedAt: new Date()
+        };
+        
+        newMatches.push(divisionMatch);
+      }
+    }
+  });
+  
+  return newMatches;
+};
+
+// Function to create playoff knockout matches
+export const createPlayoffKnockoutMatches = (tournament: Tournament): Match[] => {
+  // Get teams for each division based on their performance in division placement
+  // This is a simplified approach; in reality, you would determine division placement
+  // based on match results
+  
+  const division1Teams: Team[] = [];
+  const division2Teams: Team[] = [];
+  const division3Teams: Team[] = [];
+  
+  // In a real implementation, you would sort teams by their performance
+  // For simplicity, we'll just use the first 1/3 for division 1, etc.
+  const sortedTeams = [...tournament.teams].sort((a, b) => (a.seed || 999) - (b.seed || 999));
+  
+  const teamsPerDivision = Math.ceil(sortedTeams.length / 3);
+  
+  // Group teams by category first
+  const teamsByCategory: Record<string, Team[]> = {};
+  
+  for (const team of sortedTeams) {
+    const categoryId = team.category?.id || 'uncategorized';
+    if (!teamsByCategory[categoryId]) {
+      teamsByCategory[categoryId] = [];
+    }
+    teamsByCategory[categoryId].push(team);
+  }
+  
+  const newMatches: Match[] = [];
+  
+  // Create playoff matches for each category
+  Object.entries(teamsByCategory).forEach(([categoryId, categoryTeams]) => {
+    // Find the corresponding category object
+    const category = tournament.categories.find(c => c.id === categoryId) || tournament.categories[0];
+    
+    // Divide teams into divisions for this category
+    const teamsCount = categoryTeams.length;
+    const teamsPerDiv = Math.ceil(teamsCount / 3);
+    
+    const div1Teams = categoryTeams.slice(0, teamsPerDiv);
+    const div2Teams = categoryTeams.slice(teamsPerDiv, teamsPerDiv * 2);
+    const div3Teams = categoryTeams.slice(teamsPerDiv * 2);
+    
+    // Create knockout matches for Division 1
+    for (let i = 0; i < div1Teams.length; i += 2) {
+      const team1 = div1Teams[i];
+      const team2 = div1Teams[i + 1];
+      
+      if (team1 && team2) {
+        const knockoutMatch: Match = {
+          id: generateId(),
+          tournamentId: tournament.id,
+          team1: team1,
+          team2: team2,
+          scores: [],
+          division: "DIVISION_1" as Division,
+          stage: "PLAYOFF_KNOCKOUT" as TournamentStage,
+          status: "SCHEDULED" as MatchStatus,
+          courtNumber: undefined,
+          category: category,
+          updatedAt: new Date()
+        };
+        
+        newMatches.push(knockoutMatch);
+      }
+    }
+    
+    // Create knockout matches for Division 2
+    for (let i = 0; i < div2Teams.length; i += 2) {
+      const team1 = div2Teams[i];
+      const team2 = div2Teams[i + 1];
+      
+      if (team1 && team2) {
+        const knockoutMatch: Match = {
+          id: generateId(),
+          tournamentId: tournament.id,
+          team1: team1,
+          team2: team2,
+          scores: [],
+          division: "DIVISION_2" as Division,
+          stage: "PLAYOFF_KNOCKOUT" as TournamentStage,
+          status: "SCHEDULED" as MatchStatus,
+          courtNumber: undefined,
+          category: category,
+          updatedAt: new Date()
+        };
+        
+        newMatches.push(knockoutMatch);
+      }
+    }
+    
+    // Create knockout matches for Division 3
+    for (let i = 0; i < div3Teams.length; i += 2) {
+      const team1 = div3Teams[i];
+      const team2 = div3Teams[i + 1];
+      
+      if (team1 && team2) {
+        const knockoutMatch: Match = {
+          id: generateId(),
+          tournamentId: tournament.id,
+          team1: team1,
+          team2: team2,
+          scores: [],
+          division: "DIVISION_3" as Division,
+          stage: "PLAYOFF_KNOCKOUT" as TournamentStage,
+          status: "SCHEDULED" as MatchStatus,
+          courtNumber: undefined,
+          category: category,
+          updatedAt: new Date()
+        };
+        
+        newMatches.push(knockoutMatch);
+      }
+    }
+  });
+  
+  return newMatches;
 };
