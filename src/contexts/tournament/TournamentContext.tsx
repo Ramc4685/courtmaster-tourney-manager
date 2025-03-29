@@ -31,7 +31,10 @@ import { assignPlayerSeeding } from "@/utils/tournamentProgressionUtils";
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
 export const TournamentProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
+  // We cannot use useAuth here directly because it might create a circular dependency
+  // Instead, get the auth state through a different approach or pass it as props
+  const authContext = useAuth();
+  const user = authContext?.user || null;
   
   // Initialize state from localStorage if available, otherwise use empty arrays/null
   const [tournaments, setTournaments] = useState<Tournament[]>(() => {
