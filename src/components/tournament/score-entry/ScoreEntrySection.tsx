@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Match, MatchStatus } from "@/types/tournament";
+import { Match, MatchStatus, Court, CourtStatus } from "@/types/tournament";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -85,7 +85,7 @@ const ScoreEntrySection: React.FC<ScoreEntrySectionProps> = ({ matches, onMatchU
       id: `court-${m.courtNumber}`,
       number: m.courtNumber!,
       name: `Court ${m.courtNumber}`,
-      status: m.status === "IN_PROGRESS" ? "IN_USE" : "AVAILABLE" as const,
+      status: m.status === "IN_PROGRESS" ? "IN_USE" as CourtStatus : "AVAILABLE" as CourtStatus,
       currentMatch: m.status === "IN_PROGRESS" ? m : undefined
     }));
 
