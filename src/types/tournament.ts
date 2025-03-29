@@ -1,4 +1,3 @@
-
 export type Player = {
   id: string;
   name: string;
@@ -16,7 +15,7 @@ export type Team = {
 
 export type Division = "DIVISION_1" | "DIVISION_2" | "DIVISION_3" | "QUALIFIER_DIV1" | "QUALIFIER_DIV2" | "GROUP_DIV3" | "INITIAL";
 
-export type TournamentStage = "INITIAL_ROUND" | "DIVISION_PLACEMENT" | "PLAYOFF_KNOCKOUT" | "COMPLETED";
+export type TournamentStage = "INITIAL_ROUND" | "DIVISION_PLACEMENT" | "PLAYOFF_KNOCKOUT" | "GROUP_STAGE" | "ELIMINATION_ROUND" | "COMPLETED";
 
 export type MatchStatus = "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 
@@ -55,7 +54,13 @@ export type Court = {
   currentMatch?: Match;
 };
 
-export type TournamentFormat = "SINGLE_ELIMINATION" | "DOUBLE_ELIMINATION" | "ROUND_ROBIN" | "GROUP_DIVISION" | "MULTI_STAGE";
+export type TournamentFormat = 
+  | "SINGLE_ELIMINATION" 
+  | "DOUBLE_ELIMINATION" 
+  | "ROUND_ROBIN" 
+  | "SWISS"
+  | "GROUP_KNOCKOUT" 
+  | "MULTI_STAGE";
 
 export type TournamentStatus = "DRAFT" | "PUBLISHED" | "IN_PROGRESS" | "COMPLETED";
 
@@ -85,15 +90,25 @@ export type Tournament = {
   autoAssignCourts?: boolean; // Whether to automatically assign available courts to scheduled matches
   scoringSettings?: ScoringSettings; // Added scoring settings
   
+  // New properties for format-specific configuration
+  formatConfig?: {
+    groupCount?: number;             // For GROUP_KNOCKOUT - number of groups
+    teamsPerGroup?: number;          // For GROUP_KNOCKOUT - max teams per group
+    advancingTeamsPerGroup?: number; // For GROUP_KNOCKOUT - teams advancing from each group
+    swissRounds?: number;            // For SWISS - number of rounds to play
+    consolationRounds?: boolean;     // For SINGLE_ELIMINATION - whether to play consolation matches
+  };
+  
   // New properties for future Firebase/external database integration
   ownerId?: string; // For user authentication and ownership
   isPublic?: boolean; // Whether the tournament is publicly visible
   metadata?: Record<string, any>; // For custom metadata and future extensibility
 };
 
-// Groups for Division 3 group stage
+// Groups for group stage formats
 export type Group = {
   id: string;
   name: string;
   teamIds: string[];
+  matches?: string[]; // IDs of matches in this group
 };

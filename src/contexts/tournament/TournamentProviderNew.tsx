@@ -1,10 +1,10 @@
 import React, { createContext, useState, ReactNode, useEffect } from "react";
-import { Tournament, Match, Court, Team, MatchStatus, Division } from "@/types/tournament";
+import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat } from "@/types/tournament";
 import { TournamentContextType } from "./types";
 import { tournamentService } from "@/services/tournament/TournamentService";
 import { matchService } from "@/services/tournament/MatchService";
 import { courtService } from "@/services/tournament/CourtService";
-import { createSampleData } from "@/utils/tournamentSampleData";
+import { createSampleData, getSampleDataByFormat } from "@/utils/tournamentSampleData";
 import { assignPlayerSeeding } from "@/utils/tournamentProgressionUtils";
 
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -279,9 +279,10 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   };
   
   // Load sample data
-  const loadSampleData = async () => {
+  const loadSampleData = async (format?: TournamentFormat) => {
     try {
-      const sampleData = createSampleData();
+      console.log('[DEBUG] Loading sample tournament data for format:', format || 'MULTI_STAGE');
+      const sampleData = format ? getSampleDataByFormat(format) : createSampleData();
       await tournamentService.saveCurrentTournament(sampleData);
       
       const tournaments = await tournamentService.getTournaments();

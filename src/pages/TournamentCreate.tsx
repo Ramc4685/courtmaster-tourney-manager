@@ -114,6 +114,17 @@ const TournamentCreate = () => {
     }
   };
 
+  // Add a new state for the selected tournament format
+  // Function to load sample data based on format
+  const handleLoadSampleData = () => {
+    const { loadSampleData } = useTournament();
+    loadSampleData(format); // Pass the selected format
+    toast({
+      title: "Sample Data Loaded",
+      description: `Sample data for ${format} tournament has been loaded.`,
+    });
+  };
+
   // If not authenticated, don't render the form
   if (!user) {
     return (
@@ -178,12 +189,99 @@ const TournamentCreate = () => {
                   <SelectItem value="SINGLE_ELIMINATION">Single Elimination</SelectItem>
                   <SelectItem value="DOUBLE_ELIMINATION">Double Elimination</SelectItem>
                   <SelectItem value="ROUND_ROBIN">Round Robin</SelectItem>
-                  <SelectItem value="GROUP_DIVISION">Group & Division Format</SelectItem>
+                  <SelectItem value="SWISS">Swiss System</SelectItem>
+                  <SelectItem value="GROUP_KNOCKOUT">Group Stage + Knockout</SelectItem>
+                  <SelectItem value="MULTI_STAGE">Multi-Stage 38-Team Format</SelectItem>
                 </SelectContent>
               </Select>
+              
+              {/* Format explanation */}
+              <div className="mt-2 text-sm text-gray-500">
+                {format === "SINGLE_ELIMINATION" && (
+                  <p>Single elimination: Teams are eliminated after one loss, with winners advancing until a champion is declared.</p>
+                )}
+                {format === "DOUBLE_ELIMINATION" && (
+                  <p>Double elimination: Teams get a second chance in a losers bracket and are eliminated after two losses.</p>
+                )}
+                {format === "ROUND_ROBIN" && (
+                  <p>Round robin: Every team plays against every other team; standings are based on total wins and losses.</p>
+                )}
+                {format === "SWISS" && (
+                  <p>Swiss system: Teams play a fixed number of rounds against opponents with similar records; no immediate elimination.</p>
+                )}
+                {format === "GROUP_KNOCKOUT" && (
+                  <p>Group stage + knockout: Teams are divided into groups for round-robin play, then top teams advance to elimination rounds.</p>
+                )}
+                {format === "MULTI_STAGE" && (
+                  <p>Multi-stage format: 38-team tournament with initial rounds, division placement, and playoff knockout stages.</p>
+                )}
+              </div>
             </div>
 
-            {format === "GROUP_DIVISION" && (
+            {/* Format-specific options */}
+            {format === "GROUP_KNOCKOUT" && (
+              <div className="space-y-2 border rounded-md p-4">
+                <h3 className="font-medium">Group Stage Configuration</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="groupCount">Number of Groups</Label>
+                    <Select defaultValue="3">
+                      <SelectTrigger id="groupCount">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="2">2 Groups</SelectItem>
+                        <SelectItem value="3">3 Groups</SelectItem>
+                        <SelectItem value="4">4 Groups</SelectItem>
+                        <SelectItem value="6">6 Groups</SelectItem>
+                        <SelectItem value="8">8 Groups</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="advancingTeams">Teams Advancing per Group</Label>
+                    <Select defaultValue="2">
+                      <SelectTrigger id="advancingTeams">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Top 1 Team</SelectItem>
+                        <SelectItem value="2">Top 2 Teams</SelectItem>
+                        <SelectItem value="3">Top 3 Teams</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {format === "SWISS" && (
+              <div className="space-y-2">
+                <Label htmlFor="swissRounds">Number of Swiss Rounds</Label>
+                <Select defaultValue="3">
+                  <SelectTrigger id="swissRounds">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="3">3 Rounds</SelectItem>
+                    <SelectItem value="4">4 Rounds</SelectItem>
+                    <SelectItem value="5">5 Rounds</SelectItem>
+                    <SelectItem value="6">6 Rounds</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {format === "SINGLE_ELIMINATION" && (
+              <div className="flex items-center space-x-2">
+                <Switch id="consolation-rounds" />
+                <Label htmlFor="consolation-rounds">
+                  Include Consolation Rounds (3rd/4th Place Match)
+                </Label>
+              </div>
+            )}
+
+            {format === "MULTI_STAGE" && (
               <div className="flex items-center space-x-2">
                 <Switch
                   id="division-progression"
@@ -268,6 +366,21 @@ const TournamentCreate = () => {
                   +
                 </Button>
               </div>
+            </div>
+
+            {/* Load Sample Data button */}
+            <div className="mt-4">
+              <Button 
+                variant="outline" 
+                type="button"
+                onClick={handleLoadSampleData}
+                className="w-full"
+              >
+                Load Sample Data for {format}
+              </Button>
+              <p className="text-xs text-gray-500 mt-1 text-center">
+                This will create a new tournament with sample teams and matches
+              </p>
             </div>
           </CardContent>
           <CardFooter className="flex justify-end space-x-2">

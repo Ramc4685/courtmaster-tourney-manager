@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tournament } from "@/types/tournament";
 import { format } from 'date-fns';
 import TournamentScoringSettingsSection from "@/components/tournament/TournamentScoringSettingsSection";
+import TournamentFormatExplanation from "@/components/tournament/TournamentFormatExplanation";
 
 interface OverviewTabProps {
   tournament: Tournament;
@@ -29,6 +30,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       case "INITIAL_ROUND": return "Division Placement";
       case "DIVISION_PLACEMENT": return "Playoff Knockout";
       case "PLAYOFF_KNOCKOUT": return "Completed";
+      case "GROUP_STAGE": return "Elimination Round";
       default: return "Next Stage";
     }
   };
@@ -44,12 +46,12 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           <CardContent className="space-y-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm font-medium">Format</p>
-                <p>{tournament.format}</p>
-              </div>
-              <div>
                 <p className="text-sm font-medium">Status</p>
                 <p>{tournament.status}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium">Current Stage</p>
+                <p>{tournament.currentStage}</p>
               </div>
               <div>
                 <p className="text-sm font-medium">Start Date</p>
@@ -60,12 +62,12 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                 <p>{tournament.endDate ? format(new Date(tournament.endDate), 'PPP') : 'N/A'}</p>
               </div>
               <div>
-                <p className="text-sm font-medium">Auto-Assign Courts</p>
-                <p>{tournament.autoAssignCourts ? "Enabled" : "Disabled"}</p>
+                <p className="text-sm font-medium">Teams</p>
+                <p>{tournament.teams.length}</p>
               </div>
               <div>
-                <p className="text-sm font-medium">Division Progression</p>
-                <p>{tournament.divisionProgression ? "Enabled" : "Disabled"}</p>
+                <p className="text-sm font-medium">Courts</p>
+                <p>{tournament.courts.length}</p>
               </div>
             </div>
             
@@ -106,6 +108,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           onUpdateTournament={onUpdateTournament} 
         />
       </div>
+
+      {/* Add Format Explanation Card */}
+      <TournamentFormatExplanation tournament={tournament} />
 
       <Card>
         <CardHeader>

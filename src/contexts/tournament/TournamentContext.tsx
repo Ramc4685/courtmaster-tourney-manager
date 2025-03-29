@@ -1,6 +1,6 @@
 import React, { createContext, useState, ReactNode, useEffect } from "react";
-import { Tournament, Match, Court, Team, MatchStatus, Division } from "@/types/tournament";
-import { createSampleData } from "@/utils/tournamentSampleData";
+import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentStage, TournamentFormat } from "@/types/tournament";
+import { createSampleData, getSampleDataByFormat } from "@/utils/tournamentSampleData";
 import { generateId, findMatchById, updateMatchInTournament } from "@/utils/tournamentUtils";
 import { assignCourtToMatch, autoAssignCourts } from "@/utils/courtUtils";
 import { TournamentContextType } from "./types";
@@ -355,10 +355,10 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     // and add it to the matches array
   };
   
-  // Load sample data
-  const loadSampleData = () => {
-    console.log('[DEBUG] Loading sample tournament data');
-    const sampleData = createSampleData();
+  // Load sample data - updated to accept format parameter
+  const loadSampleData = (format?: TournamentFormat) => {
+    console.log('[DEBUG] Loading sample tournament data for format:', format || 'MULTI_STAGE');
+    const sampleData = format ? getSampleDataByFormat(format) : createSampleData();
     setCurrentTournament(sampleData);
     setTournaments(prev => [...prev, sampleData]);
   };

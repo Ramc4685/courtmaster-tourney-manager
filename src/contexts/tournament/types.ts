@@ -1,5 +1,5 @@
 
-import { Tournament, Match, Court, Team, MatchStatus, Division } from "@/types/tournament";
+import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat } from "@/types/tournament";
 
 export interface TournamentContextType {
   tournaments: Tournament[];
@@ -17,7 +17,7 @@ export interface TournamentContextType {
   updateMatchScore: (matchId: string, setIndex: number, team1Score: number, team2Score: number) => void;
   completeMatch: (matchId: string) => void;
   moveTeamToDivision: (teamId: string, fromDivision: Division, toDivision: Division) => void;
-  loadSampleData: () => void;
+  loadSampleData: (format?: TournamentFormat) => void;
   scheduleMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => void;
   generateBracket: () => void;
   autoAssignCourts: () => Promise<number>;
