@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +17,7 @@ import { Court, Match, Team, TournamentCategory } from "@/types/tournament";
 import { renderMatchesTab } from "@/utils/tournamentComponentHelper";
 import { useAuth } from "@/contexts/auth/AuthContext";
 import ScoreEntrySection from "@/components/tournament/score-entry/ScoreEntrySection";
+import CategoryTabs from "@/components/tournament/tabs/CategoryTabs";
 
 const TournamentDetail = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
@@ -213,9 +215,16 @@ const TournamentDetail = () => {
           </TabsContent>
 
           <TabsContent value="bracket" className="py-4">
-            <BracketTab
-              tournament={currentTournament}
-            />
+            {currentTournament.categories.length > 0 ? (
+              <CategoryTabs 
+                tournament={currentTournament}
+                activeTab={activeTab}
+              />
+            ) : (
+              <BracketTab
+                tournament={currentTournament}
+              />
+            )}
           </TabsContent>
         </Tabs>
       </div>
