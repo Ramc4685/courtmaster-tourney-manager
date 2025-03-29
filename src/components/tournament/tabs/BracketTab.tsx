@@ -8,7 +8,7 @@ import { Info } from "lucide-react";
 
 interface BracketTabProps {
   tournament: Tournament;
-  category?: TournamentCategory; // Added category prop as optional
+  category?: TournamentCategory; // Added category prop
 }
 
 const BracketTab: React.FC<BracketTabProps> = ({ tournament, category }) => {
@@ -16,6 +16,10 @@ const BracketTab: React.FC<BracketTabProps> = ({ tournament, category }) => {
   
   // Check if tournament has moved to the playoff stage
   const hasPlayoffMatches = tournament.matches.some(m => m.stage === "PLAYOFF_KNOCKOUT");
+  
+  // Add debugging for category props
+  console.log("BracketTab rendering with category:", category?.name);
+  console.log("Tournament has playoff matches:", hasPlayoffMatches);
   
   if (!hasPlayoffMatches) {
     return (

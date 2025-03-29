@@ -13,8 +13,10 @@ const Tournaments = lazyWithRetry(() => import('./pages/Tournaments'));
 const TournamentCreate = lazyWithRetry(() => import('./pages/tournament/TournamentCreate'));
 const TournamentDetail = lazyWithRetry(() => import('./pages/TournamentDetail'));
 const PublicView = lazyWithRetry(() => import('./pages/PublicView'));
+const Public = lazyWithRetry(() => import('./pages/Public'));
 const PublicViewRealtime = lazyWithRetry(() => import('./pages/PublicViewRealtime'));
 const Scoring = lazyWithRetry(() => import('./pages/Scoring'));
+const Admin = lazyWithRetry(() => import('./pages/Admin'));
 
 /**
  * Root App component with optimized route loading and performance monitoring
@@ -56,8 +58,10 @@ function App() {
               <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><TournamentDetail /></ProtectedRoute>} />
               <Route path="/tournaments/:tournamentId/scoring" element={<ProtectedRoute><Scoring /></ProtectedRoute>} />
               <Route path="/scoring/:tournamentId" element={<ProtectedRoute><Scoring /></ProtectedRoute>} />
+              <Route path="/public" element={<Public />} />
               <Route path="/public/:tournamentId" element={<PublicView />} />
               <Route path="/public/realtime/:tournamentId" element={<PublicViewRealtime />} />
+              <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><Admin /></ProtectedRoute>} />
             </Routes>
           </Suspense>
         </Router>

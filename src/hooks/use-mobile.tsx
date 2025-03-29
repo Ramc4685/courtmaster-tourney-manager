@@ -1,27 +1,28 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-export function useMediaQuery(query: string): boolean {
+export const useMediaQuery = (query: string) => {
   const [matches, setMatches] = useState(false);
 
   useEffect(() => {
     const media = window.matchMedia(query);
+    
+    // Initial check
     if (media.matches !== matches) {
       setMatches(media.matches);
     }
     
-    const listener = () => {
-      setMatches(media.matches);
-    };
+    // Event listener for changes
+    const listener = () => setMatches(media.matches);
+    media.addEventListener("change", listener);
     
-    media.addEventListener('change', listener);
-    return () => media.removeEventListener('change', listener);
+    return () => media.removeEventListener("change", listener);
   }, [matches, query]);
 
   return matches;
-}
+};
 
-// This is a convenient shorthand for mobile detection
-export function useIsMobile(): boolean {
+// Alias for backward compatibility
+export const useIsMobile = () => {
   return useMediaQuery("(max-width: 768px)");
-}
+};
