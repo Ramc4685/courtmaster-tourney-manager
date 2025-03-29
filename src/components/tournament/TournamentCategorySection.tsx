@@ -12,13 +12,13 @@ import { Input } from "@/components/ui/input";
 interface TournamentCategorySectionProps {
   categories: TournamentCategory[];
   onCategoriesChange: (categories: TournamentCategory[]) => void;
-  parentFormat?: TournamentFormat; // Added parentFormat prop as optional
+  parentFormat?: TournamentFormat; // Optional prop
 }
 
 const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({ 
   categories, 
   onCategoriesChange,
-  parentFormat // Add this to the component props
+  parentFormat 
 }) => {
   const [customCategoryName, setCustomCategoryName] = useState('');
 
@@ -27,7 +27,7 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
     const exists = categories.some(c => c.type === type);
     if (exists) return;
     
-    // If parentFormat is provided, use it as the default format for the category
+    // Use "SINGLE_ELIMINATION" as default format if no parentFormat is provided
     const defaultFormat = parentFormat || "SINGLE_ELIMINATION";
     
     onCategoriesChange([
@@ -36,7 +36,7 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
         id: crypto.randomUUID(),
         name,
         type,
-        format: defaultFormat // Use the parent format if available
+        format: defaultFormat
       }
     ]);
   };
@@ -44,7 +44,7 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
   const handleAddCustomCategory = () => {
     if (!customCategoryName.trim()) return;
     
-    // If parentFormat is provided, use it as the default format for the category
+    // Use "SINGLE_ELIMINATION" as default format if no parentFormat is provided
     const defaultFormat = parentFormat || "SINGLE_ELIMINATION";
     
     onCategoriesChange([
@@ -55,7 +55,7 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
         type: "CUSTOM" as CategoryType,
         isCustom: true,
         customName: customCategoryName,
-        format: defaultFormat // Use the parent format if available
+        format: defaultFormat
       }
     ]);
     

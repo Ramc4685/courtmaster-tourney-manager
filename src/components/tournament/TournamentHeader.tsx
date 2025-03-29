@@ -13,17 +13,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { Tournament, TournamentFormat } from "@/types/tournament";
+import { Tournament, TournamentCategory } from "@/types/tournament";
 import { toast } from "@/components/ui/use-toast";
+import TournamentCategorySection from "@/components/tournament/TournamentCategorySection";
 
 interface TournamentHeaderProps {
   tournament: Tournament;
@@ -39,7 +33,6 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
   const [editMode, setEditMode] = useState(false);
   const [tournamentName, setTournamentName] = useState(tournament.name);
   const [tournamentDescription, setTournamentDescription] = useState(tournament.description || "");
-  const [tournamentFormat, setTournamentFormat] = useState<TournamentFormat>(tournament.format);
   const [startDate, setStartDate] = useState<Date | undefined>(
     tournament.startDate ? new Date(tournament.startDate) : undefined
   );
@@ -52,6 +45,9 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
   const [divisionProgressionEnabled, setDivisionProgressionEnabled] = useState(
     tournament.divisionProgression || false
   );
+  const [categories, setCategories] = useState<TournamentCategory[]>(
+    tournament.categories || []
+  );
   const navigate = useNavigate();
 
   const handleTournamentUpdate = () => {
@@ -59,11 +55,11 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
       ...tournament,
       name: tournamentName,
       description: tournamentDescription,
-      format: tournamentFormat,
       startDate: startDate || new Date(),
       endDate: endDate,
       autoAssignCourts: autoAssignCourtsEnabled,
       divisionProgression: divisionProgressionEnabled,
+      categories: categories,
       updatedAt: new Date()
     };
 
@@ -101,24 +97,6 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
               className="mb-2"
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="mb-1 block">Tournament Format</Label>
-                <Select 
-                  value={tournamentFormat} 
-                  onValueChange={(value) => setTournamentFormat(value as TournamentFormat)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select format" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SINGLE_ELIMINATION">Single Elimination</SelectItem>
-                    <SelectItem value="DOUBLE_ELIMINATION">Double Elimination</SelectItem>
-                    <SelectItem value="ROUND_ROBIN">Round Robin</SelectItem>
-                    <SelectItem value="GROUP_DIVISION">Group Division</SelectItem>
-                    <SelectItem value="MULTI_STAGE">Multi-Stage</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="auto-assign-courts">Auto-Assign Courts</Label>
@@ -195,6 +173,12 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
                 </Popover>
               </div>
             </div>
+            
+            {/* Add Tournament Category Section to Edit screen */}
+            <TournamentCategorySection
+              categories={categories}
+              onCategoriesChange={setCategories}
+            />
           </div>
         ) : (
           <PageHeader

@@ -17,7 +17,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useTournament } from "@/contexts/tournament/useTournament";
-import { TournamentCategory, TournamentFormat, CourtStatus } from "@/types/tournament";
+import { TournamentCategory, CourtStatus } from "@/types/tournament";
 import TournamentCategorySection from "@/components/tournament/TournamentCategorySection";
 import { createDefaultCategories } from "@/utils/categoryUtils";
 import { Grid3X3Icon } from "lucide-react";
@@ -26,7 +26,6 @@ const formSchema = z.object({
   name: z.string().min(2, {
     message: "Tournament name must be at least 2 characters.",
   }),
-  format: z.enum(['SINGLE_ELIMINATION', 'DOUBLE_ELIMINATION', 'ROUND_ROBIN', 'SWISS', 'GROUP_KNOCKOUT', 'MULTI_STAGE']),
   description: z.string().optional(),
   startDate: z.date(),
   endDate: z.date().optional(),
@@ -47,7 +46,6 @@ const TournamentCreate: React.FC = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      format: "SINGLE_ELIMINATION",
       description: "",
       startDate: new Date(),
       endDate: undefined,
@@ -70,9 +68,14 @@ const TournamentCreate: React.FC = () => {
         status: "AVAILABLE" as CourtStatus  // Explicitly type as CourtStatus
       }));
 
+      // Use the first category's format as the tournament format (or default to SINGLE_ELIMINATION)
+      const tournamentFormat = categories.length > 0 
+        ? categories[0].format || "SINGLE_ELIMINATION" 
+        : "SINGLE_ELIMINATION";
+
       const tournament = createTournament({
         name: values.name, // Ensure name is explicitly passed
-        format: values.format,
+        format: tournamentFormat, // Use format from the first category or default
         description: values.description,
         startDate: values.startDate,
         endDate: values.endDate,
@@ -117,26 +120,6 @@ const TournamentCreate: React.FC = () => {
                     <FormLabel>Tournament Name</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter tournament name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="format"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Format</FormLabel>
-                    <FormControl>
-                      <select className="border rounded px-3 py-2 w-full" {...field}>
-                        <option value="SINGLE_ELIMINATION">Single Elimination</option>
-                        <option value="DOUBLE_ELIMINATION">Double Elimination</option>
-                        <option value="ROUND_ROBIN">Round Robin</option>
-                        <option value="SWISS">Swiss</option>
-                        <option value="GROUP_KNOCKOUT">Group Knockout</option>
-                        <option value="MULTI_STAGE">Multi Stage</option>
-                      </select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -250,7 +233,6 @@ const TournamentCreate: React.FC = () => {
               <TournamentCategorySection
                 categories={categories}
                 onCategoriesChange={setCategories}
-                parentFormat={form.watch("format") as TournamentFormat}
               />
               <CardFooter className="px-0">
                 <Button type="submit" disabled={isSubmitting}>
