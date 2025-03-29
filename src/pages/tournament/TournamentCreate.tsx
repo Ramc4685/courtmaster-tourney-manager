@@ -16,6 +16,7 @@ import TournamentScoringForm from "@/components/tournament/TournamentScoringForm
 import { TournamentCategory, TournamentFormat } from "@/types/tournament";
 import TournamentCategorySection from "@/components/tournament/TournamentCategorySection";
 import { createDefaultCategories } from "@/utils/categoryUtils";
+import { Grid3X3Icon } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(3, { message: "Tournament name must be at least 3 characters" }),
@@ -26,6 +27,7 @@ const formSchema = z.object({
   maxSets: z.number().min(1, { message: "Maximum sets must be at least 1" }),
   requireTwoPointLead: z.boolean().default(true),
   maxTwoPointLeadScore: z.number().optional(),
+  numberOfCourts: z.number().min(1, { message: "At least 1 court is required" }).max(20, { message: "Maximum 20 courts allowed" }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -49,6 +51,7 @@ const TournamentCreate = () => {
       maxSets: 3,
       requireTwoPointLead: true,
       maxTwoPointLeadScore: 30,
+      numberOfCourts: 4,
     },
   });
 
@@ -56,6 +59,17 @@ const TournamentCreate = () => {
     setIsSubmitting(true);
     try {
       console.log("Creating tournament with categories:", categories);
+      
+      // Generate courts based on number specified
+      const courts = [];
+      for (let i = 1; i <= values.numberOfCourts; i++) {
+        courts.push({
+          id: `court-${i}`,
+          name: `Court ${i}`,
+          number: i,
+          status: "AVAILABLE"
+        });
+      }
       
       // Create the tournament using the default format
       const newTournament = createTournament({
@@ -66,7 +80,7 @@ const TournamentCreate = () => {
         startDate: new Date(values.startDate),
         endDate: values.endDate ? new Date(values.endDate) : undefined,
         teams: [],
-        courts: [],
+        courts: courts,
         categories: categories,
         scoringSettings: {
           maxPoints: values.maxPoints,
@@ -183,6 +197,29 @@ const TournamentCreate = () => {
                     )}
                   />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="numberOfCourts"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <Grid3X3Icon className="h-4 w-4" />
+                        Number of Courts
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={20}
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 1)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <TournamentCategorySection 
                   categories={categories}
