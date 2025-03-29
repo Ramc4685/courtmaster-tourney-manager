@@ -67,9 +67,22 @@ const UnifiedScheduleDialog: React.FC<UnifiedScheduleDialogProps> = ({
   const generateSuggestedPairs = (division: Division) => {
     if (!currentTournament) return;
     
-    const eligibleTeams = currentTournament.teams.filter(t => 
-      !t.division || t.division === division
-    );
+    // Fix: Filter teams without using the division property from Team
+    // Instead, we'll use match data to determine which teams belong to which division
+    const teamsInDivision = new Set<string>();
+    
+    // First, find all teams that have played in this division
+    currentTournament.matches.forEach(match => {
+      if (match.division === division) {
+        teamsInDivision.add(match.team1.id);
+        teamsInDivision.add(match.team2.id);
+      }
+    });
+    
+    // If no matches in this division yet, use all teams
+    let eligibleTeams = teamsInDivision.size > 0 
+      ? currentTournament.teams.filter(t => teamsInDivision.has(t.id))
+      : currentTournament.teams;
     
     // Check if there are enough teams
     if (eligibleTeams.length < 2) {
@@ -280,18 +293,18 @@ const UnifiedScheduleDialog: React.FC<UnifiedScheduleDialogProps> = ({
                 </div>
               </div>
                 
-                <SuggestedMatchPairs 
-                  suggestedPairs={suggestedPairs} 
-                  onRefreshSuggestions={() => generateSuggestedPairs(selectedDivision)}
-                />
+              <SuggestedMatchPairs 
+                suggestedPairs={suggestedPairs} 
+                onRefreshSuggestions={() => generateSuggestedPairs(selectedDivision)}
+              />
                 
-                <Button
-                  className="w-full"
-                  disabled={loading || suggestedPairs.length === 0}
-                  onClick={handleSchedule}
-                >
-                  {loading ? "Scheduling..." : "Schedule & Start Matches"}
-                </Button>
+              <Button
+                className="w-full"
+                disabled={loading || suggestedPairs.length === 0}
+                onClick={handleSchedule}
+              >
+                {loading ? "Scheduling..." : "Schedule & Start Matches"}
+              </Button>
             </div>
           </TabsContent>
           
