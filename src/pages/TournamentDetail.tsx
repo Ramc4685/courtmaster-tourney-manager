@@ -13,7 +13,8 @@ import TeamCreateDialog from "@/components/team/TeamCreateDialog";
 import ImportTeamsDialog from "@/components/tournament/ImportTeamsDialog";
 import CourtCreateDialog from "@/components/court/CourtCreateDialog";
 import MatchCreateDialog from "@/components/match/MatchCreateDialog";
-import { Court, Match, Team, TournamentCategory } from "@/types/tournament";
+import UnifiedScheduleDialog from "@/components/tournament/UnifiedScheduleDialog";
+import { Court, Match, Team } from "@/types/tournament";
 import { renderMatchesTab } from "@/utils/tournamentComponentHelper";
 import { useAuth } from "@/contexts/auth/AuthContext";
 import ScoreEntrySection from "@/components/tournament/score-entry/ScoreEntrySection";
@@ -173,9 +174,8 @@ const TournamentDetail = () => {
             <OverviewTab
               tournament={currentTournament}
               onUpdateTournament={updateTournament}
-              onAutoAssignCourts={handleAutoSchedule}
-              onGenerateMultiStageTournament={generateMultiStageTournament}
               onScheduleDialogOpen={() => setScheduleDialogOpen(true)}
+              onGenerateMultiStageTournament={generateMultiStageTournament}
               onAdvanceToNextStage={advanceToNextStage}
             />
           </TabsContent>
@@ -268,6 +268,11 @@ const TournamentDetail = () => {
         open={addMatchDialogOpen}
         onOpenChange={setAddMatchDialogOpen}
         onCreateMatch={handleCreateMatch}
+      />
+
+      <UnifiedScheduleDialog
+        open={scheduleDialogOpen}
+        onOpenChange={setScheduleDialogOpen}
       />
     </Layout>
   );

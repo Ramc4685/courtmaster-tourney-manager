@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar, CircleCheckBig, Users, CalendarClock } from "lucide-react";
+import { Calendar as CalendarIcon, CircleCheckBig, Users, CalendarClock } from "lucide-react";
 import { useTournament } from "@/contexts/TournamentContext";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Team, Division, TournamentCategory } from "@/types/tournament";
@@ -270,7 +271,7 @@ const UnifiedScheduleDialog: React.FC<UnifiedScheduleDialogProps> = ({ open, onO
                       !schedulingDate && "text-muted-foreground"
                     )}
                   >
-                    <Calendar className="mr-2 h-4 w-4" />
+                    <CalendarIcon className="mr-2 h-4 w-4" />
                     {schedulingDate ? format(schedulingDate, "PPP") : (
                       <span>Pick a date</span>
                     )}

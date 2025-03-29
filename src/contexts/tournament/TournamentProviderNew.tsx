@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat, TournamentCategory } from "@/types/tournament";
 import { TournamentContextType } from "./types";
@@ -6,6 +7,7 @@ import { matchService } from "@/services/tournament/MatchService";
 import { courtService } from "@/services/tournament/CourtService";
 import { createSampleData, getSampleDataByFormat, getCategoryDemoData } from "@/utils/tournamentSampleData";
 import { assignPlayerSeeding } from "@/utils/tournamentProgressionUtils";
+import { schedulingService, SchedulingOptions, SchedulingResult } from "@/services/tournament/SchedulingService";
 
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
@@ -247,11 +249,82 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Schedule a new match
-  const scheduleMatch = async (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => {
+  const scheduleMatch = async (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => {
     if (!currentTournament) return;
     
-    // This would be implemented in a real app - for now we're keeping the existing implementation
-    console.log(`Scheduling match between ${team1Id} and ${team2Id} at ${scheduledTime}`);
+    try {
+      // Find teams
+      const team1 = currentTournament.teams.find(t => t.id === team1Id);
+      const team2 = currentTournament.teams.find(t => t.id === team2Id);
+      
+      if (!team1 || !team2) {
+        console.error("Team not found");
+        return;
+      }
+      
+      // Find category if provided
+      let category = currentTournament.categories[0]; // Default to first category
+      if (categoryId) {
+        const foundCategory = currentTournament.categories.find(c => c.id === categoryId);
+        if (foundCategory) category = foundCategory;
+      }
+      
+      // Create the match
+      const newMatch: Match = {
+        id: crypto.randomUUID(),
+        tournamentId: currentTournament.id,
+        team1,
+        team2,
+        scores: [],
+        division: "INITIAL",
+        stage: currentTournament.currentStage,
+        scheduledTime,
+        status: "SCHEDULED",
+        category
+      };
+      
+      // Assign court if provided
+      if (courtId) {
+        const court = currentTournament.courts.find(c => c.id === courtId);
+        if (court) {
+          newMatch.courtNumber = court.number;
+        }
+      }
+      
+      // Update tournament with new match
+      const updatedTournament = {
+        ...currentTournament,
+        matches: [...currentTournament.matches, newMatch],
+        updatedAt: new Date()
+      };
+      
+      await updateTournament(updatedTournament);
+    } catch (error) {
+      console.error("Error scheduling match:", error);
+    }
+  };
+
+  // Add the unified scheduling function that was missing
+  const scheduleMatches = async (teamPairs: { team1: Team; team2: Team }[], options: SchedulingOptions): Promise<SchedulingResult> => {
+    if (!currentTournament) {
+      throw new Error("No active tournament");
+    }
+    
+    try {
+      // Use the scheduling service to handle the operation
+      const result = await schedulingService.scheduleMatches(currentTournament, teamPairs, options);
+      
+      // Update the current tournament with the result
+      setCurrentTournament(result.tournament);
+      setTournaments(prev => 
+        prev.map(t => t.id === result.tournament.id ? result.tournament : t)
+      );
+      
+      return result;
+    } catch (error) {
+      console.error("Error scheduling matches:", error);
+      throw error;
+    }
   };
 
   // Generate the multi-stage tournament
@@ -455,12 +528,12 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         generateMultiStageTournament,
         advanceToNextStage,
         assignSeeding,
-        // Add the category operations
         addCategory,
         removeCategory,
         updateCategory,
-        // Add the loadCategoryDemoData function
-        loadCategoryDemoData
+        loadCategoryDemoData,
+        // Add the missing scheduleMatches function
+        scheduleMatches
       }}
     >
       {children}

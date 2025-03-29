@@ -1,5 +1,5 @@
 
-import { Tournament, Court, Match, Team } from "@/types/tournament";
+import { Tournament, Court, Match, Team, Division } from "@/types/tournament";
 import { autoAssignCourts } from "@/utils/courtUtils";
 
 export interface SchedulingOptions {
@@ -8,7 +8,7 @@ export interface SchedulingOptions {
   matchDuration: number;
   assignCourts: boolean;
   categoryId?: string;
-  division?: string;
+  division?: Division;
 }
 
 export interface SchedulingResult {
@@ -149,11 +149,11 @@ export const schedulingService = {
    * Auto-assigns courts to scheduled matches that don't have courts
    * @param tournament The tournament to assign courts for
    */
-  assignCourtsToScheduledMatches(tournament: Tournament): SchedulingResult {
+  async assignCourtsToScheduledMatches(tournament: Tournament): Promise<SchedulingResult> {
     console.log('[DEBUG] Auto-assigning courts to scheduled matches');
     
     // Use the existing court assignment utility
-    const result = autoAssignCourts(tournament);
+    const result = await autoAssignCourts(tournament);
     
     return {
       scheduledMatches: 0,
