@@ -20,4 +20,14 @@ if (!isSupabaseConfigured()) {
   }, 1000);
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Add console log to debug rendering
+console.log('Initializing app render');
+
+// Make sure we're finding the root element
+const rootElement = document.getElementById("root");
+if (!rootElement) {
+  console.error("Root element not found!");
+} else {
+  console.log('Root element found, rendering app');
+  createRoot(rootElement).render(<App />);
+}

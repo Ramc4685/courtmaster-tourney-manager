@@ -5,6 +5,8 @@ import { AuthProvider } from './contexts/auth/AuthContext';
 import { TournamentProvider } from './contexts/tournament/TournamentContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { lazyWithRetry } from './utils/lazyImports';
+import { Toaster } from 'sonner';
+import Index from './pages/Index'; // Import Index directly to prevent issues with lazy loading
 
 // Lazy-loaded components for better performance
 const Tournaments = lazyWithRetry(() => import('./pages/Tournaments'));
@@ -20,6 +22,7 @@ const Scoring = lazyWithRetry(() => import('./pages/Scoring'));
 function App() {
   // Add performance monitoring
   useEffect(() => {
+    console.log('App component mounted');
     // Track page load performance
     if (typeof window !== 'undefined' && 'performance' in window && 'getEntriesByType' in window.performance) {
       window.addEventListener('load', () => {
@@ -47,7 +50,7 @@ function App() {
         <Router>
           <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
             <Routes>
-              <Route path="/" element={<ProtectedRoute><Tournaments /></ProtectedRoute>} />
+              <Route path="/" element={<Index />} />
               <Route path="/tournaments" element={<ProtectedRoute><Tournaments /></ProtectedRoute>} />
               <Route path="/tournaments/create" element={<ProtectedRoute><TournamentCreate /></ProtectedRoute>} />
               <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><TournamentDetail /></ProtectedRoute>} />
@@ -57,6 +60,7 @@ function App() {
             </Routes>
           </Suspense>
         </Router>
+        <Toaster position="top-right" />
       </TournamentProvider>
     </AuthProvider>
   );

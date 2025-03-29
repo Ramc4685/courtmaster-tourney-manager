@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
 
 const Index = () => {
+  console.log("Rendering Index page");
   return (
     <Layout>
       <div className="max-w-6xl mx-auto">
