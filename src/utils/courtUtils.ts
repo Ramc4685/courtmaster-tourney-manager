@@ -78,7 +78,7 @@ export const freeCourt = (tournament: Tournament, courtNumber: number): Tourname
 };
 
 // Auto-assign courts to scheduled matches
-export const autoAssignCourts = (tournament: Tournament): { tournament: Tournament, assignedCount: number } => {
+export const autoAssignCourts = async (tournament: Tournament): Promise<{ tournament: Tournament, assignedCount: number }> => {
   const availableCourts = tournament.courts.filter(c => c.status === "AVAILABLE");
   const scheduledMatches = tournament.matches.filter(
     m => m.status === "SCHEDULED" && !m.courtNumber

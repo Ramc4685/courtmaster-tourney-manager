@@ -155,9 +155,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     
     if (!match || !court) return;
     
-    const updatedTournament = assignCourtToMatch(currentTournament, match, court);
+    const updatedTournament = assignCourtToMatch(currentTournament, matchId, courtId);
     
-    updateTournament(updatedTournament);
+    if (updatedTournament) {
+      updateTournament(updatedTournament);
+    }
   };
 
   // Update match status
@@ -235,10 +237,10 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     if (!currentTournament) return 0;
     
     console.log('[DEBUG] Auto-assigning courts');
-    const { updatedTournament, assignedCount } = await autoAssignCourts(currentTournament);
+    const result = await autoAssignCourts(currentTournament);
     
-    updateTournament(updatedTournament);
-    return assignedCount;
+    updateTournament(result.tournament);
+    return result.assignedCount;
   };
 
   // Generate multi-stage tournament

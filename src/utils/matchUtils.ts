@@ -1,4 +1,5 @@
-import { Match, ScoringSettings, Team, Tournament, Division, TournamentStage } from "@/types/tournament";
+
+import { Match, ScoringSettings, Team, Tournament, Division, TournamentStage, TournamentCategory } from "@/types/tournament";
 import { generateId } from "./tournamentUtils";
 
 // Get default scoring settings (updated for badminton)

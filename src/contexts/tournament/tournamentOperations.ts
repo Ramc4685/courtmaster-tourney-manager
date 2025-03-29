@@ -1,4 +1,5 @@
-import { Tournament, Team, TournamentFormat, Division, TournamentStage } from '@/types/tournament';
+
+import { Tournament, Team, TournamentFormat, Division, TournamentStage, TournamentCategory } from '@/types/tournament';
 import { generateId } from '@/utils/tournamentUtils';
 import { createDefaultCategories } from '@/utils/categoryUtils';
 
@@ -80,8 +81,8 @@ export const scheduleMatchInTournament = (
     team1: team1,
     team2: team2,
     scores: [],
-    division: "INITIAL",
-    stage: "INITIAL_ROUND",
+    division: "INITIAL" as Division,  // Explicitly cast to Division type
+    stage: "INITIAL_ROUND" as TournamentStage,  // Explicitly cast to TournamentStage type
     scheduledTime: scheduledTime,
     status: "SCHEDULED",
     courtNumber: courtId ? parseInt(courtId.split('-')[1]) : undefined,

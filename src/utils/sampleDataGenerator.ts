@@ -1,328 +1,309 @@
-import { 
-  Court, 
-  Division, 
-  Match, 
-  Player, 
-  ScoringSettings, 
-  Team, 
-  Tournament, 
-  TournamentFormat, 
-  TournamentStage,
-  TournamentCategory
-} from "@/types/tournament";
+import { Tournament, Team, Player, Match, Court, TournamentFormat, TournamentStatus, TournamentStage, Division, MatchStatus, CourtStatus, TournamentCategory } from "@/types/tournament";
+import { generateId } from "./tournamentUtils";
 
-// Generate a sample tournament with appropriate data
-export const generateSampleTournament = (format: TournamentFormat = "MULTI_STAGE"): Tournament => {
-  // Generate teams
-  const teams = generateTeams(16);
-  
-  // Generate courts
-  const courts = generateCourts(4);
-
-  // Generate default categories
-  const categories = [
-    { id: "cat-ms", name: "Men's Singles", type: "MENS_SINGLES" as const, isCustom: false },
-    { id: "cat-ws", name: "Women's Singles", type: "WOMENS_SINGLES" as const, isCustom: false },
-    { id: "cat-md", name: "Men's Doubles", type: "MENS_DOUBLES" as const, isCustom: false },
-    { id: "cat-wd", name: "Women's Doubles", type: "WOMENS_DOUBLES" as const, isCustom: false },
-    { id: "cat-xd", name: "Mixed Doubles", type: "MIXED_DOUBLES" as const, isCustom: false }
-  ];
-  
-  // Generate matches based on format
-  const matches = generateMatchesForFormat(teams, format, categories[0]);
-  
-  // Default scoring settings
-  const scoringSettings = {
-    maxPoints: 21,
-    maxSets: 3,
-    requireTwoPointLead: true,
-    maxTwoPointLeadScore: 30
-  };
+// Create sample data for testing
+export const createSampleData = (): Tournament => {
+  const sampleTournament = createSampleTournament();
+  const sampleTeams = createSampleTeams(sampleTournament.categories);
+  const sampleCourts = createSampleCourts();
+  const sampleMatches = createSampleMatches(sampleTeams, sampleTournament);
   
   return {
-    id: "sampleTournament",
+    ...sampleTournament,
+    teams: sampleTeams,
+    courts: sampleCourts,
+    matches: sampleMatches
+  };
+};
+
+// Create sample tournament by format
+export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
+  const sampleTournament = createSampleTournament(format);
+  const sampleTeams = createSampleTeams(sampleTournament.categories);
+  const sampleCourts = createSampleCourts();
+  const sampleMatches = createSampleMatches(sampleTeams, sampleTournament);
+  
+  return {
+    ...sampleTournament,
+    teams: sampleTeams,
+    courts: sampleCourts,
+    matches: sampleMatches
+  };
+};
+
+// Create a sample tournament
+export const createSampleTournament = (format: TournamentFormat = "MULTI_STAGE"): Tournament => {
+  return {
+    id: generateId(),
     name: `Sample ${format.replace("_", " ")} Tournament`,
-    description: `This is a sample ${format.toLowerCase().replace("_", " ")} tournament with 16 teams.`,
+    description: "This is a sample tournament for testing purposes",
     format: format,
     status: "IN_PROGRESS",
     currentStage: "INITIAL_ROUND",
-    teams,
-    courts,
-    matches,
+    teams: [],
+    matches: [],
+    courts: [],
     startDate: new Date(),
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+    endDate: new Date(Date.now() + 86400000), // 1 day later
     createdAt: new Date(),
     updatedAt: new Date(),
     divisionProgression: true,
     autoAssignCourts: true,
-    scoringSettings,
-    formatConfig: getFormatConfig(format),
-    categories // Add the required categories field
+    categories: [
+      {
+        id: "cat-1",
+        name: "Men's Singles",
+        type: "MENS_SINGLES"
+      },
+      {
+        id: "cat-2",
+        name: "Women's Singles",
+        type: "WOMENS_SINGLES"
+      },
+      {
+        id: "cat-3", 
+        name: "Mixed Doubles",
+        type: "MIXED_DOUBLES"
+      }
+    ]
   };
 };
 
-// Generate a specified number of teams with players
-const generateTeams = (numTeams: number): Team[] => {
-  const teams: Team[] = [];
+// Create sample teams
+export const createSampleTeams = (categories: TournamentCategory[]): Team[] => {
+  const mensSinglesCategory = categories.find(c => c.type === "MENS_SINGLES") || categories[0];
+  const womensSinglesCategory = categories.find(c => c.type === "WOMENS_SINGLES") || categories[0];
+  const mixedDoublesCategory = categories.find(c => c.type === "MIXED_DOUBLES") || categories[0];
   
-  const teamNames = [
-    "Eagles", "Hawks", "Falcons", "Owls", "Ravens", "Phoenixes",
-    "Dragons", "Lions", "Tigers", "Panthers", "Bears", "Wolves",
-    "Vipers", "Cobras", "Scorpions", "Jaguars", "Cheetahs", "Leopards",
-    "Sharks", "Dolphins", "Whales", "Barracudas", "Piranhas", "Stingrays",
-    "Wasps", "Hornets", "Bees", "Ants", "Spiders", "Beetles",
-    "Stars", "Comets", "Meteors", "Planets", "Galaxies", "Nebulas"
-  ];
-  
-  // Generate 1-2 players per team
-  for (let i = 0; i < numTeams; i++) {
-    const playerCount = Math.random() > 0.5 ? 2 : 1;
-    const players: Player[] = [];
-    
-    for (let p = 0; p < playerCount; p++) {
-      players.push({
-        id: `player-${i}-${p}`,
-        name: generateRandomName(),
-        email: `player${i}${p}@example.com`
-      });
+  return [
+    {
+      id: "team-1",
+      name: "Team Alpha",
+      players: [createSamplePlayer("John", "Doe")],
+      seed: 1,
+      category: mensSinglesCategory
+    },
+    {
+      id: "team-2",
+      name: "Team Beta",
+      players: [createSamplePlayer("Jane", "Smith")],
+      seed: 2,
+      category: womensSinglesCategory
+    },
+    {
+      id: "team-3",
+      name: "Team Gamma",
+      players: [createSamplePlayer("Bob", "Johnson")],
+      seed: 3,
+      category: mensSinglesCategory
+    },
+    {
+      id: "team-4",
+      name: "Team Delta",
+      players: [createSamplePlayer("Alice", "Williams")],
+      seed: 4,
+      category: womensSinglesCategory
+    },
+    {
+      id: "team-5",
+      name: "Team Epsilon",
+      players: [
+        createSamplePlayer("Mike", "Brown"),
+        createSamplePlayer("Sarah", "Davis")
+      ],
+      seed: 5,
+      category: mixedDoublesCategory
+    },
+    {
+      id: "team-6",
+      name: "Team Zeta",
+      players: [
+        createSamplePlayer("David", "Miller"),
+        createSamplePlayer("Emma", "Wilson")
+      ],
+      seed: 6,
+      category: mixedDoublesCategory
+    },
+    {
+      id: "team-7",
+      name: "Team Eta",
+      players: [createSamplePlayer("Chris", "Moore")],
+      seed: 7,
+      category: mensSinglesCategory
+    },
+    {
+      id: "team-8",
+      name: "Team Theta",
+      players: [createSamplePlayer("Olivia", "Taylor")],
+      seed: 8,
+      category: womensSinglesCategory
     }
-    
-    teams.push({
-      id: `team-${i}`,
-      name: `${teamNames[i % teamNames.length]} ${i + 1}`,
-      players,
-      initialRanking: i + 1 // Add this for seeding
-    });
-  }
+  ];
+};
+
+// Create a sample player
+export const createSamplePlayer = (firstName: string, lastName: string): Player => {
+  return {
+    id: generateId(),
+    name: `${firstName} ${lastName}`,
+    email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`,
+    phone: "123-456-7890"
+  };
+};
+
+// Create sample courts
+export const createSampleCourts = (): Court[] => {
+  return [
+    {
+      id: "court-1",
+      name: "Court 1",
+      number: 1,
+      status: "AVAILABLE"
+    },
+    {
+      id: "court-2",
+      name: "Court 2",
+      number: 2,
+      status: "AVAILABLE"
+    },
+    {
+      id: "court-3",
+      name: "Court 3",
+      number: 3,
+      status: "AVAILABLE"
+    },
+    {
+      id: "court-4",
+      name: "Court 4",
+      number: 4,
+      status: "AVAILABLE"
+    }
+  ];
+};
+
+// Create sample matches
+export const createSampleMatches = (teams: Team[], tournament: Tournament): Match[] => {
+  const now = new Date();
+  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+  const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+  const threeHoursLater = new Date(now.getTime() + 3 * 60 * 60 * 1000);
   
-  return teams;
-};
-
-// Generate random courts
-const generateCourts = (numCourts: number): Court[] => {
-  return Array.from({ length: numCourts }, (_, i) => ({
-    id: `court-${i + 1}`,
-    name: `Court ${i + 1}`,
-    number: i + 1,
-    status: "AVAILABLE"
-  }));
-};
-
-// Generate matches based on tournament format
-const generateMatchesForFormat = (teams: Team[], format: TournamentFormat, defaultCategory: TournamentCategory): Match[] => {
+  // Group teams by category
+  const teamsByCategory: Record<string, Team[]> = {};
+  teams.forEach(team => {
+    const categoryId = team.category?.id || 'uncategorized';
+    if (!teamsByCategory[categoryId]) {
+      teamsByCategory[categoryId] = [];
+    }
+    teamsByCategory[categoryId].push(team);
+  });
+  
   const matches: Match[] = [];
   
-  // Calculate total matches based on format and team count
-  let totalMatches = 0;
-  switch (format) {
-    case "SINGLE_ELIMINATION":
-      totalMatches = teams.length - 1;
-      break;
-    case "DOUBLE_ELIMINATION":
-      totalMatches = 2 * teams.length - 2;
-      break;
-    case "ROUND_ROBIN":
-      totalMatches = (teams.length * (teams.length - 1)) / 2;
-      break;
-    case "SWISS":
-      totalMatches = teams.length * 3 / 2; // Assuming ~3 rounds
-      break;
-    case "GROUP_KNOCKOUT":
-      totalMatches = teams.length - 1 + (teams.length / 4) * 3; // Group games + knockout
-      break;
-    case "MULTI_STAGE":
-    default:
-      totalMatches = teams.length + 4; // Initial matches + some progression
-      break;
-  }
-  
-  // For safety, cap the number of matches to a reasonable amount
-  totalMatches = Math.min(totalMatches, 30);
-  
-  // Generate matches with different statuses
-  for (let i = 0; i < totalMatches; i++) {
-    const team1Index = i % teams.length;
-    const team2Index = (i + 1 + Math.floor(i / teams.length)) % teams.length;
+  // Create matches for each category
+  Object.entries(teamsByCategory).forEach(([categoryId, categoryTeams]) => {
+    const category = tournament.categories.find(c => c.id === categoryId) || tournament.categories[0];
     
-    // Skip if same team would play against itself
-    if (team1Index === team2Index) continue;
-    
-    // Determine status - make 25% completed, 25% in progress, 50% scheduled
-    let status: "COMPLETED" | "IN_PROGRESS" | "SCHEDULED";
-    if (i < totalMatches * 0.25) {
-      status = "COMPLETED";
-    } else if (i < totalMatches * 0.5) {
-      status = "IN_PROGRESS";
-    } else {
-      status = "SCHEDULED";
-    }
-    
-    // For scheduled matches, assign courts to some of them
-    const courtNumber = 
-      status === "IN_PROGRESS" ? 
-        (i % 4) + 1 : 
-        status === "SCHEDULED" && i % 3 === 0 ? 
-          (i % 4) + 1 : 
-          undefined;
-    
-    // Generate different division assignments based on format
-    let division: Division = "INITIAL";
-    let bracketRound: number | undefined;
-    
-    if (format === "MULTI_STAGE") {
-      if (i < totalMatches * 0.3) {
-        division = "INITIAL";
-      } else if (i < totalMatches * 0.6) {
-        division = "DIVISION_1";
-      } else if (i < totalMatches * 0.8) {
-        division = "DIVISION_2";
-      } else {
-        division = "DIVISION_3";
-      }
-    } else if (format === "SINGLE_ELIMINATION" || format === "DOUBLE_ELIMINATION") {
-      bracketRound = Math.floor(Math.log2(teams.length)) - Math.floor(i / (teams.length / 2));
-      bracketRound = Math.max(1, bracketRound);
-    } else if (format === "GROUP_KNOCKOUT") {
-      if (i < totalMatches * 0.7) {
-        division = "QUALIFIER_DIV1";
-      } else {
-        division = "DIVISION_1";
-      }
-    }
-    
-    // Generate scores for completed and in-progress matches
-    const scores = [];
-    if (status === "COMPLETED") {
-      // For completed matches, create 2-3 sets with a clear winner
-      const numSets = Math.random() > 0.7 ? 3 : 2;
-      let team1Wins = 0;
-      let team2Wins = 0;
-      
-      for (let s = 0; s < numSets; s++) {
-        let team1Score, team2Score;
-        
-        if (team1Wins >= numSets / 2 || team2Wins >= numSets / 2) {
-          // One team already won majority of sets, make this set look incomplete
-          team1Score = Math.floor(Math.random() * 15);
-          team2Score = Math.floor(Math.random() * 15);
-        } else {
-          // Competitive set with a winner
-          if (s === numSets - 1 || (team1Wins === 0 && team2Wins === 0)) {
-            if (Math.random() > 0.5) {
-              team1Score = 21;
-              team2Score = Math.floor(Math.random() * 19);
-              team1Wins++;
-            } else {
-              team2Score = 21;
-              team1Score = Math.floor(Math.random() * 19);
-              team2Wins++;
-            }
-          } else {
-            if (team1Wins > team2Wins) {
-              team2Score = 21;
-              team1Score = Math.floor(Math.random() * 19);
-              team2Wins++;
-            } else {
-              team1Score = 21;
-              team2Score = Math.floor(Math.random() * 19);
-              team1Wins++;
-            }
-          }
-        }
-        
-        scores.push({ team1Score, team2Score });
-      }
-    } else if (status === "IN_PROGRESS") {
-      // For in-progress matches, create 1-2 sets with the current set in progress
-      const numSets = Math.random() > 0.7 ? 2 : 1;
-      
-      for (let s = 0; s < numSets; s++) {
-        const team1Score = Math.floor(Math.random() * 21);
-        const team2Score = Math.floor(Math.random() * 21);
-        scores.push({ team1Score, team2Score });
-      }
-    }
-    
-    // For completed matches, determine a winner
-    let winner, loser;
-    if (status === "COMPLETED") {
-      let team1Sets = 0;
-      let team2Sets = 0;
-      
-      scores.forEach(score => {
-        if (score.team1Score > score.team2Score) team1Sets++;
-        if (score.team2Score > score.team1Score) team2Sets++;
+    // Create matches only if we have at least 2 teams in this category
+    if (categoryTeams.length >= 2) {
+      // Create a completed match
+      matches.push({
+        id: generateId(),
+        tournamentId: tournament.id,
+        team1: categoryTeams[0],
+        team2: categoryTeams[1],
+        scores: [
+          { team1Score: 21, team2Score: 19 },
+          { team1Score: 19, team2Score: 21 },
+          { team1Score: 21, team2Score: 15 }
+        ],
+        division: "INITIAL",
+        stage: "INITIAL_ROUND",
+        courtNumber: 1,
+        scheduledTime: now,
+        status: "COMPLETED",
+        winner: categoryTeams[0],
+        loser: categoryTeams[1],
+        updatedAt: now,
+        category: category
       });
       
-      if (team1Sets > team2Sets) {
-        winner = teams[team1Index];
-        loser = teams[team2Index];
-      } else {
-        winner = teams[team2Index];
-        loser = teams[team1Index];
+      // If we have more teams, create an in-progress match
+      if (categoryTeams.length >= 4) {
+        matches.push({
+          id: generateId(),
+          tournamentId: tournament.id,
+          team1: categoryTeams[2],
+          team2: categoryTeams[3],
+          scores: [
+            { team1Score: 15, team2Score: 12 }
+          ],
+          division: "INITIAL",
+          stage: "INITIAL_ROUND",
+          courtNumber: 2,
+          scheduledTime: oneHourLater,
+          status: "IN_PROGRESS",
+          updatedAt: oneHourLater,
+          category: category
+        });
+      }
+      
+      // If we have even more teams, create scheduled matches
+      if (categoryTeams.length >= 6) {
+        matches.push({
+          id: generateId(),
+          tournamentId: tournament.id,
+          team1: categoryTeams[4],
+          team2: categoryTeams[5],
+          scores: [],
+          division: "INITIAL",
+          stage: "INITIAL_ROUND",
+          courtNumber: 3,
+          scheduledTime: twoHoursLater,
+          status: "SCHEDULED",
+          updatedAt: twoHoursLater,
+          category: category
+        });
+      }
+      
+      // And one more scheduled match without a court
+      if (categoryTeams.length >= 8) {
+        matches.push({
+          id: generateId(),
+          tournamentId: tournament.id,
+          team1: categoryTeams[6],
+          team2: categoryTeams[7],
+          scores: [],
+          division: "INITIAL",
+          stage: "INITIAL_ROUND",
+          scheduledTime: threeHoursLater,
+          status: "SCHEDULED",
+          updatedAt: threeHoursLater,
+          category: category
+        });
       }
     }
-    
-    // Create scheduled times spread over today and tomorrow
-    const scheduledTime = new Date();
-    scheduledTime.setHours(9 + Math.floor(i / 2) % 8);
-    scheduledTime.setMinutes((i % 2) * 30);
-    if (i > totalMatches / 2) {
-      scheduledTime.setDate(scheduledTime.getDate() + 1);
-    }
-
-    const match: Match = {
-      id: `match-${i}`,
-      tournamentId: "sampleTournament",
-      team1: teams[team1Index],
-      team2: teams[team2Index],
-      scores: scores,
-      division: division,
-      stage: "INITIAL_ROUND",
-      courtNumber,
-      scheduledTime,
-      status,
-      winner,
-      loser,
-      bracketRound,
-      bracketPosition: bracketRound ? i % Math.pow(2, bracketRound - 1) + 1 : undefined,
-      updatedAt: new Date(Date.now() - Math.random() * 86400000), // Random time in the last 24 hours
-      category: defaultCategory // Add the required category field
-    };
-    
-    matches.push(match);
-  }
+  });
   
   return matches;
 };
 
-// Generate format-specific configuration
-const getFormatConfig = (format: TournamentFormat) => {
-  switch (format) {
-    case "GROUP_KNOCKOUT":
-      return {
-        groupCount: 4,
-        teamsPerGroup: 4,
-        advancingTeamsPerGroup: 2
-      };
-    case "SWISS":
-      return {
-        swissRounds: 4
-      };
-    case "SINGLE_ELIMINATION":
-      return {
-        consolationRounds: true
-      };
-    case "MULTI_STAGE":
-    default:
-      return {};
-  }
-};
-
-// Helper function to generate random names
-const generateRandomName = (): string => {
-  const firstNames = ["John", "Jane", "Michael", "Sarah", "David", "Emma", "Richard", "Lisa", "Thomas", "Emily", "James", "Olivia", "Robert", "Sophia", "William", "Ava", "Joseph", "Mia", "Daniel", "Isabella"];
-  const lastNames = ["Smith", "Johnson", "Williams", "Jones", "Brown", "Davis", "Miller", "Wilson", "Moore", "Taylor", "Anderson", "Thomas", "Jackson", "White", "Harris", "Martin", "Thompson", "Garcia", "Martinez", "Robinson"];
+// Create a sample match
+export const createSampleMatch = (team1: Team, team2: Team, tournament: Tournament): Match => {
+  // Use team1's category, or team2's if team1 doesn't have one, or default to first tournament category
+  const category = team1.category || team2.category || tournament.categories[0];
   
-  return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
+  return {
+    id: generateId(),
+    tournamentId: tournament.id,
+    team1: team1,
+    team2: team2,
+    scores: [],
+    division: "INITIAL",
+    stage: "INITIAL_ROUND",
+    scheduledTime: new Date(),
+    status: "SCHEDULED",
+    updatedAt: new Date(),
+    category: category
+  };
 };
