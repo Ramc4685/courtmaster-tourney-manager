@@ -1,20 +1,18 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Tournaments from './pages/Tournaments';
-import TournamentCreate from './pages/TournamentCreate';
-import TournamentEdit from './pages/TournamentEdit';
-import PublicView from './pages/PublicView';
-import PublicViewRealtime from './pages/PublicViewRealtime';
-import Scoring from './pages/Scoring';
 import { AuthProvider } from './contexts/auth/AuthContext';
 import { TournamentProvider } from './contexts/tournament/TournamentContext';
-import { SupabaseProvider } from './contexts/supabase/SupabaseContext';
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import SignIn from './pages/SignIn';
-import SignUp from './pages/SignUp';
-import Account from './pages/Account';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import { lazyWithRetry } from './utils/lazyImports';
+
+// Lazy-loaded components for better performance
+const Tournaments = lazyWithRetry(() => import('./pages/Tournaments'));
+const TournamentCreate = lazyWithRetry(() => import('./pages/tournament/TournamentCreate'));
+const TournamentDetail = lazyWithRetry(() => import('./pages/TournamentDetail'));
+const PublicView = lazyWithRetry(() => import('./pages/PublicView'));
+const PublicViewRealtime = lazyWithRetry(() => import('./pages/PublicViewRealtime'));
+const Scoring = lazyWithRetry(() => import('./pages/Scoring'));
 
 /**
  * Root App component with optimized route loading and performance monitoring
@@ -44,28 +42,23 @@ function App() {
   }, []);
 
   return (
-    <SupabaseProvider>
-      <AuthProvider>
-        <TournamentProvider>
-          <Router>
+    <AuthProvider>
+      <TournamentProvider>
+        <Router>
+          <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
             <Routes>
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="/signup" element={<SignUp />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/" element={<ProtectedRoute><Tournaments /></ProtectedRoute>} />
               <Route path="/tournaments" element={<ProtectedRoute><Tournaments /></ProtectedRoute>} />
               <Route path="/tournaments/create" element={<ProtectedRoute><TournamentCreate /></ProtectedRoute>} />
-              <Route path="/tournaments/:tournamentId/edit" element={<ProtectedRoute><TournamentEdit /></ProtectedRoute>} />
+              <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><TournamentDetail /></ProtectedRoute>} />
               <Route path="/tournaments/:tournamentId/scoring" element={<ProtectedRoute><Scoring /></ProtectedRoute>} />
               <Route path="/public/:tournamentId" element={<PublicView />} />
               <Route path="/public/realtime/:tournamentId" element={<PublicViewRealtime />} />
-              <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
             </Routes>
-          </Router>
-        </TournamentProvider>
-      </AuthProvider>
-    </SupabaseProvider>
+          </Suspense>
+        </Router>
+      </TournamentProvider>
+    </AuthProvider>
   );
 }
 

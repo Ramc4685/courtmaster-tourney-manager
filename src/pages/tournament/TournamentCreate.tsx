@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -186,7 +185,16 @@ const TournamentCreate = () => {
                   onCategoriesChange={setCategories}
                 />
 
-                <TournamentScoringForm form={form} />
+                <TournamentScoringForm 
+                  maxPoints={form.watch('maxPoints')}
+                  maxSets={form.watch('maxSets')}
+                  requireTwoPointLead={form.watch('requireTwoPointLead')}
+                  maxTwoPointLeadScore={form.watch('maxTwoPointLeadScore')}
+                  onMaxPointsChange={(value) => form.setValue('maxPoints', value)}
+                  onMaxSetsChange={(value) => form.setValue('maxSets', value)}
+                  onRequireTwoPointLeadChange={(value) => form.setValue('requireTwoPointLead', value)}
+                  onMaxTwoPointLeadScoreChange={(value) => form.setValue('maxTwoPointLeadScore', value)}
+                />
 
                 <div className="flex justify-end space-x-2">
                   <Button
