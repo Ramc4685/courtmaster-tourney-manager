@@ -1,4 +1,4 @@
-import { Match, ScoringSettings, Team, Tournament } from "@/types/tournament";
+import { Match, ScoringSettings, Team, Tournament, Division, TournamentStage } from "@/types/tournament";
 import { generateId } from "./tournamentUtils";
 
 // Get default scoring settings (updated for badminton)
@@ -137,7 +137,7 @@ export const updateBracketProgression = (
   return tournament;
 };
 
-// Added function: Count the number of sets won by each team
+// Count the number of sets won by each team
 export const countSetsWon = (match: Match): { team1Sets: number, team2Sets: number } => {
   let team1Sets = 0;
   let team2Sets = 0;
@@ -154,13 +154,13 @@ export const countSetsWon = (match: Match): { team1Sets: number, team2Sets: numb
   return { team1Sets, team2Sets };
 };
 
-// Added function: Create a new match with generated ID
+// Create a new match with generated ID
 export const createMatch = (
   tournamentId: string,
   team1: Team,
   team2: Team,
-  division: string,
-  stage: string,
+  division: Division | string,
+  stage: TournamentStage | string,
   scheduledTime?: Date,
   courtNumber?: number
 ): Match => {
@@ -170,8 +170,8 @@ export const createMatch = (
     team1,
     team2,
     scores: [],
-    division,
-    stage,
+    division: division as Division,
+    stage: stage as TournamentStage,
     scheduledTime,
     status: "SCHEDULED",
     courtNumber,
