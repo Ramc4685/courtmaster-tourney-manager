@@ -164,6 +164,13 @@ export const createMatch = (
   scheduledTime?: Date,
   courtNumber?: number
 ): Match => {
+  // Use team1's category, or team2's if team1 doesn't have one
+  const category = team1.category || team2.category;
+  
+  if (!category) {
+    throw new Error("Cannot create match: Teams must have a category assigned");
+  }
+
   return {
     id: generateId(),
     tournamentId,
@@ -175,6 +182,7 @@ export const createMatch = (
     scheduledTime,
     status: "SCHEDULED",
     courtNumber,
-    updatedAt: new Date()
+    updatedAt: new Date(),
+    category // Add the required category field
   };
 };

@@ -1,5 +1,5 @@
 import React, { createContext, useState, ReactNode, useEffect } from "react";
-import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat } from "@/types/tournament";
+import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat, TournamentCategory } from "@/types/tournament";
 import { TournamentContextType } from "./types";
 import { tournamentService } from "@/services/tournament/TournamentService";
 import { matchService } from "@/services/tournament/MatchService";
@@ -309,6 +309,62 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
+  // Add category to tournament
+  const addCategory = async (category: Omit<TournamentCategory, "id">) => {
+    if (!currentTournament) return;
+    
+    try {
+      const newCategory = {
+        ...category,
+        id: crypto.randomUUID()
+      };
+      
+      const updatedTournament = {
+        ...currentTournament,
+        categories: [...currentTournament.categories, newCategory],
+        updatedAt: new Date()
+      };
+      
+      await updateTournament(updatedTournament);
+    } catch (error) {
+      console.error("Error adding category:", error);
+    }
+  };
+
+  // Remove category from tournament
+  const removeCategory = async (categoryId: string) => {
+    if (!currentTournament) return;
+    
+    try {
+      const updatedTournament = {
+        ...currentTournament,
+        categories: currentTournament.categories.filter(c => c.id !== categoryId),
+        updatedAt: new Date()
+      };
+      
+      await updateTournament(updatedTournament);
+    } catch (error) {
+      console.error("Error removing category:", error);
+    }
+  };
+
+  // Update category in tournament
+  const updateCategory = async (category: TournamentCategory) => {
+    if (!currentTournament) return;
+    
+    try {
+      const updatedTournament = {
+        ...currentTournament,
+        categories: currentTournament.categories.map(c => c.id === category.id ? category : c),
+        updatedAt: new Date()
+      };
+      
+      await updateTournament(updatedTournament);
+    } catch (error) {
+      console.error("Error updating category:", error);
+    }
+  };
+  
   if (isLoading) {
     return <div>Loading tournament data...</div>;
   }
@@ -342,7 +398,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         autoAssignCourts: autoAssignCourtsHandler,
         generateMultiStageTournament,
         advanceToNextStage,
-        assignSeeding, // Add the missing function
+        assignSeeding,
+        // Add the new category operations
+        addCategory,
+        removeCategory,
+        updateCategory
       }}
     >
       {children}

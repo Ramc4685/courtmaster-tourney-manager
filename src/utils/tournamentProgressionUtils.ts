@@ -10,8 +10,18 @@ export const createInitialRoundMatches = (tournament: Tournament): Match[] => {
     return [];
   }
 
+  // Get the default category (first category if exists)
+  const defaultCategory = tournament.categories[0];
+  if (!defaultCategory) {
+    console.error("Tournament must have at least one category");
+    return [];
+  }
+
   // Helper function to create a match
   const createMatchPair = (team1: Team, team2: Team, scheduledTime?: Date): Match => {
+    // Use team category if available, otherwise use default
+    const category = team1.category || team2.category || defaultCategory;
+    
     return {
       id: generateId(),
       tournamentId: tournament.id,
@@ -23,7 +33,8 @@ export const createInitialRoundMatches = (tournament: Tournament): Match[] => {
       scheduledTime: scheduledTime,
       status: "SCHEDULED" as MatchStatus,
       courtNumber: undefined,
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      category: category // Add the required category field
     };
   };
 
@@ -85,8 +96,19 @@ export const advanceToDivisionPlacement = (tournament: Tournament): Tournament =
 // Function to create matches for a division
 const createDivisionMatches = (tournament: Tournament, teams: Team[], division: Division): Match[] => {
   const matches: Match[] = [];
+  
+  // Get the default category (first category if exists)
+  const defaultCategory = tournament.categories[0];
+  if (!defaultCategory) {
+    console.error("Tournament must have at least one category");
+    return [];
+  }
+  
   for (let i = 0; i < teams.length; i += 2) {
     if (i + 1 < teams.length) {
+      // Use team category if available, otherwise use default
+      const category = teams[i].category || teams[i + 1].category || defaultCategory;
+      
       matches.push({
         id: generateId(),
         tournamentId: tournament.id,
@@ -97,7 +119,8 @@ const createDivisionMatches = (tournament: Tournament, teams: Team[], division: 
         stage: "DIVISION_PLACEMENT",
         status: "SCHEDULED" as MatchStatus,
         courtNumber: undefined,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        category: category // Add the required category field
       });
     }
   }
@@ -130,8 +153,19 @@ export const advanceToPlayoffKnockout = (tournament: Tournament): Tournament => 
 // Function to create matches for the playoff knockout stage
 const createPlayoffMatches = (tournament: Tournament, teams: Team[]): Match[] => {
   const matches: Match[] = [];
+  
+  // Get the default category (first category if exists)
+  const defaultCategory = tournament.categories[0];
+  if (!defaultCategory) {
+    console.error("Tournament must have at least one category");
+    return [];
+  }
+  
   for (let i = 0; i < teams.length; i += 2) {
     if (i + 1 < teams.length) {
+      // Use team category if available, otherwise use default
+      const category = teams[i].category || teams[i + 1].category || defaultCategory;
+      
       matches.push({
         id: generateId(),
         tournamentId: tournament.id,
@@ -142,7 +176,8 @@ const createPlayoffMatches = (tournament: Tournament, teams: Team[]): Match[] =>
         stage: "PLAYOFF_KNOCKOUT",
         status: "SCHEDULED" as MatchStatus,
         courtNumber: undefined,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        category: category // Add the required category field
       });
     }
   }
@@ -191,8 +226,18 @@ export const createInitialRoundMatches2 = (tournament: Tournament): Match[] => {
     return [];
   }
 
+  // Get the default category (first category if exists)
+  const defaultCategory = tournament.categories[0];
+  if (!defaultCategory) {
+    console.error("Tournament must have at least one category");
+    return [];
+  }
+
   // Helper function to create a match
   const createMatchPair = (team1: Team, team2: Team, scheduledTime?: Date): Match => {
+    // Use team category if available, otherwise use default
+    const category = team1.category || team2.category || defaultCategory;
+    
     return {
       id: generateId(),
       tournamentId: tournament.id,
@@ -204,7 +249,8 @@ export const createInitialRoundMatches2 = (tournament: Tournament): Match[] => {
       scheduledTime: scheduledTime,
       status: "SCHEDULED" as MatchStatus,
       courtNumber: undefined,
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      category: category // Add the required category field
     };
   };
 

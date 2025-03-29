@@ -1,4 +1,3 @@
-
 import { 
   Court, 
   Division, 
@@ -8,7 +7,8 @@ import {
   Team, 
   Tournament, 
   TournamentFormat, 
-  TournamentStage 
+  TournamentStage,
+  TournamentCategory
 } from "@/types/tournament";
 
 // Generate a sample tournament with appropriate data
@@ -18,12 +18,21 @@ export const generateSampleTournament = (format: TournamentFormat = "MULTI_STAGE
   
   // Generate courts
   const courts = generateCourts(4);
+
+  // Generate default categories
+  const categories = [
+    { id: "cat-ms", name: "Men's Singles", type: "MENS_SINGLES" as const, isCustom: false },
+    { id: "cat-ws", name: "Women's Singles", type: "WOMENS_SINGLES" as const, isCustom: false },
+    { id: "cat-md", name: "Men's Doubles", type: "MENS_DOUBLES" as const, isCustom: false },
+    { id: "cat-wd", name: "Women's Doubles", type: "WOMENS_DOUBLES" as const, isCustom: false },
+    { id: "cat-xd", name: "Mixed Doubles", type: "MIXED_DOUBLES" as const, isCustom: false }
+  ];
   
   // Generate matches based on format
-  const matches = generateMatchesForFormat(teams, format);
+  const matches = generateMatchesForFormat(teams, format, categories[0]);
   
   // Default scoring settings
-  const scoringSettings: ScoringSettings = {
+  const scoringSettings = {
     maxPoints: 21,
     maxSets: 3,
     requireTwoPointLead: true,
@@ -47,7 +56,8 @@ export const generateSampleTournament = (format: TournamentFormat = "MULTI_STAGE
     divisionProgression: true,
     autoAssignCourts: true,
     scoringSettings,
-    formatConfig: getFormatConfig(format)
+    formatConfig: getFormatConfig(format),
+    categories // Add the required categories field
   };
 };
 
@@ -99,7 +109,7 @@ const generateCourts = (numCourts: number): Court[] => {
 };
 
 // Generate matches based on tournament format
-const generateMatchesForFormat = (teams: Team[], format: TournamentFormat): Match[] => {
+const generateMatchesForFormat = (teams: Team[], format: TournamentFormat, defaultCategory: TournamentCategory): Match[] => {
   const matches: Match[] = [];
   
   // Calculate total matches based on format and team count
@@ -276,7 +286,8 @@ const generateMatchesForFormat = (teams: Team[], format: TournamentFormat): Matc
       loser,
       bracketRound,
       bracketPosition: bracketRound ? i % Math.pow(2, bracketRound - 1) + 1 : undefined,
-      updatedAt: new Date(Date.now() - Math.random() * 86400000) // Random time in the last 24 hours
+      updatedAt: new Date(Date.now() - Math.random() * 86400000), // Random time in the last 24 hours
+      category: defaultCategory // Add the required category field
     };
     
     matches.push(match);

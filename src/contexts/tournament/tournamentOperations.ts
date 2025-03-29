@@ -66,6 +66,14 @@ export const scheduleMatchInTournament = (
     return currentTournament;
   }
 
+  // Determine category from teams (use team1's category, or the first tournament category as fallback)
+  const category = team1.category || team2.category || currentTournament.categories[0];
+  
+  if (!category) {
+    console.error('No category found for match');
+    return currentTournament;
+  }
+
   const newMatch = {
     id: generateId(),
     tournamentId: currentTournament.id,
@@ -77,7 +85,8 @@ export const scheduleMatchInTournament = (
     scheduledTime: scheduledTime,
     status: "SCHEDULED",
     courtNumber: courtId ? parseInt(courtId.split('-')[1]) : undefined,
-    updatedAt: new Date()
+    updatedAt: new Date(),
+    category: category  // Add the required category field
   };
 
   return {

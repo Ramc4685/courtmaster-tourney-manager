@@ -1,5 +1,6 @@
+
 import React, { createContext, useState, ReactNode, useEffect } from "react";
-import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentStage, TournamentFormat } from "@/types/tournament";
+import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentStage, TournamentFormat, TournamentCategory } from "@/types/tournament";
 import { createSampleData, getSampleDataByFormat } from "@/utils/tournamentSampleData";
 import { generateId, findMatchById, updateMatchInTournament } from "@/utils/tournamentUtils";
 import { assignCourtToMatch, autoAssignCourts } from "@/utils/courtUtils";
@@ -64,340 +65,274 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   // Create a new tournament
   const createTournament = (tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">): Tournament => {
     console.log('[DEBUG] Creating new tournament:', tournamentData.name);
-    const { tournament, tournaments: newTournaments } = createNewTournament(tournamentData, tournaments);
-    setTournaments(newTournaments);
+    const { tournament, tournaments: updatedTournaments } = createNewTournament(tournamentData, tournaments);
+    
+    setTournaments(updatedTournaments);
     setCurrentTournament(tournament);
-    return tournament; // Return the created tournament
+    
+    return tournament;
   };
 
-  // Delete tournament
+  // Delete a tournament
   const deleteTournament = (tournamentId: string) => {
-    console.log('[DEBUG] Deleting tournament. ID:', tournamentId);
-    const { tournaments: updatedTournaments, currentTournament: updatedCurrentTournament } = 
-      deleteT(tournamentId, tournaments, currentTournament);
+    console.log('[DEBUG] Deleting tournament:', tournamentId);
+    const { tournaments: updatedTournaments, currentTournament: updatedCurrentTournament } = deleteT(
+      tournamentId,
+      tournaments,
+      currentTournament
+    );
     
     setTournaments(updatedTournaments);
-    if (currentTournament?.id === tournamentId) {
-      console.log('[DEBUG] Current tournament deleted, setting current to:', updatedCurrentTournament ? updatedCurrentTournament.id : 'null');
-      setCurrentTournament(updatedCurrentTournament);
-    }
+    setCurrentTournament(updatedCurrentTournament);
   };
 
-  // Update tournament
+  // Update a tournament
   const updateTournament = (tournament: Tournament) => {
-    console.log('[DEBUG] Updating tournament. ID:', tournament.id);
-    const updatedTournament = { 
-      ...tournament, 
-      updatedAt: new Date() 
-    };
-    
-    const updatedTournaments = tournaments.map(t => 
-      t.id === tournament.id ? updatedTournament : t
-    );
+    console.log('[DEBUG] Updating tournament:', tournament.id);
+    const updatedTournaments = tournaments.map(t => t.id === tournament.id ? tournament : t);
     
     setTournaments(updatedTournaments);
-    
-    if (currentTournament?.id === tournament.id) {
-      console.log('[DEBUG] Updating current tournament.');
-      setCurrentTournament(updatedTournament);
+    if (currentTournament && currentTournament.id === tournament.id) {
+      setCurrentTournament(tournament);
     }
-    
-    // Publish to real-time service
-    console.log('[DEBUG] Publishing updated tournament to realtime service.');
-    realtimeTournamentService.publishTournamentUpdate(updatedTournament);
   };
 
-  // Add team to current tournament
+  // Add a team to the current tournament
   const addTeam = (team: Team) => {
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot add team: No current tournament selected.');
-      return;
-    }
+    if (!currentTournament) return;
     
-    console.log('[DEBUG] Adding team to tournament. Team:', team.name, 'Tournament:', currentTournament.id);
+    console.log('[DEBUG] Adding team to tournament:', team.name);
     const updatedTournament = addTeamToTournament(team, currentTournament);
+    
     updateTournament(updatedTournament);
   };
-
-  // Import multiple teams at once
+  
+  // Import multiple teams to the current tournament
   const importTeams = (teams: Team[]) => {
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot import teams: No current tournament selected.');
-      return;
-    }
+    if (!currentTournament) return;
     
-    console.log('[DEBUG] Importing', teams.length, 'teams to tournament. Tournament ID:', currentTournament.id);
+    console.log('[DEBUG] Importing teams to tournament. Count:', teams.length);
     const updatedTournament = importTeamsToTournament(teams, currentTournament);
+    
     updateTournament(updatedTournament);
   };
 
-  // Update match
+  // Update a match in the current tournament
   const updateMatch = (match: Match) => {
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot update match: No current tournament selected.');
-      return;
-    }
+    if (!currentTournament) return;
     
-    console.log('[DEBUG] Updating match. Match ID:', match.id, 'Tournament ID:', currentTournament.id);
-    const updatedTournament = updateMatchInTournament(currentTournament, match);
+    console.log('[DEBUG] Updating match:', match.id);
+    const updatedMatches = currentTournament.matches.map(m => m.id === match.id ? match : m);
+    
+    updateTournament({
+      ...currentTournament,
+      matches: updatedMatches,
+      updatedAt: new Date()
+    });
+  };
+
+  // Update a court in the current tournament
+  const updateCourt = (court: Court) => {
+    if (!currentTournament) return;
+    
+    console.log('[DEBUG] Updating court:', court.id);
+    const updatedCourts = currentTournament.courts.map(c => c.id === court.id ? court : c);
+    
+    updateTournament({
+      ...currentTournament,
+      courts: updatedCourts,
+      updatedAt: new Date()
+    });
+  };
+
+  // Assign a court to a match
+  const assignCourt = (matchId: string, courtId: string) => {
+    if (!currentTournament) return;
+    
+    console.log('[DEBUG] Assigning court to match. Match:', matchId, 'Court:', courtId);
+    const match = findMatchById(currentTournament, matchId);
+    const court = currentTournament.courts.find(c => c.id === courtId);
+    
+    if (!match || !court) return;
+    
+    const updatedTournament = assignCourtToMatch(currentTournament, match, court);
+    
     updateTournament(updatedTournament);
   };
 
-  // Update court
-  const updateCourt = (court: Court) => {
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot update court: No current tournament selected.');
-      return;
+  // Update match status
+  const updateMatchStatus = (matchId: string, status: MatchStatus) => {
+    if (!currentTournament) return;
+    
+    console.log('[DEBUG] Updating match status. Match:', matchId, 'Status:', status);
+    const updatedTournament = updateMatchStatusInTournament(matchId, status, currentTournament);
+    
+    updateTournament(updatedTournament);
+  };
+
+  // Update match score
+  const updateMatchScore = (matchId: string, setIndex: number, team1Score: number, team2Score: number) => {
+    if (!currentTournament) return;
+    
+    console.log('[DEBUG] Updating match score. Match:', matchId, 'Set:', setIndex, 'Score:', team1Score, '-', team2Score);
+    const updatedTournament = updateMatchScoreInTournament(matchId, setIndex, team1Score, team2Score, currentTournament);
+    
+    updateTournament(updatedTournament);
+  };
+
+  // Complete a match
+  const completeMatch = (matchId: string) => {
+    if (!currentTournament) return;
+    
+    console.log('[DEBUG] Completing match:', matchId);
+    const updatedTournament = completeMatchInTournament(matchId, currentTournament);
+    
+    updateTournament(updatedTournament);
+  };
+
+  // Move a team to a different division
+  const moveTeamToDivision = (teamId: string, fromDivision: Division, toDivision: Division) => {
+    if (!currentTournament) return;
+    
+    console.log('[DEBUG] Moving team between divisions. Team:', teamId, 'From:', fromDivision, 'To:', toDivision);
+    const updatedTournament = moveTeam(teamId, fromDivision, toDivision, currentTournament);
+    
+    updateTournament(updatedTournament);
+  };
+
+  // Load sample data
+  const loadSampleData = (format?: TournamentFormat) => {
+    console.log('[DEBUG] Loading sample data. Format:', format || 'default');
+    const sampleData = format ? getSampleDataByFormat(format) : createSampleData();
+    
+    setCurrentTournament(sampleData);
+    setTournaments(prevTournaments => {
+      const filteredTournaments = prevTournaments.filter(t => t.id !== sampleData.id);
+      return [...filteredTournaments, sampleData];
+    });
+  };
+
+  // Schedule a match
+  const scheduleMatch = (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => {
+    if (!currentTournament) return;
+    
+    console.log('[DEBUG] Scheduling match. Team1:', team1Id, 'Team2:', team2Id, 'Time:', scheduledTime);
+    const updatedTournament = scheduleMatchInTournament(team1Id, team2Id, scheduledTime, currentTournament, courtId);
+    
+    updateTournament(updatedTournament);
+  };
+
+  // Generate bracket
+  const generateBracket = () => {
+    if (!currentTournament) return;
+    
+    console.log('[DEBUG] Generating bracket');
+    // Implementation would go here
+  };
+
+  // Auto-assign courts
+  const autoAssignCourtsHandler = async (): Promise<number> => {
+    if (!currentTournament) return 0;
+    
+    console.log('[DEBUG] Auto-assigning courts');
+    const { updatedTournament, assignedCount } = await autoAssignCourts(currentTournament);
+    
+    updateTournament(updatedTournament);
+    return assignedCount;
+  };
+
+  // Generate multi-stage tournament
+  const generateMultiStageTournament = () => {
+    if (!currentTournament) return;
+    
+    console.log('[DEBUG] Generating multi-stage tournament');
+    const updatedTournament = generateMultiStage(currentTournament);
+    
+    updateTournament(updatedTournament);
+  };
+
+  // Advance to next stage
+  const advanceToNextStage = () => {
+    if (!currentTournament) return;
+    
+    console.log('[DEBUG] Advancing to next stage. Current stage:', currentTournament.currentStage);
+    let updatedTournament = currentTournament;
+    
+    switch (currentTournament.currentStage) {
+      case "INITIAL_ROUND":
+        updatedTournament = advanceToDivisionPlacement(currentTournament);
+        break;
+      case "DIVISION_PLACEMENT":
+        updatedTournament = advanceToPlayoffKnockout(currentTournament);
+        break;
+      // Add more cases for other stages as needed
     }
     
-    console.log('[DEBUG] Updating court. Court ID:', court.id, 'Tournament ID:', currentTournament.id);
-    const updatedCourts = currentTournament.courts.map(c => 
-      c.id === court.id ? court : c
-    );
+    updateTournament(updatedTournament);
+  };
+
+  // Assign seeding
+  const assignSeeding = (tournamentId: string) => {
+    console.log('[DEBUG] Assigning seeding for tournament:', tournamentId);
+    const tournament = tournaments.find(t => t.id === tournamentId);
+    if (!tournament) return;
+    
+    const updatedTournament = assignTournamentSeeding(tournamentId, tournaments);
+    if (updatedTournament) {
+      updateTournament(updatedTournament);
+    }
+  };
+
+  // Add category to tournament
+  const addCategory = (category: Omit<TournamentCategory, "id">) => {
+    if (!currentTournament) return;
+    
+    console.log('[DEBUG] Adding category to tournament:', category.name);
+    const newCategory = {
+      ...category,
+      id: crypto.randomUUID()
+    };
     
     const updatedTournament = {
       ...currentTournament,
-      courts: updatedCourts,
+      categories: [...currentTournament.categories, newCategory],
       updatedAt: new Date()
     };
     
     updateTournament(updatedTournament);
   };
 
-  // Assign court to match
-  const assignCourt = (matchId: string, courtId: string) => {
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot assign court: No current tournament selected.');
-      return;
-    }
+  // Remove category from tournament
+  const removeCategory = (categoryId: string) => {
+    if (!currentTournament) return;
     
-    console.log('[DEBUG] Assigning court to match. Match ID:', matchId, 'Court ID:', courtId);
-    const result = assignCourtToMatch(currentTournament, matchId, courtId);
-    if (result) {
-      updateTournament(result);
-    } else {
-      console.error('[ERROR] Failed to assign court. Match or court not found.');
-    }
-  };
-
-  // Auto-assign available courts to scheduled matches
-  // Updated to return Promise<number> to match the interface
-  const autoAssignCourtsHandler = async (): Promise<number> => {
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot auto-assign courts: No current tournament selected.');
-      return 0;
-    }
-    
-    console.log('[DEBUG] Auto-assigning courts to matches. Tournament ID:', currentTournament.id);
-    const { tournament: updatedTournament, assignedCount } = autoAssignCourts(currentTournament);
-    
-    if (assignedCount > 0) {
-      console.log('[DEBUG] Auto-assigned', assignedCount, 'courts to matches.');
-      updateTournament(updatedTournament);
-    } else {
-      console.log('[DEBUG] No courts were auto-assigned.');
-    }
-    
-    return assignedCount;
-  };
-
-  // Update match status
-  const updateMatchStatus = (matchId: string, status: MatchStatus) => {
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot update match status: No current tournament selected.');
-      return;
-    }
-    
-    console.log('[DEBUG] Updating match status. Match ID:', matchId, 'New status:', status);
-    const updatedTournament = updateMatchStatusInTournament(matchId, status, currentTournament);
-    updateTournament(updatedTournament);
-  };
-
-  // Update match score
-  const updateMatchScore = (matchId: string, setIndex: number, team1Score: number, team2Score: number) => {
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot update match score: No current tournament selected.');
-      return;
-    }
-    
-    console.log('[DEBUG] Updating match score. Match ID:', matchId, 'Set:', setIndex, 'Score:', team1Score, '-', team2Score);
-    const updatedTournament = updateMatchScoreInTournament(
-      matchId, 
-      setIndex, 
-      team1Score, 
-      team2Score, 
-      currentTournament
-    );
+    console.log('[DEBUG] Removing category from tournament. Category ID:', categoryId);
+    const updatedTournament = {
+      ...currentTournament,
+      categories: currentTournament.categories.filter(c => c.id !== categoryId),
+      updatedAt: new Date()
+    };
     
     updateTournament(updatedTournament);
   };
 
-  // Complete a match and auto-assign court to next match
-  const completeMatch = (matchId: string) => {
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot complete match: No current tournament selected.');
-      return;
-    }
+  // Update category in tournament
+  const updateCategory = (category: TournamentCategory) => {
+    if (!currentTournament) return;
     
-    console.log('[DEBUG] Completing match. Match ID:', matchId);
-    const updatedTournament = completeMatchInTournament(matchId, currentTournament);
-    updateTournament(updatedTournament);
-  };
-
-  // Move team to a different division based on results
-  const moveTeamToDivision = (teamId: string, fromDivision: Division, toDivision: Division) => {
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot move team to division: No current tournament selected.');
-      return;
-    }
-    
-    console.log('[DEBUG] Moving team to division. Team ID:', teamId, 'From:', fromDivision, 'To:', toDivision);
-    const updatedTournament = moveTeam(teamId, fromDivision, toDivision, currentTournament);
-    updateTournament(updatedTournament);
-  };
-
-  // Schedule a new match with date and time
-  const scheduleMatch = (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => {
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot schedule match: No current tournament selected.');
-      return;
-    }
-    
-    console.log('[DEBUG] Scheduling match. Team 1 ID:', team1Id, 'Team 2 ID:', team2Id, 
-               'Time:', scheduledTime.toISOString(), 'Court:', courtId || 'None');
-    const updatedTournament = scheduleMatchInTournament(
-      team1Id, 
-      team2Id, 
-      scheduledTime, 
-      currentTournament, 
-      courtId
-    );
+    console.log('[DEBUG] Updating category in tournament. Category ID:', category.id);
+    const updatedTournament = {
+      ...currentTournament,
+      categories: currentTournament.categories.map(c => c.id === category.id ? category : c),
+      updatedAt: new Date()
+    };
     
     updateTournament(updatedTournament);
   };
 
-  const assignSeeding = (tournamentId: string) => {
-    console.log('[DEBUG] Assigning seeding to players in tournament. ID:', tournamentId);
-    const updatedTournament = assignTournamentSeeding(tournamentId, tournaments);
-    
-    if (updatedTournament) {
-      setTournaments(prev => prev.map(t => 
-        t.id === updatedTournament.id ? updatedTournament : t
-      ));
-      
-      if (currentTournament?.id === tournamentId) {
-        setCurrentTournament(updatedTournament);
-      }
-      
-      // Publish to real-time service
-      realtimeTournamentService.publishTournamentUpdate(updatedTournament);
-    }
-  };
-  
-  // Generate the 38-team multi-stage tournament with scheduled times
-  const generateMultiStageTournament = () => {
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot generate tournament: No current tournament selected.');
-      return;
-    }
-    
-    console.log('[DEBUG] Generating multi-stage tournament. Tournament ID:', currentTournament.id);
-    // First, ensure proper seeding is applied
-    const seededTournament = assignPlayerSeeding(currentTournament);
-    console.log('[DEBUG] Applied seeding to players (1-38) before generating tournament.');
-    
-    // Then generate the tournament with matches
-    const updatedTournament = generateMultiStage(seededTournament);
-    updateTournament(updatedTournament);
-    
-    // Auto-assign courts after creating matches
-    console.log('[DEBUG] Auto-assigning courts after generating tournament.');
-    setTimeout(() => autoAssignCourtsHandler(), 100);
-  };
-  
-  // Advance to the next stage based on current results
-  const advanceToNextStage = () => {
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot advance to next stage: No current tournament selected.');
-      return;
-    }
-    
-    console.log('[DEBUG] Advancing tournament to next stage. Current stage:', currentTournament.currentStage);
-    switch (currentTournament.currentStage) {
-      case "INITIAL_ROUND":
-        console.log('[DEBUG] Advancing from INITIAL_ROUND to DIVISION_PLACEMENT');
-        const updatedTournament1 = advanceToDivisionPlacement(currentTournament);
-        updateTournament(updatedTournament1);
-        autoAssignCourtsHandler();
-        break;
-      case "DIVISION_PLACEMENT":
-        console.log('[DEBUG] Advancing from DIVISION_PLACEMENT to PLAYOFF_KNOCKOUT');
-        const updatedTournament2 = advanceToPlayoffKnockout(currentTournament);
-        updateTournament(updatedTournament2);
-        autoAssignCourtsHandler();
-        break;
-      default:
-        console.warn('[WARN] Cannot advance: Tournament is already in final stage or unknown stage.');
-        break;
-    }
-  };
-  
-  // Generate bracket based on match results
-  const generateBracket = () => {
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot generate bracket: No current tournament selected.');
-      return;
-    }
-    
-    // Placeholder for real bracket generation logic
-    console.log('[DEBUG] Generating bracket for tournament. ID:', currentTournament.id);
-    // This would typically create a tournament bracket based on seeding
-    // and add it to the matches array
-  };
-  
-  // Load sample data - updated to ensure correct format
-  const loadSampleData = (format?: TournamentFormat) => {
-    console.log('[DEBUG] Loading sample tournament data for format:', format || 'MULTI_STAGE');
-    try {
-      const sampleData = format ? getSampleDataByFormat(format) : createSampleData();
-      
-      // Ensure scoringSettings are set to badminton default
-      const updatedSampleData = {
-        ...sampleData,
-        scoringSettings: {
-          maxPoints: 21,
-          maxSets: 3,
-          requireTwoPointLead: true,
-          maxTwoPointLeadScore: 30
-        },
-        updatedAt: new Date()
-      };
-      
-      setCurrentTournament(updatedSampleData);
-      setTournaments(prev => {
-        // Check if tournament with same ID already exists
-        const exists = prev.some(t => t.id === updatedSampleData.id);
-        if (exists) {
-          return prev.map(t => t.id === updatedSampleData.id ? updatedSampleData : t);
-        }
-        return [...prev, updatedSampleData];
-      });
-      
-      // Publish to real-time service
-      realtimeTournamentService.publishTournamentUpdate(updatedSampleData);
-      
-      return updatedSampleData;
-    } catch (error) {
-      console.error('[ERROR] Failed to load sample data:', error);
-      return null;
-    }
-  };
-  
-  // Return the context provider with all methods and state
   return (
     <TournamentContext.Provider
       value={{
-        // Keep existing properties
         tournaments,
         currentTournament,
         setCurrentTournament,
@@ -419,9 +354,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         autoAssignCourts: autoAssignCourtsHandler,
         generateMultiStageTournament,
         advanceToNextStage,
-        
-        // Add the new seeding functionality
-        assignSeeding
+        assignSeeding,
+        // Add the new category operations
+        addCategory,
+        removeCategory,
+        updateCategory
       }}
     >
       {children}
