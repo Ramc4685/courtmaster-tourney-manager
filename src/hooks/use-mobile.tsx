@@ -20,3 +20,8 @@ export function useMediaQuery(query: string): boolean {
 
   return matches;
 }
+
+// This is a convenient shorthand for mobile detection
+export function useIsMobile(): boolean {
+  return useMediaQuery("(max-width: 768px)");
+}

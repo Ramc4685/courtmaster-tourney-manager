@@ -3,8 +3,7 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { TournamentCategory, Tournament, Match, Team } from "@/types/tournament";
-import { ChevronDown } from "lucide-react";
+import { TournamentCategory, Tournament } from "@/types/tournament";
 import BracketTab from "./BracketTab";
 import { useMediaQuery } from "@/hooks/use-mobile";
 

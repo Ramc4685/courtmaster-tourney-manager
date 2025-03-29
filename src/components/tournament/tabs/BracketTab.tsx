@@ -1,16 +1,17 @@
 
 import React, { useState } from "react";
 import TournamentBracket from "@/components/tournament/TournamentBracket";
-import { Tournament, Division } from "@/types/tournament";
+import { Tournament, Division, TournamentCategory } from "@/types/tournament";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 
 interface BracketTabProps {
   tournament: Tournament;
+  category?: TournamentCategory; // Added category prop as optional
 }
 
-const BracketTab: React.FC<BracketTabProps> = ({ tournament }) => {
+const BracketTab: React.FC<BracketTabProps> = ({ tournament, category }) => {
   const [currentDivision, setCurrentDivision] = useState<Division>("DIVISION_1");
   
   // Check if tournament has moved to the playoff stage
