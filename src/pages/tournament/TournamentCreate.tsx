@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -70,7 +71,13 @@ const TournamentCreate: React.FC = () => {
       }));
 
       const tournament = createTournament({
-        ...values,
+        name: values.name, // Ensure name is explicitly passed
+        format: values.format,
+        description: values.description,
+        startDate: values.startDate,
+        endDate: values.endDate,
+        divisionProgression: values.divisionProgression,
+        autoAssignCourts: values.autoAssignCourts,
         categories: categories,
         status: "DRAFT", // Add required properties
         teams: [],      // Add required empty array
@@ -245,7 +252,7 @@ const TournamentCreate: React.FC = () => {
                 onCategoriesChange={setCategories}
                 parentFormat={form.watch("format") as TournamentFormat}
               />
-              <CardFooter>
+              <CardFooter className="px-0">
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? "Creating..." : "Create Tournament"}
                 </Button>
