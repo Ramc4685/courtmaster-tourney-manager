@@ -1,10 +1,14 @@
 
-import { Tournament, Team, Match, Division, TournamentStage, MatchStatus, TournamentFormat, TournamentCategory, CourtStatus } from "@/types/tournament";
+import { Tournament, Team, Match, Division, TournamentStage, MatchStatus, TournamentFormat, TournamentCategory, CategoryType, CourtStatus } from "@/types/tournament";
 import { generateId } from "./tournamentUtils";
 
 export const createSampleData = (): Tournament => {
   const id = generateId();
-  const defaultCategory = { id: generateId(), name: "Men's Singles", type: "MENS_SINGLES" };
+  const defaultCategory = { 
+    id: generateId(), 
+    name: "Men's Singles", 
+    type: "MENS_SINGLES" as CategoryType 
+  };
   
   const teams: Team[] = [
     { id: "team-1", name: "Cloud9", players: [{ id: "player-1", name: "Player A" }, { id: "player-2", name: "Player B" }] },
@@ -59,15 +63,19 @@ export const createSampleData = (): Tournament => {
     createdAt: new Date(),
     updatedAt: new Date(),
     categories: [
-      { id: generateId(), name: "Men's Singles", type: "MENS_SINGLES" },
-      { id: generateId(), name: "Women's Singles", type: "WOMENS_SINGLES" }
+      { id: generateId(), name: "Men's Singles", type: "MENS_SINGLES" as CategoryType },
+      { id: generateId(), name: "Women's Singles", type: "WOMENS_SINGLES" as CategoryType }
     ]
   };
 };
 
 export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
   const id = generateId();
-  const defaultCategory = { id: generateId(), name: "Men's Singles", type: "MENS_SINGLES" };
+  const defaultCategory = { 
+    id: generateId(), 
+    name: "Men's Singles", 
+    type: "MENS_SINGLES" as CategoryType 
+  };
   
   const teams: Team[] = [
     { id: "team-1", name: "Cloud9", players: [{ id: "player-1", name: "Player A" }, { id: "player-2", name: "Player B" }] },
@@ -122,8 +130,8 @@ export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
     createdAt: new Date(),
     updatedAt: new Date(),
     categories: [
-      { id: generateId(), name: "Men's Singles", type: "MENS_SINGLES" },
-      { id: generateId(), name: "Women's Singles", type: "WOMENS_SINGLES" }
+      { id: generateId(), name: "Men's Singles", type: "MENS_SINGLES" as CategoryType },
+      { id: generateId(), name: "Women's Singles", type: "WOMENS_SINGLES" as CategoryType }
     ]
   };
 };
