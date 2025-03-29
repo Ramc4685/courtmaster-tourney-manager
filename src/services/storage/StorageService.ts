@@ -1,4 +1,3 @@
-
 // Abstract storage interface that can be implemented for different backends
 export interface StorageService {
   getItem<T>(key: string): Promise<T | null>;
@@ -36,16 +35,25 @@ export class LocalStorageService implements StorageService {
 }
 
 // Supabase implementation
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 export class SupabaseStorageService implements StorageService {
   private async getUserId(): Promise<string | null> {
+    if (!isSupabaseConfigured()) {
+      return null;
+    }
+    
     const { data } = await supabase.auth.getSession();
     return data.session ? data.session.user.id : null;
   }
 
   async getItem<T>(key: string): Promise<T | null> {
     try {
+      // If Supabase is not configured, fall back to localStorage
+      if (!isSupabaseConfigured()) {
+        return new LocalStorageService().getItem<T>(key);
+      }
+      
       // For tournaments list - get all tournaments the user has access to
       if (key === 'tournaments') {
         const userId = await this.getUserId();
@@ -94,12 +102,18 @@ export class SupabaseStorageService implements StorageService {
       return new LocalStorageService().getItem<T>(key);
     } catch (error) {
       console.error(`Error getting item from Supabase: ${key}`, error);
-      return null;
+      // Fallback to localStorage on error
+      return new LocalStorageService().getItem<T>(key);
     }
   }
 
   async setItem<T>(key: string, value: T): Promise<void> {
     try {
+      // If Supabase is not configured, fall back to localStorage
+      if (!isSupabaseConfigured()) {
+        return new LocalStorageService().setItem<T>(key, value);
+      }
+      
       // For tournaments list - not directly supported, we save individual tournaments
       if (key === 'tournaments') {
         const tournaments = value as any[];
@@ -155,11 +169,18 @@ export class SupabaseStorageService implements StorageService {
       }
     } catch (error) {
       console.error(`Error setting item in Supabase: ${key}`, error);
+      // Fallback to localStorage on error
+      return new LocalStorageService().setItem<T>(key, value);
     }
   }
 
   async removeItem(key: string): Promise<void> {
     try {
+      // If Supabase is not configured, fall back to localStorage
+      if (!isSupabaseConfigured()) {
+        return new LocalStorageService().removeItem(key);
+      }
+      
       if (key === 'currentTournament') {
         localStorage.removeItem('currentTournamentId');
       }
@@ -179,6 +200,8 @@ export class SupabaseStorageService implements StorageService {
       }
     } catch (error) {
       console.error(`Error removing item from Supabase: ${key}`, error);
+      // Fallback to localStorage on error
+      return new LocalStorageService().removeItem(key);
     }
   }
 }
@@ -257,6 +280,8 @@ export const createStorageService = (config?: StorageConfig): StorageService => 
       console.log('Using Supabase storage service');
       return new SupabaseStorageService();
     }
+  } else {
+    console.log('Supabase not configured, falling back to LocalStorage');
   }
   
   if (config?.useLocalStorage !== false) {

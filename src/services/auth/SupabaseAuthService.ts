@@ -1,9 +1,13 @@
-
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { User, UserCredentials } from '@/types/user';
 
 export class SupabaseAuthService {
   async getCurrentUser(): Promise<User | null> {
+    if (!isSupabaseConfigured()) {
+      console.warn('Supabase is not configured. Unable to get current user.');
+      return null;
+    }
+    
     const { data } = await supabase.auth.getSession();
     
     if (!data.session) {
@@ -23,11 +27,16 @@ export class SupabaseAuthService {
       name: profile?.name || data.session.user.email?.split('@')[0] || '',
       createdAt: data.session.user.created_at || new Date().toISOString(),
       isVerified: data.session.user.email_confirmed_at !== null,
-      role: profile?.role || 'user',
+      role: (profile?.role as "admin" | "user") || 'user',
     };
   }
 
   async login(credentials: UserCredentials): Promise<User | null> {
+    if (!isSupabaseConfigured()) {
+      console.warn('Supabase is not configured. Unable to log in.');
+      throw new Error('Supabase is not configured. Please set up your Supabase project first.');
+    }
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email: credentials.email,
       password: credentials.password,
@@ -55,11 +64,16 @@ export class SupabaseAuthService {
       name: profile?.name || data.user.email?.split('@')[0] || '',
       createdAt: data.user.created_at || new Date().toISOString(),
       isVerified: data.user.email_confirmed_at !== null,
-      role: profile?.role || 'user',
+      role: (profile?.role as "admin" | "user") || 'user',
     };
   }
 
   async register(credentials: UserCredentials, name: string): Promise<User | null> {
+    if (!isSupabaseConfigured()) {
+      console.warn('Supabase is not configured. Unable to register.');
+      throw new Error('Supabase is not configured. Please set up your Supabase project first.');
+    }
+    
     const { data, error } = await supabase.auth.signUp({
       email: credentials.email,
       password: credentials.password,
@@ -98,6 +112,11 @@ export class SupabaseAuthService {
   }
 
   async logout(): Promise<void> {
+    if (!isSupabaseConfigured()) {
+      console.warn('Supabase is not configured. Unable to log out.');
+      return;
+    }
+    
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Logout error:', error.message);
@@ -106,6 +125,11 @@ export class SupabaseAuthService {
   }
 
   async resetPassword(email: string): Promise<void> {
+    if (!isSupabaseConfigured()) {
+      console.warn('Supabase is not configured. Unable to reset password.');
+      throw new Error('Supabase is not configured. Please set up your Supabase project first.');
+    }
+    
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) {
       console.error('Password reset error:', error.message);
@@ -114,6 +138,11 @@ export class SupabaseAuthService {
   }
 
   async updateUserProfile(user: Partial<User>): Promise<User | null> {
+    if (!isSupabaseConfigured()) {
+      console.warn('Supabase is not configured. Unable to update profile.');
+      throw new Error('Supabase is not configured. Please set up your Supabase project first.');
+    }
+    
     const { data: sessionData } = await supabase.auth.getSession();
     
     if (!sessionData.session) {
