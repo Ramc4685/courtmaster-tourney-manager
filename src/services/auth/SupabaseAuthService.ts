@@ -10,7 +10,7 @@ export class SupabaseAuthService {
       return null;
     }
     
-    // Get the user profile from the users table
+    // Get the user profile from the profiles table
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')

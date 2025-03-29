@@ -37,22 +37,24 @@ export class LocalStorageService implements StorageService {
 
 // Supabase implementation
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/contexts/auth/AuthContext';
 
 export class SupabaseStorageService implements StorageService {
-  private getUserId(): string | null {
-    const session = supabase.auth.getSession();
-    return session ? (session as any).user?.id : null;
+  private async getUserId(): Promise<string | null> {
+    const { data } = await supabase.auth.getSession();
+    return data.session ? data.session.user.id : null;
   }
 
   async getItem<T>(key: string): Promise<T | null> {
     try {
       // For tournaments list - get all tournaments the user has access to
       if (key === 'tournaments') {
+        const userId = await this.getUserId();
+        if (!userId) return null;
+        
         const { data, error } = await supabase
           .from('user_tournaments')
           .select('tournament_id')
-          .eq('user_id', this.getUserId() || '');
+          .eq('user_id', userId);
           
         if (error) throw error;
         
@@ -116,7 +118,7 @@ export class SupabaseStorageService implements StorageService {
       }
       else if (key.startsWith('tournament_')) {
         const tournamentId = key.replace('tournament_', '');
-        const userId = this.getUserId();
+        const userId = await this.getUserId();
         
         if (!userId) {
           console.error('User not authenticated, cannot save tournament to Supabase');
