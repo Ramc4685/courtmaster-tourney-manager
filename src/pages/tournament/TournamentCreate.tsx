@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -17,7 +16,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useTournament } from "@/contexts/tournament/useTournament";
-import { TournamentCategory, TournamentFormat } from "@/types/tournament";
+import { TournamentCategory, TournamentFormat, CourtStatus } from "@/types/tournament";
 import TournamentCategorySection from "@/components/tournament/TournamentCategorySection";
 import { createDefaultCategories } from "@/utils/categoryUtils";
 import { Grid3X3Icon } from "lucide-react";
@@ -67,7 +66,7 @@ const TournamentCreate: React.FC = () => {
         id: crypto.randomUUID(),
         name: `Court ${index + 1}`,
         number: index + 1,
-        status: "AVAILABLE"
+        status: "AVAILABLE" as CourtStatus  // Explicitly type as CourtStatus
       }));
 
       const tournament = createTournament({
@@ -149,6 +148,7 @@ const TournamentCreate: React.FC = () => {
                   </FormItem>
                 )}
               />
+              
               <FormField
                 control={form.control}
                 name="startDate"
