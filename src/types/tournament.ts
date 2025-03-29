@@ -1,4 +1,3 @@
-
 export type Player = {
   id: string;
   name: string;
@@ -75,13 +74,15 @@ export type ScoringSettings = {
   maxTwoPointLeadScore?: number; // Maximum score for a win when using two-point lead rule
 };
 
-// New type for tournament categories/events
+// Updated TournamentCategory with description and format fields
 export type TournamentCategory = {
   id: string;
   name: string;
   type: CategoryType;
   isCustom?: boolean;
   customName?: string; // Only used for custom categories
+  description?: string; // New field for custom category description
+  format?: TournamentFormat; // Format specific to this category
 };
 
 // Standard badminton category types

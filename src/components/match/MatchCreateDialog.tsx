@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,17 @@ const MatchCreateDialog: React.FC<MatchCreateDialogProps> = ({
   const [scheduledTime, setScheduledTime] = useState("12:00");
   const [courtId, setCourtId] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<TournamentCategory | null>(null);
+
+  // Update selected category when categoryId changes
+  useEffect(() => {
+    if (categoryId && currentTournament) {
+      const category = currentTournament.categories.find(c => c.id === categoryId) || null;
+      setSelectedCategory(category);
+    } else {
+      setSelectedCategory(null);
+    }
+  }, [categoryId, currentTournament]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +118,7 @@ const MatchCreateDialog: React.FC<MatchCreateDialogProps> = ({
                 <SelectContent>
                   {availableCategories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
-                      {category.name}
+                      {category.name} {category.format ? `(${category.format})` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>

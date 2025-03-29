@@ -18,7 +18,7 @@ export interface TournamentContextType {
   completeMatch: (matchId: string) => void;
   moveTeamToDivision: (teamId: string, fromDivision: Division, toDivision: Division) => void;
   loadSampleData: (format?: TournamentFormat) => void;
-  scheduleMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => void;
+  scheduleMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => void;
   generateBracket: () => void;
   autoAssignCourts: () => Promise<number>;
   generateMultiStageTournament: () => void;
@@ -29,4 +29,7 @@ export interface TournamentContextType {
   addCategory: (category: Omit<TournamentCategory, "id">) => void;
   removeCategory: (categoryId: string) => void;
   updateCategory: (category: TournamentCategory) => void;
+  
+  // New operation for loading demo data for a specific category
+  loadCategoryDemoData: (categoryId: string, format: TournamentFormat) => void;
 }

@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentStage, TournamentFormat, TournamentCategory } from "@/types/tournament";
 import { createSampleData, getSampleDataByFormat } from "@/utils/tournamentSampleData";
@@ -27,6 +26,7 @@ import { realtimeTournamentService } from "@/services/realtime/RealtimeTournamen
 import { useAuth } from "@/contexts/auth/AuthContext";
 import { assignTournamentSeeding } from "./tournamentOperations";
 import { assignPlayerSeeding } from "@/utils/tournamentProgressionUtils";
+import { getCategoryDemoData } from "@/utils/tournamentSampleData";
 
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
@@ -218,11 +218,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Schedule a match
-  const scheduleMatch = (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => {
+  const scheduleMatch = (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => {
     if (!currentTournament) return;
     
     console.log('[DEBUG] Scheduling match. Team1:', team1Id, 'Team2:', team2Id, 'Time:', scheduledTime);
-    const updatedTournament = scheduleMatchInTournament(team1Id, team2Id, scheduledTime, currentTournament, courtId);
+    const updatedTournament = scheduleMatchInTournament(team1Id, team2Id, scheduledTime, currentTournament, courtId, categoryId);
     
     updateTournament(updatedTournament);
   };
@@ -335,6 +335,33 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     updateTournament(updatedTournament);
   };
 
+  // New function to load demo data for a specific category
+  const loadCategoryDemoData = (categoryId: string, format: TournamentFormat) => {
+    if (!currentTournament) return;
+    
+    console.log('[DEBUG] Loading demo data for category ID:', categoryId, 'Format:', format);
+    
+    // Find the category in the current tournament
+    const category = currentTournament.categories.find(c => c.id === categoryId);
+    if (!category) {
+      console.error('[ERROR] Category not found:', categoryId);
+      return;
+    }
+    
+    // Get demo data specific to this category and format
+    const { teams, matches } = getCategoryDemoData(format, category);
+    
+    // Update tournament with new teams and matches for this category
+    const updatedTournament = {
+      ...currentTournament,
+      teams: [...currentTournament.teams, ...teams],
+      matches: [...currentTournament.matches, ...matches],
+      updatedAt: new Date()
+    };
+    
+    updateTournament(updatedTournament);
+  };
+
   return (
     <TournamentContext.Provider
       value={{
@@ -363,7 +390,9 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         // Add the new category operations
         addCategory,
         removeCategory,
-        updateCategory
+        updateCategory,
+        // Add the new category demo data function
+        loadCategoryDemoData
       }}
     >
       {children}

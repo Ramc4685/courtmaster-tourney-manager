@@ -57,7 +57,8 @@ export const scheduleMatchInTournament = (
   team2Id: string,
   scheduledTime: Date,
   currentTournament: Tournament,
-  courtId?: string
+  courtId?: string,
+  categoryId?: string
 ): Tournament => {
   const team1 = currentTournament.teams.find(team => team.id === team1Id);
   const team2 = currentTournament.teams.find(team => team.id === team2Id);
@@ -67,8 +68,14 @@ export const scheduleMatchInTournament = (
     return currentTournament;
   }
 
-  // Determine category from teams (use team1's category, or the first tournament category as fallback)
-  const category = team1.category || team2.category || currentTournament.categories[0];
+  // Determine category from the categoryId parameter or from the teams
+  let category: TournamentCategory | undefined;
+  
+  if (categoryId) {
+    category = currentTournament.categories.find(c => c.id === categoryId);
+  } else {
+    category = team1.category || team2.category || currentTournament.categories[0];
+  }
   
   if (!category) {
     console.error('No category found for match');
@@ -81,13 +88,13 @@ export const scheduleMatchInTournament = (
     team1: team1,
     team2: team2,
     scores: [],
-    division: "INITIAL" as Division,  // Explicitly cast to Division type
-    stage: "INITIAL_ROUND" as TournamentStage,  // Explicitly cast to TournamentStage type
+    division: "INITIAL" as Division,
+    stage: "INITIAL_ROUND" as TournamentStage,
     scheduledTime: scheduledTime,
-    status: "SCHEDULED" as MatchStatus,  // Explicitly cast to MatchStatus type
+    status: "SCHEDULED" as MatchStatus,
     courtNumber: courtId ? parseInt(courtId.split('-')[1]) : undefined,
     updatedAt: new Date(),
-    category: category  // Add the required category field
+    category: category
   };
 
   return {

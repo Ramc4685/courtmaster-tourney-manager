@@ -1,246 +1,257 @@
-import { Tournament, TournamentFormat } from "@/types/tournament";
+import { Tournament, Team, Match, Division, TournamentStage, MatchStatus, TournamentFormat, TournamentCategory } from "@/types/tournament";
 import { generateId } from "./tournamentUtils";
-import { createDefaultCategories, generateCategoryTeams } from "./categoryUtils";
 
-// Create a sample tournament with 38 teams
 export const createSampleData = (): Tournament => {
-  const categories = createDefaultCategories();
-  
-  // Create teams for each category
-  const teamsMS = generateCategoryTeams(categories.find(c => c.type === "MENS_SINGLES")!, 8);
-  const teamsWS = generateCategoryTeams(categories.find(c => c.type === "WOMENS_SINGLES")!, 8);
-  const teamsMD = generateCategoryTeams(categories.find(c => c.type === "MENS_DOUBLES")!, 4);
-  const teamsWD = generateCategoryTeams(categories.find(c => c.type === "WOMENS_DOUBLES")!, 4);
-  const teamsMX = generateCategoryTeams(categories.find(c => c.type === "MIXED_DOUBLES")!, 8);
-  
-  // Combine all teams
-  const teams = [...teamsMS, ...teamsWS, ...teamsMD, ...teamsWD, ...teamsMX];
-  
-  // Create tournament
+  const id = generateId();
+  const teams: Team[] = [
+    { id: "team-1", name: "Cloud9", players: [{ id: "player-1", name: "Player A" }, { id: "player-2", name: "Player B" }] },
+    { id: "team-2", name: "TSM", players: [{ id: "player-3", name: "Player C" }, { id: "player-4", name: "Player D" }] },
+    { id: "team-3", name: "Liquid", players: [{ id: "player-5", name: "Player E" }, { id: "player-6", name: "Player F" }] },
+    { id: "team-4", name: "Fnatic", players: [{ id: "player-7", name: "Player G" }, { id: "player-8", name: "Player H" }] }
+  ];
+
+  const matches: Match[] = [
+    {
+      id: generateId(),
+      tournamentId: id,
+      team1: teams[0],
+      team2: teams[1],
+      scores: [],
+      division: "DIVISION_1",
+      stage: "INITIAL_ROUND",
+      status: "SCHEDULED",
+      scheduledTime: new Date()
+    },
+    {
+      id: generateId(),
+      tournamentId: id,
+      team1: teams[2],
+      team2: teams[3],
+      scores: [],
+      division: "DIVISION_2",
+      stage: "INITIAL_ROUND",
+      status: "SCHEDULED",
+      scheduledTime: new Date()
+    }
+  ];
+
+  const courts = [
+    { id: "court-1", name: "Court 1", number: 1, status: "AVAILABLE" },
+    { id: "court-2", name: "Court 2", number: 2, status: "AVAILABLE" }
+  ];
+
   return {
-    id: generateId(),
-    name: "Sample Badminton Tournament",
-    description: "This is a sample tournament with multiple categories",
-    format: "MULTI_STAGE",
+    id,
+    name: "Sample Tournament",
+    format: "SINGLE_ELIMINATION",
     status: "DRAFT",
     currentStage: "INITIAL_ROUND",
     teams,
-    matches: [],
-    courts: Array.from({ length: 4 }, (_, i) => ({
-      id: `court-${i + 1}`,
-      name: `Court ${i + 1}`,
-      number: i + 1,
-      status: "AVAILABLE",
-    })),
+    matches,
+    courts,
     startDate: new Date(),
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+    endDate: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),
-    divisionProgression: true,
-    autoAssignCourts: true,
-    categories,
-    scoringSettings: {
-      maxPoints: 21,
-      maxSets: 3,
-      requireTwoPointLead: true,
-      maxTwoPointLeadScore: 30,
-    },
+    categories: [
+      { id: generateId(), name: "Men's Singles", type: "MENS_SINGLES" },
+      { id: generateId(), name: "Women's Singles", type: "WOMENS_SINGLES" }
+    ]
   };
 };
 
-// Get sample data for a specific tournament format
 export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
-  const categories = createDefaultCategories();
-  
-  // Create teams for different categories based on format
-  let categoryTeams = [];
-  
-  switch (format) {
-    case "SINGLE_ELIMINATION":
-    case "DOUBLE_ELIMINATION":
-      // For elimination formats, create 8 teams per category
-      categoryTeams = categories.map(category => 
-        generateCategoryTeams(category, 8)
-      ).flat();
-      break;
-      
-    case "ROUND_ROBIN":
-      // For round robin, fewer teams per category (4-6)
-      categoryTeams = categories.map(category => 
-        generateCategoryTeams(category, 4)
-      ).flat();
-      break;
-      
-    case "SWISS":
-      // For Swiss, more teams
-      categoryTeams = categories.map(category => 
-        generateCategoryTeams(category, 8)
-      ).flat();
-      break;
-      
-    case "GROUP_KNOCKOUT":
-      // For group stage, 12 teams (4 per group, 3 groups)
-      categoryTeams = categories.map(category => 
-        generateCategoryTeams(category, 12)
-      ).flat();
-      break;
-      
-    case "MULTI_STAGE":
-    default:
-      // Keep a subset of categories for the multi-stage 38-team format
-      const multiStageCategories = categories.filter(c => 
-        c.type === "MENS_SINGLES" || c.type === "WOMENS_SINGLES"
-      );
-      
-      // Create 19 teams for each selected category
-      categoryTeams = multiStageCategories.map(category => 
-        generateCategoryTeams(category, 19)
-      ).flat();
-      break;
-  }
-  
-  // Create tournament with appropriate teams, categories, and format
+  const id = generateId();
+  const teams: Team[] = [
+    { id: "team-1", name: "Cloud9", players: [{ id: "player-1", name: "Player A" }, { id: "player-2", name: "Player B" }] },
+    { id: "team-2", name: "TSM", players: [{ id: "player-3", name: "Player C" }, { id: "player-4", name: "Player D" }] },
+    { id: "team-3", name: "Liquid", players: [{ id: "player-5", name: "Player E" }, { id: "player-6", name: "Player F" }] },
+    { id: "team-4", name: "Fnatic", players: [{ id: "player-7", name: "Player G" }, { id: "player-8", name: "Player H" }] }
+  ];
+
+  const matches: Match[] = [
+    {
+      id: generateId(),
+      tournamentId: id,
+      team1: teams[0],
+      team2: teams[1],
+      scores: [],
+      division: "DIVISION_1",
+      stage: "INITIAL_ROUND",
+      status: "SCHEDULED",
+      scheduledTime: new Date()
+    },
+    {
+      id: generateId(),
+      tournamentId: id,
+      team1: teams[2],
+      team2: teams[3],
+      scores: [],
+      division: "DIVISION_2",
+      stage: "INITIAL_ROUND",
+      status: "SCHEDULED",
+      scheduledTime: new Date()
+    }
+  ];
+
+  const courts = [
+    { id: "court-1", name: "Court 1", number: 1, status: "AVAILABLE" },
+    { id: "court-2", name: "Court 2", number: 2, status: "AVAILABLE" }
+  ];
+
   return {
-    id: generateId(),
-    name: `Sample ${format.replace(/_/g, " ")} Tournament`,
-    description: `This is a sample tournament using the ${format.replace(/_/g, " ")} format with multiple categories`,
-    format,
+    id,
+    name: `Sample ${format} Tournament`,
+    format: format,
     status: "DRAFT",
     currentStage: "INITIAL_ROUND",
-    teams: categoryTeams,
-    matches: [],
-    courts: Array.from({ length: 4 }, (_, i) => ({
-      id: `court-${i + 1}`,
-      name: `Court ${i + 1}`,
-      number: i + 1,
-      status: "AVAILABLE",
-    })),
+    teams,
+    matches,
+    courts,
     startDate: new Date(),
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+    endDate: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),
-    divisionProgression: format === "MULTI_STAGE",
-    autoAssignCourts: true,
-    categories,
-    scoringSettings: {
-      maxPoints: 21,
-      maxSets: 3,
-      requireTwoPointLead: true,
-      maxTwoPointLeadScore: 30,
-    },
-    formatConfig: getFormatConfig(format),
+    categories: [
+      { id: generateId(), name: "Men's Singles", type: "MENS_SINGLES" },
+      { id: generateId(), name: "Women's Singles", type: "WOMENS_SINGLES" }
+    ]
   };
 };
 
-// Helper function to get format-specific configuration
-function getFormatConfig(format: TournamentFormat) {
-  switch (format) {
-    case "GROUP_KNOCKOUT":
-      return {
-        groupCount: 3,
-        teamsPerGroup: 4,
-        advancingTeamsPerGroup: 2,
-      };
-    case "SWISS":
-      return {
-        swissRounds: 4,
-      };
-    case "SINGLE_ELIMINATION":
-      return {
-        consolationRounds: true,
-      };
+// Create sample data for a specific category
+export const getCategoryDemoData = (format: TournamentFormat, category: TournamentCategory) => {
+  const teams: Team[] = [];
+  const matches: Match[] = [];
+  
+  // Generate sample team names based on category type
+  const teamNamePrefix = getTeamNamePrefixByCategory(category);
+  
+  // Create 8 teams for this category
+  for (let i = 1; i <= 8; i++) {
+    const teamId = `team-${category.id}-${i}`;
+    teams.push({
+      id: teamId,
+      name: `${teamNamePrefix} Team ${i}`,
+      players: [
+        { id: `player-${teamId}-1`, name: `Player ${i}A` },
+        { id: `player-${teamId}-2`, name: `Player ${i}B` }
+      ],
+      category: category
+    });
+  }
+  
+  // Create sample matches based on format
+  if (format === "ROUND_ROBIN") {
+    // Round robin - everyone plays against everyone
+    for (let i = 0; i < teams.length; i++) {
+      for (let j = i + 1; j < teams.length; j++) {
+        matches.push({
+          id: `match-${category.id}-${i}-${j}`,
+          tournamentId: "sample",
+          team1: teams[i],
+          team2: teams[j],
+          scores: [],
+          division: "INITIAL" as Division,
+          stage: "INITIAL_ROUND" as TournamentStage,
+          status: "SCHEDULED" as MatchStatus,
+          scheduledTime: new Date(Date.now() + (matches.length * 3600000)), // Each match 1 hour apart
+          category: category
+        });
+      }
+    }
+  } else if (format === "SINGLE_ELIMINATION") {
+    // Create a simple bracket
+    // First round (4 matches)
+    for (let i = 0; i < 4; i++) {
+      matches.push({
+        id: `match-${category.id}-r1-${i}`,
+        tournamentId: "sample",
+        team1: teams[i * 2],
+        team2: teams[i * 2 + 1],
+        scores: [],
+        division: "INITIAL" as Division,
+        stage: "INITIAL_ROUND" as TournamentStage,
+        status: "SCHEDULED" as MatchStatus,
+        bracketRound: 1,
+        bracketPosition: i,
+        nextMatchId: `match-${category.id}-r2-${Math.floor(i/2)}`,
+        scheduledTime: new Date(Date.now() + (i * 3600000)),
+        category: category
+      });
+    }
+    
+    // Second round (2 matches)
+    for (let i = 0; i < 2; i++) {
+      matches.push({
+        id: `match-${category.id}-r2-${i}`,
+        tournamentId: "sample",
+        team1: { id: "TBD", name: "TBD", players: [] },
+        team2: { id: "TBD", name: "TBD", players: [] },
+        scores: [],
+        division: "INITIAL" as Division,
+        stage: "INITIAL_ROUND" as TournamentStage,
+        status: "SCHEDULED" as MatchStatus,
+        bracketRound: 2,
+        bracketPosition: i,
+        nextMatchId: `match-${category.id}-r3-0`,
+        scheduledTime: new Date(Date.now() + (4 * 3600000) + (i * 3600000)),
+        category: category
+      });
+    }
+    
+    // Final match
+    matches.push({
+      id: `match-${category.id}-r3-0`,
+      tournamentId: "sample",
+      team1: { id: "TBD", name: "TBD", players: [] },
+      team2: { id: "TBD", name: "TBD", players: [] },
+      scores: [],
+      division: "INITIAL" as Division,
+      stage: "INITIAL_ROUND" as TournamentStage,
+      status: "SCHEDULED" as MatchStatus,
+      bracketRound: 3,
+      bracketPosition: 0,
+      scheduledTime: new Date(Date.now() + (6 * 3600000)),
+      category: category
+    });
+  } else {
+    // For other formats, create some basic matches
+    for (let i = 0; i < 4; i++) {
+      matches.push({
+        id: `match-${category.id}-${i}`,
+        tournamentId: "sample",
+        team1: teams[i * 2],
+        team2: teams[i * 2 + 1],
+        scores: [],
+        division: "INITIAL" as Division,
+        stage: "INITIAL_ROUND" as TournamentStage,
+        status: "SCHEDULED" as MatchStatus,
+        scheduledTime: new Date(Date.now() + (i * 3600000)),
+        category: category
+      });
+    }
+  }
+  
+  return { teams, matches };
+};
+
+// Helper to get team name prefix based on category
+function getTeamNamePrefixByCategory(category: TournamentCategory): string {
+  switch (category.type) {
+    case "MENS_SINGLES":
+      return "MS";
+    case "WOMENS_SINGLES":
+      return "WS";
+    case "MENS_DOUBLES":
+      return "MD";
+    case "WOMENS_DOUBLES":
+      return "WD";
+    case "MIXED_DOUBLES":
+      return "XD";
+    case "CUSTOM":
+      return category.customName?.substring(0, 2) || "CU";
     default:
-      return {};
+      return "T";
   }
 }
-
-// Create a sample tournament with 38 teams for the multi-stage format
-export const createSample38TeamTournament = (): Tournament => {
-  const sampleTournament = createSampleData();
-  
-  // Generate 38 teams with names and players
-  const teams = Array.from({ length: 38 }, (_, i) => {
-    const teamNumber = i + 1;
-    return {
-      id: `team-${teamNumber}`,
-      name: `Team ${teamNumber}`,
-      players: [
-        {
-          id: `player-${teamNumber}-1`,
-          name: `Player ${teamNumber}-1`,
-        },
-        {
-          id: `player-${teamNumber}-2`,
-          name: `Player ${teamNumber}-2`,
-        },
-      ],
-      initialRanking: teamNumber, // Set initial ranking based on team number
-    };
-  });
-  
-  return {
-    ...sampleTournament,
-    teams,
-  };
-};
-
-// Create a sample tournament with 16 teams for single elimination
-export const createSample16TeamTournament = (): Tournament => {
-  const sampleTournament = createSampleData();
-  
-  // Generate 16 teams with names and players
-  const teams = Array.from({ length: 16 }, (_, i) => {
-    const teamNumber = i + 1;
-    return {
-      id: `team-${teamNumber}`,
-      name: `Team ${teamNumber}`,
-      players: [
-        {
-          id: `player-${teamNumber}-1`,
-          name: `Player ${teamNumber}-1`,
-        },
-        {
-          id: `player-${teamNumber}-2`,
-          name: `Player ${teamNumber}-2`,
-        },
-      ],
-      seed: teamNumber, // Set seed based on team number
-    };
-  });
-  
-  return {
-    ...sampleTournament,
-    teams,
-    format: "SINGLE_ELIMINATION",
-  };
-};
-
-// Create a sample tournament with 8 teams for round robin
-export const createSample8TeamTournament = (): Tournament => {
-  const sampleTournament = createSampleData();
-  
-  // Generate 8 teams with names and players
-  const teams = Array.from({ length: 8 }, (_, i) => {
-    const teamNumber = i + 1;
-    return {
-      id: `team-${teamNumber}`,
-      name: `Team ${teamNumber}`,
-      players: [
-        {
-          id: `player-${teamNumber}-1`,
-          name: `Player ${teamNumber}-1`,
-        },
-        {
-          id: `player-${teamNumber}-2`,
-          name: `Player ${teamNumber}-2`,
-        },
-      ],
-    };
-  });
-  
-  return {
-    ...sampleTournament,
-    teams,
-    format: "ROUND_ROBIN",
-  };
-};
