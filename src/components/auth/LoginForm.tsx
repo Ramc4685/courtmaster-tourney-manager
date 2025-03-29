@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { LogIn } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
@@ -29,6 +30,7 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const { login, isLoading } = useAuth();
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -39,21 +41,41 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   });
 
   const onSubmit = async (data: LoginFormValues) => {
+    setLoginError(null);
     console.log('[DEBUG] LoginForm: Submitting login form', data.email);
-    // Ensure data has required properties by explicitly creating a UserCredentials object
-    const credentials = {
-      email: data.email,
-      password: data.password
-    };
-    const success = await login(credentials);
-    if (success && onSuccess) {
-      onSuccess();
+    
+    try {
+      // Ensure data has required properties by explicitly creating a UserCredentials object
+      const credentials = {
+        email: data.email,
+        password: data.password
+      };
+      
+      console.log('[DEBUG] LoginForm: Calling login function with credentials');
+      const success = await login(credentials);
+      console.log('[DEBUG] LoginForm: Login result', success);
+      
+      if (success && onSuccess) {
+        console.log('[DEBUG] LoginForm: Login successful, calling onSuccess');
+        onSuccess();
+      } else if (!success) {
+        console.log('[DEBUG] LoginForm: Login failed');
+        setLoginError('Invalid email or password. Please try again.');
+      }
+    } catch (error) {
+      console.error('[ERROR] LoginForm: Error during login', error);
+      setLoginError(error instanceof Error ? error.message : 'An error occurred during login');
     }
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {loginError && (
+          <Alert variant="destructive">
+            <AlertDescription>{loginError}</AlertDescription>
+          </Alert>
+        )}
         <FormField
           control={form.control}
           name="email"
