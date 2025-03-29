@@ -12,11 +12,13 @@ import { Input } from "@/components/ui/input";
 interface TournamentCategorySectionProps {
   categories: TournamentCategory[];
   onCategoriesChange: (categories: TournamentCategory[]) => void;
+  parentFormat?: TournamentFormat; // Added parentFormat prop as optional
 }
 
 const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({ 
   categories, 
-  onCategoriesChange 
+  onCategoriesChange,
+  parentFormat // Add this to the component props
 }) => {
   const [customCategoryName, setCustomCategoryName] = useState('');
 
@@ -25,19 +27,25 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
     const exists = categories.some(c => c.type === type);
     if (exists) return;
     
+    // If parentFormat is provided, use it as the default format for the category
+    const defaultFormat = parentFormat || "SINGLE_ELIMINATION";
+    
     onCategoriesChange([
       ...categories,
       {
         id: crypto.randomUUID(),
         name,
         type,
-        format: "SINGLE_ELIMINATION" // Default format
+        format: defaultFormat // Use the parent format if available
       }
     ]);
   };
 
   const handleAddCustomCategory = () => {
     if (!customCategoryName.trim()) return;
+    
+    // If parentFormat is provided, use it as the default format for the category
+    const defaultFormat = parentFormat || "SINGLE_ELIMINATION";
     
     onCategoriesChange([
       ...categories,
@@ -47,7 +55,7 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
         type: "CUSTOM" as CategoryType,
         isCustom: true,
         customName: customCategoryName,
-        format: "SINGLE_ELIMINATION" // Default format
+        format: defaultFormat // Use the parent format if available
       }
     ]);
     
