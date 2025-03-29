@@ -100,7 +100,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
                 teams={categoryTeams}
                 courts={tournament.courts}
                 onMatchUpdate={updateMatch}
-                onAssignCourt={assignCourt}
+                onCourtAssign={assignCourt}
                 onAddMatchClick={() => {}}
                 onAutoScheduleClick={() => {}}
               />
@@ -146,7 +146,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
               teams={categoryTeams}
               courts={tournament.courts}
               onMatchUpdate={updateMatch}
-              onAssignCourt={assignCourt}
+              onCourtAssign={assignCourt}
               onAddMatchClick={() => {}}
               onAutoScheduleClick={() => {}}
             />
