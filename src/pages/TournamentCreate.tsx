@@ -23,7 +23,7 @@ import TournamentCategorySection from "@/components/tournament/TournamentCategor
 const TournamentCreate = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { createTournament } = useTournament();
+  const { createTournament, loadCategoryDemoData } = useTournament();
   const { user } = useAuth(); // Get the current user from auth context
 
   const [name, setName] = useState("");
@@ -52,7 +52,7 @@ const TournamentCreate = () => {
     }
   }, [user, toast, navigate]);
 
-  const handleCreateTournament = () => {
+  const handleCreateTournament = async () => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -90,15 +90,18 @@ const TournamentCreate = () => {
       return;
     }
 
-    // Create courts based on court count
-    const courts = Array.from({ length: courtCount }, (_, index) => ({
-      id: `court-${index + 1}`,
-      name: `Court ${index + 1}`,
-      number: index + 1,
-      status: "AVAILABLE" as const,
-    }));
-
     try {
+      // Create courts based on court count
+      const courts = Array.from({ length: courtCount }, (_, index) => ({
+        id: `court-${index + 1}`,
+        name: `Court ${index + 1}`,
+        number: index + 1,
+        status: "AVAILABLE" as const,
+      }));
+
+      // Clean the categories by removing the addDemoData flag before creating tournament
+      const cleanedCategories = categories.map(({addDemoData, ...cat}) => cat);
+
       // Create the tournament using the createTournament function in context
       const createdTournament = createTournament({
         name,
@@ -111,8 +114,30 @@ const TournamentCreate = () => {
         endDate,
         divisionProgression,
         autoAssignCourts: true,
-        categories, // Add the selected categories
+        categories: cleanedCategories, // Use the cleaned categories
       });
+      
+      // After tournament is created, check if we need to load demo data for any categories
+      const categoriesNeedingDemoData = categories.filter(cat => cat.addDemoData);
+      
+      if (categoriesNeedingDemoData.length > 0) {
+        // Process each category one by one to prevent UI freezing
+        for (const category of categoriesNeedingDemoData) {
+          if (category.format) {
+            try {
+              await loadCategoryDemoData(category.id, category.format);
+            } catch (error) {
+              console.error(`Error loading demo data for ${category.name}:`, error);
+              // Continue with other categories even if one fails
+            }
+          }
+        }
+        
+        toast({
+          title: "Demo Data Added",
+          description: `Added demo data for ${categoriesNeedingDemoData.length} categories`,
+        });
+      }
       
       toast({
         title: "Success",
@@ -131,7 +156,6 @@ const TournamentCreate = () => {
     }
   };
 
-  // Add a new state for the selected tournament format
   // Function to load sample data based on format
   const handleLoadSampleData = () => {
     const { loadSampleData } = useTournament();

@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { useTournament } from "@/contexts/TournamentContext";
 import { useAuth } from "@/contexts/auth/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface TournamentCategorySectionProps {
   categories: TournamentCategory[];
@@ -43,11 +44,14 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
   const [customCategoryName, setCustomCategoryName] = useState("");
   const [customCategoryDescription, setCustomCategoryDescription] = useState("");
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
-  const { loadCategoryDemoData } = useTournament();
+  const { toast } = useToast();
   const { user } = useAuth();
   
   // Check if the user is an admin or demo user
   const isAdminOrDemo = user && (user.role === "admin" || user.email?.includes("demo"));
+
+  // NOTE: Removed direct reference to loadCategoryDemoData from the context
+  // We'll handle this separately in the create tournament flow
 
   // Check if a standard category is selected
   const isCategorySelected = (type: CategoryType) => {
@@ -80,7 +84,7 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
         { 
           id: crypto.randomUUID(), 
           name: customCategoryName,
-          type: "CUSTOM",
+          type: "CUSTOM" as CategoryType,
           isCustom: true,
           customName: customCategoryName,
           description: customCategoryDescription.trim() || undefined,
@@ -111,12 +115,11 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
     ));
   };
 
-  // Toggle demo data for a category
-  const toggleDemoData = (categoryId: string, checked: boolean) => {
-    const category = categories.find(cat => cat.id === categoryId);
-    if (checked && category && category.format) {
-      loadCategoryDemoData(categoryId, category.format);
-    }
+  // Mark a category for demo data loading (we'll just add a flag for now)
+  const markForDemoData = (categoryId: string, shouldAddDemo: boolean) => {
+    onCategoriesChange(categories.map(cat => 
+      cat.id === categoryId ? { ...cat, addDemoData: shouldAddDemo } : cat
+    ));
   };
 
   // Toggle category details panel
@@ -138,8 +141,8 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
             <div key={category.id} className="flex items-center space-x-2">
               <Checkbox 
                 id={`category-${category.id}`} 
-                checked={isCategorySelected(category.id as CategoryType)}
-                onCheckedChange={() => toggleCategory(category.id as CategoryType, category.name)}
+                checked={isCategorySelected(category.id)}
+                onCheckedChange={() => toggleCategory(category.id, category.name)}
               />
               <Label htmlFor={`category-${category.id}`} className="font-normal">
                 {category.name}
@@ -260,7 +263,8 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
                         <div className="flex items-center space-x-2 mt-2">
                           <Checkbox 
                             id={`demo-data-${category.id}`}
-                            onCheckedChange={(checked) => toggleDemoData(category.id, checked === true)}
+                            checked={category.addDemoData || false}
+                            onCheckedChange={(checked) => markForDemoData(category.id, checked === true)}
                           />
                           <Label htmlFor={`demo-data-${category.id}`} className="text-sm">
                             Add demo data for this category

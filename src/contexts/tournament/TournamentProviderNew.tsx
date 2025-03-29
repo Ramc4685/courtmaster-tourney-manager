@@ -296,11 +296,16 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Add the missing loadCategoryDemoData function
+  // Add the loadCategoryDemoData function with improved error handling
   const loadCategoryDemoData = async (categoryId: string, format: TournamentFormat) => {
-    if (!currentTournament) return;
+    if (!currentTournament) {
+      console.error("No current tournament selected");
+      return;
+    }
     
     try {
+      console.log(`Loading demo data for category ID ${categoryId} with format ${format}`);
+      
       // Find the category
       const category = currentTournament.categories.find(c => c.id === categoryId);
       if (!category) {
@@ -310,6 +315,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       
       // Get demo data for this category
       const { teams, matches } = getCategoryDemoData(format, category);
+      
+      if (teams.length === 0 || matches.length === 0) {
+        console.warn(`No demo data was generated for category ${category.name}`);
+        return;
+      }
       
       // Add the teams and matches to the current tournament
       const updatedTournament = {
@@ -321,7 +331,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       
       // Update the tournament
       await updateTournament(updatedTournament);
-      console.log(`Demo data loaded for category ${category.name} with format ${format}`);
+      console.log(`Demo data loaded for category ${category.name} with format ${format}: ${teams.length} teams, ${matches.length} matches`);
     } catch (error) {
       console.error(`Error loading demo data for category ID ${categoryId}:`, error);
     }
@@ -433,11 +443,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         generateMultiStageTournament,
         advanceToNextStage,
         assignSeeding,
-        // Add the new category operations
+        // Add the category operations
         addCategory,
         removeCategory,
         updateCategory,
-        // Add the new loadCategoryDemoData function
+        // Add the loadCategoryDemoData function
         loadCategoryDemoData
       }}
     >

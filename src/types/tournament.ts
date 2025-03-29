@@ -83,6 +83,7 @@ export type TournamentCategory = {
   customName?: string; // Only used for custom categories
   description?: string; // New field for custom category description
   format?: TournamentFormat; // Format specific to this category
+  addDemoData?: boolean; // Flag to indicate if demo data should be loaded for this category
 };
 
 // Standard badminton category types
