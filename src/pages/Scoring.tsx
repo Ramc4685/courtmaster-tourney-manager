@@ -14,7 +14,13 @@ import { useScoringLogic } from "@/components/scoring/useScoringLogic";
 import { useTournament } from "@/contexts/TournamentContext";
 
 const Scoring = () => {
-  const { tournamentId } = useParams<{ tournamentId: string }>();
+  console.log("Rendering Scoring page");
+  
+  // Get tournament ID from URL - could be from either path format
+  const params = useParams<{ tournamentId: string }>();
+  const tournamentId = params.tournamentId;
+  console.log("Tournament ID from URL params:", tournamentId);
+  
   const navigate = useNavigate();
   const { tournaments, setCurrentTournament } = useTournament();
   
@@ -43,18 +49,26 @@ const Scoring = () => {
   
   // Set the current tournament based on the URL parameter
   useEffect(() => {
+    console.log("Scoring useEffect - tournamentId:", tournamentId);
+    console.log("Available tournaments:", tournaments.map(t => t.id));
+    
     if (tournamentId) {
       const tournament = tournaments.find(t => t.id === tournamentId);
+      console.log("Found tournament:", tournament ? "Yes" : "No");
+      
       if (tournament) {
+        console.log("Setting current tournament:", tournament.id, tournament.name);
         setCurrentTournament(tournament);
       } else {
         // Tournament not found, redirect to tournaments page
+        console.log("Tournament not found, redirecting to tournaments page");
         navigate("/tournaments");
       }
     }
   }, [tournamentId, tournaments, setCurrentTournament, navigate]);
 
   if (!tournamentId) {
+    console.log("No tournament ID found in URL params");
     return (
       <Layout>
         <div className="max-w-6xl mx-auto py-8 px-4 text-center">
@@ -75,15 +89,18 @@ const Scoring = () => {
   }
 
   if (!currentTournament) {
+    console.log("Current tournament not loaded yet");
     return (
       <Layout>
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto py-8 px-4">
           <p>Loading tournament data...</p>
         </div>
       </Layout>
     );
   }
 
+  console.log("Rendering Scoring UI for tournament:", currentTournament.id);
+  
   // Filter matches by different statuses
   const scheduledMatches = currentTournament.matches.filter(
     (match) => match.status === "SCHEDULED"

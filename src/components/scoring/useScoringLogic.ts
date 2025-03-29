@@ -6,6 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { isSetComplete, isMatchComplete, getDefaultScoringSettings } from "@/utils/matchUtils";
 
 export const useScoringLogic = () => {
+  console.log("[DEBUG] Initializing useScoringLogic hook");
+  
   const { 
     currentTournament, 
     updateMatchScore, 
@@ -13,6 +15,8 @@ export const useScoringLogic = () => {
     completeMatch, 
     updateTournament 
   } = useTournament();
+  
+  console.log("[DEBUG] Current tournament in scoring logic:", currentTournament?.id);
   
   const { toast } = useToast();
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
@@ -257,11 +261,11 @@ export const useScoringLogic = () => {
     setCompleteMatchDialogOpen,
     handleSelectMatch,
     handleSelectCourt,
-    handleScoreChange,
-    handleStartMatch,
-    handleCompleteMatch,
-    handleNewSet,
-    handleUpdateScoringSettings,
-    handleBackToCourts
+    handleScoreChange: handleScoreChange,
+    handleStartMatch: handleStartMatch,
+    handleCompleteMatch: handleCompleteMatch,
+    handleNewSet: handleNewSet,
+    handleUpdateScoringSettings: handleUpdateScoringSettings,
+    handleBackToCourts: handleBackToCourts
   };
 };

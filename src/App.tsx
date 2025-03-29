@@ -55,6 +55,7 @@ function App() {
               <Route path="/tournaments/create" element={<ProtectedRoute><TournamentCreate /></ProtectedRoute>} />
               <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><TournamentDetail /></ProtectedRoute>} />
               <Route path="/tournaments/:tournamentId/scoring" element={<ProtectedRoute><Scoring /></ProtectedRoute>} />
+              <Route path="/scoring/:tournamentId" element={<ProtectedRoute><Scoring /></ProtectedRoute>} />
               <Route path="/public/:tournamentId" element={<PublicView />} />
               <Route path="/public/realtime/:tournamentId" element={<PublicViewRealtime />} />
             </Routes>

@@ -15,6 +15,8 @@ export const useScoringActions = (
   setCurrentSet: (set: number) => void,
   setSelectedMatch: (match: Match | null) => void
 ) => {
+  console.log("[DEBUG] Initializing useScoringActions hook");
+  
   const { 
     currentTournament, 
     updateMatchScore, 

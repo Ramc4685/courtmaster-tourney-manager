@@ -24,6 +24,7 @@ const BracketTab: React.FC<BracketTabProps> = ({ tournament, category }) => {
         <AlertDescription>
           Bracket view will be available after completing the Division Placement stage.
           Current tournament stage: {tournament.currentStage}.
+          {category && ` Category: ${category.name}`}
         </AlertDescription>
       </Alert>
     );
