@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +12,7 @@ import TeamCreateDialog from "@/components/team/TeamCreateDialog";
 import ImportTeamsDialog from "@/components/tournament/ImportTeamsDialog";
 import CourtCreateDialog from "@/components/court/CourtCreateDialog";
 import MatchCreateDialog from "@/components/match/MatchCreateDialog";
-import { Court, Match, Team } from "@/types/tournament";
+import { Court, Match, Team, TournamentCategory } from "@/types/tournament";
 import { renderMatchesTab } from "@/utils/tournamentComponentHelper";
 import { useAuth } from "@/contexts/auth/AuthContext";
 import ScoreEntrySection from "@/components/tournament/score-entry/ScoreEntrySection";
@@ -94,7 +93,20 @@ const TournamentDetail = () => {
     setAddCourtDialogOpen(false);
   };
 
-  const handleCreateMatch = (team1Id: string, team2Id: string, time: Date, courtId?: string) => {
+  // Updated to include categoryId
+  const handleCreateMatch = (
+    team1Id: string, 
+    team2Id: string, 
+    time: Date, 
+    courtId?: string,
+    categoryId?: string
+  ) => {
+    // Find the category if categoryId is provided
+    const category = categoryId 
+      ? currentTournament.categories.find(c => c.id === categoryId)
+      : undefined;
+    
+    // If a category is found or we're not using categories yet, schedule the match
     scheduleMatch(team1Id, team2Id, time, courtId);
     setAddMatchDialogOpen(false);
   };

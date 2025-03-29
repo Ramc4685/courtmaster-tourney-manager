@@ -18,13 +18,13 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { Team, Court } from "@/types/tournament";
+import { Team, Court, TournamentCategory } from "@/types/tournament";
 import { useTournament } from "@/contexts/TournamentContext";
 
 interface MatchCreateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string) => void;
+  onCreateMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => void;
 }
 
 const MatchCreateDialog: React.FC<MatchCreateDialogProps> = ({
@@ -38,11 +38,12 @@ const MatchCreateDialog: React.FC<MatchCreateDialogProps> = ({
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(new Date());
   const [scheduledTime, setScheduledTime] = useState("12:00");
   const [courtId, setCourtId] = useState("");
+  const [categoryId, setCategoryId] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!team1Id || !team2Id || !scheduledDate) {
+    if (!team1Id || !team2Id || !scheduledDate || !categoryId) {
       return;
     }
     
@@ -53,14 +54,29 @@ const MatchCreateDialog: React.FC<MatchCreateDialogProps> = ({
     
     // Call onCreateMatch with the selected values
     // Only pass courtId if it's not "none" (our special value for no court)
-    onCreateMatch(team1Id, team2Id, scheduledDateTime, courtId !== "none" ? courtId : undefined);
+    onCreateMatch(
+      team1Id, 
+      team2Id, 
+      scheduledDateTime, 
+      courtId !== "none" ? courtId : undefined,
+      categoryId
+    );
   };
 
   const availableTeams = currentTournament?.teams || [];
   const availableCourts = currentTournament?.courts.filter(court => court.status === "AVAILABLE") || [];
+  const availableCategories = currentTournament?.categories || [];
 
   // Filter out team2 options to prevent selecting the same team
   const team2Options = availableTeams.filter(team => team.id !== team1Id);
+  
+  // Filter teams by selected category
+  const getTeamsByCategory = (categoryId: string) => {
+    if (!categoryId) return availableTeams;
+    // In a real implementation, teams would be filtered by category
+    // For now, we'll assume all teams can play in all categories
+    return availableTeams;
+  };
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,6 +86,34 @@ const MatchCreateDialog: React.FC<MatchCreateDialogProps> = ({
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
+            {/* Category Selection */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category" className="text-right">
+                Category
+              </Label>
+              <Select
+                value={categoryId}
+                onValueChange={(value) => {
+                  setCategoryId(value);
+                  // Reset team selections when category changes
+                  setTeam1Id("");
+                  setTeam2Id("");
+                }}
+                required
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableCategories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="team1" className="text-right">
                 Team 1
@@ -77,12 +121,13 @@ const MatchCreateDialog: React.FC<MatchCreateDialogProps> = ({
               <Select
                 value={team1Id}
                 onValueChange={setTeam1Id}
+                disabled={!categoryId}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select Team 1" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableTeams.map((team) => (
+                  {getTeamsByCategory(categoryId).map((team) => (
                     <SelectItem key={team.id} value={team.id}>
                       {team.name}
                     </SelectItem>
@@ -177,7 +222,7 @@ const MatchCreateDialog: React.FC<MatchCreateDialogProps> = ({
           <DialogFooter>
             <Button 
               type="submit" 
-              disabled={!team1Id || !team2Id || !scheduledDate}
+              disabled={!team1Id || !team2Id || !scheduledDate || !categoryId}
             >
               Schedule Match
             </Button>

@@ -1,3 +1,4 @@
+
 export type Player = {
   id: string;
   name: string;
@@ -11,6 +12,7 @@ export type Team = {
   players: Player[];
   seed?: number; // For tournament seeding
   initialRanking?: number; // Initial ranking (#1-#38)
+  category?: TournamentCategory; // The category this team belongs to
 };
 
 export type Division = "DIVISION_1" | "DIVISION_2" | "DIVISION_3" | "QUALIFIER_DIV1" | "QUALIFIER_DIV2" | "GROUP_DIV3" | "INITIAL";
@@ -42,6 +44,7 @@ export type Match = {
   nextMatchId?: string; // ID of the next match (for advancement)
   groupName?: string; // For group matches (e.g., "Group A")
   updatedAt?: Date; // Added updatedAt field for tracking when the match was last updated
+  category: TournamentCategory; // The category this match belongs to
 };
 
 export type CourtStatus = "AVAILABLE" | "IN_USE" | "MAINTENANCE";
@@ -72,6 +75,24 @@ export type ScoringSettings = {
   maxTwoPointLeadScore?: number; // Maximum score for a win when using two-point lead rule
 };
 
+// New type for tournament categories/events
+export type TournamentCategory = {
+  id: string;
+  name: string;
+  type: CategoryType;
+  isCustom?: boolean;
+  customName?: string; // Only used for custom categories
+};
+
+// Standard badminton category types
+export type CategoryType = 
+  | "MENS_SINGLES" 
+  | "WOMENS_SINGLES" 
+  | "MENS_DOUBLES" 
+  | "WOMENS_DOUBLES" 
+  | "MIXED_DOUBLES"
+  | "CUSTOM";
+
 export type Tournament = {
   id: string;
   name: string;
@@ -90,7 +111,10 @@ export type Tournament = {
   autoAssignCourts?: boolean; // Whether to automatically assign available courts to scheduled matches
   scoringSettings?: ScoringSettings; // Added scoring settings
   
-  // New properties for format-specific configuration
+  // New property for categories
+  categories: TournamentCategory[];
+  
+  // Format-specific configuration
   formatConfig?: {
     groupCount?: number;             // For GROUP_KNOCKOUT - number of groups
     teamsPerGroup?: number;          // For GROUP_KNOCKOUT - max teams per group
@@ -99,7 +123,7 @@ export type Tournament = {
     consolationRounds?: boolean;     // For SINGLE_ELIMINATION - whether to play consolation matches
   };
   
-  // New properties for future Firebase/external database integration
+  // Properties for future Firebase/external database integration
   ownerId?: string; // For user authentication and ownership
   isPublic?: boolean; // Whether the tournament is publicly visible
   metadata?: Record<string, any>; // For custom metadata and future extensibility

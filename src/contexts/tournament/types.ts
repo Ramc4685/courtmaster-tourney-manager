@@ -1,5 +1,5 @@
 
-import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat } from "@/types/tournament";
+import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat, TournamentCategory } from "@/types/tournament";
 
 export interface TournamentContextType {
   tournaments: Tournament[];
@@ -23,7 +23,10 @@ export interface TournamentContextType {
   autoAssignCourts: () => Promise<number>;
   generateMultiStageTournament: () => void;
   advanceToNextStage: () => void;
-  
-  // Tournament seeding functionality
   assignSeeding: (tournamentId: string) => void;
+  
+  // New operations for categories
+  addCategory: (category: Omit<TournamentCategory, "id">) => void;
+  removeCategory: (categoryId: string) => void;
+  updateCategory: (category: TournamentCategory) => void;
 }

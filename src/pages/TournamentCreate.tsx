@@ -14,10 +14,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format as formatDate } from "date-fns"; // Fixed import with alias to avoid conflicts
 import { useTournament } from "@/contexts/TournamentContext";
-import { TournamentFormat, TournamentStatus } from "@/types/tournament";
+import { TournamentFormat, TournamentStatus, TournamentCategory } from "@/types/tournament";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/auth/AuthContext";
 import PageHeader from "@/components/shared/PageHeader";
+import TournamentCategorySection from "@/components/tournament/TournamentCategorySection";
 
 const TournamentCreate = () => {
   const navigate = useNavigate();
@@ -27,11 +28,17 @@ const TournamentCreate = () => {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [format, setFormat] = useState<TournamentFormat>("MULTI_STAGE"); // Changed from GROUP_DIVISION to MULTI_STAGE
+  const [format, setFormat] = useState<TournamentFormat>("MULTI_STAGE"); 
   const [divisionProgression, setDivisionProgression] = useState(true);
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [courtCount, setCourtCount] = useState(2);
+  
+  // New state for categories
+  const [categories, setCategories] = useState<TournamentCategory[]>([
+    { id: crypto.randomUUID(), name: "Men's Singles", type: "MENS_SINGLES", isCustom: false },
+    { id: crypto.randomUUID(), name: "Women's Singles", type: "WOMENS_SINGLES", isCustom: false },
+  ]);
 
   // Check if the user is authenticated when the component mounts
   useEffect(() => {
@@ -74,6 +81,15 @@ const TournamentCreate = () => {
       return;
     }
 
+    if (categories.length === 0) {
+      toast({
+        title: "Error",
+        description: "At least one category is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Create courts based on court count
     const courts = Array.from({ length: courtCount }, (_, index) => ({
       id: `court-${index + 1}`,
@@ -95,6 +111,7 @@ const TournamentCreate = () => {
         endDate,
         divisionProgression,
         autoAssignCourts: true,
+        categories, // Add the selected categories
       });
       
       toast({
@@ -175,6 +192,12 @@ const TournamentCreate = () => {
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
+
+            {/* Add the new Tournament Categories section */}
+            <TournamentCategorySection 
+              categories={categories} 
+              onCategoriesChange={setCategories}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="format">Tournament Format</Label>
@@ -368,7 +391,6 @@ const TournamentCreate = () => {
               </div>
             </div>
 
-            {/* Load Sample Data button */}
             <div className="mt-4">
               <Button 
                 variant="outline" 
