@@ -116,7 +116,7 @@ export const assignPlayerSeeding = (tournament: Tournament): Tournament => {
   };
 };
 
-// Function to create division placement matches
+// Export the function to create division placement matches
 export const createDivisionPlacementMatches = (tournament: Tournament): Match[] => {
   // Get all teams that should participate in division placement
   const teamsForPlacement = [...tournament.teams];
@@ -170,7 +170,7 @@ export const createDivisionPlacementMatches = (tournament: Tournament): Match[] 
   return newMatches;
 };
 
-// Function to create playoff knockout matches
+// Export the function to create playoff knockout matches
 export const createPlayoffKnockoutMatches = (tournament: Tournament): Match[] => {
   // Get teams for each division based on their performance in division placement
   // This is a simplified approach; in reality, you would determine division placement
