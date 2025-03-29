@@ -1,5 +1,5 @@
 
-import { Tournament, Court, Match, Team, Division, MatchStatus } from "@/types/tournament";
+import { Tournament, Court, Match, Team, Division, MatchStatus, CourtStatus } from "@/types/tournament";
 import { autoAssignCourts } from "@/utils/courtUtils";
 
 export interface SchedulingOptions {

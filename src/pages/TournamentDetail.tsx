@@ -167,7 +167,7 @@ const TournamentDetail = () => {
         toast({
           title: "Match started",
           description: forceStart ? "Match started without a court assignment" : "Match started successfully",
-          variant: forceStart ? "warning" : "default"
+          variant: forceStart ? "destructive" : "default"
         });
       } else {
         toast({

@@ -336,8 +336,8 @@ const UnifiedScheduleDialog: React.FC<UnifiedScheduleDialogProps> = ({
                 </div>
                 
                 <SuggestedMatchPairs 
-                  pairs={suggestedPairs} 
-                  onPairsChange={setSuggestedPairs}
+                  suggestedPairs={suggestedPairs} 
+                  onRefreshSuggestions={() => generateSuggestedPairs(selectedDivision)}
                 />
                 
                 <Button
