@@ -355,12 +355,42 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     // and add it to the matches array
   };
   
-  // Load sample data - updated to accept format parameter
+  // Load sample data - updated to ensure correct format
   const loadSampleData = (format?: TournamentFormat) => {
     console.log('[DEBUG] Loading sample tournament data for format:', format || 'MULTI_STAGE');
-    const sampleData = format ? getSampleDataByFormat(format) : createSampleData();
-    setCurrentTournament(sampleData);
-    setTournaments(prev => [...prev, sampleData]);
+    try {
+      const sampleData = format ? getSampleDataByFormat(format) : createSampleData();
+      
+      // Ensure scoringSettings are set to badminton default
+      const updatedSampleData = {
+        ...sampleData,
+        scoringSettings: {
+          maxPoints: 21,
+          maxSets: 3,
+          requireTwoPointLead: true,
+          maxTwoPointLeadScore: 30
+        },
+        updatedAt: new Date()
+      };
+      
+      setCurrentTournament(updatedSampleData);
+      setTournaments(prev => {
+        // Check if tournament with same ID already exists
+        const exists = prev.some(t => t.id === updatedSampleData.id);
+        if (exists) {
+          return prev.map(t => t.id === updatedSampleData.id ? updatedSampleData : t);
+        }
+        return [...prev, updatedSampleData];
+      });
+      
+      // Publish to real-time service
+      realtimeTournamentService.publishTournamentUpdate(updatedSampleData);
+      
+      return updatedSampleData;
+    } catch (error) {
+      console.error('[ERROR] Failed to load sample data:', error);
+      return null;
+    }
   };
   
   // Return the context provider with all methods and state

@@ -1,13 +1,24 @@
 
-import { Tournament, Match, Court } from "@/types/tournament";
+import { Tournament, Match, Court, CourtStatus } from "@/types/tournament";
 import { findCourtById, findMatchById, updateCourtInTournament, updateMatchInTournament } from "./tournamentUtils";
 
 // Assign court to match
 export const assignCourtToMatch = (tournament: Tournament, matchId: string, courtId: string): Tournament | null => {
   const match = findMatchById(tournament, matchId);
-  const court = findCourtById(tournament, courtId);
+  if (!match) return null;
   
-  if (!match || !court) return null;
+  // Special case: removing court assignment
+  if (courtId === "no-court") {
+    return removeCourt(tournament, match);
+  }
+  
+  const court = findCourtById(tournament, courtId);
+  if (!court) return null;
+  
+  // If match already has a court assigned, free that court first
+  if (match.courtNumber) {
+    tournament = freeCourt(tournament, match.courtNumber);
+  }
   
   // Update the match with court number
   const updatedMatch = {
@@ -18,7 +29,7 @@ export const assignCourtToMatch = (tournament: Tournament, matchId: string, cour
   // Update the court status and current match
   const updatedCourt = {
     ...court,
-    status: "IN_USE" as const,
+    status: "IN_USE" as CourtStatus,
     currentMatch: updatedMatch
   };
   
@@ -27,6 +38,43 @@ export const assignCourtToMatch = (tournament: Tournament, matchId: string, cour
   updatedTournament = updateCourtInTournament(updatedTournament, updatedCourt);
   
   return updatedTournament;
+};
+
+// Remove court assignment from a match
+export const removeCourt = (tournament: Tournament, match: Match): Tournament => {
+  // If match has a court assigned, free it
+  if (match.courtNumber) {
+    tournament = freeCourt(tournament, match.courtNumber);
+  }
+  
+  // Update the match to remove court assignment
+  const updatedMatch = {
+    ...match,
+    courtNumber: undefined
+  };
+  
+  // Update the match in the tournament
+  return updateMatchInTournament(tournament, updatedMatch);
+};
+
+// Free up a court
+export const freeCourt = (tournament: Tournament, courtNumber: number): Tournament => {
+  const courtIndex = tournament.courts.findIndex(c => c.number === courtNumber);
+  
+  if (courtIndex < 0) return tournament;
+  
+  const updatedCourts = [...tournament.courts];
+  updatedCourts[courtIndex] = {
+    ...updatedCourts[courtIndex],
+    status: "AVAILABLE" as CourtStatus,
+    currentMatch: undefined
+  };
+  
+  return {
+    ...tournament,
+    courts: updatedCourts,
+    updatedAt: new Date()
+  };
 };
 
 // Auto-assign courts to scheduled matches

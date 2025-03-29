@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Match, Court } from "@/types/tournament";
-import { Clipboard, MapPin } from "lucide-react";
+import { MapPin, X } from "lucide-react";
 import { useTournament } from "@/contexts/TournamentContext";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +30,7 @@ const ManualCourtAssignment: React.FC<ManualCourtAssignmentProps> = ({
   const [open, setOpen] = useState(false);
   const [selectedCourtId, setSelectedCourtId] = useState<string>("");
   const { toast } = useToast();
+  const { updateMatchStatus } = useTournament();
   
   // Filter available courts
   const availableCourts = courts.filter(court => 
@@ -71,6 +72,27 @@ const ManualCourtAssignment: React.FC<ManualCourtAssignmentProps> = ({
     toast({
       title: "Court assigned",
       description: `${match.team1.name} vs ${match.team2.name} assigned to ${courtName}`
+    });
+  };
+
+  const handleClearCourt = () => {
+    // Special handling to clear court assignment
+    if (match.status === "IN_PROGRESS") {
+      // If match is in progress, defer it first
+      updateMatchStatus(match.id, "SCHEDULED");
+      toast({
+        title: "Match deferred",
+        description: `Match ${match.team1.name} vs ${match.team2.name} has been deferred and removed from court.`,
+      });
+    }
+    
+    // Use a special value to indicate clearing the court
+    onCourtAssign(match.id, "no-court");
+    setOpen(false);
+    
+    toast({
+      title: "Court cleared",
+      description: `${match.team1.name} vs ${match.team2.name} removed from court`
     });
   };
 
@@ -137,7 +159,17 @@ const ManualCourtAssignment: React.FC<ManualCourtAssignmentProps> = ({
           </div>
         </div>
         
-        <DialogFooter>
+        <DialogFooter className="flex justify-between sm:justify-between">
+          {match.courtNumber && (
+            <Button 
+              variant="outline"
+              onClick={handleClearCourt}
+              className="border-red-200 text-red-600 hover:bg-red-50"
+            >
+              <X className="h-4 w-4 mr-1" /> Remove Court Assignment
+            </Button>
+          )}
+          
           <Button 
             onClick={handleAssignCourt} 
             disabled={availableCourts.length === 0 || !selectedCourtId}

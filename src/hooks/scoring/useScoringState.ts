@@ -3,8 +3,10 @@ import { useState, useEffect } from "react";
 import { Match, Court, ScoringSettings } from "@/types/tournament";
 import { getDefaultScoringSettings } from "@/utils/matchUtils";
 
-// This hook manages the state for the scoring interface
-export const useScoringState = (initialScoringSettings?: ScoringSettings) => {
+/**
+ * Hook to manage scoring state separate from actions
+ */
+export const useScoringState = (tournamentSettings?: ScoringSettings) => {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const [currentSet, setCurrentSet] = useState(0);
@@ -13,37 +15,34 @@ export const useScoringState = (initialScoringSettings?: ScoringSettings) => {
   const [newSetDialogOpen, setNewSetDialogOpen] = useState(false);
   const [completeMatchDialogOpen, setCompleteMatchDialogOpen] = useState(false);
   
-  // Get scoring settings from tournament or use defaults
+  // Initialize scoring settings with badminton defaults or tournament settings
   const [scoringSettings, setScoringSettings] = useState<ScoringSettings>(
-    initialScoringSettings || getDefaultScoringSettings()
+    tournamentSettings || getDefaultScoringSettings()
   );
   
-  // Update scoring settings when tournament changes
+  // Update settings when tournament settings change
   useEffect(() => {
-    if (initialScoringSettings) {
-      setScoringSettings(initialScoringSettings);
+    if (tournamentSettings) {
+      setScoringSettings(tournamentSettings);
     }
-  }, [initialScoringSettings]);
+  }, [tournamentSettings]);
 
   return {
-    // State
     selectedMatch,
-    selectedCourt,
-    currentSet,
-    settingsOpen,
-    activeView,
-    scoringSettings,
-    newSetDialogOpen,
-    completeMatchDialogOpen,
-    
-    // State setters
     setSelectedMatch,
+    selectedCourt,
     setSelectedCourt,
+    currentSet,
     setCurrentSet,
+    settingsOpen,
     setSettingsOpen,
+    activeView,
     setActiveView,
+    scoringSettings,
     setScoringSettings,
+    newSetDialogOpen,
     setNewSetDialogOpen,
+    completeMatchDialogOpen,
     setCompleteMatchDialogOpen
   };
 };

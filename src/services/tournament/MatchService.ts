@@ -3,6 +3,7 @@ import { Tournament, Match, MatchStatus, MatchScore, CourtStatus } from "@/types
 import { tournamentService } from "./TournamentService";
 import { findMatchById, findCourtByNumber } from "@/utils/tournamentUtils";
 import { determineMatchWinnerAndLoser, updateBracketProgression, getDefaultScoringSettings } from "@/utils/matchUtils";
+import { freeCourt } from "@/utils/courtUtils";
 
 export class MatchService {
   // Update match score
@@ -31,7 +32,8 @@ export class MatchService {
     
     const updatedMatch = {
       ...match,
-      scores: updatedScores
+      scores: updatedScores,
+      updatedAt: new Date() // Add timestamp for real-time updates
     };
     
     // Update the match in the tournament
@@ -46,6 +48,10 @@ export class MatchService {
     };
     
     await tournamentService.updateTournament(updatedTournament);
+    
+    // Publish update for real-time functionality
+    await this.publishMatchUpdate(updatedMatch);
+    
     return updatedTournament;
   }
 
@@ -63,38 +69,36 @@ export class MatchService {
     
     const updatedMatch = {
       ...match,
-      status
+      status,
+      updatedAt: new Date() // Add timestamp for real-time updates
     };
     
     // If the match is completed or cancelled, free up the court
     if ((status === "COMPLETED" || status === "CANCELLED") && match.courtNumber) {
-      const courtToUpdate = findCourtByNumber(tournament, match.courtNumber);
+      let updatedTournament = freeCourt(tournament, match.courtNumber);
       
-      if (courtToUpdate) {
-        const updatedCourt = {
-          ...courtToUpdate,
-          status: "AVAILABLE" as CourtStatus,
-          currentMatch: undefined
-        };
-        
-        const updatedCourts = tournament.courts.map(c => 
-          c.id === courtToUpdate.id ? updatedCourt : c
-        );
-        
-        const updatedMatches = tournament.matches.map(m => 
-          m.id === matchId ? updatedMatch : m
-        );
-        
-        const updatedTournament = {
-          ...tournament,
-          matches: updatedMatches,
-          courts: updatedCourts,
-          updatedAt: new Date()
-        };
-        
-        await tournamentService.updateTournament(updatedTournament);
-        return updatedTournament;
-      }
+      // Remove court assignment from the match
+      const matchWithoutCourt = {
+        ...updatedMatch,
+        courtNumber: undefined
+      };
+      
+      const updatedMatches = updatedTournament.matches.map(m => 
+        m.id === matchId ? matchWithoutCourt : m
+      );
+      
+      updatedTournament = {
+        ...updatedTournament,
+        matches: updatedMatches,
+        updatedAt: new Date()
+      };
+      
+      await tournamentService.updateTournament(updatedTournament);
+      
+      // Publish update for real-time functionality
+      await this.publishMatchUpdate(matchWithoutCourt);
+      
+      return updatedTournament;
     }
     
     // If no court update needed, just update the match
@@ -109,6 +113,10 @@ export class MatchService {
     };
     
     await tournamentService.updateTournament(updatedTournament);
+    
+    // Publish update for real-time functionality
+    await this.publishMatchUpdate(updatedMatch);
+    
     return updatedTournament;
   }
 
@@ -123,7 +131,7 @@ export class MatchService {
     const match = findMatchById(tournament, matchId);
     if (!match) return null;
     
-    // Get scoring settings
+    // Get scoring settings with badminton defaults
     const scoringSettings = tournament.scoringSettings || getDefaultScoringSettings();
     
     // Determine winner based on scores
@@ -136,28 +144,17 @@ export class MatchService {
       ...match,
       status: "COMPLETED" as MatchStatus,
       winner,
-      loser
+      loser,
+      updatedAt: new Date() // Add timestamp for real-time updates
     };
     
     // Update the match in the tournament
     let updatedTournament = { ...tournament };
     
-    // Free up the court if assigned
+    // Free up the court if assigned and remove court assignment from match
     if (match.courtNumber) {
-      const courtIndex = updatedTournament.courts.findIndex(c => c.number === match.courtNumber);
-      if (courtIndex >= 0) {
-        const updatedCourts = [...updatedTournament.courts];
-        updatedCourts[courtIndex] = {
-          ...updatedCourts[courtIndex],
-          status: "AVAILABLE" as CourtStatus,
-          currentMatch: undefined
-        };
-        
-        updatedTournament = {
-          ...updatedTournament,
-          courts: updatedCourts
-        };
-      }
+      updatedTournament = freeCourt(updatedTournament, match.courtNumber);
+      updatedMatch.courtNumber = undefined; // Clear court assignment
     }
     
     const updatedMatches = updatedTournament.matches.map(m => 
@@ -174,6 +171,10 @@ export class MatchService {
     updatedTournament = updateBracketProgression(updatedTournament, updatedMatch, winner);
     
     await tournamentService.updateTournament(updatedTournament);
+    
+    // Publish update for real-time functionality
+    await this.publishMatchUpdate(updatedMatch);
+    
     return updatedTournament;
   }
 
@@ -183,6 +184,18 @@ export class MatchService {
     if (!tournament || tournament.id !== tournamentId) return [];
     
     return tournament.matches.filter(match => match.status === status);
+  }
+  
+  // Publish match update for real-time functionality
+  private async publishMatchUpdate(match: Match): Promise<void> {
+    try {
+      // This would use a real-time service in a production environment
+      // Here we're just logging to help with debugging
+      console.log(`[DEBUG] Publishing match update: Match ID=${match.id}, Status=${match.status}`);
+      // In a real implementation, this would publish to a real-time database or message broker
+    } catch (error) {
+      console.error('[ERROR] Failed to publish match update:', error);
+    }
   }
 }
 
