@@ -85,68 +85,79 @@ const ManualResultEntry: React.FC<ManualResultEntryProps> = ({
         <Button 
           variant={match.status === "IN_PROGRESS" ? "default" : "outline"} 
           size="sm" 
-          className={match.status === "IN_PROGRESS" ? "bg-court-green hover:bg-court-green/90" : ""}
+          className={match.status === "IN_PROGRESS" ? "bg-green-600 hover:bg-green-700" : ""}
         >
           <ClipboardEdit className="h-4 w-4 mr-1" /> 
-          {match.status === "COMPLETED" ? "Edit Result" : "Enter Score"}
+          {match.status === "IN_PROGRESS" ? "Record Result" : "Edit Match"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Enter Match Result</DialogTitle>
+          <DialogTitle>Record Match Result</DialogTitle>
           <DialogDescription>
-            {match.team1.name} vs {match.team2.name}
+            Enter the final score for {match.team1.name} vs {match.team2.name}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
-          <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
-            <div className="text-center font-medium">{match.team1.name}</div>
-            <div className="text-center">vs</div>
-            <div className="text-center font-medium">{match.team2.name}</div>
-            <div></div>
+        <div className="py-4">
+          <div className="space-y-4">
+            {scores.map((score, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Set {index + 1}
+                  </label>
+                  <div className="grid grid-cols-5 gap-2 items-center">
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-500 mb-1">{match.team1.name}</p>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={score.team1Score}
+                        onChange={(e) => handleScoreChange(index, 'team1', e.target.value)}
+                      />
+                    </div>
+                    <div className="text-center text-gray-500">vs</div>
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-500 mb-1">{match.team2.name}</p>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={score.team2Score}
+                        onChange={(e) => handleScoreChange(index, 'team2', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+                {scores.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeSet(index)}
+                    className="mt-6"
+                  >
+                    <Trash className="h-4 w-4 text-red-500" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addSet}
+              className="mt-2"
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add Set
+            </Button>
           </div>
-          
-          {scores.map((score, index) => (
-            <div key={index} className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
-              <Input
-                type="number"
-                min="0"
-                value={score.team1Score}
-                onChange={(e) => handleScoreChange(index, 'team1', e.target.value)}
-                className="text-center"
-              />
-              <div className="text-center">-</div>
-              <Input
-                type="number"
-                min="0"
-                value={score.team2Score}
-                onChange={(e) => handleScoreChange(index, 'team2', e.target.value)}
-                className="text-center"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => removeSet(index)}
-                disabled={scores.length <= 1}
-              >
-                <Trash className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-          
-          <Button 
-            variant="outline" 
-            className="w-full" 
-            onClick={addSet}
-          >
-            <Plus className="h-4 w-4 mr-1" /> Add Set
-          </Button>
         </div>
         
         <DialogFooter>
-          <Button onClick={handleComplete} className="bg-court-green hover:bg-court-green/90">
-            <Save className="h-4 w-4 mr-1" /> Save Result
+          <Button onClick={handleComplete} className="bg-green-600 hover:bg-green-700">
+            <Save className="h-4 w-4 mr-1" /> Complete Match
           </Button>
         </DialogFooter>
       </DialogContent>

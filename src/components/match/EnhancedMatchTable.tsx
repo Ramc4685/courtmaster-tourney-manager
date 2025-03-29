@@ -2,6 +2,7 @@
 import React from "react";
 import MatchTable from "@/components/match/MatchTable";
 import ManualResultEntry from "@/components/match/ManualResultEntry";
+import DeferMatch from "@/components/match/DeferMatch";
 import { Match, Team, Court } from "@/types/tournament";
 import { useTournament } from "@/contexts/TournamentContext";
 import { Badge } from "@/components/ui/badge";
@@ -47,13 +48,13 @@ const EnhancedMatchTable: React.FC<EnhancedMatchTableProps> = ({
     <tr key={match.id} className="border-b border-gray-200">
       <td className="p-2">{match.team1.name} vs {match.team2.name}</td>
       <td className="p-2">
-        <Badge className={`px-2 py-1 rounded text-xs ${
+        <Badge className="px-2 py-1 rounded text-xs" variant={
           match.status === "COMPLETED" 
-            ? "bg-green-100 text-green-800" 
+            ? "success" 
             : match.status === "IN_PROGRESS" 
-            ? "bg-blue-100 text-blue-800"
-            : "bg-gray-100 text-gray-800"
-        }`}>
+            ? "secondary"
+            : "outline"
+        }>
           {match.status}
         </Badge>
       </td>
@@ -83,6 +84,9 @@ const EnhancedMatchTable: React.FC<EnhancedMatchTableProps> = ({
             >
               <PlayCircle className="h-4 w-4 mr-1" /> Start Match
             </Button>
+          )}
+          {match.status === "IN_PROGRESS" && (
+            <DeferMatch match={match} />
           )}
           <ManualResultEntry
             match={match}

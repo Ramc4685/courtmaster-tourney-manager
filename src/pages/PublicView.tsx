@@ -1,77 +1,75 @@
+
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { RefreshCw, Award, Clock, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useTournament } from "@/contexts/TournamentContext";
 import Layout from "@/components/layout/Layout";
 import MatchCard from "@/components/shared/MatchCard";
 import CourtCard from "@/components/shared/CourtCard";
 import { Match, Division } from "@/types/tournament";
 import { format } from "date-fns";
+import { tournamentService } from "@/services/tournament/TournamentService";
 
 const PublicView = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
-  const { currentTournament, tournaments } = useTournament();
+  const [tournament, setTournament] = useState(null);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [refreshing, setRefreshing] = useState(false);
-  const [displayTournament, setDisplayTournament] = useState<any>(null);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    // In a real app, you would fetch the latest data here
-    setTimeout(() => {
-      setLastRefreshed(new Date());
-      setRefreshing(false);
-    }, 500);
-  };
-
+  // Fetch tournament data
   useEffect(() => {
-    // If tournamentId is provided, find that specific tournament
+    const loadTournament = async () => {
+      if (!tournamentId) return;
+      
+      const tournaments = await tournamentService.getTournaments();
+      const foundTournament = tournaments.find(t => t.id === tournamentId);
+      
+      if (foundTournament) {
+        setTournament(foundTournament);
+        setLastRefreshed(new Date());
+      }
+    };
+    
+    loadTournament();
+  }, [tournamentId]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    
     if (tournamentId) {
-      const tournament = tournaments.find(t => t.id === tournamentId);
-      if (tournament) {
-        setDisplayTournament(tournament);
-        return;
+      const tournaments = await tournamentService.getTournaments();
+      const refreshedTournament = tournaments.find(t => t.id === tournamentId);
+      
+      if (refreshedTournament) {
+        setTournament(refreshedTournament);
       }
     }
     
-    // Otherwise use the current tournament
-    if (currentTournament) {
-      setDisplayTournament(currentTournament);
-    }
-  }, [tournamentId, currentTournament, tournaments]);
+    setLastRefreshed(new Date());
+    setTimeout(() => setRefreshing(false), 500);
+  };
 
-  useEffect(() => {
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(() => {
-      handleRefresh();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  if (!displayTournament) {
+  if (!tournament) {
     return (
       <Layout>
         <div className="max-w-6xl mx-auto">
-          <p>No tournament selected. Please select a tournament first.</p>
+          <p>Loading tournament data...</p>
         </div>
       </Layout>
     );
   }
 
-  const inProgressMatches = displayTournament.matches.filter(
+  const inProgressMatches = tournament.matches.filter(
     (match) => match.status === "IN_PROGRESS"
   );
-
-  const completedMatches = displayTournament.matches.filter(
+  
+  const completedMatches = tournament.matches.filter(
     (match) => match.status === "COMPLETED"
   );
 
-  const upcomingMatches = displayTournament.matches.filter(
+  const upcomingMatches = tournament.matches.filter(
     (match) => match.status === "SCHEDULED"
   ).sort((a, b) => {
     // Sort by scheduled time if available
@@ -117,21 +115,6 @@ const PublicView = () => {
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "SCHEDULED":
-        return "Not Started";
-      case "IN_PROGRESS":
-        return "In Progress";
-      case "COMPLETED":
-        return "Completed";
-      case "CANCELLED":
-        return "Cancelled";
-      default:
-        return status;
-    }
-  };
-
   const renderMatchesByDivision = (matches: Match[]) => {
     const grouped = groupByDivision(matches);
     
@@ -144,20 +127,7 @@ const PublicView = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {divMatches.map((match) => (
             <div key={match.id} className="border rounded-lg p-4">
-              <MatchCard key={match.id} match={match} />
-              <div className="mt-2 flex justify-between">
-                {match.scheduledTime && (
-                  <div className="text-sm text-gray-500 flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    <span>{format(new Date(match.scheduledTime), "MMM d, yyyy")}</span>
-                    <Clock className="h-4 w-4 ml-3 mr-1" />
-                    <span>{format(new Date(match.scheduledTime), "h:mm a")}</span>
-                  </div>
-                )}
-                <Badge variant={match.status === "IN_PROGRESS" ? "secondary" : "outline"}>
-                  {getStatusLabel(match.status)}
-                </Badge>
-              </div>
+              <MatchCard match={match} detailed />
             </div>
           ))}
         </div>
@@ -170,9 +140,12 @@ const PublicView = () => {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">{displayTournament.name}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">{tournament.name}</h1>
             <p className="text-gray-500">
-              Live Tournament Updates
+              {format(new Date(tournament.startDate), "MMMM d, yyyy")}
+              {tournament.endDate && (
+                <> - {format(new Date(tournament.endDate), "MMMM d, yyyy")}</>
+              )}
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -191,15 +164,15 @@ const PublicView = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="live" className="mt-6">
+        <Tabs defaultValue="inprogress" className="mt-6">
           <TabsList className="mb-4">
-            <TabsTrigger value="live">Live Matches</TabsTrigger>
+            <TabsTrigger value="inprogress">In Progress</TabsTrigger>
             <TabsTrigger value="courts">Courts</TabsTrigger>
             <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="live">
+          <TabsContent value="inprogress">
             {inProgressMatches.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500">No matches currently in progress</p>
@@ -211,7 +184,7 @@ const PublicView = () => {
 
           <TabsContent value="courts">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {displayTournament.courts.map((court) => (
+              {tournament.courts.map((court) => (
                 <CourtCard key={court.id} court={court} detailed />
               ))}
             </div>

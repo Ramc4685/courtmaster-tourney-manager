@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ClipboardEdit, PlayCircle } from "lucide-react";
 import ManualResultEntry from "@/components/match/ManualResultEntry";
+import DeferMatch from "@/components/match/DeferMatch";
 import { useTournament } from "@/contexts/TournamentContext";
 
 interface ScoreEntrySectionProps {
@@ -100,11 +101,12 @@ const ScoreEntrySection: React.FC<ScoreEntrySectionProps> = ({ matches, onMatchU
                     ) : (
                       <p className="text-sm text-gray-500">No scores recorded</p>
                     )}
-                    <div className="mt-2">
+                    <div className="mt-2 flex space-x-2">
                       <ManualResultEntry
                         match={match}
                         onComplete={handleMatchUpdate}
                       />
+                      <DeferMatch match={match} />
                     </div>
                   </div>
                 ))}
@@ -173,6 +175,9 @@ const ScoreEntrySection: React.FC<ScoreEntrySectionProps> = ({ matches, onMatchU
                   match={selectedMatch}
                   onComplete={handleMatchUpdate}
                 />
+                {selectedMatch.status === "IN_PROGRESS" && (
+                  <DeferMatch match={selectedMatch} />
+                )}
               </div>
             </div>
           ) : (
