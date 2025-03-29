@@ -36,7 +36,7 @@ const ScheduledMatchesList: React.FC<ScheduledMatchesListProps> = ({
                 {match.status}
               </Badge>
             </div>
-            <MatchCard match={match} mode="compact" />
+            <MatchCard match={match} detailed={false} />
           </CardContent>
           <CardFooter className="bg-gray-50 px-4 py-3 flex justify-end">
             <Button 
