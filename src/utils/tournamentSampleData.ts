@@ -4,7 +4,6 @@ import { Tournament, Team, Match, Division, TournamentStage, MatchStatus, Tourna
 import { generateId } from "./tournamentUtils";
 
 export const createSampleData = (): Tournament => {
-  // ... keep existing code (tournament creation with the fixed category types)
   const id = generateId();
   const defaultCategory = { 
     id: generateId(), 
@@ -30,7 +29,7 @@ export const createSampleData = (): Tournament => {
       stage: "INITIAL_ROUND",
       status: "SCHEDULED",
       scheduledTime: new Date(),
-      category: defaultCategory // Add the missing category property
+      category: defaultCategory
     },
     {
       id: generateId(),
@@ -42,7 +41,7 @@ export const createSampleData = (): Tournament => {
       stage: "INITIAL_ROUND",
       status: "SCHEDULED",
       scheduledTime: new Date(),
-      category: defaultCategory // Add the missing category property
+      category: defaultCategory
     }
   ];
 
@@ -97,7 +96,7 @@ export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
       stage: "INITIAL_ROUND",
       status: "SCHEDULED",
       scheduledTime: new Date(),
-      category: defaultCategory // Add the missing category property
+      category: defaultCategory
     },
     {
       id: generateId(),
@@ -109,7 +108,7 @@ export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
       stage: "INITIAL_ROUND",
       status: "SCHEDULED",
       scheduledTime: new Date(),
-      category: defaultCategory // Add the missing category property
+      category: defaultCategory
     }
   ];
 
@@ -138,7 +137,7 @@ export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
   };
 };
 
-// Create sample data for a specific category - improved error handling
+// Create sample data for a specific category - improved error handling and logging
 export const getCategoryDemoData = (format: TournamentFormat, category: TournamentCategory) => {
   try {
     console.log(`Generating demo data for category ${category.name} with format ${format}`);

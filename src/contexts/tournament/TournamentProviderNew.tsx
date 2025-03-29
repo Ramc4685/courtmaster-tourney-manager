@@ -321,6 +321,8 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
+      console.log(`Generated ${teams.length} teams and ${matches.length} matches for ${category.name}`);
+      
       // Add the teams and matches to the current tournament
       const updatedTournament = {
         ...currentTournament,
@@ -331,7 +333,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       
       // Update the tournament
       await updateTournament(updatedTournament);
-      console.log(`Demo data loaded for category ${category.name} with format ${format}: ${teams.length} teams, ${matches.length} matches`);
+      console.log(`Demo data loaded for category ${category.name}: ${teams.length} teams, ${matches.length} matches`);
     } catch (error) {
       console.error(`Error loading demo data for category ID ${categoryId}:`, error);
     }
@@ -408,6 +410,16 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error updating category:", error);
     }
   };
+
+  // Add effect to clear current tournament when all tournaments are deleted
+  useEffect(() => {
+    if (tournaments.length === 0 && currentTournament) {
+      console.log("No tournaments left, clearing current tournament");
+      setCurrentTournament(null);
+      tournamentService.saveCurrentTournament(null)
+        .catch(error => console.error("Error clearing current tournament:", error));
+    }
+  }, [tournaments, currentTournament]);
   
   if (isLoading) {
     return <div>Loading tournament data...</div>;

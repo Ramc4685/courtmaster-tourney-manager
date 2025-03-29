@@ -65,6 +65,23 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentTournament]);
 
+  // When tournaments list changes, check if currentTournament still exists
+  useEffect(() => {
+    // If there are no tournaments left, clear the current tournament
+    if (tournaments.length === 0 && currentTournament) {
+      console.log('[DEBUG] No tournaments left, clearing current tournament');
+      setCurrentTournament(null);
+      localStorage.removeItem('currentTournament');
+    }
+    
+    // If currentTournament no longer exists in the tournaments list, clear it
+    if (currentTournament && !tournaments.some(t => t.id === currentTournament.id)) {
+      console.log('[DEBUG] Current tournament no longer exists, clearing it');
+      setCurrentTournament(null);
+      localStorage.removeItem('currentTournament');
+    }
+  }, [tournaments, currentTournament]);
+
   // Create a new tournament
   const createTournament = (tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">): Tournament => {
     console.log('[DEBUG] Creating new tournament:', tournamentData.name);
@@ -335,11 +352,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     updateTournament(updatedTournament);
   };
 
-  // New function to load demo data for a specific category
+  // Update loadCategoryDemoData to use the selected format
   const loadCategoryDemoData = (categoryId: string, format: TournamentFormat) => {
     if (!currentTournament) return;
     
-    console.log('[DEBUG] Loading demo data for category ID:', categoryId, 'Format:', format);
+    console.log(`[DEBUG] Loading demo data for category ID ${categoryId} with format ${format}`);
     
     // Find the category in the current tournament
     const category = currentTournament.categories.find(c => c.id === categoryId);
@@ -350,6 +367,13 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     
     // Get demo data specific to this category and format
     const { teams, matches } = getCategoryDemoData(format, category);
+    
+    if (teams.length === 0 || matches.length === 0) {
+      console.warn(`No demo data generated for category ${category.name}`);
+      return;
+    }
+    
+    console.log(`Generated ${teams.length} teams and ${matches.length} matches for ${category.name}`);
     
     // Update tournament with new teams and matches for this category
     const updatedTournament = {

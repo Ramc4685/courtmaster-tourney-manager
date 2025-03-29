@@ -1,3 +1,4 @@
+
 export type Player = {
   id: string;
   name: string;
@@ -74,7 +75,7 @@ export type ScoringSettings = {
   maxTwoPointLeadScore?: number; // Maximum score for a win when using two-point lead rule
 };
 
-// Updated TournamentCategory with description and format fields
+// Updated TournamentCategory with description, format, and addDemoData fields
 export type TournamentCategory = {
   id: string;
   name: string;
