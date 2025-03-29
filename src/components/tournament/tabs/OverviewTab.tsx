@@ -9,23 +9,22 @@ import TournamentScoringSettingsSection from "@/components/tournament/Tournament
 import TournamentFormatExplanation from "@/components/tournament/TournamentFormatExplanation";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import UnifiedScheduleDialog from "@/components/tournament/UnifiedScheduleDialog";
 
 interface OverviewTabProps {
   tournament: Tournament;
   onUpdateTournament: (tournament: Tournament) => void;
   onGenerateMultiStageTournament: () => void;
   onAdvanceToNextStage: () => void;
+  onScheduleDialogOpen: () => void;
 }
 
 const OverviewTab: React.FC<OverviewTabProps> = ({
   tournament,
   onUpdateTournament,
   onGenerateMultiStageTournament,
-  onAdvanceToNextStage
+  onAdvanceToNextStage,
+  onScheduleDialogOpen
 }) => {
-  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
-  
   const getNextStageName = (currentStage: string) => {
     switch (currentStage) {
       case "INITIAL_ROUND": return "Division Placement";
@@ -110,7 +109,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
               <Button 
-                onClick={() => setScheduleDialogOpen(true)}
+                onClick={onScheduleDialogOpen}
                 className="bg-purple-600 hover:bg-purple-700 flex items-center"
               >
                 <CalendarIcon className="h-4 w-4 mr-2" />
@@ -183,12 +182,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       
       {/* Tournament Format Explanation */}
       <TournamentFormatExplanation tournament={tournament} />
-      
-      {/* Unified Schedule Dialog */}
-      <UnifiedScheduleDialog
-        open={scheduleDialogOpen}
-        onOpenChange={setScheduleDialogOpen}
-      />
     </div>
   );
 };

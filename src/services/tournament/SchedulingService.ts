@@ -70,6 +70,9 @@ export const schedulingService = {
       const matchTime = new Date(baseDateTime);
       matchTime.setMinutes(matchTime.getMinutes() + (i * 5));
       
+      // Use the division from options, defaulting to "INITIAL" if not provided
+      const division: Division = options.division || "INITIAL";
+      
       // Create the match
       const newMatch: Match = {
         id: crypto.randomUUID(),
@@ -77,7 +80,7 @@ export const schedulingService = {
         team1: team1,
         team2: team2,
         scores: [],
-        division: options.division || "INITIAL",
+        division: division,
         stage: tournament.currentStage,
         status: "SCHEDULED",
         scheduledTime: matchTime,
@@ -111,6 +114,9 @@ export const schedulingService = {
         (i * 5)
       );
       
+      // Use the division from options, defaulting to "INITIAL" if not provided
+      const division: Division = options.division || "INITIAL";
+      
       // Create the match without a court
       const newMatch: Match = {
         id: crypto.randomUUID(),
@@ -118,7 +124,7 @@ export const schedulingService = {
         team1: team1,
         team2: team2,
         scores: [],
-        division: options.division || "INITIAL",
+        division: division,
         stage: tournament.currentStage,
         status: "SCHEDULED",
         scheduledTime: matchTime,
@@ -148,6 +154,7 @@ export const schedulingService = {
   /**
    * Auto-assigns courts to scheduled matches that don't have courts
    * @param tournament The tournament to assign courts for
+   * @returns Promise with tournament and assignment results
    */
   async assignCourtsToScheduledMatches(tournament: Tournament): Promise<SchedulingResult> {
     console.log('[DEBUG] Auto-assigning courts to scheduled matches');

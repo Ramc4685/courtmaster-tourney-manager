@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Layout from "@/components/layout/Layout";
-import { useTournament } from "@/contexts/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament";
 import TournamentHeader from "@/components/tournament/TournamentHeader";
 import OverviewTab from "@/components/tournament/tabs/OverviewTab";
 import TeamsTab from "@/components/tournament/tabs/TeamsTab";

@@ -397,23 +397,19 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Add our new unified scheduling method
+  // Update the scheduleMatches function to return a Promise with SchedulingResult
   const scheduleMatches = async (
     teamPairs: { team1: Team; team2: Team }[],
     options: SchedulingOptions
   ): Promise<SchedulingResult> => {
     if (!currentTournament) {
-      return {
-        scheduledMatches: 0,
-        assignedCourts: 0,
-        tournament: null as unknown as Tournament
-      };
+      throw new Error("No active tournament");
     }
     
     console.log('[DEBUG] Scheduling matches with unified service', teamPairs.length, options);
     
     // Use our scheduling service to handle both scheduling and court assignment
-    const result = schedulingService.scheduleMatches(currentTournament, teamPairs, options);
+    const result = await schedulingService.scheduleMatches(currentTournament, teamPairs, options);
     
     // Update the tournament with the scheduled matches and assigned courts
     updateTournament(result.tournament);
@@ -450,7 +446,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         removeCategory,
         updateCategory,
         loadCategoryDemoData,
-        // Add the new unified scheduling method
+        // Add the updated scheduleMatches function
         scheduleMatches
       }}
     >

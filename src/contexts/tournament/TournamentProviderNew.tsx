@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat, TournamentCategory } from "@/types/tournament";
 import { TournamentContextType } from "./types";
@@ -369,8 +368,8 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Add the loadCategoryDemoData function with improved error handling
-  const loadCategoryDemoData = async (categoryId: string, format: TournamentFormat) => {
+  // Fix the loadCategoryDemoData function
+  const loadCategoryDemoData = async (tournamentId: string, categoryId: string, format: TournamentFormat) => {
     if (!currentTournament) {
       console.error("No current tournament selected");
       return;
@@ -411,7 +410,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       console.error(`Error loading demo data for category ID ${categoryId}:`, error);
     }
   };
-
+  
   // Fix the assignSeeding function
   const assignSeeding = async (tournamentId: string) => {
     if (!currentTournament || currentTournament.id !== tournamentId) return;
