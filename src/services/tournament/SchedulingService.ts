@@ -1,5 +1,5 @@
 
-import { Tournament, Court, Match, Team, Division } from "@/types/tournament";
+import { Tournament, Court, Match, Team, Division, MatchStatus } from "@/types/tournament";
 import { autoAssignCourts } from "@/utils/courtUtils";
 
 export interface SchedulingOptions {
@@ -7,6 +7,7 @@ export interface SchedulingOptions {
   startTime: string;
   matchDuration: number;
   assignCourts: boolean;
+  autoStartMatches?: boolean; // New option to auto-start matches if courts are available
   categoryId?: string;
   division?: Division;
 }
@@ -14,6 +15,7 @@ export interface SchedulingOptions {
 export interface SchedulingResult {
   scheduledMatches: number;
   assignedCourts: number;
+  startedMatches?: number; // New field for number of matches started
   tournament: Tournament;
 }
 
@@ -22,7 +24,7 @@ export interface SchedulingResult {
  */
 export const schedulingService = {
   /**
-   * Schedules matches and optionally assigns courts in a single operation
+   * Schedules matches, assigns courts, and optionally starts matches in a single operation
    * @param tournament The tournament to schedule matches for
    * @param teamPairs Array of team pairs to schedule
    * @param options Scheduling configuration options
@@ -36,6 +38,7 @@ export const schedulingService = {
       return {
         scheduledMatches: 0,
         assignedCourts: 0,
+        startedMatches: 0,
         tournament: tournament
       };
     }
@@ -53,6 +56,7 @@ export const schedulingService = {
     let updatedTournament = { ...tournament };
     let scheduledCount = 0;
     let assignedCourtCount = 0;
+    let startedMatchCount = 0;
     
     // Schedule as many matches as possible
     const maxInitialMatches = options.assignCourts 
@@ -73,7 +77,7 @@ export const schedulingService = {
       // Use the division from options, defaulting to "INITIAL" if not provided
       const division: Division = options.division || "INITIAL";
       
-      // Create the match
+      // Create the match - with the option to auto-start it
       const newMatch: Match = {
         id: crypto.randomUUID(),
         tournamentId: tournament.id,
@@ -82,7 +86,7 @@ export const schedulingService = {
         scores: [],
         division: division,
         stage: tournament.currentStage,
-        status: "SCHEDULED",
+        status: options.autoStartMatches && i < availableCourts.length ? "IN_PROGRESS" as MatchStatus : "SCHEDULED" as MatchStatus,
         scheduledTime: matchTime,
         category: options.categoryId 
           ? tournament.categories.find(c => c.id === options.categoryId)! 
@@ -95,6 +99,11 @@ export const schedulingService = {
         const court = tournament.courts.find(c => c.id === courtId)!;
         newMatch.courtNumber = court.number;
         assignedCourtCount++;
+        
+        // If auto-start is enabled, mark the match as started
+        if (options.autoStartMatches) {
+          startedMatchCount++;
+        }
       }
       
       newMatches.push(newMatch);
@@ -126,7 +135,7 @@ export const schedulingService = {
         scores: [],
         division: division,
         stage: tournament.currentStage,
-        status: "SCHEDULED",
+        status: "SCHEDULED" as MatchStatus,
         scheduledTime: matchTime,
         category: options.categoryId 
           ? tournament.categories.find(c => c.id === options.categoryId)! 
@@ -144,9 +153,33 @@ export const schedulingService = {
       updatedAt: new Date()
     };
     
+    // If auto-starting matches, update court statuses
+    if (options.autoStartMatches && assignedCourtCount > 0) {
+      // Update court statuses for courts that have been assigned to started matches
+      updatedTournament = {
+        ...updatedTournament,
+        courts: updatedTournament.courts.map(court => {
+          const matchUsingCourt = newMatches.find(
+            m => m.courtNumber === court.number && m.status === "IN_PROGRESS"
+          );
+          
+          if (matchUsingCourt) {
+            return {
+              ...court,
+              status: "IN_USE" as CourtStatus,
+              currentMatch: matchUsingCourt
+            };
+          }
+          
+          return court;
+        })
+      };
+    }
+    
     return {
       scheduledMatches: scheduledCount,
       assignedCourts: assignedCourtCount,
+      startedMatches: startedMatchCount,
       tournament: updatedTournament
     };
   },
@@ -167,5 +200,122 @@ export const schedulingService = {
       assignedCourts: result.assignedCount,
       tournament: result.tournament
     };
+  },
+  
+  /**
+   * Start a match and assign it to an available court if possible
+   * @param tournament The tournament
+   * @param matchId The match ID to start
+   * @param forceStart Whether to start the match even if no courts are available
+   * @returns The updated tournament and whether the match was started
+   */
+  startMatch(
+    tournament: Tournament, 
+    matchId: string, 
+    forceStart: boolean = false
+  ): {tournament: Tournament, started: boolean} {
+    // Find the match
+    const match = tournament.matches.find(m => m.id === matchId);
+    if (!match || match.status !== "SCHEDULED") {
+      return { tournament, started: false };
+    }
+    
+    // Check if the match already has a court assigned
+    if (match.courtNumber) {
+      // Update match status and court status
+      const updatedTournament = {
+        ...tournament,
+        matches: tournament.matches.map(m => 
+          m.id === matchId 
+            ? { ...m, status: "IN_PROGRESS" as MatchStatus } 
+            : m
+        ),
+        courts: tournament.courts.map(c => 
+          c.number === match.courtNumber 
+            ? { 
+                ...c, 
+                status: "IN_USE" as CourtStatus, 
+                currentMatch: { ...match, status: "IN_PROGRESS" as MatchStatus }
+              } 
+            : c
+        ),
+        updatedAt: new Date()
+      };
+      
+      return { tournament: updatedTournament, started: true };
+    }
+    
+    // If no court is assigned, try to find an available court
+    const availableCourt = tournament.courts.find(c => c.status === "AVAILABLE");
+    
+    if (availableCourt) {
+      // Assign the available court and start the match
+      const updatedTournament = {
+        ...tournament,
+        matches: tournament.matches.map(m => 
+          m.id === matchId 
+            ? { 
+                ...m, 
+                status: "IN_PROGRESS" as MatchStatus,
+                courtNumber: availableCourt.number
+              } 
+            : m
+        ),
+        courts: tournament.courts.map(c => 
+          c.id === availableCourt.id 
+            ? { 
+                ...c, 
+                status: "IN_USE" as CourtStatus, 
+                currentMatch: { 
+                  ...match, 
+                  status: "IN_PROGRESS" as MatchStatus,
+                  courtNumber: availableCourt.number
+                }
+              } 
+            : c
+        ),
+        updatedAt: new Date()
+      };
+      
+      return { tournament: updatedTournament, started: true };
+    }
+    
+    // If no courts are available but forceStart is true, start the match anyway
+    if (forceStart) {
+      const updatedTournament = {
+        ...tournament,
+        matches: tournament.matches.map(m => 
+          m.id === matchId 
+            ? { ...m, status: "IN_PROGRESS" as MatchStatus } 
+            : m
+        ),
+        updatedAt: new Date()
+      };
+      
+      return { tournament: updatedTournament, started: true };
+    }
+    
+    // No court available and not forcing start
+    return { tournament, started: false };
+  },
+  
+  /**
+   * Check if there are any scheduled matches that can be started when a court becomes available
+   * This function would be called when a match is completed and a court becomes available
+   * @param tournament The tournament
+   * @returns The updated tournament with any new matches started
+   */
+  startNextScheduledMatch(tournament: Tournament): {tournament: Tournament, started: boolean} {
+    // Find the next scheduled match
+    const scheduledMatch = tournament.matches.find(
+      m => m.status === "SCHEDULED" && !m.courtNumber
+    );
+    
+    if (!scheduledMatch) {
+      return { tournament, started: false };
+    }
+    
+    // Try to start the match
+    return this.startMatch(tournament, scheduledMatch.id);
   }
 };

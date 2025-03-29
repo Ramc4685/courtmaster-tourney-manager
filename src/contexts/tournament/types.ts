@@ -1,5 +1,6 @@
 
-import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat, TournamentCategory } from "@/types/tournament";
+// Add this import at the top if needed
+import { Tournament, Team, Match, Court, Division, MatchStatus, TournamentFormat, TournamentCategory } from "@/types/tournament";
 import { SchedulingOptions, SchedulingResult } from "@/services/tournament/SchedulingService";
 
 export interface TournamentContextType {
@@ -29,7 +30,6 @@ export interface TournamentContextType {
   removeCategory: (categoryId: string) => void;
   updateCategory: (category: TournamentCategory) => void;
   loadCategoryDemoData: (tournamentId: string, categoryId: string, format: TournamentFormat) => void;
-  
-  // New unified scheduling method
+  // Add the scheduleMatches function that uses our enhanced SchedulingService
   scheduleMatches: (teamPairs: { team1: Team; team2: Team }[], options: SchedulingOptions) => Promise<SchedulingResult>;
 }

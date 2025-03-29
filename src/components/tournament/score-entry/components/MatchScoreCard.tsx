@@ -4,7 +4,6 @@ import { Match } from "@/types/tournament";
 import { Button } from "@/components/ui/button";
 import ManualResultEntry from "@/components/match/ManualResultEntry";
 import DeferMatch from "@/components/match/DeferMatch";
-import ManualCourtAssignment from "@/components/match/ManualCourtAssignment";
 
 interface MatchScoreCardProps {
   match: Match;
@@ -55,11 +54,7 @@ const MatchScoreCard: React.FC<MatchScoreCardProps> = ({
           onComplete={onUpdate}
         />
         <DeferMatch match={match} />
-        <ManualCourtAssignment 
-          match={match}
-          courts={courts}
-          onCourtAssign={onCourtAssign}
-        />
+        {/* Removed the court assignment button from this view */}
       </div>
     </div>
   );

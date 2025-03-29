@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Plus, Clock, ArrowRight } from "lucide-react";
+import { Plus, Clock, ArrowRight, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog,
@@ -19,6 +19,7 @@ interface MatchesTabProps {
   courts: Court[];
   onMatchUpdate: (match: Match) => void;
   onCourtAssign: (matchId: string, courtId: string) => void;
+  onStartMatch?: (matchId: string, force?: boolean) => void;
   onAddMatchClick: () => void;
   onAutoScheduleClick: () => void;
 }
@@ -29,6 +30,7 @@ const MatchesTab: React.FC<MatchesTabProps> = ({
   courts,
   onMatchUpdate,
   onCourtAssign,
+  onStartMatch,
   onAddMatchClick,
   onAutoScheduleClick
 }) => {
@@ -62,9 +64,9 @@ const MatchesTab: React.FC<MatchesTabProps> = ({
             <Plus className="h-4 w-4 mr-2" />
             Schedule One Match
           </Button>
-          <Button onClick={onAutoScheduleClick}>
+          <Button onClick={onAutoScheduleClick} className="flex items-center">
             <Clock className="h-4 w-4 mr-2" />
-            Auto Schedule
+            Auto Schedule & Start
           </Button>
         </div>
       </div>
@@ -78,13 +80,26 @@ const MatchesTab: React.FC<MatchesTabProps> = ({
                 <div className="truncate">
                   <span className="text-sm font-medium">{match.team1.name} vs {match.team2.name}</span>
                 </div>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => handleQuickAssign(match)}
-                >
-                  Assign Court
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleQuickAssign(match)}
+                  >
+                    Assign Court
+                  </Button>
+                  {onStartMatch && (
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onStartMatch(match.id)}
+                      className="bg-green-50 border-green-200 hover:bg-green-100 text-green-700"
+                    >
+                      <Play className="h-3 w-3 mr-1" />
+                      Start
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -97,6 +112,7 @@ const MatchesTab: React.FC<MatchesTabProps> = ({
         courts={courts}
         onMatchUpdate={onMatchUpdate}
         onCourtAssign={onCourtAssign}
+        onStartMatch={onStartMatch}
       />
 
       <Dialog open={quickAssignOpen} onOpenChange={setQuickAssignOpen}>

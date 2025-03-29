@@ -19,6 +19,8 @@ import { renderMatchesTab } from "@/utils/tournamentComponentHelper";
 import { useAuth } from "@/contexts/auth/AuthContext";
 import ScoreEntrySection from "@/components/tournament/score-entry/ScoreEntrySection";
 import CategoryTabs from "@/components/tournament/tabs/CategoryTabs";
+import { schedulingService } from "@/services/tournament/SchedulingService";
+import { toast } from "@/components/ui/use-toast";
 
 const TournamentDetail = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
@@ -36,7 +38,8 @@ const TournamentDetail = () => {
     scheduleMatch,
     autoAssignCourts,
     generateMultiStageTournament,
-    advanceToNextStage
+    advanceToNextStage,
+    updateMatchStatus
   } = useTournament();
 
   const [activeTab, setActiveTab] = useState("overview");
@@ -116,10 +119,10 @@ const TournamentDetail = () => {
 
   const handleAutoSchedule = async () => {
     try {
-      const assignedCount = await autoAssignCourts();
-      console.log(`Assigned ${assignedCount} courts automatically`);
+      // Open the scheduling dialog instead of directly auto-assigning
+      setScheduleDialogOpen(true);
     } catch (error) {
-      console.error("Error auto-scheduling matches:", error);
+      console.error("Error opening auto-schedule dialog:", error);
     }
   };
 
@@ -147,6 +150,40 @@ const TournamentDetail = () => {
     };
     
     updateTournament(updatedTournament);
+  };
+
+  // Handle starting a match (even without a court if forceStart is true)
+  const handleStartMatch = async (matchId: string, forceStart?: boolean) => {
+    try {
+      if (!currentTournament) return;
+      
+      // Use the scheduling service to start the match
+      const result = await schedulingService.startMatch(currentTournament, matchId, forceStart);
+      
+      if (result.started) {
+        // Update the tournament with the started match
+        updateTournament(result.tournament);
+        
+        toast({
+          title: "Match started",
+          description: forceStart ? "Match started without a court assignment" : "Match started successfully",
+          variant: forceStart ? "warning" : "default"
+        });
+      } else {
+        toast({
+          title: "Could not start match",
+          description: "No courts are available. Add a court or force start the match.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error starting match:", error);
+      toast({
+        title: "Error starting match",
+        description: "An error occurred while starting the match",
+        variant: "destructive"
+      });
+    }
   };
 
   const isUserAdmin = user ? user.role === 'admin' : false;
@@ -208,15 +245,22 @@ const TournamentDetail = () => {
                   onMatchUpdate={updateMatch} 
                 />
                 
-                {renderMatchesTab(
-                  currentTournament.matches,
-                  currentTournament.teams,
-                  currentTournament.courts,
-                  updateMatch,
-                  assignCourt,
-                  () => setAddMatchDialogOpen(true),
-                  handleAutoSchedule
-                )}
+                {/* Use the updated renderMatchesTab with the onStartMatch prop */}
+                <div>
+                  {React.createElement(
+                    // @ts-ignore - We're using renderMatchesTab helper which might have missed types
+                    renderMatchesTab(
+                      currentTournament.matches,
+                      currentTournament.teams,
+                      currentTournament.courts,
+                      updateMatch,
+                      assignCourt,
+                      handleStartMatch,
+                      () => setAddMatchDialogOpen(true),
+                      handleAutoSchedule
+                    )
+                  )}
+                </div>
               </>
             )}
           </TabsContent>
