@@ -180,8 +180,6 @@ export const assignPlayerSeeding = (tournament: Tournament): Tournament => {
 };
 
 // Update the createInitialRoundMatches function to use the seeding
-// Function to create initial round matches for a 38-team tournament
-// Function to create initial round matches for a 38-team tournament
 export const createInitialRoundMatches2 = (tournament: Tournament): Match[] => {
   // First, make sure all teams are properly seeded
   const seededTournament = assignPlayerSeeding(tournament);
@@ -235,4 +233,27 @@ export const createInitialRoundMatches2 = (tournament: Tournament): Match[] => {
   // Return the matches created based on seeding
   console.log(`[DEBUG] Created initial round matches based on seeding 1-38`);
   return matches;
+};
+
+// Export these functions to match the imports in stageProgression.ts
+export const createDivisionPlacementMatches = (tournament: Tournament): Match[] => {
+  // Define the divisions
+  const division1Teams = tournament.teams.slice(0, 10);
+  const division2Teams = tournament.teams.slice(10, 20);
+  const division3Teams = tournament.teams.slice(20);
+
+  // Create matches for division placement
+  const division1Matches = createDivisionMatches(tournament, division1Teams, "DIVISION_1");
+  const division2Matches = createDivisionMatches(tournament, division2Teams, "DIVISION_2");
+  const division3Matches = createDivisionMatches(tournament, division3Teams, "DIVISION_3");
+  
+  return [...division1Matches, ...division2Matches, ...division3Matches];
+};
+
+export const createPlayoffKnockoutMatches = (tournament: Tournament): Match[] => {
+  // Get top teams for playoff
+  const playoffTeams = tournament.teams.slice(0, 8); // Top 8 teams advance
+  
+  // Create matches for the playoff knockout stage
+  return createPlayoffMatches(tournament, playoffTeams);
 };

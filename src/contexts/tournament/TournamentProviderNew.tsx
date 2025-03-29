@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division } from "@/types/tournament";
 import { TournamentContextType } from "./types";
@@ -6,6 +5,7 @@ import { tournamentService } from "@/services/tournament/TournamentService";
 import { matchService } from "@/services/tournament/MatchService";
 import { courtService } from "@/services/tournament/CourtService";
 import { createSampleData } from "@/utils/tournamentSampleData";
+import { assignPlayerSeeding } from "@/utils/tournamentProgressionUtils";
 
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
@@ -294,6 +294,19 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error loading sample data:", error);
     }
   };
+
+  // Add the assignSeeding function that was missing
+  const assignSeeding = async (tournamentId: string) => {
+    if (!currentTournament || currentTournament.id !== tournamentId) return;
+    
+    try {
+      const seededTournament = assignPlayerSeeding(currentTournament);
+      await updateTournament(seededTournament);
+      console.log("Tournament teams have been seeded successfully");
+    } catch (error) {
+      console.error("Error assigning seeds to teams:", error);
+    }
+  };
   
   if (isLoading) {
     return <div>Loading tournament data...</div>;
@@ -327,7 +340,8 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         generateBracket,
         autoAssignCourts: autoAssignCourtsHandler,
         generateMultiStageTournament,
-        advanceToNextStage
+        advanceToNextStage,
+        assignSeeding, // Add the missing function
       }}
     >
       {children}

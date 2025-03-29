@@ -1,3 +1,4 @@
+
 import { Tournament, Match, Court, Team, MatchStatus, Division } from "@/types/tournament";
 
 export interface TournamentContextType {
@@ -23,6 +24,6 @@ export interface TournamentContextType {
   generateMultiStageTournament: () => void;
   advanceToNextStage: () => void;
   
-  // Add new seeding functionality
+  // Tournament seeding functionality
   assignSeeding: (tournamentId: string) => void;
 }
