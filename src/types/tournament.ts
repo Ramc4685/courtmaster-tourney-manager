@@ -1,4 +1,3 @@
-
 export type Player = {
   id: string;
   name: string;
@@ -85,6 +84,7 @@ export type TournamentCategory = {
   description?: string; // New field for custom category description
   format?: TournamentFormat; // Format specific to this category
   addDemoData?: boolean; // Flag to indicate if demo data should be loaded for this category
+  scoringSettings?: ScoringSettings; // Add support for category-specific scoring settings
 };
 
 // Standard badminton category types

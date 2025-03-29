@@ -1,11 +1,12 @@
 
 import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentFormat, TournamentCategory } from "@/types/tournament";
+import { SchedulingOptions, SchedulingResult } from "@/services/tournament/SchedulingService";
 
 export interface TournamentContextType {
   tournaments: Tournament[];
   currentTournament: Tournament | null;
   setCurrentTournament: (tournament: Tournament | null) => void;
-  createTournament: (tournament: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">) => Tournament;
+  createTournament: (tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">) => Tournament;
   updateTournament: (tournament: Tournament) => void;
   deleteTournament: (tournamentId: string) => void;
   addTeam: (team: Team) => void;
@@ -24,12 +25,11 @@ export interface TournamentContextType {
   generateMultiStageTournament: () => void;
   advanceToNextStage: () => void;
   assignSeeding: (tournamentId: string) => void;
-  
-  // New operations for categories
   addCategory: (category: Omit<TournamentCategory, "id">) => void;
   removeCategory: (categoryId: string) => void;
   updateCategory: (category: TournamentCategory) => void;
-  
-  // Updated to include tournamentId
   loadCategoryDemoData: (tournamentId: string, categoryId: string, format: TournamentFormat) => void;
+  
+  // New unified scheduling method
+  scheduleMatches: (teamPairs: { team1: Team; team2: Team }[], options: SchedulingOptions) => Promise<SchedulingResult>;
 }

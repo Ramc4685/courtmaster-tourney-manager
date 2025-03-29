@@ -27,6 +27,7 @@ import { useAuth } from "@/contexts/auth/AuthContext";
 import { assignTournamentSeeding } from "./tournamentOperations";
 import { assignPlayerSeeding } from "@/utils/tournamentProgressionUtils";
 import { getCategoryDemoData } from "@/utils/tournamentSampleData";
+import { schedulingService, SchedulingOptions, SchedulingResult } from "@/services/tournament/SchedulingService";
 
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
@@ -396,6 +397,30 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Add our new unified scheduling method
+  const scheduleMatches = async (
+    teamPairs: { team1: Team; team2: Team }[],
+    options: SchedulingOptions
+  ): Promise<SchedulingResult> => {
+    if (!currentTournament) {
+      return {
+        scheduledMatches: 0,
+        assignedCourts: 0,
+        tournament: null as unknown as Tournament
+      };
+    }
+    
+    console.log('[DEBUG] Scheduling matches with unified service', teamPairs.length, options);
+    
+    // Use our scheduling service to handle both scheduling and court assignment
+    const result = schedulingService.scheduleMatches(currentTournament, teamPairs, options);
+    
+    // Update the tournament with the scheduled matches and assigned courts
+    updateTournament(result.tournament);
+    
+    return result;
+  };
+
   return (
     <TournamentContext.Provider
       value={{
@@ -421,12 +446,12 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         generateMultiStageTournament,
         advanceToNextStage,
         assignSeeding,
-        // Add the new category operations
         addCategory,
         removeCategory,
         updateCategory,
-        // Add the new category demo data function
-        loadCategoryDemoData
+        loadCategoryDemoData,
+        // Add the new unified scheduling method
+        scheduleMatches
       }}
     >
       {children}

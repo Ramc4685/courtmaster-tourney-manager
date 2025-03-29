@@ -174,11 +174,15 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
               </div>
             </div>
             
-            {/* Add Tournament Category Section to Edit screen */}
-            <TournamentCategorySection
-              categories={categories}
-              onCategoriesChange={setCategories}
-            />
+            {/* Category management for edit mode */}
+            <div className="mt-4">
+              <TournamentCategorySection
+                categories={categories}
+                onCategoriesChange={setCategories}
+                tournament={tournament}
+                onUpdateTournament={updateTournament}
+              />
+            </div>
           </div>
         ) : (
           <PageHeader

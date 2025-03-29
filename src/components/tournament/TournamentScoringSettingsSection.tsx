@@ -36,10 +36,10 @@ const TournamentScoringSettingsSection: React.FC<TournamentScoringSettingsSectio
         <CardHeader>
           <CardTitle className="flex items-center">
             <Trophy className="h-5 w-5 mr-2" />
-            Badminton Scoring Rules
+            Tournament Default Scoring Rules
           </CardTitle>
           <CardDescription>
-            Configure scoring rules for all matches in this tournament
+            Default scoring rules applied to all matches unless a category has custom rules
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -70,7 +70,7 @@ const TournamentScoringSettingsSection: React.FC<TournamentScoringSettingsSectio
               onClick={() => setSettingsOpen(true)}
             >
               <Settings className="h-4 w-4 mr-2" />
-              Configure Scoring Settings
+              Configure Default Scoring Settings
             </Button>
           </div>
         </CardContent>
@@ -81,8 +81,8 @@ const TournamentScoringSettingsSection: React.FC<TournamentScoringSettingsSectio
         onOpenChange={setSettingsOpen}
         settings={scoringSettings}
         onSettingsChange={handleUpdateScoringSettings}
-        title="Tournament Scoring Settings"
-        description="Configure scoring rules for all matches in this tournament"
+        title="Tournament Default Scoring Settings"
+        description="Configure default scoring rules for all matches in this tournament"
       />
     </>
   );
