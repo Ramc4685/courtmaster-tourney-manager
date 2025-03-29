@@ -27,7 +27,7 @@ const TournamentCreate = () => {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [format, setFormat] = useState<TournamentFormat>("GROUP_DIVISION");
+  const [format, setFormat] = useState<TournamentFormat>("MULTI_STAGE"); // Changed from GROUP_DIVISION to MULTI_STAGE
   const [divisionProgression, setDivisionProgression] = useState(true);
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
