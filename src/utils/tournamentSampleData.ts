@@ -1,8 +1,11 @@
-import { Tournament, Team, Match, Division, TournamentStage, MatchStatus, TournamentFormat, TournamentCategory } from "@/types/tournament";
+
+import { Tournament, Team, Match, Division, TournamentStage, MatchStatus, TournamentFormat, TournamentCategory, CourtStatus } from "@/types/tournament";
 import { generateId } from "./tournamentUtils";
 
 export const createSampleData = (): Tournament => {
   const id = generateId();
+  const defaultCategory = { id: generateId(), name: "Men's Singles", type: "MENS_SINGLES" };
+  
   const teams: Team[] = [
     { id: "team-1", name: "Cloud9", players: [{ id: "player-1", name: "Player A" }, { id: "player-2", name: "Player B" }] },
     { id: "team-2", name: "TSM", players: [{ id: "player-3", name: "Player C" }, { id: "player-4", name: "Player D" }] },
@@ -20,7 +23,8 @@ export const createSampleData = (): Tournament => {
       division: "DIVISION_1",
       stage: "INITIAL_ROUND",
       status: "SCHEDULED",
-      scheduledTime: new Date()
+      scheduledTime: new Date(),
+      category: defaultCategory // Add the missing category property
     },
     {
       id: generateId(),
@@ -31,13 +35,14 @@ export const createSampleData = (): Tournament => {
       division: "DIVISION_2",
       stage: "INITIAL_ROUND",
       status: "SCHEDULED",
-      scheduledTime: new Date()
+      scheduledTime: new Date(),
+      category: defaultCategory // Add the missing category property
     }
   ];
 
   const courts = [
-    { id: "court-1", name: "Court 1", number: 1, status: "AVAILABLE" },
-    { id: "court-2", name: "Court 2", number: 2, status: "AVAILABLE" }
+    { id: "court-1", name: "Court 1", number: 1, status: "AVAILABLE" as CourtStatus },
+    { id: "court-2", name: "Court 2", number: 2, status: "AVAILABLE" as CourtStatus }
   ];
 
   return {
@@ -62,6 +67,8 @@ export const createSampleData = (): Tournament => {
 
 export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
   const id = generateId();
+  const defaultCategory = { id: generateId(), name: "Men's Singles", type: "MENS_SINGLES" };
+  
   const teams: Team[] = [
     { id: "team-1", name: "Cloud9", players: [{ id: "player-1", name: "Player A" }, { id: "player-2", name: "Player B" }] },
     { id: "team-2", name: "TSM", players: [{ id: "player-3", name: "Player C" }, { id: "player-4", name: "Player D" }] },
@@ -79,7 +86,8 @@ export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
       division: "DIVISION_1",
       stage: "INITIAL_ROUND",
       status: "SCHEDULED",
-      scheduledTime: new Date()
+      scheduledTime: new Date(),
+      category: defaultCategory // Add the missing category property
     },
     {
       id: generateId(),
@@ -90,13 +98,14 @@ export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
       division: "DIVISION_2",
       stage: "INITIAL_ROUND",
       status: "SCHEDULED",
-      scheduledTime: new Date()
+      scheduledTime: new Date(),
+      category: defaultCategory // Add the missing category property
     }
   ];
 
   const courts = [
-    { id: "court-1", name: "Court 1", number: 1, status: "AVAILABLE" },
-    { id: "court-2", name: "Court 2", number: 2, status: "AVAILABLE" }
+    { id: "court-1", name: "Court 1", number: 1, status: "AVAILABLE" as CourtStatus },
+    { id: "court-2", name: "Court 2", number: 2, status: "AVAILABLE" as CourtStatus }
   ];
 
   return {

@@ -4,7 +4,7 @@ import { TournamentContextType } from "./types";
 import { tournamentService } from "@/services/tournament/TournamentService";
 import { matchService } from "@/services/tournament/MatchService";
 import { courtService } from "@/services/tournament/CourtService";
-import { createSampleData, getSampleDataByFormat } from "@/utils/tournamentSampleData";
+import { createSampleData, getSampleDataByFormat, getCategoryDemoData } from "@/utils/tournamentSampleData";
 import { assignPlayerSeeding } from "@/utils/tournamentProgressionUtils";
 
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -296,6 +296,37 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Add the missing loadCategoryDemoData function
+  const loadCategoryDemoData = async (categoryId: string, format: TournamentFormat) => {
+    if (!currentTournament) return;
+    
+    try {
+      // Find the category
+      const category = currentTournament.categories.find(c => c.id === categoryId);
+      if (!category) {
+        console.error(`Category with ID ${categoryId} not found`);
+        return;
+      }
+      
+      // Get demo data for this category
+      const { teams, matches } = getCategoryDemoData(format, category);
+      
+      // Add the teams and matches to the current tournament
+      const updatedTournament = {
+        ...currentTournament,
+        teams: [...currentTournament.teams, ...teams],
+        matches: [...currentTournament.matches, ...matches],
+        updatedAt: new Date()
+      };
+      
+      // Update the tournament
+      await updateTournament(updatedTournament);
+      console.log(`Demo data loaded for category ${category.name} with format ${format}`);
+    } catch (error) {
+      console.error(`Error loading demo data for category ID ${categoryId}:`, error);
+    }
+  };
+
   // Fix the assignSeeding function
   const assignSeeding = async (tournamentId: string) => {
     if (!currentTournament || currentTournament.id !== tournamentId) return;
@@ -405,7 +436,9 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         // Add the new category operations
         addCategory,
         removeCategory,
-        updateCategory
+        updateCategory,
+        // Add the new loadCategoryDemoData function
+        loadCategoryDemoData
       }}
     >
       {children}
