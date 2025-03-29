@@ -100,7 +100,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
           <SelectContent>
             {tournament.categories.map(category => (
               <SelectItem key={category.id} value={category.id}>
-                {category.name}
+                {category.name} {category.format ? `(${category.format.replace('_', ' ')})` : ''}
               </SelectItem>
             ))}
           </SelectContent>
@@ -180,6 +180,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
             {tournament.categories.map(category => (
               <TabsTrigger key={category.id} value={category.id}>
                 {category.name}
+                {category.format && <span className="text-xs ml-1 opacity-70">({category.format.replace('_', ' ')})</span>}
               </TabsTrigger>
             ))}
           </TabsList>
