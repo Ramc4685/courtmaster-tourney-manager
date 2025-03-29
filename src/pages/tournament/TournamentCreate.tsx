@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTournament } from "@/contexts/TournamentContext";
 import { useToast } from "@/hooks/use-toast";
 import TournamentScoringForm from "@/components/tournament/TournamentScoringForm";
@@ -21,7 +20,6 @@ import { createDefaultCategories } from "@/utils/categoryUtils";
 const formSchema = z.object({
   name: z.string().min(3, { message: "Tournament name must be at least 3 characters" }),
   description: z.string().optional(),
-  format: z.enum(["SINGLE_ELIMINATION", "DOUBLE_ELIMINATION", "ROUND_ROBIN", "MULTI_STAGE"]),
   startDate: z.string(),
   endDate: z.string().optional(),
   maxPoints: z.number().min(1, { message: "Maximum points must be at least 1" }),
@@ -37,15 +35,15 @@ const TournamentCreate = () => {
   const { createTournament, loadCategoryDemoData } = useTournament();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedFormat, setSelectedFormat] = useState<TournamentFormat>("MULTI_STAGE");
   const [categories, setCategories] = useState<TournamentCategory[]>(createDefaultCategories());
+  // Default format for the tournament is MULTI_STAGE, but each category can have its own format
+  const defaultFormat: TournamentFormat = "MULTI_STAGE";
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       description: "",
-      format: "MULTI_STAGE",
       startDate: new Date().toISOString().slice(0, 10),
       maxPoints: 21,
       maxSets: 3,
@@ -54,23 +52,16 @@ const TournamentCreate = () => {
     },
   });
 
-  // Update selected format when form value changes
-  React.useEffect(() => {
-    const formatValue = form.watch('format');
-    setSelectedFormat(formatValue as TournamentFormat);
-  }, [form.watch('format')]);
-
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
     try {
-      console.log("Creating tournament with format:", values.format);
       console.log("Creating tournament with categories:", categories);
       
-      // Create the tournament first
+      // Create the tournament first with default format
       const newTournament = createTournament({
         name: values.name,
         description: values.description,
-        format: values.format as TournamentFormat,
+        format: defaultFormat,
         status: "DRAFT",
         startDate: new Date(values.startDate),
         endDate: values.endDate ? new Date(values.endDate) : undefined,
@@ -93,8 +84,9 @@ const TournamentCreate = () => {
         // Process demo data loading with delay to ensure tournament is created first
         setTimeout(() => {
           categoriesToLoadDemoData.forEach(category => {
-            console.log(`Loading demo data for category ${category.name} with format ${category.format || values.format}`);
-            loadCategoryDemoData(newTournament.id, category.id, category.format || values.format as TournamentFormat);
+            const categoryFormat = category.format || defaultFormat;
+            console.log(`Loading demo data for category ${category.name} with format ${categoryFormat}`);
+            loadCategoryDemoData(newTournament.id, category.id, categoryFormat);
           });
         }, 100);
       }
@@ -161,33 +153,6 @@ const TournamentCreate = () => {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="format"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tournament Format</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a format" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="SINGLE_ELIMINATION">Single Elimination</SelectItem>
-                          <SelectItem value="DOUBLE_ELIMINATION">Double Elimination</SelectItem>
-                          <SelectItem value="ROUND_ROBIN">Round Robin</SelectItem>
-                          <SelectItem value="MULTI_STAGE">Multi-Stage Tournament</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -221,7 +186,7 @@ const TournamentCreate = () => {
                 <TournamentCategorySection 
                   categories={categories}
                   onCategoriesChange={setCategories}
-                  parentFormat={form.watch('format') as TournamentFormat}
+                  parentFormat={defaultFormat}
                 />
 
                 <TournamentScoringForm 
