@@ -2,6 +2,7 @@
 import React from "react";
 import MatchTable from "@/components/match/MatchTable";
 import ManualResultEntry from "@/components/match/ManualResultEntry";
+import ManualCourtAssignment from "@/components/match/ManualCourtAssignment";
 import DeferMatch from "@/components/match/DeferMatch";
 import { Match, Team, Court } from "@/types/tournament";
 import { useTournament } from "@/contexts/TournamentContext";
@@ -91,6 +92,11 @@ const EnhancedMatchTable: React.FC<EnhancedMatchTableProps> = ({
           <ManualResultEntry
             match={match}
             onComplete={handleCompleteMatch}
+          />
+          <ManualCourtAssignment 
+            match={match}
+            courts={courts}
+            onCourtAssign={onCourtAssign}
           />
         </div>
       </td>

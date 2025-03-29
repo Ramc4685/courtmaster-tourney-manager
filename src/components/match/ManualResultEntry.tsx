@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Match, Team } from "@/types/tournament";
 import { Edit, Save, Plus, Trash, ClipboardEdit } from "lucide-react";
 import { determineMatchWinnerAndLoser, getDefaultScoringSettings } from "@/utils/matchUtils";
+import { useToast } from "@/hooks/use-toast";
 
 interface ManualResultEntryProps {
   match: Match;
@@ -30,6 +31,18 @@ const ManualResultEntry: React.FC<ManualResultEntryProps> = ({
       ? [...match.scores] 
       : [{ team1Score: 0, team2Score: 0 }]
   );
+  const { toast } = useToast();
+
+  // Reset scores when match changes or dialog opens
+  React.useEffect(() => {
+    if (open) {
+      setScores(
+        match.scores && match.scores.length > 0 
+          ? [...match.scores] 
+          : [{ team1Score: 0, team2Score: 0 }]
+      );
+    }
+  }, [match, open]);
 
   const handleScoreChange = (setIndex: number, team: 'team1' | 'team2', value: string) => {
     const newScores = [...scores];
@@ -77,6 +90,11 @@ const ManualResultEntry: React.FC<ManualResultEntryProps> = ({
     
     onComplete(updatedMatch);
     setOpen(false);
+    
+    toast({
+      title: "Match score recorded",
+      description: `Recorded score for ${match.team1.name} vs ${match.team2.name}`,
+    });
   };
 
   return (

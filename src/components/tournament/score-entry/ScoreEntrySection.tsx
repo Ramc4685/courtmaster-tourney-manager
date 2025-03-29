@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ClipboardEdit, PlayCircle } from "lucide-react";
 import ManualResultEntry from "@/components/match/ManualResultEntry";
+import ManualCourtAssignment from "@/components/match/ManualCourtAssignment";
 import DeferMatch from "@/components/match/DeferMatch";
 import { useTournament } from "@/contexts/TournamentContext";
 
@@ -16,7 +17,7 @@ interface ScoreEntrySectionProps {
 
 const ScoreEntrySection: React.FC<ScoreEntrySectionProps> = ({ matches, onMatchUpdate }) => {
   const [selectedMatchId, setSelectedMatchId] = useState<string>("");
-  const { updateMatchStatus } = useTournament();
+  const { updateMatchStatus, assignCourt } = useTournament();
   
   // Filter matches that are in progress or scheduled (not completed)
   const availableMatches = matches.filter(
@@ -36,11 +37,29 @@ const ScoreEntrySection: React.FC<ScoreEntrySectionProps> = ({ matches, onMatchU
 
   const handleMatchUpdate = (updatedMatch: Match) => {
     onMatchUpdate(updatedMatch);
+    // Refresh the selected match if it's the one being updated
+    if (selectedMatchId === updatedMatch.id) {
+      const refreshedMatch = matches.find(m => m.id === updatedMatch.id);
+      if (refreshedMatch) {
+        // Force a re-render
+        setSelectedMatchId("");
+        setTimeout(() => setSelectedMatchId(updatedMatch.id), 0);
+      }
+    }
   };
   
   const handleStartMatch = (matchId: string) => {
     updateMatchStatus(matchId, "IN_PROGRESS");
     setSelectedMatchId(matchId);
+  };
+
+  const handleCourtAssign = (matchId: string, courtId: string) => {
+    assignCourt(matchId, courtId);
+    // Refresh the view after court assignment
+    const updatedMatch = matches.find(match => match.id === matchId);
+    if (updatedMatch) {
+      handleMatchUpdate(updatedMatch);
+    }
   };
 
   if (availableMatches.length === 0) {
@@ -58,6 +77,22 @@ const ScoreEntrySection: React.FC<ScoreEntrySectionProps> = ({ matches, onMatchU
       </Card>
     );
   }
+
+  // Get all courts from all matches
+  const allCourts = matches
+    .filter(m => m.courtNumber)
+    .map(m => ({
+      id: `court-${m.courtNumber}`,
+      number: m.courtNumber!,
+      name: `Court ${m.courtNumber}`,
+      status: m.status === "IN_PROGRESS" ? "IN_USE" : "AVAILABLE" as const,
+      currentMatch: m.status === "IN_PROGRESS" ? m : undefined
+    }));
+
+  // Remove duplicates
+  const uniqueCourts = Array.from(
+    new Map(allCourts.map(court => [court.number, court])).values()
+  );
 
   return (
     <Card className="mb-8">
@@ -107,6 +142,11 @@ const ScoreEntrySection: React.FC<ScoreEntrySectionProps> = ({ matches, onMatchU
                         onComplete={handleMatchUpdate}
                       />
                       <DeferMatch match={match} />
+                      <ManualCourtAssignment 
+                        match={match}
+                        courts={uniqueCourts}
+                        onCourtAssign={handleCourtAssign}
+                      />
                     </div>
                   </div>
                 ))}
@@ -178,6 +218,11 @@ const ScoreEntrySection: React.FC<ScoreEntrySectionProps> = ({ matches, onMatchU
                 {selectedMatch.status === "IN_PROGRESS" && (
                   <DeferMatch match={selectedMatch} />
                 )}
+                <ManualCourtAssignment 
+                  match={selectedMatch}
+                  courts={uniqueCourts}
+                  onCourtAssign={handleCourtAssign}
+                />
               </div>
             </div>
           ) : (
