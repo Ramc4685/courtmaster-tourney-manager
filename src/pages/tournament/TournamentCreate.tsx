@@ -1,261 +1,225 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import Layout from "@/components/layout/Layout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useTournament } from "@/contexts/tournament/useTournament";
-import { useToast } from "@/hooks/use-toast";
-import TournamentScoringForm from "@/components/tournament/TournamentScoringForm";
 import { TournamentCategory, TournamentFormat } from "@/types/tournament";
 import TournamentCategorySection from "@/components/tournament/TournamentCategorySection";
 import { createDefaultCategories } from "@/utils/categoryUtils";
 import { Grid3X3Icon } from "lucide-react";
 
 const formSchema = z.object({
-  name: z.string().min(3, { message: "Tournament name must be at least 3 characters" }),
+  name: z.string().min(2, {
+    message: "Tournament name must be at least 2 characters.",
+  }),
+  format: z.enum(['SINGLE_ELIMINATION', 'DOUBLE_ELIMINATION', 'ROUND_ROBIN', 'SWISS', 'GROUP_KNOCKOUT', 'MULTI_STAGE']),
   description: z.string().optional(),
-  startDate: z.string(),
-  endDate: z.string().optional(),
-  maxPoints: z.number().min(1, { message: "Maximum points must be at least 1" }),
-  maxSets: z.number().min(1, { message: "Maximum sets must be at least 1" }),
-  requireTwoPointLead: z.boolean().default(true),
-  maxTwoPointLeadScore: z.number().optional(),
-  numberOfCourts: z.number().min(1, { message: "At least 1 court is required" }).max(20, { message: "Maximum 20 courts allowed" }),
+  startDate: z.date(),
+  endDate: z.date().optional(),
+  divisionProgression: z.boolean().default(false),
+  autoAssignCourts: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-const TournamentCreate = () => {
+const TournamentCreate: React.FC = () => {
+  const { createTournament, loadSampleData } = useTournament();
   const navigate = useNavigate();
-  const { createTournament, loadCategoryDemoData } = useTournament();
-  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<TournamentCategory[]>(createDefaultCategories());
-  // Default format is MULTI_STAGE (no longer showing in UI but used as fallback)
-  const defaultFormat: TournamentFormat = "MULTI_STAGE";
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      format: "SINGLE_ELIMINATION",
       description: "",
-      startDate: new Date().toISOString().slice(0, 10),
-      maxPoints: 21,
-      maxSets: 3,
-      requireTwoPointLead: true,
-      maxTwoPointLeadScore: 30,
-      numberOfCourts: 4,
+      startDate: new Date(),
+      endDate: undefined,
+      divisionProgression: false,
+      autoAssignCourts: false,
     },
   });
 
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
     try {
-      console.log("Creating tournament with categories:", categories);
-      
-      // Generate courts based on number specified
-      const courts = [];
-      for (let i = 1; i <= values.numberOfCourts; i++) {
-        courts.push({
-          id: `court-${i}`,
-          name: `Court ${i}`,
-          number: i,
-          status: "AVAILABLE"
-        });
-      }
-      
-      // Create the tournament using the default format
-      const newTournament = createTournament({
-        name: values.name,
-        description: values.description,
-        format: defaultFormat,
-        status: "DRAFT",
-        startDate: new Date(values.startDate),
-        endDate: values.endDate ? new Date(values.endDate) : undefined,
-        teams: [],
-        courts: courts,
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate network request
+
+      const tournament = createTournament({
+        ...values,
         categories: categories,
-        scoringSettings: {
-          maxPoints: values.maxPoints,
-          maxSets: values.maxSets,
-          requireTwoPointLead: values.requireTwoPointLead,
-          maxTwoPointLeadScore: values.maxTwoPointLeadScore,
-        },
       });
-      
-      // After tournament is created, load demo data for categories that have it enabled
-      const categoriesToLoadDemoData = categories.filter(c => c.addDemoData);
-      if (categoriesToLoadDemoData.length > 0) {
-        console.log(`Loading demo data for ${categoriesToLoadDemoData.length} categories`);
-        
-        // Process demo data loading with delay to ensure tournament is created first
-        setTimeout(() => {
-          categoriesToLoadDemoData.forEach(category => {
-            // Use category-specific format or fallback to default
-            const categoryFormat = category.format || defaultFormat;
-            console.log(`Loading demo data for category ${category.name} with format ${categoryFormat}`);
-            loadCategoryDemoData(newTournament.id, category.id, categoryFormat);
-          });
-        }, 100);
-      }
-      
-      toast({
-        title: "Tournament created",
-        description: "Your tournament has been created successfully",
-      });
-      
-      navigate(`/tournaments/${newTournament.id}`);
-    } catch (error) {
-      console.error("Error creating tournament:", error);
-      toast({
-        title: "Error",
-        description: "There was an error creating the tournament",
-        variant: "destructive",
-      });
+
+      navigate(`/tournaments/${tournament.id}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Layout>
-      <div className="max-w-4xl mx-auto py-8 px-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Create Tournament</CardTitle>
-            <CardDescription>
-              Set up your new tournament with basic details
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tournament Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter tournament name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description (Optional)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Enter tournament description"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="startDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Start Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="endDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>End Date (Optional)</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="numberOfCourts"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Grid3X3Icon className="h-4 w-4" />
-                        Number of Courts
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={20}
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 1)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <TournamentCategorySection 
-                  categories={categories}
-                  onCategoriesChange={setCategories}
-                  parentFormat={defaultFormat}
-                />
-
-                <TournamentScoringForm 
-                  maxPoints={form.watch('maxPoints')}
-                  maxSets={form.watch('maxSets')}
-                  requireTwoPointLead={form.watch('requireTwoPointLead')}
-                  maxTwoPointLeadScore={form.watch('maxTwoPointLeadScore')}
-                  onMaxPointsChange={(value) => form.setValue('maxPoints', value)}
-                  onMaxSetsChange={(value) => form.setValue('maxSets', value)}
-                  onRequireTwoPointLeadChange={(value) => form.setValue('requireTwoPointLead', value)}
-                  onMaxTwoPointLeadScoreChange={(value) => form.setValue('maxTwoPointLeadScore', value)}
-                />
-
-                <div className="flex justify-end space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate("/tournaments")}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Creating..." : "Create Tournament"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+    <div className="container mx-auto py-10">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold">Create Tournament</h1>
+        <Button variant="secondary" onClick={() => loadSampleData()}>
+          <Grid3X3Icon className="h-4 w-4 mr-2" />
+          Load Sample Data
+        </Button>
       </div>
-    </Layout>
+      <Card>
+        <CardHeader>
+          <CardTitle>Tournament Details</CardTitle>
+          <CardDescription>
+            Enter the details for your new tournament.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tournament Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter tournament name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="format"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Format</FormLabel>
+                    <FormControl>
+                      <select className="border rounded px-3 py-2 w-full" {...field}>
+                        <option value="SINGLE_ELIMINATION">Single Elimination</option>
+                        <option value="DOUBLE_ELIMINATION">Double Elimination</option>
+                        <option value="ROUND_ROBIN">Round Robin</option>
+                        <option value="SWISS">Swiss</option>
+                        <option value="GROUP_KNOCKOUT">Group Knockout</option>
+                        <option value="MULTI_STAGE">Multi Stage</option>
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter description" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Date</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                        value={field.value ? new Date(field.value).toISOString().split('T')[0] : ""}
+                        onChange={(e) => field.onChange(new Date(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Date (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                        value={field.value ? new Date(field.value).toISOString().split('T')[0] : ""}
+                        onChange={(e) => field.onChange(new Date(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex items-center space-x-2">
+                <FormField
+                  control={form.control}
+                  name="divisionProgression"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-1 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        Enable Division Progression
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="autoAssignCourts"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-1 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        Auto Assign Courts
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <TournamentCategorySection
+                categories={categories}
+                setCategories={setCategories}
+              />
+              <CardFooter>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Creating..." : "Create Tournament"}
+                </Button>
+              </CardFooter>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

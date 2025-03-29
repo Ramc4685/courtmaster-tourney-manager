@@ -1,14 +1,23 @@
 
-import React from "react";
-import MatchTable from "@/components/match/MatchTable";
+import React, { useState } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format } from "date-fns";
+import { Match, Team, Court, MatchStatus } from "@/types/tournament";
+import { useTournament } from "@/contexts/tournament/useTournament";
+import { Badge } from "@/components/ui/badge";
+import { Edit, PlayCircle } from "lucide-react";
 import ManualResultEntry from "@/components/match/ManualResultEntry";
 import ManualCourtAssignment from "@/components/match/ManualCourtAssignment";
 import DeferMatch from "@/components/match/DeferMatch";
-import { Match, Team, Court } from "@/types/tournament";
-import { useTournament } from "@/contexts/TournamentContext";
-import { Badge } from "@/components/ui/badge";
-import { Edit, PlayCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 interface EnhancedMatchTableProps {
   matches: Match[];
@@ -25,161 +34,172 @@ const EnhancedMatchTable: React.FC<EnhancedMatchTableProps> = ({
   onMatchUpdate,
   onCourtAssign,
 }) => {
-  const { completeMatch, updateMatchStatus } = useTournament();
+  const { updateMatchStatus } = useTournament();
+  const [assigningCourtId, setAssigningCourtId] = useState<string | null>(null);
+  const [selectedCourtId, setSelectedCourtId] = useState<string>("");
 
-  const handleCompleteMatch = (updatedMatch: Match) => {
-    onMatchUpdate(updatedMatch);
-    
-    // If the match was not already completed, mark it as complete through the tournament context
-    if (updatedMatch.status === "COMPLETED" && updatedMatch.id) {
-      completeMatch(updatedMatch.id);
+  const handleAssignCourt = (matchId: string) => {
+    if (selectedCourtId) {
+      onCourtAssign(matchId, selectedCourtId);
+      setAssigningCourtId(null);
+      setSelectedCourtId("");
     }
   };
 
-  const handleStartMatch = (matchId: string) => {
-    updateMatchStatus(matchId, "IN_PROGRESS");
+  const handleStartMatch = (match: Match) => {
+    if (!match.courtNumber) {
+      alert("A match must be assigned to a court before it can start.");
+      return;
+    }
+    
+    updateMatchStatus(match.id, "IN_PROGRESS");
   };
 
-  // Group matches by status for better organization
-  const scheduledMatches = matches.filter(match => match.status === "SCHEDULED");
-  const inProgressMatches = matches.filter(match => match.status === "IN_PROGRESS");
-  const completedMatches = matches.filter(match => match.status === "COMPLETED");
+  const getStatusBadge = (status: MatchStatus) => {
+    switch (status) {
+      case "SCHEDULED":
+        return <Badge variant="outline">Scheduled</Badge>;
+      case "IN_PROGRESS":
+        return <Badge variant="secondary">In Progress</Badge>;
+      case "COMPLETED":
+        return <Badge variant="default">Completed</Badge>;
+      case "CANCELLED":
+        return <Badge variant="destructive">Cancelled</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
 
-  const renderMatchRow = (match: Match) => (
-    <tr key={match.id} className="border-b border-gray-200">
-      <td className="p-2">{match.team1.name} vs {match.team2.name}</td>
-      <td className="p-2">
-        <Badge className="px-2 py-1 rounded text-xs" variant={
-          match.status === "COMPLETED" 
-            ? "success" 
-            : match.status === "IN_PROGRESS" 
-            ? "secondary"
-            : "outline"
-        }>
-          {match.status}
-        </Badge>
-      </td>
-      <td className="p-2">{match.courtNumber ? `Court ${match.courtNumber}` : "Not assigned"}</td>
-      <td className="p-2">
-        {match.scheduledTime 
-          ? new Date(match.scheduledTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-          : "Not scheduled"}
-      </td>
-      <td className="p-2">
-        {match.scores && match.scores.length > 0
-          ? match.scores.map((score, idx) => (
-              <span key={idx} className="mr-2">
-                {score.team1Score}-{score.team2Score}
-              </span>
-            ))
-          : "No scores"}
-      </td>
-      <td className="p-2">
-        <div className="flex space-x-2">
-          {match.status === "SCHEDULED" && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-              onClick={() => handleStartMatch(match.id)}
-            >
-              <PlayCircle className="h-4 w-4 mr-1" /> Start Match
-            </Button>
-          )}
-          {match.status === "IN_PROGRESS" && (
-            <DeferMatch match={match} />
-          )}
-          <ManualResultEntry
-            match={match}
-            onComplete={handleCompleteMatch}
-          />
-          <ManualCourtAssignment 
-            match={match}
-            courts={courts}
-            onCourtAssign={onCourtAssign}
-          />
-        </div>
-      </td>
-    </tr>
-  );
+  const getScoreSummary = (match: Match) => {
+    if (!match.scores || match.scores.length === 0) {
+      return "No scores";
+    }
+    
+    return match.scores.map((score, index) => (
+      `Set ${index + 1}: ${score.team1Score}-${score.team2Score}`
+    )).join(", ");
+  };
+
+  const availableCourts = courts.filter(court => court.status === "AVAILABLE");
 
   return (
-    <div>
-      <div className="overflow-x-auto mb-8">
-        {inProgressMatches.length > 0 && (
-          <>
-            <h3 className="text-lg font-medium mb-2">Matches In Progress</h3>
-            <table className="w-full border-collapse mb-8">
-              <thead>
-                <tr className="bg-blue-50 text-left">
-                  <th className="p-2">Teams</th>
-                  <th className="p-2">Status</th>
-                  <th className="p-2">Court</th>
-                  <th className="p-2">Time</th>
-                  <th className="p-2">Score</th>
-                  <th className="p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inProgressMatches.map(renderMatchRow)}
-              </tbody>
-            </table>
-          </>
-        )}
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Teams</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Court</TableHead>
+            <TableHead>Time</TableHead>
+            <TableHead>Score</TableHead>
+            <TableHead>Division</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {matches.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center text-muted-foreground">
+                No matches scheduled. Schedule a match to get started.
+              </TableCell>
+            </TableRow>
+          ) : (
+            matches.map((match) => (
+              <TableRow key={match.id}>
+                <TableCell>{match.team1.name} vs {match.team2.name}</TableCell>
+                <TableCell>{getStatusBadge(match.status)}</TableCell>
+                <TableCell>
+                  {assigningCourtId === match.id ? (
+                    <div className="flex items-center space-x-2">
+                      <Select
+                        value={selectedCourtId}
+                        onValueChange={setSelectedCourtId}
+                      >
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue placeholder="Select Court" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableCourts.map((court) => (
+                            <SelectItem key={court.id} value={court.id}>
+                              {court.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleAssignCourt(match.id)}
+                        disabled={!selectedCourtId}
+                      >
+                        Assign
+                      </Button>
+                    </div>
+                  ) : (
+                    match.courtNumber ? `Court ${match.courtNumber}` : "Not assigned"
+                  )}
+                </TableCell>
+                <TableCell>
+                  {match.scheduledTime ? format(new Date(match.scheduledTime), "PPp") : "Not scheduled"}
+                </TableCell>
+                <TableCell>
+                  {match.status === "COMPLETED" ? 
+                    `${match.winner?.name || "Unknown"} won (${getScoreSummary(match)})` : 
+                    getScoreSummary(match)
+                  }
+                </TableCell>
+                <TableCell>{match.division}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    {/* Manual Result Entry Button */}
+                    <ManualResultEntry
+                      match={match}
+                      onComplete={onMatchUpdate}
+                    />
 
-        {scheduledMatches.length > 0 && (
-          <>
-            <h3 className="text-lg font-medium mb-2">Scheduled Matches</h3>
-            <table className="w-full border-collapse mb-8">
-              <thead>
-                <tr className="bg-gray-100 text-left">
-                  <th className="p-2">Teams</th>
-                  <th className="p-2">Status</th>
-                  <th className="p-2">Court</th>
-                  <th className="p-2">Time</th>
-                  <th className="p-2">Score</th>
-                  <th className="p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {scheduledMatches.map(renderMatchRow)}
-              </tbody>
-            </table>
-          </>
-        )}
+                    {/* Defer Match Button (only for IN_PROGRESS matches) */}
+                    {match.status === "IN_PROGRESS" && (
+                      <DeferMatch match={match} />
+                    )}
 
-        {completedMatches.length > 0 && (
-          <>
-            <h3 className="text-lg font-medium mb-2">Completed Matches</h3>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-green-50 text-left">
-                  <th className="p-2">Teams</th>
-                  <th className="p-2">Status</th>
-                  <th className="p-2">Court</th>
-                  <th className="p-2">Time</th>
-                  <th className="p-2">Score</th>
-                  <th className="p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {completedMatches.map(renderMatchRow)}
-              </tbody>
-            </table>
-          </>
-        )}
-      </div>
-      
-      {/* Original MatchTable as a fallback */}
-      <div className="hidden">
-        <MatchTable
-          matches={matches}
-          teams={teams}
-          courts={courts}
-          onMatchUpdate={onMatchUpdate}
-          onCourtAssign={onCourtAssign}
-        />
-      </div>
+                    {/* Start Match Button (only for SCHEDULED matches) */}
+                    {match.status === "SCHEDULED" && match.courtNumber && (
+                      <Button 
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700"
+                        onClick={() => handleStartMatch(match)}
+                      >
+                        <PlayCircle className="h-4 w-4 mr-1" />
+                        Start
+                      </Button>
+                    )}
+
+                    {/* Court Assignment Button */}
+                    {match.status !== "COMPLETED" && !match.courtNumber && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setAssigningCourtId(match.id)}
+                        disabled={availableCourts.length === 0}
+                      >
+                        Assign Court
+                      </Button>
+                    )}
+
+                    {/* Manual Court Assignment for matches with courts */}
+                    {match.status !== "COMPLETED" && match.courtNumber && (
+                      <ManualCourtAssignment 
+                        match={match}
+                        courts={courts}
+                        onCourtAssign={onCourtAssign}
+                      />
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 };
