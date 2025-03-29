@@ -296,12 +296,15 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Add the assignSeeding function that was missing
+  // Fix the assignSeeding function
   const assignSeeding = async (tournamentId: string) => {
     if (!currentTournament || currentTournament.id !== tournamentId) return;
     
     try {
+      // Call the utility function to assign seeding
       const seededTournament = assignPlayerSeeding(currentTournament);
+      
+      // Update the tournament with the seeded teams
       await updateTournament(seededTournament);
       console.log("Tournament teams have been seeded successfully");
     } catch (error) {
