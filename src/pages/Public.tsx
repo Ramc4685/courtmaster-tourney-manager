@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton";
 import { tournamentService } from "@/services/tournament/TournamentService";
 import { format } from "date-fns";
-import { Calendar, Users, Trophy, ExternalLink } from "lucide-react";
+import { Calendar, Users, Trophy, ExternalLink, Play, Clock, ClipboardEdit } from "lucide-react";
 
 const Public = () => {
   const [tournaments, setTournaments] = useState([]);
@@ -17,9 +17,13 @@ const Public = () => {
     const loadTournaments = async () => {
       try {
         const allTournaments = await tournamentService.getTournaments();
-        // Only show published tournaments
-        const publishedTournaments = allTournaments.filter(t => t.status === "PUBLISHED" || t.status === "IN_PROGRESS");
-        setTournaments(publishedTournaments);
+        // Show tournaments that are draft, published or in progress
+        const availableTournaments = allTournaments.filter(t => 
+          t.status === "PUBLISHED" || 
+          t.status === "IN_PROGRESS" || 
+          t.status === "DRAFT"
+        );
+        setTournaments(availableTournaments);
       } catch (error) {
         console.error("Error loading tournaments:", error);
       } finally {
@@ -61,7 +65,7 @@ const Public = () => {
             <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-2">No Tournaments Available</h3>
             <p className="text-gray-500 mb-4">
-              There are currently no published tournaments to display.
+              There are currently no tournaments to display.
             </p>
           </div>
         ) : (
@@ -73,8 +77,10 @@ const Public = () => {
                   <CardDescription>
                     {tournament.status === "IN_PROGRESS" ? (
                       <span className="text-green-600 font-medium">In Progress</span>
+                    ) : tournament.status === "PUBLISHED" ? (
+                      <span className="text-blue-600 font-medium">Published</span>
                     ) : (
-                      <span>Published</span>
+                      <span className="text-amber-600 font-medium">Draft</span>
                     )}
                   </CardDescription>
                 </CardHeader>
@@ -98,14 +104,36 @@ const Public = () => {
                       <Users className="h-4 w-4 mr-1" />
                       <span>{tournament.teams?.length || 0} Teams</span>
                     </div>
+                    {tournament.matches && tournament.matches.length > 0 && (
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Play className="h-4 w-4 mr-1" />
+                        <span>
+                          {tournament.matches.filter(m => m.status === "IN_PROGRESS").length} Matches in progress
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button asChild variant="default" className="w-full" size="sm">
-                    <Link to={`/public/${tournament.id}`}>
-                      View Tournament <ExternalLink className="h-4 w-4 ml-1" />
-                    </Link>
-                  </Button>
+                  <div className="w-full space-y-2">
+                    <Button asChild variant="default" className="w-full" size="sm">
+                      <Link to={`/public/${tournament.id}`}>
+                        <Trophy className="h-4 w-4 mr-1" /> View Tournament
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="w-full" size="sm">
+                      <Link to={`/public/realtime/${tournament.id}`}>
+                        <Clock className="h-4 w-4 mr-1" /> Realtime View
+                      </Link>
+                    </Button>
+                    {tournament.matches && tournament.matches.some(m => m.status === "IN_PROGRESS") && (
+                      <Button asChild variant="outline" className="w-full bg-green-50 text-green-600 border-green-200 hover:bg-green-100" size="sm">
+                        <Link to={`/scoring/${tournament.id}`}>
+                          <ClipboardEdit className="h-4 w-4 mr-1" /> Score Matches
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
                 </CardFooter>
               </Card>
             ))}
@@ -122,6 +150,10 @@ const Public = () => {
             For real-time updates during matches, use:
           </p>
           <code className="block p-3 bg-gray-100 rounded text-sm">/public/realtime/[tournament-id]</code>
+          <p className="mt-3 text-gray-600 text-sm">
+            For scoring matches in progress, use:
+          </p>
+          <code className="block p-3 bg-gray-100 rounded text-sm">/scoring/[tournament-id]</code>
         </div>
       </div>
     </Layout>
