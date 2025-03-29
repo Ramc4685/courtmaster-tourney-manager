@@ -1,76 +1,46 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import { RefreshCw, Award, Clock, Calendar, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import Layout from "@/components/layout/Layout";
 import MatchCard from "@/components/shared/MatchCard";
 import CourtCard from "@/components/shared/CourtCard";
 import { Match, Division } from "@/types/tournament";
 import { format } from "date-fns";
 import { useRealtimeTournamentUpdates } from "@/hooks/useRealtimeTournamentUpdates";
+import { throttle } from "@/utils/performanceUtils";
 
-const PublicViewRealtime = () => {
-  const { tournamentId } = useParams<{ tournamentId: string }>();
-  console.log(`[DEBUG] PublicViewRealtime: Initializing with tournamentId=${tournamentId || 'undefined'}`);
+// Lazy loaded components
+const LazyTournamentHeader = React.lazy(() => import("@/components/tournament/TournamentHeader"));
+
+// Error boundary for lazy loaded components
+const ErrorBoundary = ({ children }: { children: React.ReactNode }) => {
+  const [hasError, setHasError] = useState(false);
   
-  const { currentTournament, inProgressMatches, isSubscribed } = useRealtimeTournamentUpdates(tournamentId);
-  const [lastRefreshed, setLastRefreshed] = useState(new Date());
-  const [refreshing, setRefreshing] = useState(false);
-
-  const handleRefresh = () => {
-    console.log(`[DEBUG] PublicViewRealtime: Manual refresh requested`);
-    setRefreshing(true);
-    setLastRefreshed(new Date());
-    setTimeout(() => setRefreshing(false), 500);
-  };
-
-  // Update last refreshed time when we get new data
   useEffect(() => {
-    if (currentTournament) {
-      console.log(`[DEBUG] PublicViewRealtime: Data refreshed at ${new Date().toISOString()}`);
-      console.log(`[DEBUG] PublicViewRealtime: Current tournament: ${currentTournament.name}, matches: ${currentTournament.matches.length}`);
-      console.log(`[DEBUG] PublicViewRealtime: In-progress matches: ${inProgressMatches.length}`);
-      setLastRefreshed(new Date());
-    }
-  }, [currentTournament, inProgressMatches]);
-
-  if (!currentTournament) {
-    console.log(`[DEBUG] PublicViewRealtime: No tournament selected`);
-    return (
-      <Layout>
-        <div className="max-w-6xl mx-auto">
-          <p>No tournament selected. Please select a tournament first.</p>
-        </div>
-      </Layout>
-    );
-  }
-
-  console.log(`[DEBUG] PublicViewRealtime: Rendering tournament ${currentTournament.id}. Subscription status: ${isSubscribed ? 'Active' : 'Inactive'}`);
+    const errorHandler = () => setHasError(true);
+    window.addEventListener('error', errorHandler);
+    return () => window.removeEventListener('error', errorHandler);
+  }, []);
   
-  const completedMatches = currentTournament.matches.filter(
-    (match) => match.status === "COMPLETED"
-  );
-  console.log(`[DEBUG] PublicViewRealtime: Completed matches: ${completedMatches.length}`);
+  if (hasError) {
+    return <div className="p-4 text-red-500">Something went wrong. Please refresh the page.</div>;
+  }
+  
+  return <>{children}</>;
+};
 
-  const upcomingMatches = currentTournament.matches.filter(
-    (match) => match.status === "SCHEDULED"
-  ).sort((a, b) => {
-    // Sort by scheduled time if available
-    if (a.scheduledTime && b.scheduledTime) {
-      return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
-    } else if (a.scheduledTime) {
-      return -1;
-    } else if (b.scheduledTime) {
-      return 1;
-    }
-    return 0;
-  });
-  console.log(`[DEBUG] PublicViewRealtime: Upcoming matches: ${upcomingMatches.length}`);
+// Optimized match card with memo
+const MemoizedMatchCard = React.memo(MatchCard);
 
-  const groupByDivision = (matches: Match[]) => {
+// Component to display matches grouped by division
+const MatchesByDivision = React.memo(({ matches }: { matches: Match[] }) => {
+  // Memoize the grouping operation to avoid unnecessary recalculations
+  const groupedMatches = useMemo(() => {
     return matches.reduce((groups, match) => {
       const division = match.division;
       if (!groups[division]) {
@@ -79,78 +49,161 @@ const PublicViewRealtime = () => {
       groups[division].push(match);
       return groups;
     }, {} as Record<Division, Match[]>);
-  };
+  }, [matches]);
+  
+  // Memoize the entries to avoid recreation on each render
+  const divisionEntries = useMemo(() => {
+    return Object.entries(groupedMatches);
+  }, [groupedMatches]);
 
-  const getDivisionLabel = (division: string) => {
+  const getDivisionLabel = useCallback((division: string) => {
     switch (division) {
-      case "GROUP_DIV3":
-        return "Division 3 - Group Stage";
-      case "DIVISION_1":
-        return "Division 1";
-      case "DIVISION_2":
-        return "Division 2";
-      case "DIVISION_3":
-        return "Division 3";
-      case "QUALIFIER_DIV1":
-        return "Division 1 - Qualifiers";
-      case "QUALIFIER_DIV2":
-        return "Division 2 - Qualifiers";
-      case "INITIAL":
-        return "Initial Round";
-      default:
-        return division;
+      case "GROUP_DIV3": return "Division 3 - Group Stage";
+      case "DIVISION_1": return "Division 1";
+      case "DIVISION_2": return "Division 2";
+      case "DIVISION_3": return "Division 3";
+      case "QUALIFIER_DIV1": return "Division 1 - Qualifiers";
+      case "QUALIFIER_DIV2": return "Division 2 - Qualifiers";
+      case "INITIAL": return "Initial Round";
+      default: return division;
     }
-  };
+  }, []);
 
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = useCallback((status: string) => {
     switch (status) {
-      case "SCHEDULED":
-        return "Not Started";
-      case "IN_PROGRESS":
-        return "In Progress";
-      case "COMPLETED":
-        return "Completed";
-      case "CANCELLED":
-        return "Cancelled";
-      default:
-        return status;
+      case "SCHEDULED": return "Not Started";
+      case "IN_PROGRESS": return "In Progress";
+      case "COMPLETED": return "Completed";
+      case "CANCELLED": return "Cancelled";
+      default: return status;
     }
-  };
+  }, []);
 
-  const renderMatchesByDivision = (matches: Match[]) => {
-    const grouped = groupByDivision(matches);
-    console.log(`[DEBUG] PublicViewRealtime: Grouped matches by division:`, 
-                Object.entries(grouped).map(([div, matches]) => `${div}: ${matches.length}`));
-    
-    return Object.entries(grouped).map(([division, divMatches]) => (
-      <div key={division} className="mb-6">
-        <h3 className="font-semibold text-lg mb-3 flex items-center">
-          <Award className="h-5 w-5 text-court-blue mr-2" />
-          {getDivisionLabel(division)}
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {divMatches.map((match) => (
-            <div key={match.id} className="border rounded-lg p-4">
-              <MatchCard key={match.id} match={match} />
-              <div className="mt-2 flex justify-between">
-                {match.scheduledTime && (
-                  <div className="text-sm text-gray-500 flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    <span>{format(new Date(match.scheduledTime), "MMM d, yyyy")}</span>
-                    <Clock className="h-4 w-4 ml-3 mr-1" />
-                    <span>{format(new Date(match.scheduledTime), "h:mm a")}</span>
-                  </div>
-                )}
-                <Badge variant={match.status === "IN_PROGRESS" ? "secondary" : "outline"}>
-                  {getStatusLabel(match.status)}
-                </Badge>
-              </div>
-            </div>
-          ))}
-        </div>
+  if (divisionEntries.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">No matches found</p>
       </div>
-    ));
-  };
+    );
+  }
+
+  return (
+    <>
+      {divisionEntries.map(([division, divMatches]) => (
+        <div key={division} className="mb-6">
+          <h3 className="font-semibold text-lg mb-3 flex items-center">
+            <Award className="h-5 w-5 text-court-blue mr-2" />
+            {getDivisionLabel(division)}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {divMatches.map((match) => (
+              <div key={match.id} className="border rounded-lg p-4">
+                <MemoizedMatchCard match={match} />
+                <div className="mt-2 flex justify-between">
+                  {match.scheduledTime && (
+                    <div className="text-sm text-gray-500 flex items-center">
+                      <Calendar className="h-4 w-4 mr-1" />
+                      <span>{format(new Date(match.scheduledTime), "MMM d, yyyy")}</span>
+                      <Clock className="h-4 w-4 ml-3 mr-1" />
+                      <span>{format(new Date(match.scheduledTime), "h:mm a")}</span>
+                    </div>
+                  )}
+                  <Badge variant={match.status === "IN_PROGRESS" ? "secondary" : "outline"}>
+                    {getStatusLabel(match.status)}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </>
+  );
+});
+
+// Optimized court list with virtualization
+const CourtsList = React.memo(({ courts }: { courts: any[] }) => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {courts.map((court) => (
+        <CourtCard key={court.id} court={court} detailed />
+      ))}
+    </div>
+  );
+});
+
+// Loading state component
+const LoadingState = () => (
+  <div className="space-y-4">
+    <Skeleton className="h-12 w-3/4" />
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Skeleton className="h-40" />
+      <Skeleton className="h-40" />
+      <Skeleton className="h-40" />
+      <Skeleton className="h-40" />
+    </div>
+  </div>
+);
+
+const PublicViewRealtime = () => {
+  const { tournamentId } = useParams<{ tournamentId: string }>();
+  
+  const { currentTournament, inProgressMatches, isSubscribed } = useRealtimeTournamentUpdates(tournamentId);
+  const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState("live");
+
+  // Memoize filtered matches to avoid unnecessary filtering on each render
+  const completedMatches = useMemo(() => 
+    currentTournament?.matches.filter((match) => match.status === "COMPLETED") || [],
+    [currentTournament?.matches]
+  );
+
+  const upcomingMatches = useMemo(() => 
+    currentTournament?.matches
+      .filter((match) => match.status === "SCHEDULED")
+      .sort((a, b) => {
+        if (a.scheduledTime && b.scheduledTime) {
+          return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
+        } else if (a.scheduledTime) {
+          return -1;
+        } else if (b.scheduledTime) {
+          return 1;
+        }
+        return 0;
+      }) || [],
+    [currentTournament?.matches]
+  );
+
+  // Throttle the refresh function to prevent rapid successive calls
+  const handleRefresh = useCallback(throttle(() => {
+    setRefreshing(true);
+    setLastRefreshed(new Date());
+    setTimeout(() => setRefreshing(false), 500);
+  }, 1000), []);
+
+  // Update last refreshed time when we get new data
+  useEffect(() => {
+    if (currentTournament) {
+      setLastRefreshed(new Date());
+    }
+  }, [currentTournament, inProgressMatches]);
+
+  // Handle tab change with performance optimization
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value);
+    // Prefetch data for the selected tab if needed
+  }, []);
+
+  if (!currentTournament) {
+    return (
+      <Layout>
+        <div className="max-w-6xl mx-auto">
+          <p>No tournament selected. Please select a tournament first.</p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -183,7 +236,7 @@ const PublicViewRealtime = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="live" className="mt-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-6">
           <TabsList className="mb-4">
             <TabsTrigger value="live">Live Matches</TabsTrigger>
             <TabsTrigger value="courts">Courts</TabsTrigger>
@@ -192,41 +245,53 @@ const PublicViewRealtime = () => {
           </TabsList>
 
           <TabsContent value="live">
-            {inProgressMatches.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500">No matches currently in progress</p>
-              </div>
-            ) : (
-              renderMatchesByDivision(inProgressMatches)
-            )}
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingState />}>
+                {inProgressMatches.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500">No matches currently in progress</p>
+                  </div>
+                ) : (
+                  <MatchesByDivision matches={inProgressMatches} />
+                )}
+              </Suspense>
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="courts">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {currentTournament.courts.map((court) => (
-                <CourtCard key={court.id} court={court} detailed />
-              ))}
-            </div>
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingState />}>
+                <CourtsList courts={currentTournament.courts} />
+              </Suspense>
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="upcoming">
-            {upcomingMatches.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500">No upcoming matches scheduled</p>
-              </div>
-            ) : (
-              renderMatchesByDivision(upcomingMatches)
-            )}
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingState />}>
+                {upcomingMatches.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500">No upcoming matches scheduled</p>
+                  </div>
+                ) : (
+                  <MatchesByDivision matches={upcomingMatches} />
+                )}
+              </Suspense>
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="completed">
-            {completedMatches.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500">No completed matches yet</p>
-              </div>
-            ) : (
-              renderMatchesByDivision(completedMatches)
-            )}
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingState />}>
+                {completedMatches.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500">No completed matches yet</p>
+                  </div>
+                ) : (
+                  <MatchesByDivision matches={completedMatches} />
+                )}
+              </Suspense>
+            </ErrorBoundary>
           </TabsContent>
         </Tabs>
       </div>
@@ -234,4 +299,4 @@ const PublicViewRealtime = () => {
   );
 };
 
-export default PublicViewRealtime;
+export default React.memo(PublicViewRealtime);

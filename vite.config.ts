@@ -1,7 +1,9 @@
 
-import { defineConfig } from "vite";
+import { defineConfig, splitVendorChunkPlugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { visualizer } from "rollup-plugin-visualizer";
+import { compression } from "vite-plugin-compression2";
 
 // Try to import the component tagger in a way that won't break builds
 let componentTagger;
@@ -23,6 +25,24 @@ export default defineConfig(({ mode }) => ({
     react(),
     // Only use component tagger in development mode
     mode === 'development' && componentTagger && componentTagger(),
+    // Split vendor chunks for better caching
+    splitVendorChunkPlugin(),
+    // Generate bundle visualizer in analyze mode
+    mode === 'analyze' && visualizer({
+      open: true,
+      filename: "dist/stats.html",
+      gzipSize: true,
+      brotliSize: true,
+    }),
+    // Enable Brotli & Gzip compression for production builds
+    mode === 'production' && compression({
+      algorithm: 'brotliCompress',
+      exclude: [/\.(br)$/, /\.(gz)$/, /\.(png|jpe?g|gif|webp)$/i],
+    }),
+    mode === 'production' && compression({
+      algorithm: 'gzip',
+      exclude: [/\.(br)$/, /\.(gz)$/, /\.(png|jpe?g|gif|webp)$/i],
+    }),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -31,18 +51,41 @@ export default defineConfig(({ mode }) => ({
     // Explicitly tell Vite how to handle directories vs files
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json']
   },
-  // Build configuration optimizations for deployment
+  // Optimization configuration
   build: {
     // Improve chunk size for better loading performance
     rollupOptions: {
       output: {
         manualChunks: {
+          // Core framework and large dependencies
           vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['@/components/ui/button', '@/components/ui/card', '@/components/ui/select']
+          // UI components
+          ui: ['@/components/ui/button', '@/components/ui/card', '@/components/ui/select'],
+          // Supabase and auth
+          auth: ['@supabase/supabase-js'],
+          // Data visualization
+          charts: ['recharts'],
+          // Date handling
+          dates: ['date-fns'],
+          // Form handling
+          forms: ['react-hook-form', 'zod']
         }
       }
     },
-    // Generate source maps for production build
+    // Enable source maps for production build for better error tracking
     sourcemap: true,
+    // Target modern browsers for smaller bundle size
+    target: 'es2020',
+    // Optimize CSS
+    cssCodeSplit: true,
+    // Adjust chunk size warning
+    chunkSizeWarningLimit: 600,
+    // Minification options
+    minify: 'esbuild',
+    assetsInlineLimit: 4096, // 4kb
+  },
+  // Enable tree shaking to eliminate dead code
+  esbuild: {
+    treeShaking: true,
   }
 }));
