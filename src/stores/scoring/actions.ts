@@ -1,4 +1,3 @@
-
 import { Match, Court, ScoringSettings } from "@/types/tournament";
 import { StoreApi, GetState } from "zustand";
 import { ScoringState } from "./types";

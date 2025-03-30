@@ -15,7 +15,7 @@ export interface ScoringState {
   // Actions
   setSelectedMatch: (match: Match | null) => void;
   setSelectedCourt: (court: Court | null) => void;
-  setCurrentSet: (set: number) => void;
+  setCurrentSet: (setIndex: number) => void;
   setSettingsOpen: (open: boolean) => void;
   setActiveView: (view: "courts" | "scoring") => void;
   setNewSetDialogOpen: (open: boolean) => void;

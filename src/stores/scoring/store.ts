@@ -19,7 +19,7 @@ export const useScoringStore = create<ScoringState>((set, get) => {
     // Basic setters
     setSelectedMatch: (match) => set({ selectedMatch: match }),
     setSelectedCourt: (court) => set({ selectedCourt: court }),
-    setCurrentSet: (set) => set({ currentSet: set }),
+    setCurrentSet: (setIndex) => set({ currentSet: setIndex }),
     setSettingsOpen: (open) => set({ settingsOpen: open }),
     setActiveView: (view) => set({ activeView: view }),
     setNewSetDialogOpen: (open) => set({ newSetDialogOpen: open }),
