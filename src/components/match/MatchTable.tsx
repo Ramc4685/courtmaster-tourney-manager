@@ -159,7 +159,7 @@ const MatchTable: React.FC<MatchTableProps> = ({
                           </Button>
                         )}
                         
-                        {/* Start Game Button */}
+                        {/* Start Game Button - Explicitly added */}
                         {onStartMatch && (
                           noAvailableCourts && !match.courtNumber ? (
                             <Tooltip>

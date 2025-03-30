@@ -45,8 +45,8 @@ const MatchDetails: React.FC<MatchDetailsProps> = ({
         </div>
       </div>
       
-      {/* Improved button layout with grid for consistent sizing */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+      {/* Updated button grid with equal-width columns */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
         {match.status === "SCHEDULED" && (
           <Button 
             onClick={() => onStartMatch(match.id)}

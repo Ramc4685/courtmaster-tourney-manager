@@ -22,8 +22,8 @@ interface ManualResultEntryProps {
 
 const ManualResultEntry: React.FC<ManualResultEntryProps> = ({ match, onComplete }) => {
   const [open, setOpen] = useState(false);
-  const [team1Score, setTeam1Score] = useState(0);
-  const [team2Score, setTeam2Score] = useState(0);
+  const [team1Score, setTeam1Score] = useState(match.scores[0]?.team1Score || 0);
+  const [team2Score, setTeam2Score] = useState(match.scores[0]?.team2Score || 0);
   const { completeMatch, updateMatchScore } = useTournament();
   
   const handleSave = () => {
@@ -34,7 +34,7 @@ const ManualResultEntry: React.FC<ManualResultEntryProps> = ({ match, onComplete
     setOpen(false);
     
     // Optionally complete the match
-    if (onComplete && match.status === "IN_PROGRESS") {
+    if (onComplete) {
       onComplete({
         ...match,
         scores: [{ team1Score, team2Score }]
@@ -51,6 +51,15 @@ const ManualResultEntry: React.FC<ManualResultEntryProps> = ({ match, onComplete
     
     // Close the dialog
     setOpen(false);
+    
+    // Notify parent about the update
+    if (onComplete) {
+      onComplete({
+        ...match,
+        status: "COMPLETED",
+        scores: [{ team1Score, team2Score }]
+      });
+    }
   };
 
   return (

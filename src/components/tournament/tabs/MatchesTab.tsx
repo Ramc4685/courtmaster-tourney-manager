@@ -115,7 +115,7 @@ const MatchesTab: React.FC<MatchesTabProps> = ({
                         className="bg-green-50 border-green-200 hover:bg-green-100 text-green-700 flex-1"
                       >
                         <Play className="h-3 w-3 mr-1" />
-                        Start
+                        Start Game
                       </Button>
                     )
                   )}
