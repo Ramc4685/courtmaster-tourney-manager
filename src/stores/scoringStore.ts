@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 import { Match, Court, Tournament, ScoringSettings } from "@/types/tournament";
 import { useTournamentStore } from "./tournamentStore";
@@ -285,4 +284,3 @@ export const useScoringStore = create<ScoringState>((set, get) => {
     }
   };
 });
-
