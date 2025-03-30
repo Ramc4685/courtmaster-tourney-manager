@@ -38,9 +38,6 @@ interface ScoringState {
 }
 
 export const useScoringStore = create<ScoringState>((set, get) => {
-  // Get toast outside of store - will be used inside actions
-  const toast = useToast();
-  
   return {
     // Initial state
     selectedMatch: null,
@@ -169,7 +166,8 @@ export const useScoringStore = create<ScoringState>((set, get) => {
     handleStartMatch: (match) => {
       if (!match.courtNumber) {
         console.warn(`[WARN] Cannot start match ${match.id}: No court assigned`);
-        toast().toast({
+        const { toast } = useToast();
+        toast({
           title: "Court assignment required",
           description: "A match must be assigned to a court before it can start.",
           variant: "destructive"
@@ -186,7 +184,8 @@ export const useScoringStore = create<ScoringState>((set, get) => {
       // Select the match to view scoring
       get().handleSelectMatch(match);
       
-      toast().toast({
+      const { toast } = useToast();
+      toast({
         title: "Match started",
         description: "The match has been started and is now in progress."
       });
@@ -205,7 +204,8 @@ export const useScoringStore = create<ScoringState>((set, get) => {
       console.log(`[DEBUG] Completing match: ${selectedMatch.id}`);
       completeMatch(selectedMatch.id);
       
-      toast().toast({
+      const { toast } = useToast();
+      toast({
         title: "Match completed",
         description: "The match has been marked as complete."
       });
@@ -232,7 +232,8 @@ export const useScoringStore = create<ScoringState>((set, get) => {
       
       if (newSetIndex >= scoringSettings.maxSets) {
         console.warn(`[WARN] Maximum sets (${scoringSettings.maxSets}) reached`);
-        toast().toast({
+        const { toast } = useToast();
+        toast({
           title: "Maximum sets reached",
           description: `This match is limited to ${scoringSettings.maxSets} sets.`
         });
@@ -255,7 +256,8 @@ export const useScoringStore = create<ScoringState>((set, get) => {
         newSetDialogOpen: false
       });
       
-      toast().toast({
+      const { toast } = useToast();
+      toast({
         title: "New set started",
         description: `Set ${newSetIndex + 1} has been started.`
       });
