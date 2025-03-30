@@ -18,9 +18,10 @@ import { ClipboardEdit } from "lucide-react";
 interface ManualResultEntryProps {
   match: Match;
   onComplete?: (match: Match) => void;
+  renderButton?: (onClick: () => void) => React.ReactNode;
 }
 
-const ManualResultEntry: React.FC<ManualResultEntryProps> = ({ match, onComplete }) => {
+const ManualResultEntry: React.FC<ManualResultEntryProps> = ({ match, onComplete, renderButton }) => {
   const [open, setOpen] = useState(false);
   const [team1Score, setTeam1Score] = useState(match.scores[0]?.team1Score || 0);
   const [team2Score, setTeam2Score] = useState(match.scores[0]?.team2Score || 0);
@@ -62,17 +63,26 @@ const ManualResultEntry: React.FC<ManualResultEntryProps> = ({ match, onComplete
     }
   };
 
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="default" 
-          className="bg-green-600 hover:bg-green-700 w-full"
-        >
-          <ClipboardEdit className="h-4 w-4 mr-2" />
-          Record Result
-        </Button>
-      </DialogTrigger>
+      {renderButton ? (
+        renderButton(handleOpen)
+      ) : (
+        <DialogTrigger asChild>
+          <Button 
+            variant="default" 
+            className="bg-green-600 hover:bg-green-700 w-full"
+          >
+            <ClipboardEdit className="h-4 w-4 mr-2" />
+            Record Result
+          </Button>
+        </DialogTrigger>
+      )}
+      
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Record Match Result</DialogTitle>

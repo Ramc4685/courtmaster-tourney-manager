@@ -13,8 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { Match, Team, Court, MatchStatus } from "@/types/tournament";
 import { Badge } from "@/components/ui/badge";
-import { Play, AlertTriangle } from "lucide-react";
+import { Play, AlertTriangle, ClipboardEdit } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import ManualResultEntry from "./ManualResultEntry";
 
 interface MatchTableProps {
   matches: Match[];
@@ -147,7 +148,8 @@ const MatchTable: React.FC<MatchTableProps> = ({
                   <TableCell>{match.division}</TableCell>
                   <TableCell className="text-right">
                     {match.status === "SCHEDULED" && (
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-2 flex-wrap">
+                        {/* Assign Court Button */}
                         {!match.courtNumber && (
                           <Button 
                             variant="outline" 
@@ -159,7 +161,7 @@ const MatchTable: React.FC<MatchTableProps> = ({
                           </Button>
                         )}
                         
-                        {/* Start Game Button - Explicitly added */}
+                        {/* Start Game Button */}
                         {onStartMatch && (
                           noAvailableCourts && !match.courtNumber ? (
                             <Tooltip>
@@ -191,6 +193,23 @@ const MatchTable: React.FC<MatchTableProps> = ({
                             </Button>
                           )
                         )}
+                        
+                        {/* Record Result Button - Added */}
+                        <ManualResultEntry
+                          match={match}
+                          onComplete={onMatchUpdate}
+                          renderButton={(onClick) => (
+                            <Button 
+                              variant="outline"
+                              size="sm"
+                              onClick={onClick}
+                              className="bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-700 flex items-center"
+                            >
+                              <ClipboardEdit className="mr-1 h-3 w-3" />
+                              Record Result
+                            </Button>
+                          )}
+                        />
                       </div>
                     )}
                   </TableCell>
