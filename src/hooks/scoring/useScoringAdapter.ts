@@ -1,5 +1,5 @@
 
-import { useScoringStore } from "@/stores/scoringStore";
+import { useScoringStore } from "@/stores/scoring";
 import { useTournamentStore } from "@/stores/tournamentStore";
 import { useTournament } from "@/contexts/TournamentContext";
 
