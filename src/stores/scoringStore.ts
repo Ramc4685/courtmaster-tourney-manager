@@ -166,6 +166,7 @@ export const useScoringStore = create<ScoringState>((set, get) => {
     handleStartMatch: (match) => {
       if (!match.courtNumber) {
         console.warn(`[WARN] Cannot start match ${match.id}: No court assigned`);
+        // Use toast inside the function instead of at the top level
         const { toast } = useToast();
         toast({
           title: "Court assignment required",
@@ -184,6 +185,7 @@ export const useScoringStore = create<ScoringState>((set, get) => {
       // Select the match to view scoring
       get().handleSelectMatch(match);
       
+      // Use toast inside the function
       const { toast } = useToast();
       toast({
         title: "Match started",
@@ -204,6 +206,7 @@ export const useScoringStore = create<ScoringState>((set, get) => {
       console.log(`[DEBUG] Completing match: ${selectedMatch.id}`);
       completeMatch(selectedMatch.id);
       
+      // Use toast inside the function
       const { toast } = useToast();
       toast({
         title: "Match completed",
@@ -232,6 +235,7 @@ export const useScoringStore = create<ScoringState>((set, get) => {
       
       if (newSetIndex >= scoringSettings.maxSets) {
         console.warn(`[WARN] Maximum sets (${scoringSettings.maxSets}) reached`);
+        // Use toast inside the function
         const { toast } = useToast();
         toast({
           title: "Maximum sets reached",
@@ -256,6 +260,7 @@ export const useScoringStore = create<ScoringState>((set, get) => {
         newSetDialogOpen: false
       });
       
+      // Use toast inside the function
       const { toast } = useToast();
       toast({
         title: "New set started",
