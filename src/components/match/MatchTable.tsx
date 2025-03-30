@@ -161,40 +161,20 @@ const MatchTable: React.FC<MatchTableProps> = ({
                           </Button>
                         )}
                         
-                        {/* Start Game Button */}
+                        {/* Start Game Button - Always show for scheduled matches */}
                         {onStartMatch && (
-                          noAvailableCourts && !match.courtNumber ? (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleStartMatch(match.id)}
-                                  className="border-amber-400 hover:bg-amber-50 text-amber-600 flex items-center"
-                                >
-                                  <Play className="mr-1 h-3 w-3" />
-                                  <span>Start Game</span>
-                                  <AlertTriangle className="ml-1 h-3 w-3" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>No courts available. Starting this match without a court is not recommended.</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          ) : (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleStartMatch(match.id)}
-                              className="bg-green-50 border-green-200 hover:bg-green-100 text-green-700 flex items-center"
-                            >
-                              <Play className="mr-1 h-3 w-3" />
-                              Start Game
-                            </Button>
-                          )
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleStartMatch(match.id)}
+                            className="bg-green-50 border-green-200 hover:bg-green-100 text-green-700 flex items-center"
+                          >
+                            <Play className="mr-1 h-3 w-3" />
+                            Start Game
+                          </Button>
                         )}
                         
-                        {/* Record Result Button - Added */}
+                        {/* Record Result Button */}
                         <ManualResultEntry
                           match={match}
                           onComplete={onMatchUpdate}
