@@ -25,6 +25,7 @@ export const useStandaloneScoring = (matchId: string | null) => {
         await standaloneMatchStore.loadMatchById(matchId);
         if (!standaloneMatchStore.currentMatch) {
           setError('Match not found');
+          setScoringMatch(null);
         } else {
           // Convert standalone match to scoring match format
           const converted = convertToScoringMatch(standaloneMatchStore.currentMatch);
@@ -32,6 +33,7 @@ export const useStandaloneScoring = (matchId: string | null) => {
         }
       } catch (err) {
         setError('Failed to load match');
+        setScoringMatch(null);
         console.error('Error loading standalone match:', err);
       } finally {
         setIsLoading(false);
@@ -70,12 +72,16 @@ export const useStandaloneScoring = (matchId: string | null) => {
   const convertToScoringMatch = (standaloneMatch: StandaloneMatch | null): Match | null => {
     if (!standaloneMatch) return null;
     
+    // Ensure scores is always an array
+    const scores = standaloneMatch.scores || [];
+    
     return {
       ...standaloneMatch,
       tournamentId: 'standalone',
       division: 'INITIAL',
       stage: 'INITIAL_ROUND' as TournamentStage,
-      category: standaloneMatch.category || { id: 'default', name: 'Default', type: 'MENS_SINGLES' }
+      category: standaloneMatch.category || { id: 'default', name: 'Default', type: 'MENS_SINGLES' },
+      scores: scores
     } as Match;
   };
 

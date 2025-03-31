@@ -22,6 +22,15 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
   currentSet,
   onSetChange
 }) => {
+  // Ensure match.scores is always an array, even if it's undefined
+  const scores = match.scores || [];
+  
+  // Make sure we have a valid current set index
+  const validCurrentSet = scores.length > 0 ? Math.min(currentSet, scores.length - 1) : 0;
+  
+  // Get current score or default to 0-0
+  const currentScore = scores[validCurrentSet] || { team1Score: 0, team2Score: 0 };
+
   return (
     <Card className="shadow-md">
       <CardContent className="p-6">
@@ -51,30 +60,30 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
 
         {/* Match Teams */}
         <div className="flex justify-between items-center mb-6">
-          <div className="font-medium text-lg">{match.team1.name}</div>
+          <div className="font-medium text-lg">{match.team1?.name || "Team 1"}</div>
           <div className="text-sm text-gray-500">vs</div>
-          <div className="font-medium text-lg text-right">{match.team2.name}</div>
+          <div className="font-medium text-lg text-right">{match.team2?.name || "Team 2"}</div>
         </div>
 
         {/* Set Navigation */}
-        {match.scores.length > 1 && (
+        {scores.length > 1 && (
           <div className="flex justify-center items-center space-x-2 mb-6">
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onSetChange(Math.max(0, currentSet - 1))}
-              disabled={currentSet === 0}
+              onClick={() => onSetChange(Math.max(0, validCurrentSet - 1))}
+              disabled={validCurrentSet === 0}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm font-medium">
-              Set {currentSet + 1} of {match.scores.length}
+              Set {validCurrentSet + 1} of {scores.length}
             </span>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onSetChange(Math.min(match.scores.length - 1, currentSet + 1))}
-              disabled={currentSet === match.scores.length - 1}
+              onClick={() => onSetChange(Math.min(scores.length - 1, validCurrentSet + 1))}
+              disabled={validCurrentSet === scores.length - 1}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -84,7 +93,7 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
         {/* Team 1 Scoring */}
         <div className="border rounded-lg p-6 mb-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex justify-between items-center">
-            <h4 className="font-medium text-xl">{match.team1.name}</h4>
+            <h4 className="font-medium text-xl">{match.team1?.name || "Team 1"}</h4>
             <div className="flex items-center space-x-4">
               <Button
                 variant="outline"
@@ -96,7 +105,7 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
               </Button>
               
               <span className="text-4xl font-bold min-w-16 text-center">
-                {match.scores[currentSet]?.team1Score || 0}
+                {currentScore.team1Score || 0}
               </span>
               
               <Button
@@ -113,7 +122,7 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
         {/* Team 2 Scoring */}
         <div className="border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex justify-between items-center">
-            <h4 className="font-medium text-xl">{match.team2.name}</h4>
+            <h4 className="font-medium text-xl">{match.team2?.name || "Team 2"}</h4>
             <div className="flex items-center space-x-4">
               <Button
                 variant="outline"
@@ -125,7 +134,7 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
               </Button>
               
               <span className="text-4xl font-bold min-w-16 text-center">
-                {match.scores[currentSet]?.team2Score || 0}
+                {currentScore.team2Score || 0}
               </span>
               
               <Button
@@ -142,17 +151,17 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
       <CardFooter className="bg-gray-50 px-6 py-4">
         <div className="w-full overflow-x-auto">
           <div className="flex justify-center flex-wrap gap-2 min-w-max">
-            {match.scores.map((score, index) => (
+            {scores.map((score, index) => (
               <div 
                 key={index}
                 className={`px-4 py-2 rounded-full text-sm cursor-pointer transition-colors ${
-                  currentSet === index 
+                  validCurrentSet === index 
                     ? 'bg-green-500 text-white' 
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
                 onClick={() => onSetChange(index)}
               >
-                Set {index + 1}: {score.team1Score}-{score.team2Score}
+                Set {index + 1}: {score.team1Score || 0}-{score.team2Score || 0}
               </div>
             ))}
           </div>

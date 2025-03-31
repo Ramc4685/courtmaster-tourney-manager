@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { ChevronLeft, AlertTriangle, Trophy } from "lucide-react";
@@ -73,7 +74,7 @@ const Scoring = () => {
         handleSelectMatch(standaloneScoring.scoringMatch);
       }
     }
-  }, [matchId, matchType, standaloneScoring.scoringMatch]);
+  }, [matchId, matchType, standaloneScoring.scoringMatch, handleSelectMatch]);
   
   // Set the current tournament based on the URL parameter
   useEffect(() => {
@@ -132,7 +133,9 @@ const Scoring = () => {
             <Button 
               variant="outline" 
               onClick={() => {
-                standaloneScoring.saveMatch();
+                if (standaloneScoring.saveMatch) {
+                  standaloneScoring.saveMatch();
+                }
               }}
             >
               Save Match

@@ -28,30 +28,43 @@ export const useScoringActions = (
   const { toast } = useToast();
 
   const handleSelectMatch = (match: Match) => {
+    if (!match) {
+      console.error('[ERROR] Cannot select match: Match is null or undefined');
+      return;
+    }
+    
     // Get the latest version of the match from the tournament
-    if (!currentTournament) return;
+    if (!currentTournament) {
+      console.log("[DEBUG] No current tournament, using provided match directly");
+      setSelectedMatch(match);
+      setCurrentSet(match.scores?.length > 0 ? match.scores.length - 1 : 0);
+      setActiveView("scoring");
+      return;
+    }
     
     const latestMatch = currentTournament.matches.find(m => m.id === match.id) || match;
     setSelectedMatch(latestMatch);
-    setCurrentSet(latestMatch.scores.length > 0 ? latestMatch.scores.length - 1 : 0);
+    setCurrentSet(latestMatch.scores?.length > 0 ? latestMatch.scores.length - 1 : 0);
     setActiveView("scoring");
   };
 
   const handleScoreChange = (team: "team1" | "team2", increment: boolean) => {
-    if (!selectedMatch || !currentTournament) return;
+    if (!selectedMatch) return;
 
     // Make sure we have the latest match from context
-    const latestMatch = currentTournament.matches.find(m => m.id === selectedMatch.id);
+    const latestMatch = currentTournament?.matches?.find(m => m.id === selectedMatch.id) || selectedMatch;
     if (!latestMatch) return;
 
-    let scores = [...latestMatch.scores];
+    // Ensure scores is always an array
+    let scores = [...(latestMatch.scores || [])];
     if (scores.length === 0) {
       scores = [{ team1Score: 0, team2Score: 0 }];
     }
     
+    // Get current score or create default
     const currentScore = scores[currentSet] || { team1Score: 0, team2Score: 0 };
-    let team1Score = currentScore.team1Score;
-    let team2Score = currentScore.team2Score;
+    let team1Score = currentScore.team1Score || 0;
+    let team2Score = currentScore.team2Score || 0;
     
     if (team === "team1") {
       team1Score = increment 
@@ -64,10 +77,12 @@ export const useScoringActions = (
     }
     
     // Call the updateMatchScore with all required parameters
-    updateMatchScore(selectedMatch.id, currentSet, team1Score, team2Score);
+    if (currentTournament) {
+      updateMatchScore(selectedMatch.id, currentSet, team1Score, team2Score);
+    }
 
     // Update our local selected match to reflect the new score immediately
-    const updatedScores = [...selectedMatch.scores];
+    const updatedScores = [...(selectedMatch.scores || [])];
     if (updatedScores.length <= currentSet) {
       while (updatedScores.length <= currentSet) {
         updatedScores.push({ team1Score: 0, team2Score: 0 });
