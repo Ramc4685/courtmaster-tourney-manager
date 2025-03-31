@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -10,8 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormDescription } from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 import { Team, Player } from "@/types/tournament";
-import { generateTeamName } from "@/utils/teamNameUtils";
+import { generateTeamName, generateCreativeTeamName } from "@/utils/teamNameUtils";
 
 interface TeamCreateDialogProps {
   open: boolean;
@@ -29,19 +32,32 @@ const TeamCreateDialog: React.FC<TeamCreateDialogProps> = ({
   const [player2Name, setPlayer2Name] = useState("");
   const [initialRanking, setInitialRanking] = useState<number | undefined>(undefined);
   const [isTeamNameManuallyEdited, setIsTeamNameManuallyEdited] = useState(false);
+  const [showNameLengthAlert, setShowNameLengthAlert] = useState(false);
   
   // Update team name when player names change
   useEffect(() => {
     if (!isTeamNameManuallyEdited) {
       const playerNames = [player1Name, player2Name].filter(name => name.trim() !== '');
       if (playerNames.length > 0) {
+        // Store the previous team name
+        const previousName = teamName;
         const generatedName = generateTeamName(playerNames);
+        
         if (generatedName) {
           setTeamName(generatedName);
+          
+          // Check if the generated name is likely a creative name (not derived from player names)
+          const containsPlayerNameParts = playerNames.some(name => {
+            const firstName = name.split(' ')[0];
+            return firstName.length >= 3 && generatedName.includes(firstName);
+          });
+          
+          // If we have player names but they're not represented in the team name, show alert
+          setShowNameLengthAlert(playerNames.length > 0 && !containsPlayerNameParts);
         }
       }
     }
-  }, [player1Name, player2Name, isTeamNameManuallyEdited]);
+  }, [player1Name, player2Name, isTeamNameManuallyEdited, teamName]);
   
   // Reset manual edit flag when dialog opens/closes
   useEffect(() => {
@@ -51,12 +67,21 @@ const TeamCreateDialog: React.FC<TeamCreateDialogProps> = ({
       setPlayer1Name("");
       setPlayer2Name("");
       setInitialRanking(undefined);
+      setShowNameLengthAlert(false);
     }
   }, [open]);
 
   const handleTeamNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTeamName(e.target.value);
     setIsTeamNameManuallyEdited(true);
+    setShowNameLengthAlert(false); // Hide alert when manually edited
+  };
+  
+  const handleGenerateCreativeName = () => {
+    const creativeName = generateCreativeTeamName();
+    setTeamName(creativeName);
+    setIsTeamNameManuallyEdited(true);
+    setShowNameLengthAlert(false); // Hide alert when using creative name generator
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -86,6 +111,7 @@ const TeamCreateDialog: React.FC<TeamCreateDialogProps> = ({
     setPlayer2Name("");
     setInitialRanking(undefined);
     setIsTeamNameManuallyEdited(false);
+    setShowNameLengthAlert(false);
   };
 
   return (
@@ -124,15 +150,35 @@ const TeamCreateDialog: React.FC<TeamCreateDialogProps> = ({
                 Team Name
               </Label>
               <div className="col-span-3 space-y-1">
-                <Input
-                  id="teamName"
-                  value={teamName}
-                  onChange={handleTeamNameChange}
-                  className="w-full"
-                  required
-                />
+                {showNameLengthAlert && (
+                  <Alert variant="info" className="mb-2 bg-blue-50 py-2 text-sm">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Player names need at least 3 characters for automatic naming. A creative name was generated.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                <div className="flex space-x-2">
+                  <Input
+                    id="teamName"
+                    value={teamName}
+                    onChange={handleTeamNameChange}
+                    className="flex-1"
+                    required
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon"
+                    onClick={handleGenerateCreativeName}
+                    title="Generate creative team name"
+                  >
+                    <Info className="h-4 w-4" />
+                  </Button>
+                </div>
                 <FormDescription className="text-xs">
-                  Auto-generated from player names. You can edit it.
+                  Auto-generated from player names. You can edit it or use the generate button for a creative name.
                 </FormDescription>
               </div>
             </div>
