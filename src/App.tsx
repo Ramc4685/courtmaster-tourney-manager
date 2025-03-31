@@ -1,6 +1,7 @@
+
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { Layout } from "@/components/shared/Layout"
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Layout from "@/components/layout/Layout";
 import Tournaments from "@/pages/Tournaments";
 import TournamentCreate from "@/pages/TournamentCreate";
 import TournamentDetail from "@/pages/TournamentDetail";
@@ -14,11 +15,12 @@ import PublicViewRealtime from "@/pages/PublicViewRealtime";
 import QuickMatchPage from "@/pages/QuickMatch";
 
 // Import necessary providers
-import { ToastProvider } from "@/hooks/use-toast"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { TournamentProvider } from "@/contexts/TournamentContext";
 import { StandaloneMatchProvider } from "@/contexts/StandaloneMatchContext";
+import { Toaster } from "@/components/ui/toaster";
+
+// Note: We remove the ReactQueryDevtools import as it's not available
 
 function App() {
   // Create a client
@@ -29,23 +31,30 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Index />} />
-          <Route path="tournaments" element={<Tournaments />} />
-          <Route path="tournament/create" element={<TournamentCreate />} />
-          <Route path="tournament/:tournamentId" element={<TournamentDetail />} />
-          <Route path="scoring" element={<Scoring />} />
-          <Route path="quick-match" element={<QuickMatchPage />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="admin" element={<Admin />} />
-          <Route path="*" element={<NotFound />} />
-        </Route>
-        <Route path="/share/:shareCode" element={<PublicView />} />
-        <Route path="/share/rt/:shareCode" element={<PublicViewRealtime />} />
-      </Routes>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <TournamentProvider>
+        <StandaloneMatchProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<Index />} />
+                <Route path="tournaments" element={<Tournaments />} />
+                <Route path="tournament/create" element={<TournamentCreate />} />
+                <Route path="tournament/:tournamentId" element={<TournamentDetail />} />
+                <Route path="scoring" element={<Scoring />} />
+                <Route path="quick-match" element={<QuickMatchPage />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="admin" element={<Admin />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+              <Route path="/share/:shareCode" element={<PublicView />} />
+              <Route path="/share/rt/:shareCode" element={<PublicViewRealtime />} />
+            </Routes>
+          </BrowserRouter>
+          <Toaster />
+        </StandaloneMatchProvider>
+      </TournamentProvider>
+    </QueryClientProvider>
   );
 }
 

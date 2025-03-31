@@ -1,6 +1,6 @@
 
 import React from "react";
-import { PageHeader } from "@/components/shared/PageHeader";
+import PageHeader from "@/components/shared/PageHeader";
 import StandaloneMatchForm from "@/components/match/StandaloneMatchForm";
 
 const QuickMatchPage: React.FC = () => {
