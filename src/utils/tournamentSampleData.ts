@@ -15,7 +15,15 @@ export const createSampleTeams = (count: number = 8): Team[] => {
     ["Lee Zii Jia", "Loh Kean Yew"],
     ["Carolina Marin", "P.V. Sindhu"],
     ["Kento Momota", "Chou Tien-chen"],
-    ["Ratchanok Intanon", "He Bingjiao"]
+    ["Ratchanok Intanon", "He Bingjiao"],
+    ["Lakshya Sen", "Kidambi Srikanth"],
+    ["Zhang Nan", "Zhao Yunlei"],
+    ["Kevin Sanjaya", "Marcus Fernaldi"],
+    ["Greysia Polii", "Apriyani Rahayu"],
+    ["Wang Yilyu", "Huang Dongping"],
+    ["Zheng Siwei", "Huang Yaqiong"],
+    ["Praveen Jordan", "Melati Daeva"],
+    ["Tang Chun Man", "Tse Ying Suet"]
   ];
   
   const teams: Team[] = [];
@@ -91,7 +99,7 @@ export const createSampleData = (): Tournament => {
 
 // Function to get sample data by format
 export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
-  const teams = createSampleTeams();
+  const teams = createSampleTeams(16); // Ensure we have enough teams for any format
   const tournamentId = generateId();
   const matches = TournamentFormatService.generateMatchesForCategory(format, teams, {
     id: "default",
@@ -157,13 +165,17 @@ export const getCategoryDemoData = (format: TournamentFormat, category: Tourname
       ["Yuta Watanabe", "Arisa Higashino"],
       ["Tang Chun Man", "Tse Ying Suet"],
       ["Marcus Ellis", "Lauren Smith"],
-      ["Goh Soon Huat", "Lai Shevon Jemie"]
+      ["Goh Soon Huat", "Lai Shevon Jemie"],
+      ["Thom Gicquel", "Delphine Delrue"],
+      ["Chan Peng Soon", "Goh Liu Ying"],
+      ["Seo Seung Jae", "Chae Yujung"],
+      ["Mathias Christiansen", "Alexandra Bøje"]
     ];
   } else {
-    // Default player pool for other categories
+    // Default player pool for other categories - use real players instead of generic names
     playerPool = [
-      "Player A", "Player B", "Player C", "Player D",
-      "Player E", "Player F", "Player G", "Player H"
+      "Viktor Axelsen", "Tai Tzu-ying", "Jonatan Christie", "Carolina Marin",
+      "Kento Momota", "An Se-young", "Anders Antonsen", "Chen Yufei"
     ];
   }
   

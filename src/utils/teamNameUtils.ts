@@ -10,7 +10,7 @@
  * @param maxLength Maximum length of the generated team name
  * @returns Generated team name
  */
-export const generateTeamName = (playerNames: string[], maxLength: number = 12): string => {
+export const generateTeamName = (playerNames: string[], maxLength: number = 20): string => {
   // Filter out empty player names
   const validNames = playerNames.filter(name => name && name.trim() !== '');
 
@@ -74,7 +74,7 @@ const extractNameChunk = (name: string, minLength: number = 3): string | null =>
   // just take the first minLength characters from the full name
   if (name.length >= minLength) {
     // Use either the whole name or just the first 6 characters if it's very long
-    return name.substring(0, Math.min(name.length, 6)); // Limit to 6 characters for balance
+    return name.substring(0, Math.min(name.length, 8)); // Increased to 8 characters for better readability
   }
   
   // If the name is shorter than minLength, return null
@@ -99,12 +99,14 @@ export const generateCreativeTeamName = (): string => {
   // Array of creative team name parts
   const prefixes = [
     "Blazing", "Swift", "Mighty", "Power", "Elite", 
-    "Thunder", "Victory", "Dynamic", "Stellar", "Prime"
+    "Thunder", "Victory", "Dynamic", "Stellar", "Prime",
+    "Rapid", "Smashing", "Imperial", "Master", "Apex"
   ];
   
   const suffixes = [
     "Smashers", "Aces", "Stars", "Squad", "Force",
-    "Titans", "Knights", "Legends", "Phoenix", "Dragons"
+    "Titans", "Knights", "Legends", "Phoenix", "Dragons",
+    "Shuttlers", "Champions", "Racquets", "Eagles", "Warriors"
   ];
   
   // Randomly select a prefix and suffix
