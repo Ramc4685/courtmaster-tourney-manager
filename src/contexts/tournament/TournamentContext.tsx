@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentStage, TournamentFormat, TournamentCategory } from "@/types/tournament";
 import { createSampleData, getSampleDataByFormat } from "@/utils/tournamentSampleData";
@@ -23,19 +24,25 @@ import {
   completeMatchInTournament
 } from "./matchOperations";
 import { realtimeTournamentService } from "@/services/realtime/RealtimeTournamentService";
-import { useAuth } from "@/contexts/auth/AuthContext";
 import { assignTournamentSeeding } from "./tournamentOperations";
 import { assignPlayerSeeding } from "@/utils/tournamentProgressionUtils";
 import { getCategoryDemoData } from "@/utils/tournamentSampleData";
 import { schedulingService, SchedulingOptions, SchedulingResult } from "@/services/tournament/SchedulingService";
 
+// Import useAuth but handle the case where it might not be available
+import { useAuth } from "@/contexts/auth/AuthContext";
+
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
 export const TournamentProvider = ({ children }: { children: ReactNode }) => {
-  // We cannot use useAuth here directly because it might create a circular dependency
-  // Instead, get the auth state through a different approach or pass it as props
-  const authContext = useAuth();
-  const user = authContext?.user || null;
+  // Try to use auth context but handle case where it might not be available
+  let user = null;
+  try {
+    const authContext = useAuth();
+    user = authContext?.user || null;
+  } catch (error) {
+    console.warn('Auth context not available, proceeding without user data');
+  }
   
   // Initialize state from localStorage if available, otherwise use empty arrays/null
   const [tournaments, setTournaments] = useState<Tournament[]>(() => {
@@ -454,3 +461,4 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     </TournamentContext.Provider>
   );
 };
+

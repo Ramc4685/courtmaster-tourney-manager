@@ -1,16 +1,19 @@
 
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth/AuthContext';
+import Layout from '@/components/layout/Layout';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   requiredRole?: 'admin' | 'user';
+  withLayout?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requiredRole,
+  withLayout = true,
 }) => {
   const { user } = useAuth();
   const location = useLocation();
@@ -25,7 +28,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/" replace />;
   }
 
-  return <>{children}</>;
+  // Use children if provided, otherwise render Outlet for nested routes
+  const content = children || <Outlet />;
+
+  // Wrap in Layout if withLayout is true
+  if (withLayout) {
+    return <>{content}</>;
+  }
+
+  return <>{content}</>;
 };
 
 export default ProtectedRoute;
