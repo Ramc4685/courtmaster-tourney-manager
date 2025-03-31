@@ -33,7 +33,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Wrap in Layout if withLayout is true
   if (withLayout) {
-    return <>{content}</>;
+    return <Layout>{content}</Layout>;
   }
 
   return <>{content}</>;
