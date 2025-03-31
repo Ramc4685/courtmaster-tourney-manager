@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { ChevronLeft, AlertTriangle, Trophy } from "lucide-react";
@@ -13,8 +12,9 @@ import ScoringConfirmationDialogs from "@/components/scoring/ScoringConfirmation
 import { useScoringLogic } from "@/components/scoring/useScoringLogic";
 import { useTournament } from "@/contexts/TournamentContext";
 import { useStandaloneMatchStore } from "@/stores/standaloneMatchStore";
-import { Match } from "@/types/tournament";
+import { Match, TournamentStage } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
+import { useStandaloneScoring } from "@/hooks/scoring/useStandaloneScoring";
 
 const Scoring = () => {
   console.log("Rendering Scoring page");
@@ -33,8 +33,10 @@ const Scoring = () => {
   
   const navigate = useNavigate();
   const { tournaments, setCurrentTournament } = useTournament();
-  const standaloneMatchStore = useStandaloneMatchStore();
   const [isStandaloneMatch, setIsStandaloneMatch] = useState(false);
+  
+  // Use standalone scoring hook when a standalone match is specified
+  const standaloneScoring = useStandaloneScoring(matchType === "standalone" ? matchId : null);
   
   const {
     currentTournament,
@@ -65,24 +67,13 @@ const Scoring = () => {
       console.log("Loading standalone match:", matchId);
       setIsStandaloneMatch(true);
       
-      // Load the standalone match
-      standaloneMatchStore.loadMatchById(matchId);
-      
-      // If match is loaded, create a temporary tournament structure for scoring UI
-      if (standaloneMatchStore.currentMatch) {
+      if (standaloneScoring.scoringMatch) {
         console.log("Standalone match loaded successfully");
-        // Convert standaloneMatch to regular Match type with required properties
-        const adaptedMatch = {
-          ...standaloneMatchStore.currentMatch,
-          tournamentId: 'standalone',
-          division: 'INITIAL',
-          stage: 'FINAL'
-        } as Match;
-        
-        handleSelectMatch(adaptedMatch);
+        // Using the properly converted scoringMatch from the hook
+        handleSelectMatch(standaloneScoring.scoringMatch);
       }
     }
-  }, [matchId, matchType, standaloneMatchStore.currentMatch]);
+  }, [matchId, matchType, standaloneScoring.scoringMatch]);
   
   // Set the current tournament based on the URL parameter
   useEffect(() => {
@@ -112,7 +103,7 @@ const Scoring = () => {
 
   // Handle standalone match case
   if (isStandaloneMatch) {
-    const match = standaloneMatchStore.currentMatch;
+    const match = standaloneScoring.match;
     
     if (!match) {
       return (
@@ -143,11 +134,7 @@ const Scoring = () => {
             <Button 
               variant="outline" 
               onClick={() => {
-                standaloneMatchStore.updateMatch(match);
-                toast({
-                  title: "Match saved",
-                  description: "Your match has been saved successfully."
-                });
+                standaloneScoring.saveMatch();
               }}
             >
               Save Match
@@ -162,14 +149,9 @@ const Scoring = () => {
             <ChevronLeft className="mr-1 h-4 w-4" /> Back to Quick Match
           </Button>
           
-          {match && (
+          {standaloneScoring.scoringMatch && (
             <ScoringMatchDetail
-              match={{
-                ...match,
-                tournamentId: 'standalone',
-                division: 'INITIAL',
-                stage: 'FINAL'
-              } as Match}
+              match={standaloneScoring.scoringMatch}
               onScoreChange={handleScoreChange}
               onNewSet={() => setNewSetDialogOpen(true)}
               onCompleteMatch={() => setCompleteMatchDialogOpen(true)}

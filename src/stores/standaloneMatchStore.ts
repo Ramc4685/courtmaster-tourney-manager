@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 import { StandaloneMatch, Team, MatchStatus } from "@/types/tournament";
 import { standaloneMatchService } from "@/services/match/StandaloneMatchService";
@@ -20,6 +19,7 @@ interface StandaloneMatchState {
   updateMatch: (match: StandaloneMatch) => Promise<StandaloneMatch>;
   deleteMatch: (id: string) => Promise<void>;
   setCurrentMatch: (match: StandaloneMatch | null) => void;
+  saveMatch: () => Promise<boolean>; // Add saveMatch method
   
   // Match operations
   updateMatchScore: (matchId: string, setIndex: number, team1Score: number, team2Score: number) => Promise<void>;
@@ -38,6 +38,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchState>((set, get) =
   error: null,
   
   // CRUD operations
+  
   loadMatches: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -114,6 +115,22 @@ export const useStandaloneMatchStore = create<StandaloneMatchState>((set, get) =
       throw e;
     }
   },
+  
+  // Add saveMatch method that uses updateMatch for the current match
+  saveMatch: async () => {
+    const { currentMatch, updateMatch } = get();
+    if (!currentMatch) return false;
+    
+    try {
+      await updateMatch(currentMatch);
+      return true;
+    } catch (e) {
+      console.error("Error saving match:", e);
+      return false;
+    }
+  },
+  
+  
   
   deleteMatch: async (id) => {
     set({ isLoading: true, error: null });

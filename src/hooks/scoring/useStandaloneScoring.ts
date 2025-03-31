@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
-import { Match, StandaloneMatch } from '@/types/tournament';
+import { Match, StandaloneMatch, TournamentStage } from '@/types/tournament';
 import { useToast } from '@/hooks/use-toast';
 
 export const useStandaloneScoring = (matchId: string | null) => {
@@ -69,7 +69,8 @@ export const useStandaloneScoring = (matchId: string | null) => {
       ...standaloneMatch,
       tournamentId: 'standalone',
       division: 'INITIAL',
-      stage: 'FINAL'
+      stage: 'INITIAL_ROUND' as TournamentStage, // Use correct enum value from TournamentStage
+      category: standaloneMatch.category || { id: 'default', name: 'Default', type: 'MENS_SINGLES' }
     } as Match;
   };
 
