@@ -14,6 +14,8 @@ export const useScoringLogic = () => {
   
   // Prevent initialization logs from running every render
   const isInitialRender = useRef(true);
+  const isUpdatingMatch = useRef(false);
+
   if (isInitialRender.current) {
     console.log("[DEBUG] Current tournament in scoring logic:", currentTournament?.id);
     isInitialRender.current = false;
@@ -30,6 +32,18 @@ export const useScoringLogic = () => {
   const [activeView, setActiveView] = useState<"courts" | "scoring">("courts");
   const [newSetDialogOpen, setNewSetDialogOpen] = useState(false);
   const [completeMatchDialogOpen, setCompleteMatchDialogOpen] = useState(false);
+  
+  // Safely update the selected match to prevent infinite loops
+  const safeSetSelectedMatch = useCallback((match: Match | null) => {
+    if (isUpdatingMatch.current) return;
+    isUpdatingMatch.current = true;
+    
+    // Use setTimeout to break the potential update chain
+    setTimeout(() => {
+      setSelectedMatch(match);
+      isUpdatingMatch.current = false;
+    }, 0);
+  }, []);
   
   // Handle selecting a match - wrapped in useCallback with stable dependencies
   const handleSelectMatch = useCallback((match: Match) => {
@@ -52,10 +66,10 @@ export const useScoringLogic = () => {
     const setIndex = scores.length > 0 ? scores.length - 1 : 0;
     console.log(`[DEBUG] Setting current set to ${setIndex}`);
     
-    setSelectedMatch(latestMatch);
+    safeSetSelectedMatch(latestMatch);
     setCurrentSet(setIndex);
     setActiveView("scoring");
-  }, [currentTournament]);
+  }, [currentTournament, safeSetSelectedMatch]);
   
   // Handle selecting a court - wrapped in useCallback with stable dependencies
   const handleSelectCourt = useCallback((court: Court) => {
@@ -120,19 +134,22 @@ export const useScoringLogic = () => {
     console.log(`[DEBUG] Calling updateMatchScore: match=${selectedMatch.id}, set=${currentSet}, scores=${team1Score}-${team2Score}`);
     updateMatchScore(selectedMatch.id, currentSet, team1Score, team2Score);
 
-    // Update our local selected match to reflect the new score immediately
-    // Rather than mutating the existing match, create a new object with updated scores
+    // Update our local selected match to reflect the new score immediately using a new object
+    // Rather than directly modifying the existing scores array, create a new array
     const updatedScores = Array.isArray(selectedMatch.scores) ? [...selectedMatch.scores] : [];
     while (updatedScores.length <= currentSet) {
       updatedScores.push({ team1Score: 0, team2Score: 0 });
     }
     updatedScores[currentSet] = { team1Score, team2Score };
     
+    // Create an entirely new match object to avoid mutation issues
     const updatedMatch = {
       ...selectedMatch,
       scores: updatedScores
     };
-    setSelectedMatch(updatedMatch);
+    
+    // Use our safe setter with setTimeout to avoid update loops
+    safeSetSelectedMatch(updatedMatch);
 
     // Check if this set is complete based on rules
     const setComplete = isSetComplete(team1Score, team2Score, scoringSettings);
@@ -145,14 +162,20 @@ export const useScoringLogic = () => {
       
       if (matchComplete) {
         console.log(`[DEBUG] Match is complete, showing complete match dialog`);
-        setCompleteMatchDialogOpen(true);
+        // Break the rendering chain with setTimeout
+        setTimeout(() => {
+          setCompleteMatchDialogOpen(true);
+        }, 0);
       } else {
         // Ask for confirmation to start a new set
         console.log(`[DEBUG] Set is complete but match is not, showing new set dialog`);
-        setNewSetDialogOpen(true);
+        // Break the rendering chain with setTimeout
+        setTimeout(() => {
+          setNewSetDialogOpen(true);
+        }, 0);
       }
     }
-  }, [currentTournament, selectedMatch, currentSet, scoringSettings, updateMatchScore]);
+  }, [currentTournament, selectedMatch, currentSet, scoringSettings, updateMatchScore, safeSetSelectedMatch]);
   
   // Start a match - wrapped in useCallback with stable dependencies
   const handleStartMatch = useCallback((match: Match) => {
@@ -169,8 +192,7 @@ export const useScoringLogic = () => {
     console.log(`[DEBUG] Starting match: ${match.id} (${match.team1.name} vs ${match.team2.name})`);
     updateMatchStatus(match.id, "IN_PROGRESS");
     
-    // Use a timeout to ensure the match status update completes before selecting the match
-    // This helps prevent state update loops
+    // Break the potential update chain
     setTimeout(() => {
       handleSelectMatch(match);
     }, 0);
@@ -195,11 +217,13 @@ export const useScoringLogic = () => {
       description: "The match has been marked as complete."
     });
     
-    // Clear selected match and return to courts view
-    setSelectedMatch(null);
-    setActiveView("courts");
-    setCompleteMatchDialogOpen(false);
-  }, [selectedMatch, completeMatch, toast]);
+    // Clear selected match and return to courts view with setTimeout to break update chain
+    setTimeout(() => {
+      safeSetSelectedMatch(null);
+      setActiveView("courts");
+      setCompleteMatchDialogOpen(false);
+    }, 0);
+  }, [selectedMatch, completeMatch, toast, safeSetSelectedMatch]);
   
   // Create a new set - wrapped in useCallback with stable dependencies
   const handleNewSet = useCallback(() => {
@@ -226,30 +250,34 @@ export const useScoringLogic = () => {
     console.log(`[DEBUG] Initializing new set ${newSetIndex} with score 0-0`);
     updateMatchScore(selectedMatch.id, newSetIndex, 0, 0);
     
-    // Update our local selected match to reflect the new set
-    const updatedScores = Array.isArray(selectedMatch.scores) 
-      ? [...selectedMatch.scores, { team1Score: 0, team2Score: 0 }]
-      : [{ team1Score: 0, team2Score: 0 }];
-    
-    const updatedMatch = {
-      ...selectedMatch,
-      scores: updatedScores
-    };
-    
-    // First close the dialog, then update the match and set
+    // First close the dialog, then update the match and set with timeouts
     setNewSetDialogOpen(false);
     
     // Use setTimeout to break the potential state update chain
     setTimeout(() => {
-      setSelectedMatch(updatedMatch);
-      setCurrentSet(newSetIndex);
+      // Update our local selected match to reflect the new set
+      const updatedScores = Array.isArray(selectedMatch.scores) 
+        ? [...selectedMatch.scores, { team1Score: 0, team2Score: 0 }]
+        : [{ team1Score: 0, team2Score: 0 }];
       
-      toast({
-        title: "New set started",
-        description: `Set ${newSetIndex + 1} has been started.`
-      });
+      const updatedMatch = {
+        ...selectedMatch,
+        scores: updatedScores
+      };
+      
+      safeSetSelectedMatch(updatedMatch);
+      
+      // Use another setTimeout to ensure this happens after match update
+      setTimeout(() => {
+        setCurrentSet(newSetIndex);
+        
+        toast({
+          title: "New set started",
+          description: `Set ${newSetIndex + 1} has been started.`
+        });
+      }, 0);
     }, 0);
-  }, [selectedMatch, scoringSettings, updateMatchScore, toast]);
+  }, [selectedMatch, scoringSettings, updateMatchScore, toast, safeSetSelectedMatch]);
   
   // Update scoring settings - wrapped in useCallback with stable dependencies
   const handleUpdateScoringSettings = useCallback((newSettings) => {
@@ -293,7 +321,7 @@ export const useScoringLogic = () => {
     setNewSetDialogOpen,
     setCompleteMatchDialogOpen,
     setActiveView,
-    setSelectedMatch,
+    setSelectedMatch: safeSetSelectedMatch,
     setSelectedCourt,
     
     // Actions
