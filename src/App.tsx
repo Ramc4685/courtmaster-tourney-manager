@@ -19,6 +19,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TournamentProvider } from "@/contexts/TournamentContext";
 import { StandaloneMatchProvider } from "@/contexts/StandaloneMatchContext";
 import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider } from "@/contexts/auth/AuthContext";
 
 function App() {
   // Create a client
@@ -30,28 +31,30 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TournamentProvider>
-        <StandaloneMatchProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Layout />}>
-                <Route index element={<Index />} />
-                <Route path="tournaments" element={<Tournaments />} />
-                <Route path="tournament/create" element={<TournamentCreate />} />
-                <Route path="tournament/:tournamentId" element={<TournamentDetail />} />
-                <Route path="scoring" element={<Scoring />} />
-                <Route path="quick-match" element={<QuickMatchPage />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="admin" element={<Admin />} />
-                <Route path="*" element={<NotFound />} />
-              </Route>
-              <Route path="/share/:shareCode" element={<PublicView />} />
-              <Route path="/share/rt/:shareCode" element={<PublicViewRealtime />} />
-            </Routes>
-          </BrowserRouter>
-          <Toaster />
-        </StandaloneMatchProvider>
-      </TournamentProvider>
+      <AuthProvider>
+        <TournamentProvider>
+          <StandaloneMatchProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Layout />}>
+                  <Route index element={<Index />} />
+                  <Route path="tournaments" element={<Tournaments />} />
+                  <Route path="tournament/create" element={<TournamentCreate />} />
+                  <Route path="tournament/:tournamentId" element={<TournamentDetail />} />
+                  <Route path="scoring" element={<Scoring />} />
+                  <Route path="quick-match" element={<QuickMatchPage />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="admin" element={<Admin />} />
+                  <Route path="*" element={<NotFound />} />
+                </Route>
+                <Route path="/share/:shareCode" element={<PublicView />} />
+                <Route path="/share/rt/:shareCode" element={<PublicViewRealtime />} />
+              </Routes>
+            </BrowserRouter>
+            <Toaster />
+          </StandaloneMatchProvider>
+        </TournamentProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
