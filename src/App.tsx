@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Layout from "@/components/layout/Layout";
@@ -50,6 +51,7 @@ function App() {
                   <Route path="tournament/:tournamentId" element={<TournamentDetail />} />
                   <Route path="tournaments/:tournamentId" element={<TournamentDetail />} />
                   <Route path="scoring" element={<Scoring />} />
+                  <Route path="scoring/:tournamentId" element={<Scoring />} />
                   <Route path="quick-match" element={<QuickMatchPage />} />
                   <Route path="profile" element={<Profile />} />
                   <Route path="admin" element={<Admin />} />
