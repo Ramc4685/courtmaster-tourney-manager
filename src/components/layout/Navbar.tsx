@@ -66,12 +66,12 @@ const Navbar: React.FC = () => {
               <UserMenu />
             ) : (
               // Show login button if not logged in
-              <AuthDialog>
+              <Link to="/login">
                 <Button variant="outline" size="sm" className="hidden md:flex">
                   <LogIn className="h-4 w-4 mr-2" />
                   Sign In
                 </Button>
-              </AuthDialog>
+              </Link>
             )}
 
             {/* Show profile link if logged in */}
@@ -120,12 +120,12 @@ const Navbar: React.FC = () => {
                       Profile
                     </Link>
                   ) : (
-                    <AuthDialog>
+                    <Link to="/login">
                       <Button className="w-full">
                         <LogIn className="h-4 w-4 mr-2" />
                         Sign In
                       </Button>
-                    </AuthDialog>
+                    </Link>
                   )}
                 </nav>
               </SheetContent>

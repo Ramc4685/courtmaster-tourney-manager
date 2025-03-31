@@ -13,6 +13,7 @@ import NotFound from "@/pages/NotFound";
 import PublicView from "@/pages/PublicView";
 import PublicViewRealtime from "@/pages/PublicViewRealtime";
 import QuickMatchPage from "@/pages/QuickMatch";
+import Login from "@/pages/Login";
 
 // Import necessary providers
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -56,6 +57,7 @@ function App() {
                   <Route path="profile" element={<Profile />} />
                   <Route path="admin" element={<Admin />} />
                 </Route>
+                <Route path="/login" element={<Login />} />
                 <Route path="/share/:tournamentId" element={<PublicView />} />
                 <Route path="/share/rt/:tournamentId" element={<PublicViewRealtime />} />
                 <Route path="*" element={<NotFound />} />
