@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -12,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormDescription } from "@/components/ui/form";
 import { Team, Player } from "@/types/tournament";
+import { generateTeamName } from "@/utils/teamNameUtils";
 
 interface TeamCreateDialogProps {
   open: boolean;
@@ -30,22 +30,15 @@ const TeamCreateDialog: React.FC<TeamCreateDialogProps> = ({
   const [initialRanking, setInitialRanking] = useState<number | undefined>(undefined);
   const [isTeamNameManuallyEdited, setIsTeamNameManuallyEdited] = useState(false);
   
-  // Generate team name based on player names
-  const generateTeamName = (): string => {
-    if (player1Name && player2Name) {
-      return `${player1Name.split(' ')[0]} & ${player2Name.split(' ')[0]}`;
-    } else if (player1Name) {
-      return player1Name;
-    }
-    return "";
-  };
-  
   // Update team name when player names change
   useEffect(() => {
     if (!isTeamNameManuallyEdited) {
-      const generatedName = generateTeamName();
-      if (generatedName) {
-        setTeamName(generatedName);
+      const playerNames = [player1Name, player2Name].filter(name => name.trim() !== '');
+      if (playerNames.length > 0) {
+        const generatedName = generateTeamName(playerNames);
+        if (generatedName) {
+          setTeamName(generatedName);
+        }
       }
     }
   }, [player1Name, player2Name, isTeamNameManuallyEdited]);
@@ -54,6 +47,10 @@ const TeamCreateDialog: React.FC<TeamCreateDialogProps> = ({
   useEffect(() => {
     if (open) {
       setIsTeamNameManuallyEdited(false);
+      setTeamName("");
+      setPlayer1Name("");
+      setPlayer2Name("");
+      setInitialRanking(undefined);
     }
   }, [open]);
 

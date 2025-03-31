@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -11,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
-import { CalendarIcon, PlusCircleIcon, User, X } from "lucide-react";
+import { CalendarIcon, PlusCircleIcon, User, X, Wand2 } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -22,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { generateTeamName, generateCreativeTeamName } from "@/utils/teamNameUtils";
 
 const formSchema = z.object({
   team1Name: z.string().min(1, { message: "Team 1 name is required" }),
@@ -43,6 +43,8 @@ const StandaloneMatchForm: React.FC = () => {
   const navigate = useNavigate();
   const [team1Players, setTeam1Players] = useState<string[]>(['']);
   const [team2Players, setTeam2Players] = useState<string[]>(['']);
+  const [team1NameEdited, setTeam1NameEdited] = useState(false);
+  const [team2NameEdited, setTeam2NameEdited] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -55,51 +57,24 @@ const StandaloneMatchForm: React.FC = () => {
     }
   });
 
-  // Generate team name based on player names
-  const generateTeamName = (players: string[]): string => {
-    const validPlayers = players.filter(name => name.trim() !== '');
-    
-    if (validPlayers.length === 0) {
-      return "";
-    }
-    
-    if (validPlayers.length === 1) {
-      // Single player - use their name
-      return validPlayers[0].trim();
-    } else {
-      // Multiple players - use first names or initials
-      const parts = validPlayers.map(name => {
-        const nameParts = name.trim().split(' ');
-        return nameParts[0]; // Take first name
-      });
-      
-      if (parts.length === 2) {
-        // For two players, use format "First1 & First2"
-        return `${parts[0]} & ${parts[1]}`;
-      } else {
-        // For more than two, use format "First1, First2 & First3"
-        const lastPart = parts.pop();
-        return `${parts.join(', ')} & ${lastPart}`;
-      }
-    }
-  };
-
   // Effect to update team names when players change
   useEffect(() => {
-    const validPlayers = team1Players.filter(name => name.trim() !== '');
-    if (validPlayers.length > 0 && !form.getValues('team1Name')) {
+    if (!team1NameEdited) {
       const generatedName = generateTeamName(team1Players);
-      form.setValue('team1Name', generatedName);
+      if (generatedName) {
+        form.setValue('team1Name', generatedName);
+      }
     }
-  }, [team1Players, form]);
+  }, [team1Players, form, team1NameEdited]);
 
   useEffect(() => {
-    const validPlayers = team2Players.filter(name => name.trim() !== '');
-    if (validPlayers.length > 0 && !form.getValues('team2Name')) {
+    if (!team2NameEdited) {
       const generatedName = generateTeamName(team2Players);
-      form.setValue('team2Name', generatedName);
+      if (generatedName) {
+        form.setValue('team2Name', generatedName);
+      }
     }
-  }, [team2Players, form]);
+  }, [team2Players, form, team2NameEdited]);
 
   const handleAddPlayer = (team: "team1" | "team2") => {
     if (team === "team1") {
@@ -129,23 +104,22 @@ const StandaloneMatchForm: React.FC = () => {
       newPlayers[index] = value;
       setTeam1Players(newPlayers);
       form.setValue("team1Players", newPlayers.filter(p => p.trim() !== ''));
-      
-      // Only auto-update team name if it hasn't been manually modified
-      if (!form.getValues('team1Name')) {
-        const generatedName = generateTeamName(newPlayers);
-        form.setValue('team1Name', generatedName);
-      }
     } else {
       const newPlayers = [...team2Players];
       newPlayers[index] = value;
       setTeam2Players(newPlayers);
       form.setValue("team2Players", newPlayers.filter(p => p.trim() !== ''));
-      
-      // Only auto-update team name if it hasn't been manually modified
-      if (!form.getValues('team2Name')) {
-        const generatedName = generateTeamName(newPlayers);
-        form.setValue('team2Name', generatedName);
-      }
+    }
+  };
+
+  const handleGenerateCreativeName = (team: "team1" | "team2") => {
+    const creativeName = generateCreativeTeamName();
+    if (team === "team1") {
+      form.setValue('team1Name', creativeName);
+      setTeam1NameEdited(true);
+    } else {
+      form.setValue('team2Name', creativeName);
+      setTeam2NameEdited(true);
     }
   };
 
@@ -269,9 +243,25 @@ const StandaloneMatchForm: React.FC = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Team Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter team name" />
-                    </FormControl>
+                    <div className="flex space-x-2">
+                      <FormControl>
+                        <Input {...field} placeholder="Enter team name" className="flex-grow"
+                          onChange={e => {
+                            field.onChange(e);
+                            setTeam1NameEdited(true);
+                          }} 
+                        />
+                      </FormControl>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => handleGenerateCreativeName("team1")}
+                        title="Generate creative team name"
+                      >
+                        <Wand2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <FormDescription className="text-xs">
                       Auto-generated from player names. You can edit it.
                     </FormDescription>
@@ -328,9 +318,25 @@ const StandaloneMatchForm: React.FC = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Team Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter team name" />
-                    </FormControl>
+                    <div className="flex space-x-2">
+                      <FormControl>
+                        <Input {...field} placeholder="Enter team name" className="flex-grow"
+                          onChange={e => {
+                            field.onChange(e);
+                            setTeam2NameEdited(true);
+                          }}
+                        />
+                      </FormControl>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => handleGenerateCreativeName("team2")}
+                        title="Generate creative team name"
+                      >
+                        <Wand2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <FormDescription className="text-xs">
                       Auto-generated from player names. You can edit it.
                     </FormDescription>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { X, PlusCircle, User } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -9,6 +8,7 @@ import { FormDescription } from "@/components/ui/form";
 import { useTournament } from "@/contexts/TournamentContext";
 import { Team, Player } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
+import { generateTeamName, generateCreativeTeamName } from "@/utils/teamNameUtils";
 
 interface AddTeamDialogProps {
   open: boolean;
@@ -23,41 +23,12 @@ const AddTeamDialog: React.FC<AddTeamDialogProps> = ({ open, onOpenChange, tourn
   const [players, setPlayers] = useState<Player[]>([{ id: "player-1", name: "" }]);
   const [isTeamNameManuallyEdited, setIsTeamNameManuallyEdited] = useState(false);
 
-  // Generate team name based on player names
-  const generateTeamName = (playerList: Player[]): string => {
-    const validPlayers = playerList.filter(p => p.name.trim() !== '');
-    
-    if (validPlayers.length === 0) {
-      return "";
-    }
-    
-    if (validPlayers.length === 1) {
-      // Single player - use their name
-      return validPlayers[0].name.trim();
-    } else {
-      // Multiple players - use first names or initials
-      const parts = validPlayers.map(player => {
-        const nameParts = player.name.trim().split(' ');
-        return nameParts[0]; // Take first name
-      });
-      
-      if (parts.length === 2) {
-        // For two players, use format "First1 & First2"
-        return `${parts[0]} & ${parts[1]}`;
-      } else {
-        // For more than two, use format "First1, First2 & First3"
-        const lastPart = parts.pop();
-        return `${parts.join(', ')} & ${lastPart}`;
-      }
-    }
-  };
-  
   // Update team name when player names change
   useEffect(() => {
     if (!isTeamNameManuallyEdited) {
-      const validPlayers = players.filter(p => p.name.trim() !== '');
-      if (validPlayers.length > 0) {
-        const generatedName = generateTeamName(players);
+      const playerNames = players.map(p => p.name).filter(name => name.trim() !== '');
+      if (playerNames.length > 0) {
+        const generatedName = generateTeamName(playerNames);
         if (generatedName) {
           setTeamName(generatedName);
         }
@@ -94,6 +65,12 @@ const AddTeamDialog: React.FC<AddTeamDialogProps> = ({ open, onOpenChange, tourn
 
   const handleTeamNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTeamName(e.target.value);
+    setIsTeamNameManuallyEdited(true);
+  };
+
+  const handleGenerateCreativeName = () => {
+    const creativeName = generateCreativeTeamName();
+    setTeamName(creativeName);
     setIsTeamNameManuallyEdited(true);
   };
 
@@ -207,14 +184,26 @@ const AddTeamDialog: React.FC<AddTeamDialogProps> = ({ open, onOpenChange, tourn
           
           <div className="space-y-2">
             <Label htmlFor="teamName">Team Name</Label>
-            <Input
-              id="teamName"
-              value={teamName}
-              onChange={handleTeamNameChange}
-              placeholder="Enter team name"
-            />
+            <div className="flex space-x-2">
+              <Input
+                id="teamName"
+                value={teamName}
+                onChange={handleTeamNameChange}
+                placeholder="Enter team name"
+                className="flex-grow"
+              />
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={handleGenerateCreativeName}
+                title="Generate creative team name"
+              >
+                Inspire
+              </Button>
+            </div>
             <FormDescription className="text-xs">
-              Auto-generated from player names. You can edit it.
+              Auto-generated from player names. You can edit it or click "Inspire" for a creative name.
             </FormDescription>
           </div>
           
