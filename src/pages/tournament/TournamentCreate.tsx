@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -17,10 +16,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useTournament } from "@/contexts/tournament/useTournament";
-import { TournamentCategory, CourtStatus } from "@/types/tournament";
+import { TournamentCategory, CourtStatus, Tournament } from "@/types/tournament";
 import TournamentCategorySection from "@/components/tournament/TournamentCategorySection";
 import { createDefaultCategories } from "@/utils/categoryUtils";
 import { Grid3X3Icon } from "lucide-react";
+
+// Define the component props interface
+interface TournamentCreateProps {
+  onTournamentCreated?: (tournament: Tournament) => void;
+}
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -36,7 +40,8 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const TournamentCreate: React.FC = () => {
+// Update component to accept props
+const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated }) => {
   const { createTournament, loadSampleData } = useTournament();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,6 +61,7 @@ const TournamentCreate: React.FC = () => {
   });
 
   const onSubmit = async (values: FormValues) => {
+    console.log("Form submitted with values:", values);
     setIsSubmitting(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate network request
@@ -87,7 +93,16 @@ const TournamentCreate: React.FC = () => {
         courts: courts  // Add courts based on numCourts
       });
 
-      navigate(`/tournaments/${tournament.id}`);
+      // Call the onTournamentCreated callback if provided
+      if (onTournamentCreated) {
+        console.log("Calling onTournamentCreated with tournament:", tournament);
+        onTournamentCreated(tournament);
+      } else {
+        console.log("No onTournamentCreated provided, navigating to:", `/tournament/${tournament.id}`);
+        navigate(`/tournament/${tournament.id}`);
+      }
+    } catch (error) {
+      console.error("Error creating tournament:", error);
     } finally {
       setIsSubmitting(false);
     }

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Layout from "@/components/layout/Layout";
 import Tournaments from "@/pages/Tournaments";
 import TournamentCreate from "@/pages/TournamentCreate";
@@ -21,6 +21,17 @@ import { StandaloneMatchProvider } from "@/contexts/StandaloneMatchContext";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/auth/AuthContext";
 
+// Add a route logger component
+const RouteLogger = () => {
+  const location = useLocation();
+  
+  React.useEffect(() => {
+    console.log('Current route:', location.pathname);
+  }, [location]);
+  
+  return null;
+};
+
 function App() {
   // Create a client
   const queryClient = new QueryClient();
@@ -31,13 +42,14 @@ function App() {
         <TournamentProvider>
           <StandaloneMatchProvider>
             <BrowserRouter>
+              <RouteLogger />
               <Routes>
                 <Route path="/" element={<Layout />}>
                   <Route index element={<Index />} />
                   <Route path="tournaments" element={<Tournaments />} />
                   <Route path="tournament/create" element={<TournamentCreate />} />
                   <Route path="tournament/:tournamentId" element={<TournamentDetail />} />
-                  <Route path="tournaments/:tournamentId" element={<TournamentDetail />} /> {/* Support both URL patterns */}
+                  <Route path="tournaments/:tournamentId" element={<TournamentDetail />} />
                   <Route path="scoring/:tournamentId" element={<Scoring />} />
                   <Route path="quick-match" element={<QuickMatchPage />} />
                   <Route path="profile" element={<Profile />} />
