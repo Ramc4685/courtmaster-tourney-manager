@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from "@/components/layout/Layout";
 import Tournaments from "@/pages/Tournaments";
@@ -20,13 +20,11 @@ import { TournamentProvider } from "@/contexts/TournamentContext";
 import { StandaloneMatchProvider } from "@/contexts/StandaloneMatchContext";
 import { Toaster } from "@/components/ui/toaster";
 
-// Note: We remove the ReactQueryDevtools import as it's not available
-
 function App() {
   // Create a client
-  const [queryClient] = React.useState(() => new QueryClient());
+  const queryClient = new QueryClient();
 
-  useEffect(() => {
+  React.useEffect(() => {
     document.documentElement.classList.add("dark");
   }, []);
 
