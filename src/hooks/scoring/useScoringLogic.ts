@@ -20,7 +20,7 @@ export const useScoringLogic = () => {
   // Use the state hook
   const state = useScoringState(scoringSettings);
   
-  // Use the actions hook
+  // Use the actions hook - with safer state passing
   const actions = useScoringActions(
     state.selectedMatch,
     state.currentSet,

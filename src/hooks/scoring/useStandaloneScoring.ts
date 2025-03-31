@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
 import { Match, StandaloneMatch, TournamentStage } from '@/types/tournament';
 import { useToast } from '@/hooks/use-toast';
@@ -10,7 +10,8 @@ export const useStandaloneScoring = (matchId: string | null) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scoringMatch, setScoringMatch] = useState<Match | null>(null);
-  const [prevMatchId, setPrevMatchId] = useState<string | null>(null);
+  const prevMatchIdRef = useRef<string | null>(null);
+  const isInitialRender = useRef(true);
 
   // Convert standalone match to regular match compatible with scoring components
   const convertToScoringMatch = useCallback((standaloneMatch: StandaloneMatch | null): Match | null => {
@@ -29,40 +30,44 @@ export const useStandaloneScoring = (matchId: string | null) => {
     } as Match;
   }, []);
 
-  // Load standalone match - fix the infinite update issue
+  // Load standalone match - with proper dependency management
   useEffect(() => {
-    if (!matchId || matchId === prevMatchId) {
-      // If we've already processed this matchId, don't reload it
+    // Only run this effect if matchId changes or on initial render
+    if (!matchId || (matchId === prevMatchIdRef.current && !isInitialRender.current)) {
       if (!matchId) setIsLoading(false);
       return;
     }
 
     const loadMatch = async () => {
+      console.log(`Loading standalone match with ID: ${matchId}`);
       setIsLoading(true);
       setError(null);
       try {
         await standaloneMatchStore.loadMatchById(matchId);
         if (!standaloneMatchStore.currentMatch) {
+          console.log("Match not found in store after loading");
           setError('Match not found');
           setScoringMatch(null);
         } else {
+          console.log("Successfully loaded match from store");
           // Convert standalone match to scoring match format
           const converted = convertToScoringMatch(standaloneMatchStore.currentMatch);
           setScoringMatch(converted);
         }
       } catch (err) {
+        console.error('Error loading standalone match:', err);
         setError('Failed to load match');
         setScoringMatch(null);
-        console.error('Error loading standalone match:', err);
       } finally {
         setIsLoading(false);
-        // Update the previous matchId to prevent reloading the same match
-        setPrevMatchId(matchId);
+        // Update the previous matchId for comparison in future renders
+        prevMatchIdRef.current = matchId;
+        isInitialRender.current = false;
       }
     };
 
     loadMatch();
-  }, [matchId, standaloneMatchStore, convertToScoringMatch, prevMatchId]);
+  }, [matchId, standaloneMatchStore, convertToScoringMatch]);
 
   const saveMatch = useCallback(async () => {
     if (!standaloneMatchStore.currentMatch) return false;

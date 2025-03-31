@@ -15,16 +15,26 @@ interface ScoringMatchDetailProps {
 }
 
 // Memoize the component to prevent unnecessary re-renders
-const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = memo(({
+const ScoringMatchDetail = memo(({
   match,
   onScoreChange,
   onNewSet,
   onCompleteMatch,
   currentSet,
   onSetChange
-}) => {
+}: ScoringMatchDetailProps) => {
+  if (!match) {
+    return (
+      <Card className="shadow-md">
+        <CardContent className="p-6">
+          <p>No match data available</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   // Ensure match.scores is always an array, even if it's undefined
-  const scores = match?.scores || [];
+  const scores = Array.isArray(match.scores) ? match.scores : [];
   
   // Make sure we have a valid current set index
   const validCurrentSet = scores.length > 0 ? Math.min(currentSet, scores.length - 1) : 0;
@@ -33,15 +43,15 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = memo(({
   const currentScore = scores[validCurrentSet] || { team1Score: 0, team2Score: 0 };
   
   // Ensure team names are defined
-  const team1Name = match?.team1?.name || "Team 1";
-  const team2Name = match?.team2?.name || "Team 2";
+  const team1Name = match.team1?.name || "Team 1";
+  const team2Name = match.team2?.name || "Team 2";
 
   return (
     <Card className="shadow-md">
       <CardContent className="p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-semibold text-lg">
-            Scoring: {match?.courtNumber ? `Court ${match.courtNumber}` : "Standalone Match"}
+            Scoring: {match.courtNumber ? `Court ${match.courtNumber}` : "Standalone Match"}
           </h3>
           <div className="flex space-x-2">
             <Button
