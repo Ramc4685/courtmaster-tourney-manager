@@ -23,10 +23,10 @@ export interface ScoringState {
   setScoringSettings: (settings: ScoringSettings) => void;
   
   // Business logic for tournament matches
-  handleSelectMatch: (match: Match) => void;
+  handleSelectMatch: (match: Match | StandaloneMatch) => void;
   handleSelectCourt: (court: Court) => void;
   handleScoreChange: (team: "team1" | "team2", increment: boolean) => void;
-  handleStartMatch: (match: Match) => void;
+  handleStartMatch: (match: Match | StandaloneMatch) => void;
   handleCompleteMatch: () => void;
   handleNewSet: () => void;
   handleUpdateScoringSettings: (settings: ScoringSettings) => void;

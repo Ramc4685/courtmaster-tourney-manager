@@ -39,6 +39,12 @@ export const useScoringAdapter = ({
         if (matchId) {
           // Load the specified standalone match
           await standaloneStore.loadMatchById(matchId);
+          
+          // Select the match in the scoring store if it was found
+          if (standaloneStore.currentMatch) {
+            scoringStore.setSelectedMatch(standaloneStore.currentMatch);
+            scoringStore.setActiveView("scoring");
+          }
         }
       } else {
         if (matchId) {
@@ -74,13 +80,35 @@ export const useScoringAdapter = ({
             scoringStore.handleStandaloneScoreChange(team, increment, standaloneStore);
           },
           handleStartMatch: (match: Match | StandaloneMatch) => {
-            scoringStore.handleStandaloneStartMatch(match.id, standaloneStore);
+            if ('tournamentId' in match) {
+              // It's a regular match from tournament
+              scoringStore.handleStartMatch(match);
+            } else {
+              // It's a standalone match
+              scoringStore.handleStandaloneStartMatch(match.id, standaloneStore);
+            }
           },
           handleCompleteMatch: () => {
-            scoringStore.handleStandaloneCompleteMatch(standaloneStore);
+            // Check what type of match is currently selected
+            const match = scoringStore.selectedMatch;
+            if (match && !('tournamentId' in match)) {
+              // It's a standalone match
+              scoringStore.handleStandaloneCompleteMatch(standaloneStore);
+            } else {
+              // It's a regular tournament match
+              scoringStore.handleCompleteMatch();
+            }
           },
           handleNewSet: () => {
-            scoringStore.handleStandaloneNewSet(standaloneStore);
+            // Check what type of match is currently selected
+            const match = scoringStore.selectedMatch;
+            if (match && !('tournamentId' in match)) {
+              // It's a standalone match
+              scoringStore.handleStandaloneNewSet(standaloneStore);
+            } else {
+              // It's a regular tournament match
+              scoringStore.handleNewSet();
+            }
           }
         };
       }

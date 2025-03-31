@@ -1,4 +1,5 @@
-import { Match, Court, ScoringSettings } from "@/types/tournament";
+
+import { Match, Court, ScoringSettings, StandaloneMatch } from "@/types/tournament";
 import { StoreApi, GetState } from "zustand";
 import { ScoringState } from "./types";
 import { useTournamentStore } from "../tournamentStore";
@@ -10,13 +11,26 @@ export const createScoringActions = (
   get: GetState<ScoringState>
 ) => ({
   // Business logic methods
-  handleSelectMatch: (match: Match) => {
+  handleSelectMatch: (match: Match | StandaloneMatch) => {
     console.log(`[DEBUG] Selecting match: ${match.id} (${match.team1.name} vs ${match.team2.name})`);
     
-    // Get the latest version of the tournament to make sure we have updated match data
+    // Check if this is a standalone match or a tournament match
+    const isStandaloneMatch = !('tournamentId' in match);
+    
+    if (isStandaloneMatch) {
+      // Handle standalone match selection
+      set({ 
+        selectedMatch: match,
+        currentSet: match.scores.length > 0 ? match.scores.length - 1 : 0,
+        activeView: "scoring"
+      });
+      return;
+    }
+    
+    // It's a tournament match, use the tournament store
     const { currentTournament } = useTournamentStore.getState();
     if (!currentTournament) {
-      console.error('[ERROR] Cannot select match: No current tournament selected.');
+      console.error('[ERROR] Cannot select tournament match: No current tournament selected.');
       return;
     }
     
@@ -54,7 +68,16 @@ export const createScoringActions = (
       return;
     }
     
-    // Get tournament operations from tournament store
+    // Check if this is a standalone match or a tournament match
+    const isStandaloneMatch = !('tournamentId' in selectedMatch);
+    
+    if (isStandaloneMatch) {
+      // We should use the standalone handler for this case
+      console.log('[DEBUG] Using standalone score handling method');
+      return;
+    }
+    
+    // Get tournament operations from tournament store for tournament matches
     const { updateMatchScore } = useTournamentStore.getState();
     
     console.log(`[DEBUG] Updating score for ${team} (${increment ? 'increment' : 'decrement'}) for set ${currentSet}`);
@@ -81,8 +104,9 @@ export const createScoringActions = (
       console.log(`[DEBUG] Updated team2 score: ${currentScore.team2Score} -> ${team2Score}`);
     }
     
-    // Call the updateMatchScore method from the tournament store
-    updateMatchScore(selectedMatch.id, currentSet, team1Score, team2Score);
+    // Call the updateMatchScore method from the tournament store for tournament matches
+    const tournamentMatch = selectedMatch as Match; // Cast as tournament match
+    updateMatchScore(tournamentMatch.id, currentSet, team1Score, team2Score);
     
     // Update our local selected match to reflect the new score immediately
     const updatedScores = [...selectedMatch.scores];
@@ -103,7 +127,7 @@ export const createScoringActions = (
     // Check if set or match is complete based on rules
     const setComplete = isSetComplete(team1Score, team2Score, scoringSettings);
     if (setComplete) {
-      const matchComplete = isMatchComplete(updatedMatch, scoringSettings);
+      const matchComplete = isMatchComplete(updatedMatch as Match, scoringSettings);
       
       if (matchComplete) {
         set({ completeMatchDialogOpen: true });
@@ -113,7 +137,7 @@ export const createScoringActions = (
     }
   },
   
-  handleStartMatch: (match: Match) => {
+  handleStartMatch: (match: Match | StandaloneMatch) => {
     if (!match.courtNumber) {
       console.warn(`[WARN] Cannot start match ${match.id}: No court assigned`);
       // Use toast inside the function
@@ -126,7 +150,15 @@ export const createScoringActions = (
       return;
     }
     
-    // Get tournament operations from tournament store
+    // Check if this is a standalone match or a tournament match
+    const isStandaloneMatch = !('tournamentId' in match);
+    
+    if (isStandaloneMatch) {
+      console.log('[DEBUG] This is a standalone match, should use standalone handler');
+      return;
+    }
+    
+    // Get tournament operations from tournament store for tournament matches
     const { updateMatchStatus } = useTournamentStore.getState();
     
     console.log(`[DEBUG] Starting match: ${match.id} (${match.team1.name} vs ${match.team2.name})`);
@@ -147,6 +179,14 @@ export const createScoringActions = (
     const { selectedMatch } = get();
     if (!selectedMatch) {
       console.error('[ERROR] Cannot complete match: No match selected.');
+      return;
+    }
+    
+    // Check if this is a standalone match or a tournament match
+    const isStandaloneMatch = !('tournamentId' in selectedMatch);
+    
+    if (isStandaloneMatch) {
+      console.log('[DEBUG] This is a standalone match, should use standalone handler');
       return;
     }
     
@@ -174,6 +214,14 @@ export const createScoringActions = (
     const { selectedMatch, scoringSettings } = get();
     if (!selectedMatch) {
       console.error('[ERROR] Cannot create new set: No match selected.');
+      return;
+    }
+    
+    // Check if this is a standalone match or a tournament match
+    const isStandaloneMatch = !('tournamentId' in selectedMatch);
+    
+    if (isStandaloneMatch) {
+      console.log('[DEBUG] This is a standalone match, should use standalone handler');
       return;
     }
     

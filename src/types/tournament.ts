@@ -206,3 +206,17 @@ export type StandaloneMatch = {
 
 // Type to distinguish between scoring sources
 export type ScorerType = "TOURNAMENT" | "STANDALONE";
+
+// Helper type for isMatchOfType guard function
+export interface MatchCommon {
+  id: string;
+  team1: Team;
+  team2: Team;
+  scores: MatchScore[];
+  status: MatchStatus;
+}
+
+// Type guard to check if a match is a standalone match
+export function isStandaloneMatch(match: Match | StandaloneMatch): match is StandaloneMatch {
+  return !('tournamentId' in match);
+}

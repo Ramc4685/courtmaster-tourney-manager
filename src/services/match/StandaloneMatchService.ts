@@ -1,5 +1,5 @@
 
-import { StandaloneMatch, Team, MatchStatus, MatchScore, ScoringSettings } from "@/types/tournament";
+import { StandaloneMatch, Team, MatchStatus, MatchScore, ScoringSettings, Match } from "@/types/tournament";
 import { generateId } from "@/utils/tournamentUtils";
 import { storageService } from "../storage/StorageService";
 import { determineMatchWinnerAndLoser, getDefaultScoringSettings } from "@/utils/matchUtils";
@@ -174,8 +174,10 @@ export class StandaloneMatchService {
     // Get scoring settings with badminton defaults
     const settings = scoringSettings || getDefaultScoringSettings();
     
-    // Determine winner based on scores
-    const result = determineMatchWinnerAndLoser(match, settings);
+    // Modified type assertion to handle StandaloneMatch with determineMatchWinnerAndLoser
+    // This adapts StandaloneMatch to work with the function that expects Match
+    const matchAsAny = match as any; // Use any as an intermediate step
+    const result = determineMatchWinnerAndLoser(matchAsAny, settings);
     if (!result) return null;
     
     const { winner, loser } = result;
