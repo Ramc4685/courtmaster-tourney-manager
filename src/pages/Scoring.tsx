@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { ChevronLeft, AlertTriangle, Trophy } from "lucide-react";
@@ -12,6 +13,8 @@ import ScoringConfirmationDialogs from "@/components/scoring/ScoringConfirmation
 import { useScoringLogic } from "@/components/scoring/useScoringLogic";
 import { useTournament } from "@/contexts/TournamentContext";
 import { useStandaloneMatchStore } from "@/stores/standaloneMatchStore";
+import { Match } from "@/types/tournament";
+import { useToast } from "@/hooks/use-toast";
 
 const Scoring = () => {
   console.log("Rendering Scoring page");
@@ -22,6 +25,7 @@ const Scoring = () => {
   const tournamentId = params.tournamentId;
   const matchId = searchParams.get("matchId");
   const matchType = searchParams.get("type");
+  const { toast } = useToast();
   
   console.log("Tournament ID from URL params:", tournamentId);
   console.log("Match ID from URL query:", matchId);
@@ -67,10 +71,18 @@ const Scoring = () => {
       // If match is loaded, create a temporary tournament structure for scoring UI
       if (standaloneMatchStore.currentMatch) {
         console.log("Standalone match loaded successfully");
-        handleSelectMatch(standaloneMatchStore.currentMatch);
+        // Convert standaloneMatch to regular Match type with required properties
+        const adaptedMatch = {
+          ...standaloneMatchStore.currentMatch,
+          tournamentId: 'standalone',
+          division: 'INITIAL',
+          stage: 'FINAL'
+        } as Match;
+        
+        handleSelectMatch(adaptedMatch);
       }
     }
-  }, [matchId, matchType]);
+  }, [matchId, matchType, standaloneMatchStore.currentMatch]);
   
   // Set the current tournament based on the URL parameter
   useEffect(() => {
@@ -128,7 +140,16 @@ const Scoring = () => {
             <h1 className="text-2xl font-bold">
               Standalone Match Scoring
             </h1>
-            <Button variant="outline" onClick={() => standaloneMatchStore.saveMatch(match)}>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                standaloneMatchStore.updateMatch(match);
+                toast({
+                  title: "Match saved",
+                  description: "Your match has been saved successfully."
+                });
+              }}
+            >
               Save Match
             </Button>
           </div>
@@ -143,7 +164,12 @@ const Scoring = () => {
           
           {match && (
             <ScoringMatchDetail
-              match={match}
+              match={{
+                ...match,
+                tournamentId: 'standalone',
+                division: 'INITIAL',
+                stage: 'FINAL'
+              } as Match}
               onScoreChange={handleScoreChange}
               onNewSet={() => setNewSetDialogOpen(true)}
               onCompleteMatch={() => setCompleteMatchDialogOpen(true)}

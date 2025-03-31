@@ -30,6 +30,7 @@ import { useTournament } from "@/contexts/TournamentContext";
 import { toast } from "@/components/ui/use-toast";
 import SuggestedMatchPairs from "./SuggestedMatchPairs";
 import { SchedulingOptions } from "@/services/tournament/SchedulingService";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface UnifiedScheduleDialogProps {
   open: boolean;
@@ -177,7 +178,7 @@ const UnifiedScheduleDialog: React.FC<UnifiedScheduleDialogProps> = ({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Schedule & Start Matches</DialogTitle>
           <DialogDescription>
@@ -195,126 +196,130 @@ const UnifiedScheduleDialog: React.FC<UnifiedScheduleDialogProps> = ({
             <TabsTrigger value="manual">Manual Schedule</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="auto" className="pt-4">
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {date ? format(date, "PPP") : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={date}
-                        onSelect={(newDate) => setDate(newDate as Date)}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+          <ScrollArea className="max-h-[60vh] pr-4 pb-4">
+            <TabsContent value="auto" className="pt-4">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {date ? format(date, "PPP") : "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={date}
+                          onSelect={(newDate) => setDate(newDate as Date)}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="startTime">Start Time</Label>
+                    <Input
+                      id="startTime"
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                    />
+                  </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="startTime">Start Time</Label>
-                  <Input
-                    id="startTime"
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="matchDuration">Match Duration (minutes)</Label>
+                    <Input
+                      id="matchDuration"
+                      type="number"
+                      value={matchDuration}
+                      onChange={(e) => setMatchDuration(Number(e.target.value))}
+                      min={5}
+                      step={5}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="division">Division</Label>
+                    <Select
+                      value={selectedDivision}
+                      onValueChange={(value) => {
+                        setSelectedDivision(value as Division);
+                        generateSuggestedPairs(value as Division);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Division" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="INITIAL">Initial</SelectItem>
+                        <SelectItem value="A">Division A</SelectItem>
+                        <SelectItem value="B">Division B</SelectItem>
+                        <SelectItem value="C">Division C</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="assignCourts"
+                      checked={assignCourts}
+                      onCheckedChange={setAssignCourts}
+                    />
+                    <Label htmlFor="assignCourts">Auto-assign courts</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="autoStartMatches"
+                      checked={autoStartMatches}
+                      onCheckedChange={setAutoStartMatches}
+                      disabled={!assignCourts}
+                    />
+                    <Label 
+                      htmlFor="autoStartMatches" 
+                      className={!assignCourts ? "text-gray-400" : ""}
+                    >
+                      Auto-start matches
+                    </Label>
+                  </div>
+                </div>
+                  
+                <SuggestedMatchPairs 
+                  suggestedPairs={suggestedPairs} 
+                  onRefreshSuggestions={() => generateSuggestedPairs(selectedDivision)}
+                />
               </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="matchDuration">Match Duration (minutes)</Label>
-                  <Input
-                    id="matchDuration"
-                    type="number"
-                    value={matchDuration}
-                    onChange={(e) => setMatchDuration(Number(e.target.value))}
-                    min={5}
-                    step={5}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="division">Division</Label>
-                  <Select
-                    value={selectedDivision}
-                    onValueChange={(value) => {
-                      setSelectedDivision(value as Division);
-                      generateSuggestedPairs(value as Division);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Division" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="INITIAL">Initial</SelectItem>
-                      <SelectItem value="A">Division A</SelectItem>
-                      <SelectItem value="B">Division B</SelectItem>
-                      <SelectItem value="C">Division C</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="assignCourts"
-                    checked={assignCourts}
-                    onCheckedChange={setAssignCourts}
-                  />
-                  <Label htmlFor="assignCourts">Auto-assign courts</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="autoStartMatches"
-                    checked={autoStartMatches}
-                    onCheckedChange={setAutoStartMatches}
-                    disabled={!assignCourts}
-                  />
-                  <Label 
-                    htmlFor="autoStartMatches" 
-                    className={!assignCourts ? "text-gray-400" : ""}
-                  >
-                    Auto-start matches
-                  </Label>
-                </div>
-              </div>
-                
-              <SuggestedMatchPairs 
-                suggestedPairs={suggestedPairs} 
-                onRefreshSuggestions={() => generateSuggestedPairs(selectedDivision)}
-              />
-                
-              <Button
-                className="w-full"
-                disabled={loading || suggestedPairs.length === 0}
-                onClick={handleSchedule}
-              >
-                {loading ? "Scheduling..." : "Schedule & Start Matches"}
-              </Button>
-            </div>
-          </TabsContent>
+            </TabsContent>
           
-          {/* Manual scheduling tab content would go here */}
-          <TabsContent value="manual" className="pt-4">
-            <div className="text-center py-8 text-gray-500">
-              <p>Manual scheduling allows you to create individual matches with specific teams and times.</p>
-              <p className="mt-2">To manually schedule matches, close this dialog and use the "Schedule One Match" button on the Matches tab.</p>
-            </div>
-          </TabsContent>
+            {/* Manual scheduling tab content would go here */}
+            <TabsContent value="manual" className="pt-4">
+              <div className="text-center py-8 text-gray-500">
+                <p>Manual scheduling allows you to create individual matches with specific teams and times.</p>
+                <p className="mt-2">To manually schedule matches, close this dialog and use the "Schedule One Match" button on the Matches tab.</p>
+              </div>
+            </TabsContent>
+          </ScrollArea>
+          
+          <DialogFooter className="mt-6">
+            <Button
+              className="w-full"
+              disabled={loading || suggestedPairs.length === 0}
+              onClick={handleSchedule}
+            >
+              {loading ? "Scheduling..." : "Schedule & Start Matches"}
+            </Button>
+          </DialogFooter>
         </Tabs>
       </DialogContent>
     </Dialog>
