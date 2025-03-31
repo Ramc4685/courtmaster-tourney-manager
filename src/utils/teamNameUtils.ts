@@ -22,52 +22,63 @@ export const generateTeamName = (playerNames: string[], maxLength: number = 12):
     // Single player - use their name
     return truncateName(validNames[0].trim(), maxLength);
   } else if (validNames.length === 2) {
-    // Two players - use "FirstName1/FirstName2" format
-    const firstName1 = extractFirstNameWithMinLength(validNames[0]);
-    const firstName2 = extractFirstNameWithMinLength(validNames[1]);
+    // Two players - use firstchunk/secondchunk format, ensuring at least 3 chars from each
+    const name1Chunk = extractNameChunk(validNames[0], 3);
+    const name2Chunk = extractNameChunk(validNames[1], 3);
     
     // If either name couldn't meet the minimum length requirement, generate a creative name
-    if (!firstName1 || !firstName2) {
+    if (!name1Chunk || !name2Chunk) {
       console.log("Could not extract names with minimum length, generating creative name");
       return generateCreativeTeamName();
     }
     
-    return truncateName(`${firstName1}/${firstName2}`, maxLength);
+    // Determine how much space we have for each name chunk within the max length
+    // Account for the "/" separator (1 character)
+    const availableSpace = maxLength - 1;
+    const eachNameMaxLength = Math.floor(availableSpace / 2);
+    
+    const truncatedName1 = truncateName(name1Chunk, eachNameMaxLength);
+    const truncatedName2 = truncateName(name2Chunk, eachNameMaxLength);
+    
+    return `${truncatedName1}/${truncatedName2}`;
   } else {
     // Multiple players (3+) - use first player's name with "+ X others"
-    const firstName = extractFirstNameWithMinLength(validNames[0]);
-    if (!firstName) {
+    const nameChunk = extractNameChunk(validNames[0], 3);
+    if (!nameChunk) {
       return generateCreativeTeamName();
     }
-    return truncateName(`${firstName} + ${validNames.length - 1} others`, maxLength);
+    return truncateName(`${nameChunk} + ${validNames.length - 1}`, maxLength);
   }
 };
 
 /**
- * Extracts the first name from a full name
+ * Extracts a chunk of characters from a name (preferably the first name)
+ * ensuring it has at least the specified minimum length
  * @param name Full name
- * @returns First name
+ * @param minLength Minimum length of the extracted chunk
+ * @returns Name chunk with at least minLength characters, or null if not possible
  */
-const extractFirstName = (name: string): string => {
-  const nameParts = name.trim().split(' ');
-  return nameParts[0];
-};
-
-/**
- * Extracts the first name from a full name, ensuring it has a minimum length of 3 characters
- * If name is too short, returns empty string to trigger creative name generation
- * @param name Full name
- * @returns First name with minimum length, or empty string if not possible
- */
-const extractFirstNameWithMinLength = (name: string, minLength: number = 3): string => {
-  const firstName = extractFirstName(name);
+const extractNameChunk = (name: string, minLength: number = 3): string | null => {
+  name = name.trim();
   
-  // Check if the first name meets the minimum length requirement
-  if (firstName.length < minLength) {
-    return ""; // Return empty string to trigger creative name generation
+  // First try to get the first name from a full name (if there are spaces)
+  const nameParts = name.split(' ');
+  const firstName = nameParts[0];
+  
+  // If the first name meets the minimum length, use it
+  if (firstName.length >= minLength) {
+    return firstName;
   }
   
-  return firstName;
+  // If the full name doesn't have spaces, or the first name is too short,
+  // just take the first minLength characters from the full name
+  if (name.length >= minLength) {
+    // Use either the whole name or just the first minLength characters if it's very long
+    return name.substring(0, Math.min(name.length, 6)); // Limit to 6 characters for balance
+  }
+  
+  // If the name is shorter than minLength, return null
+  return null;
 };
 
 /**

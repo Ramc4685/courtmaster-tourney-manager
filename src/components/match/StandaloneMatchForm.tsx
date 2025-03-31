@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -66,14 +65,10 @@ const StandaloneMatchForm: React.FC = () => {
       const nonEmptyPlayers = team1Players.filter(p => p.trim() !== '');
       const generatedName = generateTeamName(nonEmptyPlayers);
       
-      // Check if the generated name is likely a creative name (not derived from player names)
-      const containsPlayerNameParts = nonEmptyPlayers.some(name => {
-        const firstName = name.split(' ')[0];
-        return firstName.length >= 3 && generatedName.includes(firstName);
-      });
-      
-      // Show alert if using creative name due to short player names
-      setShowTeam1Alert(nonEmptyPlayers.length > 0 && !containsPlayerNameParts);
+      // If we got a creative team name (not derived from player names)
+      // or if any player name is too short, show an alert
+      const hasShortNames = nonEmptyPlayers.some(name => name.trim().length < 3);
+      setShowTeam1Alert(nonEmptyPlayers.length > 0 && hasShortNames);
       
       if (generatedName) {
         form.setValue('team1Name', generatedName);
@@ -86,14 +81,10 @@ const StandaloneMatchForm: React.FC = () => {
       const nonEmptyPlayers = team2Players.filter(p => p.trim() !== '');
       const generatedName = generateTeamName(nonEmptyPlayers);
       
-      // Check if the generated name is likely a creative name (not derived from player names)
-      const containsPlayerNameParts = nonEmptyPlayers.some(name => {
-        const firstName = name.split(' ')[0];
-        return firstName.length >= 3 && generatedName.includes(firstName);
-      });
-      
-      // Show alert if using creative name due to short player names
-      setShowTeam2Alert(nonEmptyPlayers.length > 0 && !containsPlayerNameParts);
+      // If we got a creative team name (not derived from player names)
+      // or if any player name is too short, show an alert
+      const hasShortNames = nonEmptyPlayers.some(name => name.trim().length < 3);
+      setShowTeam2Alert(nonEmptyPlayers.length > 0 && hasShortNames);
       
       if (generatedName) {
         form.setValue('team2Name', generatedName);
