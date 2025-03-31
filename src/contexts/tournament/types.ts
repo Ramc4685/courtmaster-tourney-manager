@@ -6,6 +6,7 @@ import { SchedulingOptions, SchedulingResult } from "@/services/tournament/Sched
 export interface TournamentContextType {
   tournaments: Tournament[];
   currentTournament: Tournament | null;
+  isPending: boolean; // Add isPending state to indicate transitions in progress
   setCurrentTournament: (tournament: Tournament | null) => void;
   createTournament: (tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">) => Tournament;
   updateTournament: (tournament: Tournament) => void;

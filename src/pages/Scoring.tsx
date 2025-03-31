@@ -8,6 +8,7 @@ import { useStandaloneScoring } from "@/hooks/scoring/useStandaloneScoring";
 import TournamentScoring from "@/components/scoring/TournamentScoring";
 import StandaloneMatchScoring from "@/components/scoring/StandaloneMatchScoring";
 import ScoringContainer from "@/components/scoring/ScoringContainer";
+import { Match } from "@/types/tournament";
 
 const Scoring = () => {
   console.log("Rendering Scoring page");
@@ -25,7 +26,7 @@ const Scoring = () => {
   console.log("Match type from URL query:", matchType);
   
   const navigate = useNavigate();
-  const { tournaments, setCurrentTournament } = useTournament();
+  const { tournaments, setCurrentTournament, isPending } = useTournament();
   const [isStandaloneMatch, setIsStandaloneMatch] = useState(false);
   const [matchSelected, setMatchSelected] = useState(false);
   
@@ -59,7 +60,7 @@ const Scoring = () => {
   const selectStandaloneMatch = useCallback(() => {
     if (standaloneScoring.scoringMatch && !matchSelected) {
       console.log("Standalone match loaded successfully, selecting match");
-      handleSelectMatch(standaloneScoring.scoringMatch as any);
+      handleSelectMatch(standaloneScoring.scoringMatch as Match);
       setMatchSelected(true);
     }
   }, [standaloneScoring.scoringMatch, matchSelected, handleSelectMatch]);
@@ -110,8 +111,8 @@ const Scoring = () => {
     return (
       <StandaloneMatchScoring 
         isLoading={standaloneScoring.isLoading}
-        match={standaloneScoring.match}
-        scoringMatch={standaloneScoring.scoringMatch}
+        match={standaloneScoring.match as Match}
+        scoringMatch={standaloneScoring.scoringMatch as Match}
         currentSet={currentSet}
         setCurrentSet={setCurrentSet}
         settingsOpen={settingsOpen}
@@ -164,6 +165,7 @@ const Scoring = () => {
       handleCompleteMatch={handleCompleteMatch}
       handleUpdateScoringSettings={handleUpdateScoringSettings}
       handleBackToCourts={handleBackToCourts}
+      isPending={isPending} // Pass isPending to the component
     />
   );
 };

@@ -1,5 +1,4 @@
-
-import React, { createContext, useState, ReactNode, useEffect, useRef, useCallback } from "react";
+import React, { createContext, useState, ReactNode, useEffect, useRef, useCallback, useTransition } from "react";
 import { Tournament, Match, Court, Team, MatchStatus, Division, TournamentStage, TournamentFormat, TournamentCategory } from "@/types/tournament";
 import { createSampleData, getSampleDataByFormat } from "@/utils/tournamentSampleData";
 import { generateId, findMatchById, updateMatchInTournament } from "@/utils/tournamentUtils";
@@ -35,6 +34,9 @@ import { useAuth } from "@/contexts/auth/AuthContext";
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
 export const TournamentProvider = ({ children }: { children: ReactNode }) => {
+  // Add useTransition hook for non-blocking UI updates
+  const [isPending, startTransition] = useTransition();
+  
   // Try to use auth context but handle case where it might not be available
   let user = null;
   try {
@@ -145,27 +147,34 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     console.log('[DEBUG] Creating new tournament:', tournamentData.name);
     const { tournament, tournaments: updatedTournaments } = createNewTournament(tournamentData, tournamentsRef.current);
     
-    setTournaments(updatedTournaments);
-    setCurrentTournament(tournament);
+    // Use startTransition for state updates to keep UI responsive
+    startTransition(() => {
+      setTournaments(updatedTournaments);
+      setCurrentTournament(tournament);
+    });
     
     return tournament;
-  }, []);
+  }, [startTransition]);
 
   // Delete a tournament
   const deleteTournament = useCallback((tournamentId: string) => {
     console.log('[DEBUG] Deleting tournament:', tournamentId);
-    setTournaments(prevTournaments => {
-      const { tournaments: updatedTournaments } = deleteT(
-        tournamentId,
-        prevTournaments,
-        currentTournamentRef.current
-      );
-      return updatedTournaments;
+    
+    // Use startTransition for state updates to keep UI responsive
+    startTransition(() => {
+      setTournaments(prevTournaments => {
+        const { tournaments: updatedTournaments } = deleteT(
+          tournamentId,
+          prevTournaments,
+          currentTournamentRef.current
+        );
+        return updatedTournaments;
+      });
     });
     
     // Use a separate effect for checking if currentTournament should be cleared
     checkCurrentTournamentExists();
-  }, [checkCurrentTournamentExists]);
+  }, [checkCurrentTournamentExists, startTransition]);
 
   // Update a tournament with safe state update pattern
   const updateTournament = useCallback((tournament: Tournament) => {
@@ -174,15 +183,18 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     // Create a deep copy to prevent shared references
     const tournamentCopy = JSON.parse(JSON.stringify(tournament));
     
-    setTournaments(prevTournaments => 
-      prevTournaments.map(t => t.id === tournamentCopy.id ? tournamentCopy : t)
-    );
-    
-    // Only update currentTournament if it's the same tournament being updated
-    if (currentTournamentRef.current && currentTournamentRef.current.id === tournamentCopy.id) {
-      setCurrentTournament(tournamentCopy);
-    }
-  }, []);
+    // Use startTransition for state updates to keep UI responsive
+    startTransition(() => {
+      setTournaments(prevTournaments => 
+        prevTournaments.map(t => t.id === tournamentCopy.id ? tournamentCopy : t)
+      );
+      
+      // Only update currentTournament if it's the same tournament being updated
+      if (currentTournamentRef.current && currentTournamentRef.current.id === tournamentCopy.id) {
+        setCurrentTournament(tournamentCopy);
+      }
+    });
+  }, [startTransition]);
 
   // Add a team to the current tournament
   const addTeam = useCallback((team: Team) => {
@@ -201,8 +213,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     console.log('[DEBUG] Importing teams to tournament. Count:', teams.length);
     const updatedTournament = importTeamsToTournament(teams, currentTournamentRef.current);
     
-    updateTournament(updatedTournament);
-  }, [updateTournament]);
+    // Use startTransition for potentially heavy operation
+    startTransition(() => {
+      updateTournament(updatedTournament);
+    });
+  }, [updateTournament, startTransition]);
 
   // Update a match in the current tournament
   const updateMatch = useCallback((match: Match) => {
@@ -298,13 +313,16 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     console.log('[DEBUG] Loading sample data. Format:', format || 'default');
     const sampleData = format ? getSampleDataByFormat(format) : createSampleData();
     
-    setTournaments(prevTournaments => {
-      const filteredTournaments = prevTournaments.filter(t => t.id !== sampleData.id);
-      return [...filteredTournaments, sampleData];
+    // Use startTransition for heavy operation
+    startTransition(() => {
+      setTournaments(prevTournaments => {
+        const filteredTournaments = prevTournaments.filter(t => t.id !== sampleData.id);
+        return [...filteredTournaments, sampleData];
+      });
+      
+      setCurrentTournament(sampleData);
     });
-    
-    setCurrentTournament(sampleData);
-  }, []);
+  }, [startTransition]);
 
   // Schedule a match with memoized implementation
   const scheduleMatch = useCallback((team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => {
@@ -330,9 +348,13 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     console.log('[DEBUG] Auto-assigning courts');
     const result = await autoAssignCourts(currentTournamentRef.current);
     
-    updateTournament(result.tournament);
+    // Use startTransition for potentially expensive UI update
+    startTransition(() => {
+      updateTournament(result.tournament);
+    });
+    
     return result.assignedCount;
-  }, [updateTournament]);
+  }, [updateTournament, startTransition]);
 
   // Generate multi-stage tournament with memoized implementation
   const generateMultiStageTournament = useCallback(() => {
@@ -341,8 +363,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     console.log('[DEBUG] Generating multi-stage tournament');
     const updatedTournament = generateMultiStage(currentTournamentRef.current);
     
-    updateTournament(updatedTournament);
-  }, [updateTournament]);
+    // Use startTransition for heavy operation
+    startTransition(() => {
+      updateTournament(updatedTournament);
+    });
+  }, [updateTournament, startTransition]);
 
   // Advance to next stage with memoized implementation
   const advanceToNextStage = useCallback(() => {
@@ -361,8 +386,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       // Add more cases for other stages as needed
     }
     
-    updateTournament(updatedTournament);
-  }, [updateTournament]);
+    // Use startTransition for heavy operation
+    startTransition(() => {
+      updateTournament(updatedTournament);
+    });
+  }, [updateTournament, startTransition]);
 
   // Assign seeding with memoized implementation
   const assignSeeding = useCallback((tournamentId: string) => {
@@ -372,9 +400,12 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     
     const updatedTournament = assignTournamentSeeding(tournamentId, tournamentsRef.current);
     if (updatedTournament) {
-      updateTournament(updatedTournament);
+      // Use startTransition for potentially expensive operation
+      startTransition(() => {
+        updateTournament(updatedTournament);
+      });
     }
-  }, [updateTournament]);
+  }, [updateTournament, startTransition]);
 
   // Add category to tournament with memoized implementation
   const addCategory = useCallback((category: Omit<TournamentCategory, "id">) => {
@@ -459,8 +490,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       updatedAt: new Date()
     };
     
-    updateTournament(updatedTournament);
-  }, [updateTournament]);
+    // Use startTransition for potentially heavy operation
+    startTransition(() => {
+      updateTournament(updatedTournament);
+    });
+  }, [updateTournament, startTransition]);
 
   // Schedule matches with memoized implementation
   const scheduleMatches = useCallback(async (
@@ -477,15 +511,19 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     const result = await schedulingService.scheduleMatches(currentTournamentRef.current, teamPairs, options);
     
     // Update the tournament with the scheduled matches and assigned courts
-    updateTournament(result.tournament);
+    // Use startTransition to prevent UI blocking during this heavy operation
+    startTransition(() => {
+      updateTournament(result.tournament);
+    });
     
     return result;
-  }, [updateTournament]);
+  }, [updateTournament, startTransition]);
 
   // Memoize the context value to prevent unnecessary re-renders of consuming components
   const contextValue = React.useMemo(() => ({
     tournaments,
     currentTournament,
+    isPending, // Add isPending state to context
     setCurrentTournament,
     createTournament,
     updateTournament,
@@ -514,6 +552,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   }), [
     tournaments, 
     currentTournament,
+    isPending, // Add isPending to dependency array
     setCurrentTournament,
     createTournament,
     updateTournament,
