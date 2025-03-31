@@ -8,7 +8,7 @@ import TeamFormSection from "./form/TeamFormSection";
 import MatchDetailsSection from "./form/MatchDetailsSection";
 
 // Schema definition for form values
-export type FormValues = z.infer<typeof z.object({
+const matchFormSchema = z.object({
   team1Name: z.string().min(1),
   team1Players: z.array(z.string()),
   team2Name: z.string().min(1),
@@ -18,7 +18,10 @@ export type FormValues = z.infer<typeof z.object({
   tournamentName: z.string().optional(),
   categoryName: z.string().optional(),
   isPublic: z.boolean().default(false)
-})>;
+});
+
+// Export the type inferred from the schema
+export type FormValues = z.infer<typeof matchFormSchema>;
 
 const StandaloneMatchForm: React.FC = () => {
   const {
