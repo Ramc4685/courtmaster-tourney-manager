@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -5,12 +6,11 @@ import { useStandaloneMatchStore } from "@/stores/standaloneMatchStore";
 import { Team } from "@/types/tournament";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
-import { CalendarIcon, PlusCircleIcon, User, X, Wand2 } from "lucide-react";
+import { CalendarIcon, PlusCircleIcon, User, X, Wand2, Info } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -22,6 +22,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { generateTeamName, generateCreativeTeamName } from "@/utils/teamNameUtils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const formSchema = z.object({
   team1Name: z.string().min(1, { message: "Team 1 name is required" }),
@@ -45,6 +46,8 @@ const StandaloneMatchForm: React.FC = () => {
   const [team2Players, setTeam2Players] = useState<string[]>(['']);
   const [team1NameEdited, setTeam1NameEdited] = useState(false);
   const [team2NameEdited, setTeam2NameEdited] = useState(false);
+  const [showTeam1Alert, setShowTeam1Alert] = useState(false);
+  const [showTeam2Alert, setShowTeam2Alert] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -57,10 +60,21 @@ const StandaloneMatchForm: React.FC = () => {
     }
   });
 
-  // Effect to update team names when players change
+  // Update team names when player names change
   useEffect(() => {
-    if (!team1NameEdited) {
-      const generatedName = generateTeamName(team1Players);
+    if (!team1NameEdited && team1Players.some(p => p.trim() !== '')) {
+      const nonEmptyPlayers = team1Players.filter(p => p.trim() !== '');
+      const generatedName = generateTeamName(nonEmptyPlayers);
+      
+      // Check if the generated name is likely a creative name (not derived from player names)
+      const containsPlayerNameParts = nonEmptyPlayers.some(name => {
+        const firstName = name.split(' ')[0];
+        return firstName.length >= 3 && generatedName.includes(firstName);
+      });
+      
+      // Show alert if using creative name due to short player names
+      setShowTeam1Alert(nonEmptyPlayers.length > 0 && !containsPlayerNameParts);
+      
       if (generatedName) {
         form.setValue('team1Name', generatedName);
       }
@@ -68,8 +82,19 @@ const StandaloneMatchForm: React.FC = () => {
   }, [team1Players, form, team1NameEdited]);
 
   useEffect(() => {
-    if (!team2NameEdited) {
-      const generatedName = generateTeamName(team2Players);
+    if (!team2NameEdited && team2Players.some(p => p.trim() !== '')) {
+      const nonEmptyPlayers = team2Players.filter(p => p.trim() !== '');
+      const generatedName = generateTeamName(nonEmptyPlayers);
+      
+      // Check if the generated name is likely a creative name (not derived from player names)
+      const containsPlayerNameParts = nonEmptyPlayers.some(name => {
+        const firstName = name.split(' ')[0];
+        return firstName.length >= 3 && generatedName.includes(firstName);
+      });
+      
+      // Show alert if using creative name due to short player names
+      setShowTeam2Alert(nonEmptyPlayers.length > 0 && !containsPlayerNameParts);
+      
       if (generatedName) {
         form.setValue('team2Name', generatedName);
       }
@@ -117,9 +142,23 @@ const StandaloneMatchForm: React.FC = () => {
     if (team === "team1") {
       form.setValue('team1Name', creativeName);
       setTeam1NameEdited(true);
+      setShowTeam1Alert(false);
     } else {
       form.setValue('team2Name', creativeName);
       setTeam2NameEdited(true);
+      setShowTeam2Alert(false);
+    }
+  };
+
+  const handleTeamNameChange = (team: "team1" | "team2", value: string) => {
+    if (team === "team1") {
+      form.setValue('team1Name', value);
+      setTeam1NameEdited(true);
+      setShowTeam1Alert(false);
+    } else {
+      form.setValue('team2Name', value);
+      setTeam2NameEdited(true);
+      setShowTeam2Alert(false);
     }
   };
 
@@ -237,38 +276,39 @@ const StandaloneMatchForm: React.FC = () => {
                 ))}
               </div>
               
-              <FormField
-                control={form.control}
-                name="team1Name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Team Name</FormLabel>
-                    <div className="flex space-x-2">
-                      <FormControl>
-                        <Input {...field} placeholder="Enter team name" className="flex-grow"
-                          onChange={e => {
-                            field.onChange(e);
-                            setTeam1NameEdited(true);
-                          }} 
-                        />
-                      </FormControl>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="icon"
-                        onClick={() => handleGenerateCreativeName("team1")}
-                        title="Generate creative team name"
-                      >
-                        <Wand2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <FormDescription className="text-xs">
-                      Auto-generated from player names. You can edit it.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
+              <div className="space-y-2">
+                <Label>Team Name</Label>
+                
+                {showTeam1Alert && (
+                  <Alert variant="info" className="mb-2 py-2 text-sm">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Player names need at least 3 characters for automatic naming. A creative name was generated.
+                    </AlertDescription>
+                  </Alert>
                 )}
-              />
+                
+                <div className="flex space-x-2">
+                  <Input 
+                    value={form.watch('team1Name')}
+                    onChange={(e) => handleTeamNameChange("team1", e.target.value)}
+                    placeholder="Enter team name" 
+                    className="flex-grow"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => handleGenerateCreativeName("team1")}
+                    title="Generate creative team name"
+                  >
+                    <Wand2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <FormDescription className="text-xs">
+                  Auto-generated from player names. You can edit it.
+                </FormDescription>
+              </div>
             </div>
             
             {/* Team 2 Section */}
@@ -312,38 +352,39 @@ const StandaloneMatchForm: React.FC = () => {
                 ))}
               </div>
               
-              <FormField
-                control={form.control}
-                name="team2Name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Team Name</FormLabel>
-                    <div className="flex space-x-2">
-                      <FormControl>
-                        <Input {...field} placeholder="Enter team name" className="flex-grow"
-                          onChange={e => {
-                            field.onChange(e);
-                            setTeam2NameEdited(true);
-                          }}
-                        />
-                      </FormControl>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="icon"
-                        onClick={() => handleGenerateCreativeName("team2")}
-                        title="Generate creative team name"
-                      >
-                        <Wand2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <FormDescription className="text-xs">
-                      Auto-generated from player names. You can edit it.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
+              <div className="space-y-2">
+                <Label>Team Name</Label>
+                
+                {showTeam2Alert && (
+                  <Alert variant="info" className="mb-2 py-2 text-sm">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Player names need at least 3 characters for automatic naming. A creative name was generated.
+                    </AlertDescription>
+                  </Alert>
                 )}
-              />
+                
+                <div className="flex space-x-2">
+                  <Input 
+                    value={form.watch('team2Name')}
+                    onChange={(e) => handleTeamNameChange("team2", e.target.value)}
+                    placeholder="Enter team name" 
+                    className="flex-grow"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => handleGenerateCreativeName("team2")}
+                    title="Generate creative team name"
+                  >
+                    <Wand2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <FormDescription className="text-xs">
+                  Auto-generated from player names. You can edit it.
+                </FormDescription>
+              </div>
             </div>
           </div>
           
