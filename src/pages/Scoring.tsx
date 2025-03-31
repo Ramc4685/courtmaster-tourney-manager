@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { ChevronLeft, AlertTriangle, Trophy } from "lucide-react";
@@ -62,19 +61,21 @@ const Scoring = () => {
     handleBackToCourts
   } = useScoringLogic();
 
-  // Load standalone match if specified in URL
+  // Load standalone match if specified in URL - fix the infinite update loop
   useEffect(() => {
     if (matchType === "standalone" && matchId) {
       console.log("Loading standalone match:", matchId);
       setIsStandaloneMatch(true);
       
-      if (standaloneScoring.scoringMatch) {
+      // Only call handleSelectMatch if we have a valid match and it hasn't been selected yet
+      if (standaloneScoring.scoringMatch && 
+          (!selectedMatch || selectedMatch.id !== standaloneScoring.scoringMatch.id)) {
         console.log("Standalone match loaded successfully");
-        // Using the properly converted scoringMatch from the hook
         handleSelectMatch(standaloneScoring.scoringMatch);
       }
     }
-  }, [matchId, matchType, standaloneScoring.scoringMatch, handleSelectMatch]);
+  // Include selectedMatch.id in dependencies to prevent unnecessary re-selections
+  }, [matchId, matchType, standaloneScoring.scoringMatch, handleSelectMatch, selectedMatch]);
   
   // Set the current tournament based on the URL parameter
   useEffect(() => {

@@ -1,8 +1,8 @@
-
 import { ScoringSettings, Match } from "@/types/tournament";
 import { useTournament } from "@/contexts/TournamentContext";
 import { useToast } from "@/hooks/use-toast";
 import { isSetComplete, isMatchComplete } from "@/utils/matchUtils";
+import { useCallback } from "react";
 
 // This hook contains the actions for the scoring interface
 export const useScoringActions = (
@@ -27,7 +27,8 @@ export const useScoringActions = (
   
   const { toast } = useToast();
 
-  const handleSelectMatch = (match: Match) => {
+  // Use useCallback to memoize functions to prevent re-creation on every render
+  const handleSelectMatch = useCallback((match: Match) => {
     if (!match) {
       console.error('[ERROR] Cannot select match: Match is null or undefined');
       return;
@@ -46,9 +47,9 @@ export const useScoringActions = (
     setSelectedMatch(latestMatch);
     setCurrentSet(latestMatch.scores?.length > 0 ? latestMatch.scores.length - 1 : 0);
     setActiveView("scoring");
-  };
+  }, [currentTournament, setActiveView, setCurrentSet, setSelectedMatch]);
 
-  const handleScoreChange = (team: "team1" | "team2", increment: boolean) => {
+  const handleScoreChange = useCallback((team: "team1" | "team2", increment: boolean) => {
     if (!selectedMatch) return;
 
     // Make sure we have the latest match from context
@@ -106,9 +107,9 @@ export const useScoringActions = (
         setNewSetDialogOpen(true);
       }
     }
-  };
+  }, [currentSet, currentTournament, scoringSettings, selectedMatch, setCompleteMatchDialogOpen, setNewSetDialogOpen, setSelectedMatch, updateMatchScore]);
 
-  const handleStartMatch = (match: Match) => {
+  const handleStartMatch = useCallback((match: Match) => {
     if (!match.courtNumber) {
       toast({
         title: "Court assignment required",
@@ -124,9 +125,9 @@ export const useScoringActions = (
       title: "Match started",
       description: "The match has been started and is now in progress."
     });
-  };
+  }, [handleSelectMatch, toast, updateMatchStatus]);
 
-  const handleCompleteMatch = () => {
+  const handleCompleteMatch = useCallback(() => {
     if (!selectedMatch) return;
     completeMatch(selectedMatch.id);
     toast({
@@ -136,9 +137,9 @@ export const useScoringActions = (
     setSelectedMatch(null);
     setActiveView("courts");
     setCompleteMatchDialogOpen(false);
-  };
+  }, [completeMatch, selectedMatch, setActiveView, setCompleteMatchDialogOpen, setSelectedMatch, toast]);
 
-  const handleNewSet = () => {
+  const handleNewSet = useCallback(() => {
     if (!selectedMatch) return;
     const newSetIndex = (selectedMatch.scores || []).length;
     
@@ -168,9 +169,9 @@ export const useScoringActions = (
       title: "New set started",
       description: `Set ${newSetIndex + 1} has been started.`
     });
-  };
+  }, [scoringSettings.maxSets, selectedMatch, setCurrentSet, setNewSetDialogOpen, setSelectedMatch, toast, updateMatchScore]);
   
-  const handleUpdateScoringSettings = (newSettings: ScoringSettings) => {
+  const handleUpdateScoringSettings = useCallback((newSettings: ScoringSettings) => {
     // Update tournament settings
     if (currentTournament) {
       const updatedTournament = {
@@ -180,7 +181,7 @@ export const useScoringActions = (
       };
       updateTournament(updatedTournament);
     }
-  };
+  }, [currentTournament, updateTournament]);
 
   return {
     handleSelectMatch,

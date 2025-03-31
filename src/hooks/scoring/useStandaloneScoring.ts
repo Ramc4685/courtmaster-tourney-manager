@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
 import { Match, StandaloneMatch, TournamentStage } from '@/types/tournament';
 import { useToast } from '@/hooks/use-toast';
@@ -10,11 +10,30 @@ export const useStandaloneScoring = (matchId: string | null) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scoringMatch, setScoringMatch] = useState<Match | null>(null);
+  const [prevMatchId, setPrevMatchId] = useState<string | null>(null);
 
-  // Load standalone match
+  // Convert standalone match to regular match compatible with scoring components
+  const convertToScoringMatch = useCallback((standaloneMatch: StandaloneMatch | null): Match | null => {
+    if (!standaloneMatch) return null;
+    
+    // Ensure scores is always an array
+    const scores = standaloneMatch.scores || [];
+    
+    return {
+      ...standaloneMatch,
+      tournamentId: 'standalone',
+      division: 'INITIAL',
+      stage: 'INITIAL_ROUND' as TournamentStage,
+      category: standaloneMatch.category || { id: 'default', name: 'Default', type: 'MENS_SINGLES' },
+      scores: scores
+    } as Match;
+  }, []);
+
+  // Load standalone match - fix the infinite update issue
   useEffect(() => {
-    if (!matchId) {
-      setIsLoading(false);
+    if (!matchId || matchId === prevMatchId) {
+      // If we've already processed this matchId, don't reload it
+      if (!matchId) setIsLoading(false);
       return;
     }
 
@@ -37,13 +56,15 @@ export const useStandaloneScoring = (matchId: string | null) => {
         console.error('Error loading standalone match:', err);
       } finally {
         setIsLoading(false);
+        // Update the previous matchId to prevent reloading the same match
+        setPrevMatchId(matchId);
       }
     };
 
     loadMatch();
-  }, [matchId, standaloneMatchStore]);
+  }, [matchId, standaloneMatchStore, convertToScoringMatch, prevMatchId]);
 
-  const saveMatch = async () => {
+  const saveMatch = useCallback(async () => {
     if (!standaloneMatchStore.currentMatch) return false;
     
     try {
@@ -72,24 +93,7 @@ export const useStandaloneScoring = (matchId: string | null) => {
       
       return false;
     }
-  };
-
-  // Convert standalone match to regular match compatible with scoring components
-  const convertToScoringMatch = (standaloneMatch: StandaloneMatch | null): Match | null => {
-    if (!standaloneMatch) return null;
-    
-    // Ensure scores is always an array
-    const scores = standaloneMatch.scores || [];
-    
-    return {
-      ...standaloneMatch,
-      tournamentId: 'standalone',
-      division: 'INITIAL',
-      stage: 'INITIAL_ROUND' as TournamentStage,
-      category: standaloneMatch.category || { id: 'default', name: 'Default', type: 'MENS_SINGLES' },
-      scores: scores
-    } as Match;
-  };
+  }, [standaloneMatchStore, toast]);
 
   return {
     match: standaloneMatchStore.currentMatch,

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { Match, ScoringSettings } from "@/types/tournament";
 import { PlusCircle, MinusCircle, RefreshCw, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,8 @@ interface ScoringMatchDetailProps {
   onSetChange: (setIndex: number) => void;
 }
 
-const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
+// Memoize the component to prevent unnecessary re-renders
+const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = memo(({
   match,
   onScoreChange,
   onNewSet,
@@ -173,6 +174,9 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
       </CardFooter>
     </Card>
   );
-};
+});
+
+// Add display name for better debugging
+ScoringMatchDetail.displayName = 'ScoringMatchDetail';
 
 export default ScoringMatchDetail;

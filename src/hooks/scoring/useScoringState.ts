@@ -20,9 +20,9 @@ export const useScoringState = (tournamentSettings?: ScoringSettings) => {
     tournamentSettings || getDefaultScoringSettings()
   );
   
-  // Update settings when tournament settings change
+  // Update settings when tournament settings change - with safeguard to prevent unnecessary updates
   useEffect(() => {
-    if (tournamentSettings) {
+    if (tournamentSettings && JSON.stringify(tournamentSettings) !== JSON.stringify(scoringSettings)) {
       setScoringSettings(tournamentSettings);
     }
   }, [tournamentSettings]);

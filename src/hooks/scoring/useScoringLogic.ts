@@ -1,14 +1,21 @@
 
+import { useState, useCallback } from "react";
+import { Match, Court } from "@/types/tournament";
 import { useTournament } from "@/contexts/TournamentContext";
-import { Court, Match } from "@/types/tournament";
+import { useToast } from "@/hooks/use-toast";
+import { getDefaultScoringSettings } from "@/utils/matchUtils";
 import { useScoringState } from "./useScoringState";
 import { useScoringActions } from "./useScoringActions";
 
 export const useScoringLogic = () => {
+  console.log("[DEBUG] Initializing useScoringLogic hook");
+  
   const { currentTournament } = useTournament();
   
+  console.log("[DEBUG] Current tournament in scoring logic:", currentTournament?.id);
+  
   // Get scoring settings from tournament
-  const scoringSettings = currentTournament?.scoringSettings;
+  const scoringSettings = currentTournament?.scoringSettings || getDefaultScoringSettings();
   
   // Use the state hook
   const state = useScoringState(scoringSettings);
@@ -25,18 +32,18 @@ export const useScoringLogic = () => {
     state.setSelectedMatch
   );
   
-  // Court selection handler
-  const handleSelectCourt = (court: Court) => {
+  // Court selection handler - memoize to prevent recreation on every render
+  const handleSelectCourt = useCallback((court: Court) => {
     state.setSelectedCourt(court);
     if (court.currentMatch) {
       actions.handleSelectMatch(court.currentMatch);
     }
-  };
+  }, [actions, state]);
   
-  // Go back to courts view
-  const handleBackToCourts = () => {
+  // Go back to courts view - also memoized
+  const handleBackToCourts = useCallback(() => {
     state.setActiveView("courts");
-  };
+  }, [state]);
 
   return {
     // State
