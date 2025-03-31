@@ -1,4 +1,3 @@
-
 export type Player = {
   id: string;
   name: string;
@@ -184,3 +183,26 @@ export type Group = {
   teamIds: string[];
   matches?: string[]; // IDs of matches in this group
 };
+
+// New type for standalone matches (not part of a tournament)
+export type StandaloneMatch = {
+  id: string;
+  team1: Team;
+  team2: Team;
+  scores: MatchScore[];
+  courtNumber?: number;
+  scheduledTime?: Date;
+  status: MatchStatus;
+  winner?: Team;
+  loser?: Team;
+  category?: TournamentCategory; // Optional as standalone matches might not have a category
+  createdAt: Date;
+  updatedAt?: Date;
+  created_by?: string;
+  updated_by?: string;
+  isPublic?: boolean; // Whether the match is publicly viewable
+  shareCode?: string; // Code for sharing the match
+};
+
+// Type to distinguish between scoring sources
+export type ScorerType = "TOURNAMENT" | "STANDALONE";

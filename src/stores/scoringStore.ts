@@ -4,3 +4,6 @@
 
 export { useScoringStore } from './scoring';
 export type { ScoringState } from './scoring/types';
+
+// Export the standalone match store as well
+export { useStandaloneMatchStore } from './standaloneMatchStore';
