@@ -25,10 +25,6 @@ function App() {
   // Create a client
   const queryClient = new QueryClient();
 
-  React.useEffect(() => {
-    document.documentElement.classList.add("dark");
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -41,6 +37,7 @@ function App() {
                   <Route path="tournaments" element={<Tournaments />} />
                   <Route path="tournament/create" element={<TournamentCreate />} />
                   <Route path="tournament/:tournamentId" element={<TournamentDetail />} />
+                  <Route path="tournaments/:tournamentId" element={<TournamentDetail />} /> {/* Support both URL patterns */}
                   <Route path="scoring/:tournamentId" element={<Scoring />} />
                   <Route path="quick-match" element={<QuickMatchPage />} />
                   <Route path="profile" element={<Profile />} />

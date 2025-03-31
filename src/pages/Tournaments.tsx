@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PlusCircle, Trophy, Calendar, Users, Eye, Database, Trash2 } from "lucide-react";
@@ -36,13 +37,13 @@ const Tournaments = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "DRAFT":
-        return <Badge variant="outline">Draft</Badge>;
+        return <Badge variant="outline" className="bg-white text-gray-800">Draft</Badge>;
       case "PUBLISHED":
-        return <Badge variant="secondary">Published</Badge>;
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Published</Badge>;
       case "IN_PROGRESS":
-        return <Badge className="bg-court-green">In Progress</Badge>;
+        return <Badge className="bg-court-green text-white">In Progress</Badge>;
       case "COMPLETED":
-        return <Badge variant="secondary">Completed</Badge>;
+        return <Badge variant="secondary" className="bg-gray-100 text-gray-800">Completed</Badge>;
       default:
         return null;
     }
@@ -65,7 +66,7 @@ const Tournaments = () => {
 
   const handleViewTournament = (tournament: any, e: React.MouseEvent) => {
     e.preventDefault();
-    console.log("Selecting tournament:", tournament.id);
+    console.log("Navigating to tournament:", tournament.id);
     setCurrentTournament(tournament);
     navigate(`/tournament/${tournament.id}`);
   };
@@ -98,7 +99,7 @@ const Tournaments = () => {
             <Button 
               variant="outline" 
               onClick={handleLoadSampleData}
-              className="flex items-center"
+              className="flex items-center bg-white text-gray-800 border-gray-300"
             >
               <Database className="mr-2 h-4 w-4" />
               Load Sample Data
@@ -106,7 +107,7 @@ const Tournaments = () => {
             
             {user && (
               <Link to="/tournament/create">
-                <Button className="bg-court-green hover:bg-court-green/90">
+                <Button className="bg-court-green hover:bg-court-green/90 text-white">
                   <PlusCircle className="mr-2 h-4 w-4" />
                   New Tournament
                 </Button>
@@ -117,7 +118,7 @@ const Tournaments = () => {
       />
 
       {tournaments.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 bg-white rounded-lg shadow-sm">
           <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900">No tournaments yet</h3>
           <p className="mt-1 text-gray-500">Get started by creating a new tournament or loading sample data.</p>
@@ -125,6 +126,7 @@ const Tournaments = () => {
             <Button 
               variant="outline" 
               onClick={handleLoadSampleData}
+              className="bg-white"
             >
               <Database className="mr-2 h-4 w-4" />
               Load Sample Data
@@ -132,7 +134,7 @@ const Tournaments = () => {
             
             {user ? (
               <Link to="/tournament/create">
-                <Button className="bg-court-green hover:bg-court-green/90">
+                <Button className="bg-court-green hover:bg-court-green/90 text-white">
                   Create Tournament
                 </Button>
               </Link>
@@ -148,7 +150,7 @@ const Tournaments = () => {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {tournaments.map((tournament) => (
-            <Card key={tournament.id} className="overflow-hidden">
+            <Card key={tournament.id} className="overflow-hidden bg-white border border-gray-200 shadow-sm">
               <div className="bg-court-green h-2" />
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
@@ -180,7 +182,8 @@ const Tournaments = () => {
               <CardFooter className="bg-gray-50 px-6 py-3 flex justify-between">
                 <Button 
                   variant="ghost" 
-                  size="sm" 
+                  size="sm"
+                  className="text-court-green hover:text-court-green/90 hover:bg-gray-100"
                   onClick={(e) => handleViewTournament(tournament, e)}
                 >
                   <Eye className="h-4 w-4 mr-1" />
@@ -192,7 +195,7 @@ const Tournaments = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="text-red-500 border-red-200 hover:bg-red-50"
+                        className="text-red-500 border-red-200 hover:bg-red-50 bg-white"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -222,7 +225,11 @@ const Tournaments = () => {
                     to={`/scoring/${tournament.id}`}
                     onClick={() => setCurrentTournament(tournament)}
                   >
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="bg-white text-gray-800"
+                    >
                       Scoring
                     </Button>
                   </Link>

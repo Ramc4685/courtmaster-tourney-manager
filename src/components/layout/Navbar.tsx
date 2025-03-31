@@ -20,10 +20,10 @@ const Navbar: React.FC = () => {
 
   // Create conditionally rendered links based on whether there's a current tournament
   const scoringLink = currentTournament ? `/scoring/${currentTournament.id}` : "/tournaments";
-  const tournamentLink = currentTournament ? `/tournament/${currentTournament.id}` : "/tournaments";
-
+  
   const handleTournamentClick = () => {
     if (currentTournament) {
+      console.log("Navigating to current tournament:", currentTournament.id);
       navigate(`/tournament/${currentTournament.id}`);
     } else {
       navigate("/tournaments");

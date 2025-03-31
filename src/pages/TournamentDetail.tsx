@@ -49,6 +49,8 @@ const TournamentDetail = () => {
 
   useEffect(() => {
     console.log("TournamentDetail component - Received tournamentId:", tournamentId);
+    console.log("Currently loaded tournaments:", tournaments.map(t => ({ id: t.id, name: t.name })));
+    
     // Set the current tournament based on the URL parameter if it's not already set
     if (tournamentId && (!currentTournament || currentTournament.id !== tournamentId)) {
       const tournament = tournaments.find(t => t.id === tournamentId);
@@ -64,12 +66,15 @@ const TournamentDetail = () => {
   }, [tournamentId, currentTournament, tournaments, setCurrentTournament, navigate]);
 
   if (!currentTournament) {
+    console.log("No current tournament loaded, showing loading state");
     return (
-      <div className="container mx-auto py-6">
-        <p>Loading tournament...</p>
+      <div className="container mx-auto py-6 bg-white p-8 rounded-lg shadow">
+        <p className="text-center text-gray-500">Loading tournament...</p>
       </div>
     );
   }
+
+  console.log("Rendering TournamentDetail with tournament:", currentTournament.name);
 
   const handleAddTeam = (newTeam: Omit<Team, "id">) => {
     const team = { ...newTeam, id: crypto.randomUUID() } as Team;
