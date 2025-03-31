@@ -1,12 +1,17 @@
 
-import { useState, useEffect } from "react";
-import { Match, Court, ScoringSettings } from "@/types/tournament";
+import { useState, useRef } from "react";
+import { Match, Court } from "@/types/tournament";
 import { getDefaultScoringSettings } from "@/utils/matchUtils";
+import { useTournament } from "@/contexts/TournamentContext";
 
-/**
- * Hook to manage scoring state separate from actions
- */
-export const useScoringState = (tournamentSettings?: ScoringSettings) => {
+export const useScoringState = () => {
+  const { currentTournament } = useTournament();
+  
+  // Get scoring settings from tournament
+  const scoringSettings = currentTournament?.scoringSettings || getDefaultScoringSettings();
+  
+  // State management with refs to prevent infinite loops
+  const selectedMatchRef = useRef<Match | null>(null);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const [currentSet, setCurrentSet] = useState(0);
@@ -15,34 +20,40 @@ export const useScoringState = (tournamentSettings?: ScoringSettings) => {
   const [newSetDialogOpen, setNewSetDialogOpen] = useState(false);
   const [completeMatchDialogOpen, setCompleteMatchDialogOpen] = useState(false);
   
-  // Initialize scoring settings with badminton defaults or tournament settings
-  const [scoringSettings, setScoringSettings] = useState<ScoringSettings>(
-    tournamentSettings || getDefaultScoringSettings()
-  );
+  // Flag to track if we're currently updating match to prevent update loops
+  const isUpdatingMatch = useRef(false);
   
-  // Update settings when tournament settings change - with safeguard to prevent unnecessary updates
-  useEffect(() => {
-    if (tournamentSettings && JSON.stringify(tournamentSettings) !== JSON.stringify(scoringSettings)) {
-      setScoringSettings(tournamentSettings);
-    }
-  }, [tournamentSettings]);
-
+  // Safely update the selected match to prevent infinite loops
+  const safeSetSelectedMatch = (match: Match | null) => {
+    if (isUpdatingMatch.current) return;
+    isUpdatingMatch.current = true;
+    
+    // Break the update chain
+    setTimeout(() => {
+      selectedMatchRef.current = match;
+      setSelectedMatch(match);
+      isUpdatingMatch.current = false;
+    }, 0);
+  };
+  
   return {
+    currentTournament,
     selectedMatch,
-    setSelectedMatch,
+    selectedMatchRef,
     selectedCourt,
-    setSelectedCourt,
     currentSet,
-    setCurrentSet,
     settingsOpen,
-    setSettingsOpen,
     activeView,
-    setActiveView,
     scoringSettings,
-    setScoringSettings,
     newSetDialogOpen,
-    setNewSetDialogOpen,
     completeMatchDialogOpen,
-    setCompleteMatchDialogOpen
+    safeSetSelectedMatch,
+    setSelectedCourt,
+    setCurrentSet,
+    setSettingsOpen,
+    setActiveView,
+    setNewSetDialogOpen,
+    setCompleteMatchDialogOpen,
+    isUpdatingMatch
   };
 };
