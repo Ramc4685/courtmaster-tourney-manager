@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Match, Court } from "@/types/tournament";
 import { useTournament } from "@/contexts/TournamentContext";
 import { useToast } from "@/hooks/use-toast";
@@ -26,7 +26,7 @@ export const useScoringLogic = () => {
   const [newSetDialogOpen, setNewSetDialogOpen] = useState(false);
   const [completeMatchDialogOpen, setCompleteMatchDialogOpen] = useState(false);
   
-  // Handle selecting a match
+  // Handle selecting a match - wrapped in useCallback to prevent infinite loops
   const handleSelectMatch = useCallback((match: Match) => {
     // Get the latest version of the match from the tournament
     if (!currentTournament) {
@@ -44,7 +44,7 @@ export const useScoringLogic = () => {
     setActiveView("scoring");
   }, [currentTournament]);
   
-  // Handle selecting a court
+  // Handle selecting a court - wrapped in useCallback
   const handleSelectCourt = useCallback((court: Court) => {
     console.log(`[DEBUG] Selecting court: #${court.number} (${court.name || 'Unnamed'})`);
     setSelectedCourt(court);
@@ -56,7 +56,7 @@ export const useScoringLogic = () => {
     }
   }, [handleSelectMatch]);
   
-  // Handle score changes
+  // Handle score changes - wrapped in useCallback
   const handleScoreChange = useCallback((team: "team1" | "team2", increment: boolean) => {
     if (!selectedMatch || !currentTournament) {
       console.error('[ERROR] Cannot update score: No match selected or no current tournament.');
@@ -77,6 +77,11 @@ export const useScoringLogic = () => {
     if (scores.length === 0) {
       console.log(`[DEBUG] No scores found, initializing with 0-0`);
       scores = [{ team1Score: 0, team2Score: 0 }];
+    }
+    
+    // Make sure the current set exists in scores
+    while (scores.length <= currentSet) {
+      scores.push({ team1Score: 0, team2Score: 0 });
     }
     
     // Update the appropriate team's score
@@ -136,7 +141,7 @@ export const useScoringLogic = () => {
     }
   }, [currentTournament, selectedMatch, currentSet, scoringSettings, updateMatchScore]);
   
-  // Start a match
+  // Start a match - wrapped in useCallback
   const handleStartMatch = useCallback((match: Match) => {
     if (!match.courtNumber) {
       console.warn(`[WARN] Cannot start match ${match.id}: No court assigned`);
@@ -157,7 +162,7 @@ export const useScoringLogic = () => {
     });
   }, [toast, updateMatchStatus, handleSelectMatch]);
   
-  // Complete a match
+  // Complete a match - wrapped in useCallback
   const handleCompleteMatch = useCallback(() => {
     if (!selectedMatch) {
       console.error('[ERROR] Cannot complete match: No match selected.');
@@ -175,7 +180,7 @@ export const useScoringLogic = () => {
     setCompleteMatchDialogOpen(false);
   }, [selectedMatch, completeMatch, toast]);
   
-  // Create a new set
+  // Create a new set - wrapped in useCallback
   const handleNewSet = useCallback(() => {
     if (!selectedMatch) {
       console.error('[ERROR] Cannot create new set: No match selected.');
@@ -216,7 +221,7 @@ export const useScoringLogic = () => {
     });
   }, [selectedMatch, scoringSettings, updateMatchScore, toast]);
   
-  // Update scoring settings
+  // Update scoring settings - wrapped in useCallback
   const handleUpdateScoringSettings = useCallback((newSettings) => {
     console.log(`[DEBUG] Updating scoring settings:`, newSettings);
     
@@ -234,7 +239,7 @@ export const useScoringLogic = () => {
     }
   }, [currentTournament, updateTournament]);
   
-  // Go back to courts view
+  // Go back to courts view - wrapped in useCallback
   const handleBackToCourts = useCallback(() => {
     console.log(`[DEBUG] Navigating back to courts view`);
     setActiveView("courts");
