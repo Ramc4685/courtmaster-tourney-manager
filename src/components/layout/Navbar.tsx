@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { LogIn, MenuIcon, Trophy, User } from "lucide-react";
 import {
   Sheet,
@@ -16,10 +16,19 @@ import AuthDialog from "@/components/auth/AuthDialog";
 const Navbar: React.FC = () => {
   const { currentTournament } = useTournament();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
-  // Create a conditionally rendered scoring link based on whether there's a current tournament
+  // Create conditionally rendered links based on whether there's a current tournament
   const scoringLink = currentTournament ? `/scoring/${currentTournament.id}` : "/tournaments";
   const tournamentLink = currentTournament ? `/tournament/${currentTournament.id}` : "/tournaments";
+
+  const handleTournamentClick = () => {
+    if (currentTournament) {
+      navigate(`/tournament/${currentTournament.id}`);
+    } else {
+      navigate("/tournaments");
+    }
+  };
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -46,9 +55,13 @@ const Navbar: React.FC = () => {
               Tournaments
             </Link>
             {currentTournament && (
-              <Link to={tournamentLink} className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
+              <Button 
+                variant="ghost" 
+                className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium"
+                onClick={handleTournamentClick}
+              >
                 Current Tournament
-              </Link>
+              </Button>
             )}
             <Link to={scoringLink} className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
               Scoring
@@ -106,9 +119,13 @@ const Navbar: React.FC = () => {
                     Tournaments
                   </Link>
                   {currentTournament && (
-                    <Link to={tournamentLink} className="text-lg font-medium">
+                    <Button 
+                      variant="ghost" 
+                      className="justify-start text-lg font-medium p-0"
+                      onClick={handleTournamentClick}
+                    >
                       Current Tournament
-                    </Link>
+                    </Button>
                   )}
                   <Link to={scoringLink} className="text-lg font-medium">
                     Scoring

@@ -2,7 +2,6 @@
 import React from "react";
 import PageHeader from "@/components/shared/PageHeader";
 import StandaloneMatchForm from "@/components/match/StandaloneMatchForm";
-import Layout from "@/components/layout/Layout";
 
 const QuickMatchPage: React.FC = () => {
   return (

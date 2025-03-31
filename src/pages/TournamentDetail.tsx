@@ -1,8 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Layout from "@/components/layout/Layout";
 import { useTournament } from "@/contexts/tournament/useTournament";
 import TournamentHeader from "@/components/tournament/TournamentHeader";
 import OverviewTab from "@/components/tournament/tabs/OverviewTab";
@@ -50,13 +48,16 @@ const TournamentDetail = () => {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
 
   useEffect(() => {
+    console.log("TournamentDetail component - Received tournamentId:", tournamentId);
     // Set the current tournament based on the URL parameter if it's not already set
     if (tournamentId && (!currentTournament || currentTournament.id !== tournamentId)) {
       const tournament = tournaments.find(t => t.id === tournamentId);
       if (tournament) {
+        console.log("Found tournament, setting as current:", tournament.name);
         setCurrentTournament(tournament);
       } else {
         // If tournament is not found, navigate to tournaments page
+        console.error("Tournament not found with ID:", tournamentId);
         navigate("/tournaments");
       }
     }
@@ -64,11 +65,9 @@ const TournamentDetail = () => {
 
   if (!currentTournament) {
     return (
-      <Layout>
-        <div className="container mx-auto py-6">
-          <p>Loading tournament...</p>
-        </div>
-      </Layout>
+      <div className="container mx-auto py-6">
+        <p>Loading tournament...</p>
+      </div>
     );
   }
 
@@ -190,103 +189,101 @@ const TournamentDetail = () => {
   const hasCategoriesEnabled = currentTournament.categories && currentTournament.categories.length > 0;
 
   return (
-    <Layout>
-      <div className="container mx-auto py-6 space-y-8">
-        <TournamentHeader
-          tournament={currentTournament}
-          updateTournament={updateTournament}
-          deleteTournament={() => {}} // This will be implemented later
-        />
+    <div className="container mx-auto py-6 space-y-8">
+      <TournamentHeader
+        tournament={currentTournament}
+        updateTournament={updateTournament}
+        deleteTournament={() => {}} // This will be implemented later
+      />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="teams">Teams</TabsTrigger>
-            <TabsTrigger value="matches">Matches</TabsTrigger>
-            <TabsTrigger value="courts">Courts</TabsTrigger>
-            <TabsTrigger value="bracket">Bracket</TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="teams">Teams</TabsTrigger>
+          <TabsTrigger value="matches">Matches</TabsTrigger>
+          <TabsTrigger value="courts">Courts</TabsTrigger>
+          <TabsTrigger value="bracket">Bracket</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="overview" className="py-4">
-            <OverviewTab
+        <TabsContent value="overview" className="py-4">
+          <OverviewTab
+            tournament={currentTournament}
+            onUpdateTournament={updateTournament}
+            onScheduleDialogOpen={() => setScheduleDialogOpen(true)}
+            onGenerateMultiStageTournament={generateMultiStageTournament}
+            onAdvanceToNextStage={advanceToNextStage}
+          />
+        </TabsContent>
+
+        <TabsContent value="teams" className="py-4">
+          {hasCategoriesEnabled ? (
+            <CategoryTabs 
               tournament={currentTournament}
-              onUpdateTournament={updateTournament}
-              onScheduleDialogOpen={() => setScheduleDialogOpen(true)}
-              onGenerateMultiStageTournament={generateMultiStageTournament}
-              onAdvanceToNextStage={advanceToNextStage}
+              activeTab={activeTab}
             />
-          </TabsContent>
-
-          <TabsContent value="teams" className="py-4">
-            {hasCategoriesEnabled ? (
-              <CategoryTabs 
-                tournament={currentTournament}
-                activeTab={activeTab}
-              />
-            ) : (
-              <TeamsTab
-                teams={currentTournament.teams}
-                onTeamUpdate={handleTeamUpdate}
-                onAddTeamClick={() => setAddTeamDialogOpen(true)}
-              />
-            )}
-          </TabsContent>
-
-          <TabsContent value="matches" className="py-4">
-            {hasCategoriesEnabled ? (
-              <CategoryTabs 
-                tournament={currentTournament}
-                activeTab={activeTab}
-              />
-            ) : (
-              <>
-                <ScoreEntrySection 
-                  matches={currentTournament.matches} 
-                  onMatchUpdate={updateMatch} 
-                />
-                
-                {/* Use the updated renderMatchesTab with the onStartMatch prop */}
-                <div>
-                  {React.createElement(
-                    // @ts-ignore - We're using renderMatchesTab helper which might have missed types
-                    renderMatchesTab(
-                      currentTournament.matches,
-                      currentTournament.teams,
-                      currentTournament.courts,
-                      updateMatch,
-                      assignCourt,
-                      handleStartMatch,
-                      () => setAddMatchDialogOpen(true),
-                      handleAutoSchedule
-                    )
-                  )}
-                </div>
-              </>
-            )}
-          </TabsContent>
-
-          <TabsContent value="courts" className="py-4">
-            <CourtsTab
-              courts={currentTournament.courts}
-              onCourtUpdate={handleCourtUpdate}
-              onAddCourtClick={() => setAddCourtDialogOpen(true)}
+          ) : (
+            <TeamsTab
+              teams={currentTournament.teams}
+              onTeamUpdate={handleTeamUpdate}
+              onAddTeamClick={() => setAddTeamDialogOpen(true)}
             />
-          </TabsContent>
+          )}
+        </TabsContent>
 
-          <TabsContent value="bracket" className="py-4">
-            {hasCategoriesEnabled ? (
-              <CategoryTabs 
-                tournament={currentTournament}
-                activeTab={activeTab}
+        <TabsContent value="matches" className="py-4">
+          {hasCategoriesEnabled ? (
+            <CategoryTabs 
+              tournament={currentTournament}
+              activeTab={activeTab}
+            />
+          ) : (
+            <>
+              <ScoreEntrySection 
+                matches={currentTournament.matches} 
+                onMatchUpdate={updateMatch} 
               />
-            ) : (
-              <BracketTab
-                tournament={currentTournament}
-              />
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
+              
+              {/* Use the updated renderMatchesTab with the onStartMatch prop */}
+              <div>
+                {React.createElement(
+                  // @ts-ignore - We're using renderMatchesTab helper which might have missed types
+                  renderMatchesTab(
+                    currentTournament.matches,
+                    currentTournament.teams,
+                    currentTournament.courts,
+                    updateMatch,
+                    assignCourt,
+                    handleStartMatch,
+                    () => setAddMatchDialogOpen(true),
+                    handleAutoSchedule
+                  )
+                )}
+              </div>
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="courts" className="py-4">
+          <CourtsTab
+            courts={currentTournament.courts}
+            onCourtUpdate={handleCourtUpdate}
+            onAddCourtClick={() => setAddCourtDialogOpen(true)}
+          />
+        </TabsContent>
+
+        <TabsContent value="bracket" className="py-4">
+          {hasCategoriesEnabled ? (
+            <CategoryTabs 
+              tournament={currentTournament}
+              activeTab={activeTab}
+            />
+          ) : (
+            <BracketTab
+              tournament={currentTournament}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Dialogs */}
       <TeamCreateDialog
@@ -318,7 +315,7 @@ const TournamentDetail = () => {
         open={scheduleDialogOpen}
         onOpenChange={setScheduleDialogOpen}
       />
-    </Layout>
+    </div>
   );
 };
 
