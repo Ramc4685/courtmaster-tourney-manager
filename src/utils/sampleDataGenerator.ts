@@ -1,5 +1,7 @@
+
 import { Tournament, Team, Player, Match, Court, TournamentFormat, TournamentStatus, TournamentStage, Division, MatchStatus, CourtStatus, TournamentCategory } from "@/types/tournament";
 import { generateId } from "./tournamentUtils";
+import { generateTeamName } from "./teamNameUtils";
 
 // Create sample data for testing
 export const createSampleData = (): Tournament => {
@@ -69,76 +71,79 @@ export const createSampleTournament = (format: TournamentFormat = "MULTI_STAGE")
   };
 };
 
-// Create sample teams
+// Create sample teams with realistic player names
 export const createSampleTeams = (categories: TournamentCategory[]): Team[] => {
   const mensSinglesCategory = categories.find(c => c.type === "MENS_SINGLES") || categories[0];
   const womensSinglesCategory = categories.find(c => c.type === "WOMENS_SINGLES") || categories[0];
   const mixedDoublesCategory = categories.find(c => c.type === "MIXED_DOUBLES") || categories[0];
   
-  return [
-    {
-      id: "team-1",
-      name: "Team Alpha",
-      players: [createSamplePlayer("John", "Doe")],
-      seed: 1,
-      category: mensSinglesCategory
-    },
-    {
-      id: "team-2",
-      name: "Team Beta",
-      players: [createSamplePlayer("Jane", "Smith")],
-      seed: 2,
-      category: womensSinglesCategory
-    },
-    {
-      id: "team-3",
-      name: "Team Gamma",
-      players: [createSamplePlayer("Bob", "Johnson")],
-      seed: 3,
-      category: mensSinglesCategory
-    },
-    {
-      id: "team-4",
-      name: "Team Delta",
-      players: [createSamplePlayer("Alice", "Williams")],
-      seed: 4,
-      category: womensSinglesCategory
-    },
-    {
-      id: "team-5",
-      name: "Team Epsilon",
-      players: [
-        createSamplePlayer("Mike", "Brown"),
-        createSamplePlayer("Sarah", "Davis")
-      ],
-      seed: 5,
-      category: mixedDoublesCategory
-    },
-    {
-      id: "team-6",
-      name: "Team Zeta",
-      players: [
-        createSamplePlayer("David", "Miller"),
-        createSamplePlayer("Emma", "Wilson")
-      ],
-      seed: 6,
-      category: mixedDoublesCategory
-    },
-    {
-      id: "team-7",
-      name: "Team Eta",
-      players: [createSamplePlayer("Chris", "Moore")],
-      seed: 7,
-      category: mensSinglesCategory
-    },
-    {
-      id: "team-8",
-      name: "Team Theta",
-      players: [createSamplePlayer("Olivia", "Taylor")],
-      seed: 8,
-      category: womensSinglesCategory
-    }
+  // Men's Singles Players
+  const mensSingles = [
+    { id: "player-1", name: "Jonatan Christie" },
+    { id: "player-2", name: "Viktor Axelsen" },
+    { id: "player-3", name: "Kento Momota" },
+    { id: "player-4", name: "Lee Zii Jia" }
   ];
+  
+  // Women's Singles Players
+  const womensSingles = [
+    { id: "player-5", name: "Tai Tzu-ying" },
+    { id: "player-6", name: "Chen Yufei" },
+    { id: "player-7", name: "Akane Yamaguchi" },
+    { id: "player-8", name: "Carolina Marin" }
+  ];
+  
+  // Mixed Doubles Pairs
+  const mixedDoublesPairs = [
+    [
+      { id: "player-9", name: "Zheng Siwei" },
+      { id: "player-10", name: "Huang Yaqiong" }
+    ],
+    [
+      { id: "player-11", name: "Wang Yilyu" },
+      { id: "player-12", name: "Huang Dongping" }
+    ]
+  ];
+  
+  const teams: Team[] = [];
+  
+  // Create Men's Singles Teams
+  mensSingles.forEach((player, index) => {
+    teams.push({
+      id: `team-ms-${index + 1}`,
+      name: player.name,
+      players: [player],
+      seed: index + 1,
+      category: mensSinglesCategory
+    });
+  });
+  
+  // Create Women's Singles Teams
+  womensSingles.forEach((player, index) => {
+    teams.push({
+      id: `team-ws-${index + 1}`,
+      name: player.name,
+      players: [player],
+      seed: index + 1,
+      category: womensSinglesCategory
+    });
+  });
+  
+  // Create Mixed Doubles Teams
+  mixedDoublesPairs.forEach((pair, index) => {
+    const playerNames = pair.map(p => p.name);
+    const teamName = generateTeamName(playerNames);
+    
+    teams.push({
+      id: `team-md-${index + 1}`,
+      name: teamName,
+      players: pair,
+      seed: index + 1,
+      category: mixedDoublesCategory
+    });
+  });
+  
+  return teams;
 };
 
 // Create a sample player

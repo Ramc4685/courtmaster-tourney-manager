@@ -73,7 +73,7 @@ const extractNameChunk = (name: string, minLength: number = 3): string | null =>
   // If the full name doesn't have spaces, or the first name is too short,
   // just take the first minLength characters from the full name
   if (name.length >= minLength) {
-    // Use either the whole name or just the first minLength characters if it's very long
+    // Use either the whole name or just the first 6 characters if it's very long
     return name.substring(0, Math.min(name.length, 6)); // Limit to 6 characters for balance
   }
   
