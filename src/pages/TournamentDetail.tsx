@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,7 +13,7 @@ import ImportTeamsDialog from "@/components/tournament/ImportTeamsDialog";
 import CourtCreateDialog from "@/components/court/CourtCreateDialog";
 import MatchCreateDialog from "@/components/match/MatchCreateDialog";
 import UnifiedScheduleDialog from "@/components/tournament/UnifiedScheduleDialog";
-import { Court, Match, Team } from "@/types/tournament";
+import { Court, Match, Team, Tournament } from "@/types/tournament";
 import { renderMatchesTab } from "@/utils/tournamentComponentHelper";
 import { useAuth } from "@/contexts/auth/AuthContext";
 import ScoreEntrySection from "@/components/tournament/score-entry/ScoreEntrySection";
@@ -166,7 +167,18 @@ const TournamentDetail = () => {
       
       if (result.started) {
         // Update the tournament with the started match
-        updateTournament(result.tournament);
+        const updatedTournament = result.tournament;
+        
+        // If tournament status is DRAFT and we're starting a match, update to IN_PROGRESS
+        if (updatedTournament.status === "DRAFT") {
+          updatedTournament.status = "IN_PROGRESS";
+          toast({
+            title: "Tournament started",
+            description: "Tournament status changed from Draft to In Progress",
+          });
+        }
+        
+        updateTournament(updatedTournament);
         
         toast({
           title: "Match started",
@@ -185,6 +197,24 @@ const TournamentDetail = () => {
       toast({
         title: "Error starting match",
         description: "An error occurred while starting the match",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Handle tournament generation
+  const handleGenerateMultiStageTournament = () => {
+    try {
+      generateMultiStageTournament();
+      toast({
+        title: "Tournament brackets generated",
+        description: "Match schedules and brackets have been created for all categories.",
+      });
+    } catch (error) {
+      console.error("Error generating tournament:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate tournament brackets.",
         variant: "destructive"
       });
     }
@@ -215,7 +245,7 @@ const TournamentDetail = () => {
             tournament={currentTournament}
             onUpdateTournament={updateTournament}
             onScheduleDialogOpen={() => setScheduleDialogOpen(true)}
-            onGenerateMultiStageTournament={generateMultiStageTournament}
+            onGenerateMultiStageTournament={handleGenerateMultiStageTournament}
             onAdvanceToNextStage={advanceToNextStage}
           />
         </TabsContent>

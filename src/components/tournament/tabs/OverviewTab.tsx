@@ -10,6 +10,8 @@ import TournamentSettings from "@/components/tournament/TournamentSettings";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTournament } from "@/contexts/TournamentContext";
+import { useToast } from "@/components/ui/use-toast";
 
 interface OverviewTabProps {
   tournament: Tournament;
@@ -26,6 +28,10 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   onAdvanceToNextStage,
   onScheduleDialogOpen
 }) => {
+  const { loadCategoryDemoData } = useTournament();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  
   const getNextStageName = (currentStage: string) => {
     switch (currentStage) {
       case "INITIAL_ROUND": return "Division Placement";
@@ -55,6 +61,43 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
 
   // Set up tabs for overview
   const [activeTab, setActiveTab] = useState("summary");
+  
+  // Handle loading demo data for all categories
+  const handleLoadDemoDataForAllCategories = async () => {
+    if (tournament.categories.length === 0) {
+      toast({
+        title: "No categories found",
+        description: "Please add categories to the tournament first.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      for (const category of tournament.categories) {
+        // Use the category's format if available, otherwise the tournament format
+        const format = category.format || tournament.format;
+        await loadCategoryDemoData(tournament.id, category.id, format);
+      }
+      
+      toast({
+        title: "Demo data loaded",
+        description: `Demo data loaded for all ${tournament.categories.length} categories.`,
+        variant: "default"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load demo data for all categories.",
+        variant: "destructive"
+      });
+      console.error("Error loading demo data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   return (
     <div className="space-y-6">
@@ -131,11 +174,22 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                   <Button 
                     onClick={onGenerateMultiStageTournament}
                     className="bg-blue-600 hover:bg-blue-700 flex items-center"
+                    title="Creates brackets and match schedules for all categories based on the tournament format"
                   >
                     <ActivitySquare className="h-4 w-4 mr-2" />
                     Generate Tournament Brackets
                   </Button>
                 </div>
+                
+                {/* Demo Data Button */}
+                <Button 
+                  onClick={handleLoadDemoDataForAllCategories}
+                  variant="outline"
+                  className="w-full mt-2"
+                  disabled={loading}
+                >
+                  {loading ? "Loading..." : "Load Demo Data for All Categories"}
+                </Button>
               </CardContent>
             </Card>
             
@@ -170,6 +224,12 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                       {tournament.courts.filter(c => c.status === "IN_USE").length}
                     </span>
                   </div>
+                </div>
+                
+                {/* Tournament Status Information */}
+                <div className="space-y-2 border-t pt-3 text-sm">
+                  <p><strong>Generate Tournament Brackets:</strong> Creates match schedules and brackets based on the selected tournament format for each category.</p>
+                  <p><strong>Tournament Status:</strong> Changes from Draft to In Progress when matches start being played.</p>
                 </div>
                 
                 {/* Stage Progression */}

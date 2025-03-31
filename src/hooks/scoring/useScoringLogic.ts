@@ -38,12 +38,12 @@ export const useScoringLogic = () => {
     if (court.currentMatch) {
       actions.handleSelectMatch(court.currentMatch);
     }
-  }, [actions, state]);
+  }, [actions.handleSelectMatch, state.setSelectedCourt]);
   
   // Go back to courts view - also memoized
   const handleBackToCourts = useCallback(() => {
     state.setActiveView("courts");
-  }, [state]);
+  }, [state.setActiveView]);
 
   return {
     // State
