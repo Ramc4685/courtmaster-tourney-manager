@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
 
 interface ScoringContainerProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   isLoading?: boolean;
   errorMessage?: string;
 }

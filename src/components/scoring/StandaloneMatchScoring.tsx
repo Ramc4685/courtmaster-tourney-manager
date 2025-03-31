@@ -54,15 +54,17 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
 
   if (isLoading) {
     return (
-      <ScoringContainer isLoading={true} />
+      <ScoringContainer isLoading={true}>
+        <p>Loading match data...</p>
+      </ScoringContainer>
     );
   }
 
   if (!match) {
     return (
-      <ScoringContainer 
-        errorMessage="Match Not Found"
-      />
+      <ScoringContainer errorMessage="Match Not Found">
+        <p>The requested match could not be found.</p>
+      </ScoringContainer>
     );
   }
 

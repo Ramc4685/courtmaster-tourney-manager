@@ -59,7 +59,7 @@ const Scoring = () => {
   const selectStandaloneMatch = useCallback(() => {
     if (standaloneScoring.scoringMatch && !matchSelected) {
       console.log("Standalone match loaded successfully, selecting match");
-      handleSelectMatch(standaloneScoring.scoringMatch);
+      handleSelectMatch(standaloneScoring.scoringMatch as any);
       setMatchSelected(true);
     }
   }, [standaloneScoring.scoringMatch, matchSelected, handleSelectMatch]);
@@ -135,9 +135,9 @@ const Scoring = () => {
   if (!tournamentId && !isStandaloneMatch) {
     console.log("No tournament ID found in URL params");
     return (
-      <ScoringContainer 
-        errorMessage="No Tournament Selected"
-      />
+      <ScoringContainer errorMessage="No Tournament Selected">
+        <p>Please select a tournament to continue.</p>
+      </ScoringContainer>
     );
   }
 

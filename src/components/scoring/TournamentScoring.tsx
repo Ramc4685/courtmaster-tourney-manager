@@ -60,7 +60,9 @@ const TournamentScoring: React.FC<TournamentScoringProps> = ({
 }) => {
   if (!currentTournament) {
     return (
-      <ScoringContainer isLoading={true} />
+      <ScoringContainer isLoading={true}>
+        <p>Loading tournament data...</p>
+      </ScoringContainer>
     );
   }
 
