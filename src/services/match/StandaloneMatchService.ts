@@ -53,6 +53,10 @@ export class StandaloneMatchService {
       shareCode: this.generateShareCode()
     };
 
+    if (scheduledTime) {
+      newMatch.scheduledTime = scheduledTime;
+    }
+
     const matches = await this.getMatches();
     matches.push(newMatch);
     

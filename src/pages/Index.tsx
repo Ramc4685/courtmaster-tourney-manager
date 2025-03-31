@@ -1,57 +1,82 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
-import { Trophy, Users, Calendar } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import Layout from "@/components/layout/Layout";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Trophy, Clipboard, ArrowRight } from "lucide-react";
 
 const Index = () => {
-  console.log("Rendering Index page");
+  const navigate = useNavigate();
+
   return (
-    <Layout>
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-2">Welcome to TournamentPro</h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              The ultimate platform for managing badminton tournaments, scores, and brackets
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 w-full max-w-4xl">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 text-center">
-              <Trophy className="w-12 h-12 mx-auto mb-4 text-court-green" />
-              <h3 className="text-lg font-semibold mb-2">Create Tournaments</h3>
-              <p className="text-gray-600">
-                Easy setup with flexible formats and divisions
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 text-center">
-              <Users className="w-12 h-12 mx-auto mb-4 text-court-green" />
-              <h3 className="text-lg font-semibold mb-2">Manage Teams</h3>
-              <p className="text-gray-600">
-                Add players and organize them into divisions
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 text-center">
-              <Calendar className="w-12 h-12 mx-auto mb-4 text-court-green" />
-              <h3 className="text-lg font-semibold mb-2">Live Scoring</h3>
-              <p className="text-gray-600">
-                Real-time score updates across all devices
-              </p>
-            </div>
-          </div>
-
-          <Link to="/tournaments">
-            <Button className="bg-court-green hover:bg-court-green/90 px-6 py-2 text-lg">
-              Get Started
-            </Button>
-          </Link>
-        </div>
+    <div className="container py-12">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold tracking-tight">CourtMaster</h1>
+        <p className="mt-3 text-xl text-muted-foreground">
+          Badminton Tournament Management & Scoring
+        </p>
       </div>
-    </Layout>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        {/* Tournament Management Card */}
+        <Card className="shadow-md hover:shadow-lg transition-shadow">
+          <CardHeader className="pb-2">
+            <div className="rounded-full bg-primary/10 w-12 h-12 flex items-center justify-center mb-2">
+              <Trophy className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle>Tournament Management</CardTitle>
+            <CardDescription>
+              Create and manage full badminton tournaments with brackets, scheduling and more
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 pb-2">
+            <ul className="list-disc list-inside text-sm space-y-1">
+              <li>Create tournaments with multiple categories</li>
+              <li>Manage teams, courts and schedules</li>
+              <li>Track scores and generate brackets</li>
+              <li>View comprehensive tournament statistics</li>
+            </ul>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              className="w-full" 
+              onClick={() => navigate('/tournaments')}
+            >
+              Go to Tournaments <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </CardFooter>
+        </Card>
+
+        {/* Quick Match Scoring Card */}
+        <Card className="shadow-md hover:shadow-lg transition-shadow">
+          <CardHeader className="pb-2">
+            <div className="rounded-full bg-court-green/10 w-12 h-12 flex items-center justify-center mb-2">
+              <Clipboard className="h-6 w-6 text-court-green" />
+            </div>
+            <CardTitle>Quick Match Scoring</CardTitle>
+            <CardDescription>
+              Create standalone matches for immediate scoring without tournament context
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 pb-2">
+            <ul className="list-disc list-inside text-sm space-y-1">
+              <li>Create matches with simple team/player entry</li>
+              <li>Score matches in real-time</li>
+              <li>Share match scores via public links</li>
+              <li>No tournament setup required</li>
+            </ul>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              className="w-full bg-court-green hover:bg-court-green/90" 
+              onClick={() => navigate('/quick-match')}
+            >
+              Create Quick Match <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    </div>
   );
 };
 

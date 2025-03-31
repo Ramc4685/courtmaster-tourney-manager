@@ -1,4 +1,3 @@
-
 import { useScoringStore } from "@/stores/scoring";
 import { useTournamentStore } from "@/stores/tournamentStore";
 import { useTournament } from "@/contexts/TournamentContext";
@@ -74,7 +73,12 @@ export const useScoringAdapter = ({
           ...scoringStore,
           currentMatch: standaloneStore.currentMatch,
           currentTournament: null, // No tournament for standalone matches
-          
+          matchDetails: standaloneStore.currentMatch ? {
+            courtName: standaloneStore.currentMatch.courtName,
+            tournamentName: standaloneStore.currentMatch.tournamentName,
+            categoryName: standaloneStore.currentMatch.categoryName,
+          } : null,
+        
           // Override methods to use standalone match service
           handleScoreChange: (team: "team1" | "team2", increment: boolean) => {
             scoringStore.handleStandaloneScoreChange(team, increment, standaloneStore);

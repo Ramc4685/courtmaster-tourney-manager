@@ -191,11 +191,14 @@ export type StandaloneMatch = {
   team2: Team;
   scores: MatchScore[];
   courtNumber?: number;
+  courtName?: string; // Added field for court name
   scheduledTime?: Date;
   status: MatchStatus;
   winner?: Team;
   loser?: Team;
   category?: TournamentCategory; // Optional as standalone matches might not have a category
+  categoryName?: string; // Added field for category name text
+  tournamentName?: string; // Added field for tournament name
   createdAt: Date;
   updatedAt?: Date;
   created_by?: string;

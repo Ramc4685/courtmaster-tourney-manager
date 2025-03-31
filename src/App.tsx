@@ -1,73 +1,51 @@
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { Layout } from "@/components/shared/Layout"
+import Tournaments from "@/pages/Tournaments";
+import TournamentCreate from "@/pages/TournamentCreate";
+import TournamentDetail from "@/pages/TournamentDetail";
+import Scoring from "@/pages/Scoring";
+import Index from "@/pages/Index";
+import Profile from "@/pages/Profile";
+import Admin from "@/pages/Admin";
+import NotFound from "@/pages/NotFound";
+import PublicView from "@/pages/PublicView";
+import PublicViewRealtime from "@/pages/PublicViewRealtime";
+import QuickMatchPage from "@/pages/QuickMatch";
 
-import React, { useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { AuthProvider } from './contexts/auth/AuthContext';
-import { TournamentProvider } from './contexts/tournament/TournamentContext';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-import { lazyWithRetry } from './utils/lazyImports';
-import { Toaster } from 'sonner';
-import Index from './pages/Index'; // Import Index directly to prevent issues with lazy loading
+// Import necessary providers
+import { ToastProvider } from "@/hooks/use-toast"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { TournamentProvider } from "@/contexts/TournamentContext";
+import { StandaloneMatchProvider } from "@/contexts/StandaloneMatchContext";
 
-// Lazy-loaded components for better performance
-const Tournaments = lazyWithRetry(() => import('./pages/Tournaments'));
-const TournamentCreate = lazyWithRetry(() => import('./pages/TournamentCreate')); // Ensure this points to the correct file
-const TournamentDetail = lazyWithRetry(() => import('./pages/TournamentDetail'));
-const PublicView = lazyWithRetry(() => import('./pages/PublicView'));
-const Public = lazyWithRetry(() => import('./pages/Public'));
-const PublicViewRealtime = lazyWithRetry(() => import('./pages/PublicViewRealtime'));
-const Scoring = lazyWithRetry(() => import('./pages/Scoring'));
-const Admin = lazyWithRetry(() => import('./pages/Admin'));
-
-/**
- * Root App component with optimized route loading and performance monitoring
- */
 function App() {
-  // Add performance monitoring
+  // Create a client
+  const [queryClient] = React.useState(() => new QueryClient());
+
   useEffect(() => {
-    console.log('App component mounted');
-    // Track page load performance
-    if (typeof window !== 'undefined' && 'performance' in window && 'getEntriesByType' in window.performance) {
-      window.addEventListener('load', () => {
-        setTimeout(() => {
-          const perfEntries = performance.getEntriesByType('navigation');
-          if (perfEntries.length > 0) {
-            const metrics = perfEntries[0] as PerformanceNavigationTiming;
-            console.info('Performance metrics:', {
-              dnsLookup: metrics.domainLookupEnd - metrics.domainLookupStart,
-              tcpConnection: metrics.connectEnd - metrics.connectStart,
-              serverResponse: metrics.responseEnd - metrics.requestStart,
-              domParsing: metrics.domInteractive - metrics.responseEnd,
-              resourceLoading: metrics.loadEventStart - metrics.domContentLoadedEventEnd,
-              totalPageLoad: metrics.loadEventEnd - metrics.startTime,
-            });
-          }
-        }, 0);
-      });
-    }
+    document.documentElement.classList.add("dark");
   }, []);
 
   return (
-    <AuthProvider>
-      <TournamentProvider>
-        <Router>
-          <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/tournaments" element={<ProtectedRoute><Tournaments /></ProtectedRoute>} />
-              <Route path="/tournaments/create" element={<ProtectedRoute><TournamentCreate /></ProtectedRoute>} />
-              <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><TournamentDetail /></ProtectedRoute>} />
-              <Route path="/tournaments/:tournamentId/scoring" element={<ProtectedRoute><Scoring /></ProtectedRoute>} />
-              <Route path="/scoring/:tournamentId" element={<ProtectedRoute><Scoring /></ProtectedRoute>} />
-              <Route path="/public" element={<Public />} />
-              <Route path="/public/:tournamentId" element={<PublicView />} />
-              <Route path="/public/realtime/:tournamentId" element={<PublicViewRealtime />} />
-              <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><Admin /></ProtectedRoute>} />
-            </Routes>
-          </Suspense>
-        </Router>
-        <Toaster position="top-right" />
-      </TournamentProvider>
-    </AuthProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Index />} />
+          <Route path="tournaments" element={<Tournaments />} />
+          <Route path="tournament/create" element={<TournamentCreate />} />
+          <Route path="tournament/:tournamentId" element={<TournamentDetail />} />
+          <Route path="scoring" element={<Scoring />} />
+          <Route path="quick-match" element={<QuickMatchPage />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="admin" element={<Admin />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+        <Route path="/share/:shareCode" element={<PublicView />} />
+        <Route path="/share/rt/:shareCode" element={<PublicViewRealtime />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
