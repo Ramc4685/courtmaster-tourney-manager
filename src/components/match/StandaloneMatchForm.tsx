@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useStandaloneMatchStore } from "@/stores/standaloneMatchStore";
@@ -55,6 +55,52 @@ const StandaloneMatchForm: React.FC = () => {
     }
   });
 
+  // Generate team name based on player names
+  const generateTeamName = (players: string[]): string => {
+    const validPlayers = players.filter(name => name.trim() !== '');
+    
+    if (validPlayers.length === 0) {
+      return "";
+    }
+    
+    if (validPlayers.length === 1) {
+      // Single player - use their name
+      return validPlayers[0].trim();
+    } else {
+      // Multiple players - use first names or initials
+      const parts = validPlayers.map(name => {
+        const nameParts = name.trim().split(' ');
+        return nameParts[0]; // Take first name
+      });
+      
+      if (parts.length === 2) {
+        // For two players, use format "First1 & First2"
+        return `${parts[0]} & ${parts[1]}`;
+      } else {
+        // For more than two, use format "First1, First2 & First3"
+        const lastPart = parts.pop();
+        return `${parts.join(', ')} & ${lastPart}`;
+      }
+    }
+  };
+
+  // Effect to update team names when players change
+  useEffect(() => {
+    const validPlayers = team1Players.filter(name => name.trim() !== '');
+    if (validPlayers.length > 0 && !form.getValues('team1Name')) {
+      const generatedName = generateTeamName(team1Players);
+      form.setValue('team1Name', generatedName);
+    }
+  }, [team1Players, form]);
+
+  useEffect(() => {
+    const validPlayers = team2Players.filter(name => name.trim() !== '');
+    if (validPlayers.length > 0 && !form.getValues('team2Name')) {
+      const generatedName = generateTeamName(team2Players);
+      form.setValue('team2Name', generatedName);
+    }
+  }, [team2Players, form]);
+
   const handleAddPlayer = (team: "team1" | "team2") => {
     if (team === "team1") {
       setTeam1Players([...team1Players, '']);
@@ -83,11 +129,23 @@ const StandaloneMatchForm: React.FC = () => {
       newPlayers[index] = value;
       setTeam1Players(newPlayers);
       form.setValue("team1Players", newPlayers.filter(p => p.trim() !== ''));
+      
+      // Only auto-update team name if it hasn't been manually modified
+      if (!form.getValues('team1Name')) {
+        const generatedName = generateTeamName(newPlayers);
+        form.setValue('team1Name', generatedName);
+      }
     } else {
       const newPlayers = [...team2Players];
       newPlayers[index] = value;
       setTeam2Players(newPlayers);
       form.setValue("team2Players", newPlayers.filter(p => p.trim() !== ''));
+      
+      // Only auto-update team name if it hasn't been manually modified
+      if (!form.getValues('team2Name')) {
+        const generatedName = generateTeamName(newPlayers);
+        form.setValue('team2Name', generatedName);
+      }
     }
   };
 
@@ -168,20 +226,6 @@ const StandaloneMatchForm: React.FC = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Team 1</h3>
               
-              <FormField
-                control={form.control}
-                name="team1Name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Team Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter team name" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label>Players</Label>
@@ -218,25 +262,28 @@ const StandaloneMatchForm: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </div>
-            
-            {/* Team 2 Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Team 2</h3>
               
               <FormField
                 control={form.control}
-                name="team2Name"
+                name="team1Name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Team Name</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Enter team name" />
                     </FormControl>
+                    <FormDescription className="text-xs">
+                      Auto-generated from player names. You can edit it.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </div>
+            
+            {/* Team 2 Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Team 2</h3>
               
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -274,6 +321,23 @@ const StandaloneMatchForm: React.FC = () => {
                   </div>
                 ))}
               </div>
+              
+              <FormField
+                control={form.control}
+                name="team2Name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Team Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter team name" />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Auto-generated from player names. You can edit it.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
           </div>
           

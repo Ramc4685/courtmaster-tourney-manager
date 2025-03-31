@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FormDescription } from "@/components/ui/form";
 import { Team, Player } from "@/types/tournament";
 
 interface TeamCreateDialogProps {
@@ -27,6 +28,39 @@ const TeamCreateDialog: React.FC<TeamCreateDialogProps> = ({
   const [player1Name, setPlayer1Name] = useState("");
   const [player2Name, setPlayer2Name] = useState("");
   const [initialRanking, setInitialRanking] = useState<number | undefined>(undefined);
+  const [isTeamNameManuallyEdited, setIsTeamNameManuallyEdited] = useState(false);
+  
+  // Generate team name based on player names
+  const generateTeamName = (): string => {
+    if (player1Name && player2Name) {
+      return `${player1Name.split(' ')[0]} & ${player2Name.split(' ')[0]}`;
+    } else if (player1Name) {
+      return player1Name;
+    }
+    return "";
+  };
+  
+  // Update team name when player names change
+  useEffect(() => {
+    if (!isTeamNameManuallyEdited) {
+      const generatedName = generateTeamName();
+      if (generatedName) {
+        setTeamName(generatedName);
+      }
+    }
+  }, [player1Name, player2Name, isTeamNameManuallyEdited]);
+  
+  // Reset manual edit flag when dialog opens/closes
+  useEffect(() => {
+    if (open) {
+      setIsTeamNameManuallyEdited(false);
+    }
+  }, [open]);
+
+  const handleTeamNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTeamName(e.target.value);
+    setIsTeamNameManuallyEdited(true);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +88,7 @@ const TeamCreateDialog: React.FC<TeamCreateDialogProps> = ({
     setPlayer1Name("");
     setPlayer2Name("");
     setInitialRanking(undefined);
+    setIsTeamNameManuallyEdited(false);
   };
 
   return (
@@ -64,18 +99,6 @@ const TeamCreateDialog: React.FC<TeamCreateDialogProps> = ({
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="teamName" className="text-right">
-                Team Name
-              </Label>
-              <Input
-                id="teamName"
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-                className="col-span-3"
-                required
-              />
-            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="player1" className="text-right">
                 Player 1
@@ -98,6 +121,23 @@ const TeamCreateDialog: React.FC<TeamCreateDialogProps> = ({
                 onChange={(e) => setPlayer2Name(e.target.value)}
                 className="col-span-3"
               />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="teamName" className="text-right">
+                Team Name
+              </Label>
+              <div className="col-span-3 space-y-1">
+                <Input
+                  id="teamName"
+                  value={teamName}
+                  onChange={handleTeamNameChange}
+                  className="w-full"
+                  required
+                />
+                <FormDescription className="text-xs">
+                  Auto-generated from player names. You can edit it.
+                </FormDescription>
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="ranking" className="text-right">
