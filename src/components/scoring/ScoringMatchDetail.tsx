@@ -23,20 +23,24 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
   onSetChange
 }) => {
   // Ensure match.scores is always an array, even if it's undefined
-  const scores = match.scores || [];
+  const scores = match?.scores || [];
   
   // Make sure we have a valid current set index
   const validCurrentSet = scores.length > 0 ? Math.min(currentSet, scores.length - 1) : 0;
   
   // Get current score or default to 0-0
   const currentScore = scores[validCurrentSet] || { team1Score: 0, team2Score: 0 };
+  
+  // Ensure team names are defined
+  const team1Name = match?.team1?.name || "Team 1";
+  const team2Name = match?.team2?.name || "Team 2";
 
   return (
     <Card className="shadow-md">
       <CardContent className="p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-semibold text-lg">
-            Scoring: {match.courtNumber ? `Court ${match.courtNumber}` : "Standalone Match"}
+            Scoring: {match?.courtNumber ? `Court ${match.courtNumber}` : "Standalone Match"}
           </h3>
           <div className="flex space-x-2">
             <Button
@@ -60,9 +64,9 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
 
         {/* Match Teams */}
         <div className="flex justify-between items-center mb-6">
-          <div className="font-medium text-lg">{match.team1?.name || "Team 1"}</div>
+          <div className="font-medium text-lg">{team1Name}</div>
           <div className="text-sm text-gray-500">vs</div>
-          <div className="font-medium text-lg text-right">{match.team2?.name || "Team 2"}</div>
+          <div className="font-medium text-lg text-right">{team2Name}</div>
         </div>
 
         {/* Set Navigation */}
@@ -93,7 +97,7 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
         {/* Team 1 Scoring */}
         <div className="border rounded-lg p-6 mb-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex justify-between items-center">
-            <h4 className="font-medium text-xl">{match.team1?.name || "Team 1"}</h4>
+            <h4 className="font-medium text-xl">{team1Name}</h4>
             <div className="flex items-center space-x-4">
               <Button
                 variant="outline"
@@ -122,7 +126,7 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
         {/* Team 2 Scoring */}
         <div className="border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex justify-between items-center">
-            <h4 className="font-medium text-xl">{match.team2?.name || "Team 2"}</h4>
+            <h4 className="font-medium text-xl">{team2Name}</h4>
             <div className="flex items-center space-x-4">
               <Button
                 variant="outline"

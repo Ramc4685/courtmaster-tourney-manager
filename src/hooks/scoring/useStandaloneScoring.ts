@@ -47,7 +47,13 @@ export const useStandaloneScoring = (matchId: string | null) => {
     if (!standaloneMatchStore.currentMatch) return false;
     
     try {
-      await standaloneMatchStore.saveMatch();
+      // Ensure the standaloneMatchStore has a saveMatch method
+      if (typeof standaloneMatchStore.saveMatch === 'function') {
+        await standaloneMatchStore.saveMatch();
+      } else {
+        // Fallback to updateMatch if saveMatch doesn't exist
+        await standaloneMatchStore.updateMatch(standaloneMatchStore.currentMatch);
+      }
       
       toast({
         title: "Match saved",

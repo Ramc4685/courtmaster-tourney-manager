@@ -140,7 +140,7 @@ export const useScoringActions = (
 
   const handleNewSet = () => {
     if (!selectedMatch) return;
-    const newSetIndex = selectedMatch.scores.length;
+    const newSetIndex = (selectedMatch.scores || []).length;
     
     if (newSetIndex >= scoringSettings.maxSets) {
       toast({
@@ -154,7 +154,7 @@ export const useScoringActions = (
     updateMatchScore(selectedMatch.id, newSetIndex, 0, 0);
     
     // Update our local selected match to reflect the new set
-    const updatedScores = [...selectedMatch.scores, { team1Score: 0, team2Score: 0 }];
+    const updatedScores = [...(selectedMatch.scores || []), { team1Score: 0, team2Score: 0 }];
     const updatedMatch = {
       ...selectedMatch,
       scores: updatedScores
