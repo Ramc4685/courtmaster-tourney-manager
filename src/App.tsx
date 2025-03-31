@@ -41,14 +41,14 @@ function App() {
                   <Route path="tournaments" element={<Tournaments />} />
                   <Route path="tournament/create" element={<TournamentCreate />} />
                   <Route path="tournament/:tournamentId" element={<TournamentDetail />} />
-                  <Route path="scoring" element={<Scoring />} />
+                  <Route path="scoring/:tournamentId" element={<Scoring />} />
                   <Route path="quick-match" element={<QuickMatchPage />} />
                   <Route path="profile" element={<Profile />} />
                   <Route path="admin" element={<Admin />} />
-                  <Route path="*" element={<NotFound />} />
                 </Route>
-                <Route path="/share/:shareCode" element={<PublicView />} />
-                <Route path="/share/rt/:shareCode" element={<PublicViewRealtime />} />
+                <Route path="/share/:tournamentId" element={<PublicView />} />
+                <Route path="/share/rt/:tournamentId" element={<PublicViewRealtime />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
             <Toaster />

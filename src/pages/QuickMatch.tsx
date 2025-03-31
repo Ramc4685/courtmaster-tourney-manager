@@ -6,17 +6,15 @@ import Layout from "@/components/layout/Layout";
 
 const QuickMatchPage: React.FC = () => {
   return (
-    <Layout>
-      <div className="container py-6">
-        <PageHeader 
-          title="Quick Match Scoring" 
-          description="Create a standalone match for immediate scoring without a tournament"
-        />
-        <div className="mt-6">
-          <StandaloneMatchForm />
-        </div>
+    <div className="container py-6">
+      <PageHeader 
+        title="Quick Match Scoring" 
+        description="Create a standalone match for immediate scoring without a tournament"
+      />
+      <div className="mt-6">
+        <StandaloneMatchForm />
       </div>
-    </Layout>
+    </div>
   );
 };
 

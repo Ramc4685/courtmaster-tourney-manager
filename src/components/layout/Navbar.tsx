@@ -19,6 +19,7 @@ const Navbar: React.FC = () => {
 
   // Create a conditionally rendered scoring link based on whether there's a current tournament
   const scoringLink = currentTournament ? `/scoring/${currentTournament.id}` : "/tournaments";
+  const tournamentLink = currentTournament ? `/tournament/${currentTournament.id}` : "/tournaments";
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -44,12 +45,19 @@ const Navbar: React.FC = () => {
             <Link to="/tournaments" className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
               Tournaments
             </Link>
+            {currentTournament && (
+              <Link to={tournamentLink} className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
+                Current Tournament
+              </Link>
+            )}
             <Link to={scoringLink} className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
               Scoring
             </Link>
-            <Link to="/public" className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
-              Public View
-            </Link>
+            {currentTournament && (
+              <Link to={`/share/${currentTournament.id}`} className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
+                Public View
+              </Link>
+            )}
             {user && user.role === 'admin' && (
               <Link to="/admin" className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
                 Admin
@@ -97,12 +105,19 @@ const Navbar: React.FC = () => {
                   <Link to="/tournaments" className="text-lg font-medium">
                     Tournaments
                   </Link>
+                  {currentTournament && (
+                    <Link to={tournamentLink} className="text-lg font-medium">
+                      Current Tournament
+                    </Link>
+                  )}
                   <Link to={scoringLink} className="text-lg font-medium">
                     Scoring
                   </Link>
-                  <Link to="/public" className="text-lg font-medium">
-                    Public View
-                  </Link>
+                  {currentTournament && (
+                    <Link to={`/share/${currentTournament.id}`} className="text-lg font-medium">
+                      Public View
+                    </Link>
+                  )}
                   
                   {user && user.role === 'admin' && (
                     <Link to="/admin" className="text-lg font-medium">
