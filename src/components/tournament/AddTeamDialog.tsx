@@ -204,7 +204,7 @@ const AddTeamDialog: React.FC<AddTeamDialogProps> = ({ open, onOpenChange, tourn
             <Label htmlFor="teamName">Team Name</Label>
             
             {showNameLengthAlert && (
-              <Alert variant="info" className="mb-2 bg-blue-50">
+              <Alert variant="info" className="mb-2">
                 <Info className="h-4 w-4" />
                 <AlertDescription>
                   Player names need at least 3 characters for automatic naming. A creative name was generated instead.

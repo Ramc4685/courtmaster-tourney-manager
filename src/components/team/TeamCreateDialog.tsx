@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -151,7 +150,7 @@ const TeamCreateDialog: React.FC<TeamCreateDialogProps> = ({
               </Label>
               <div className="col-span-3 space-y-1">
                 {showNameLengthAlert && (
-                  <Alert variant="info" className="mb-2 bg-blue-50 py-2 text-sm">
+                  <Alert variant="info" className="mb-2 py-2 text-sm">
                     <Info className="h-4 w-4" />
                     <AlertDescription>
                       Player names need at least 3 characters for automatic naming. A creative name was generated.
