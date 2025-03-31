@@ -1,15 +1,21 @@
 import { Tournament, Team, Match, Division, TournamentStage, CourtStatus, CategoryType, MatchStatus } from "@/types/tournament";
 import { generateId } from "@/utils/tournamentUtils";
+import { prepareNewEntity, prepareUpdatedEntity, getCurrentUserId } from "@/utils/auditUtils";
 
 // Creates a new tournament
 export const createNewTournament = (
   tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">,
   tournaments: Tournament[]
 ): { tournament: Tournament; tournaments: Tournament[] } => {
+  const now = new Date();
+  const userId = getCurrentUserId();
+  
   const newTournament: Tournament = {
     id: generateId(),
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: now,
+    updatedAt: now,
+    created_by: userId,
+    updated_by: userId,
     matches: [],
     currentStage: "INITIAL_ROUND" as TournamentStage,
     ...tournamentData,
@@ -33,23 +39,39 @@ export const deleteTournament = (
 
 // Adds a team to a tournament
 export const addTeamToTournament = (team: Team, tournament: Tournament): Tournament => {
-  const updatedTeams = [...tournament.teams, team];
+  // Apply audit fields to the team
+  const teamWithAudit = prepareNewEntity(team);
+  const updatedTeams = [...tournament.teams, teamWithAudit];
 
-  return {
+  // Update the tournament with audit fields
+  return prepareUpdatedEntity({
     ...tournament,
-    teams: updatedTeams,
-    updatedAt: new Date()
-  };
+    teams: updatedTeams
+  });
 };
 
 // Imports teams to a tournament
 export const importTeamsToTournament = (teams: Team[], tournament: Tournament): Tournament => {
-  const updatedTeams = [...tournament.teams, ...teams];
+  const userId = getCurrentUserId();
+  const now = new Date();
+  
+  // Add audit fields to each team
+  const teamsWithAudit = teams.map(team => ({
+    ...team,
+    createdAt: now,
+    updatedAt: now,
+    created_by: userId,
+    updated_by: userId
+  }));
+  
+  const updatedTeams = [...tournament.teams, ...teamsWithAudit];
 
+  // Update tournament with audit fields
   return {
     ...tournament,
     teams: updatedTeams,
-    updatedAt: new Date()
+    updatedAt: now,
+    updated_by: userId
   };
 };
 
@@ -79,7 +101,7 @@ export const generateMultiStageTournament = (tournament: Tournament): Tournament
   return tournament;
 };
 
-// Updated function to handle categoryId
+// Updated function to handle categoryId and audit fields
 export const scheduleMatchInTournament = (
   team1Id: string, 
   team2Id: string, 
@@ -105,7 +127,11 @@ export const scheduleMatchInTournament = (
     ? tournament.categories.find(c => c.id === categoryId) 
     : undefined;
   
-  // Create a new match
+  // Get current user ID for audit fields
+  const userId = getCurrentUserId();
+  const now = new Date();
+  
+  // Create a new match with audit fields
   const newMatch: Match = {
     id: generateId(),
     tournamentId: tournament.id,
@@ -121,15 +147,25 @@ export const scheduleMatchInTournament = (
       id: "default", 
       name: "Default", 
       type: "CUSTOM" as CategoryType 
-    }
+    },
+    createdAt: now,
+    updatedAt: now,
+    created_by: userId,
+    updated_by: userId
   };
   
   // Assign the court if provided
   if (court) {
-    // Update court status
+    // Update court status with audit fields
     const updatedCourts = tournament.courts.map(c => 
       c.id === court.id 
-        ? { ...c, status: "IN_USE" as CourtStatus, currentMatch: newMatch } 
+        ? { 
+            ...c, 
+            status: "IN_USE" as CourtStatus, 
+            currentMatch: newMatch,
+            updatedAt: now,
+            updated_by: userId
+          } 
         : c
     );
     
@@ -137,13 +173,15 @@ export const scheduleMatchInTournament = (
       ...tournament,
       matches: [...tournament.matches, newMatch],
       courts: updatedCourts,
-      updatedAt: new Date()
+      updatedAt: now,
+      updated_by: userId
     };
   }
   
   return {
     ...tournament,
     matches: [...tournament.matches, newMatch],
-    updatedAt: new Date()
+    updatedAt: now,
+    updated_by: userId
   };
 };

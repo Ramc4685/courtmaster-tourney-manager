@@ -229,7 +229,8 @@ export const createScoringActions = (
       const updatedTournament = {
         ...currentTournament,
         scoringSettings: newSettings,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        updated_by: currentTournament.updated_by // Preserve the updated_by field
       };
       updateTournament(updatedTournament);
     }

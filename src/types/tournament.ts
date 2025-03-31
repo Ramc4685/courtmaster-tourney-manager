@@ -1,8 +1,14 @@
+
 export type Player = {
   id: string;
   name: string;
   email?: string;
   phone?: string;
+  // New fields
+  createdAt?: Date;
+  updatedAt?: Date;
+  created_by?: string; // User ID
+  updated_by?: string; // User ID
 };
 
 export type Team = {
@@ -12,6 +18,12 @@ export type Team = {
   seed?: number; // For tournament seeding
   initialRanking?: number; // Initial ranking (#1-#38)
   category?: TournamentCategory; // The category this team belongs to
+  // New fields
+  createdAt?: Date;
+  updatedAt?: Date;
+  created_by?: string; // User ID
+  updated_by?: string; // User ID
+  status?: string; // e.g., "Active", "Inactive"
 };
 
 export type Division = "DIVISION_1" | "DIVISION_2" | "DIVISION_3" | "QUALIFIER_DIV1" | "QUALIFIER_DIV2" | "GROUP_DIV3" | "INITIAL";
@@ -44,6 +56,10 @@ export type Match = {
   groupName?: string; // For group matches (e.g., "Group A")
   updatedAt?: Date; // Added updatedAt field for tracking when the match was last updated
   category: TournamentCategory; // The category this match belongs to
+  // New fields
+  createdAt?: Date;
+  created_by?: string; // User ID
+  updated_by?: string; // User ID
 };
 
 export type CourtStatus = "AVAILABLE" | "IN_USE" | "MAINTENANCE";
@@ -54,6 +70,11 @@ export type Court = {
   number: number;
   status: CourtStatus;
   currentMatch?: Match;
+  // New fields
+  createdAt?: Date;
+  updatedAt?: Date;
+  created_by?: string; // User ID
+  updated_by?: string; // User ID
 };
 
 export type TournamentFormat = 
@@ -74,6 +95,13 @@ export type ScoringSettings = {
   maxTwoPointLeadScore?: number; // Maximum score for a win when using two-point lead rule
 };
 
+// Category and TournamentCategory types to match your proposed schema
+export type Category = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
 // Updated TournamentCategory with description, format, and addDemoData fields
 export type TournamentCategory = {
   id: string;
@@ -85,6 +113,8 @@ export type TournamentCategory = {
   format?: TournamentFormat; // Format specific to this category
   addDemoData?: boolean; // Flag to indicate if demo data should be loaded for this category
   scoringSettings?: ScoringSettings; // Add support for category-specific scoring settings
+  // Link to main category
+  category_id?: string; // Foreign key referencing the main sport category
 };
 
 // Standard badminton category types
@@ -114,7 +144,12 @@ export type Tournament = {
   autoAssignCourts?: boolean; // Whether to automatically assign available courts to scheduled matches
   scoringSettings?: ScoringSettings; // Added scoring settings
   
-  // New property for categories
+  // New fields
+  created_by?: string; // User ID
+  updated_by?: string; // User ID
+  tournament_category_id?: string; // ID of the tournament category
+  
+  // Categories
   categories: TournamentCategory[];
   
   // Format-specific configuration
@@ -130,6 +165,16 @@ export type Tournament = {
   ownerId?: string; // For user authentication and ownership
   isPublic?: boolean; // Whether the tournament is publicly visible
   metadata?: Record<string, any>; // For custom metadata and future extensibility
+};
+
+// New type for tournament registration
+export type TournamentRegistration = {
+  tournamentId: string;
+  teamId?: string;
+  playerId?: string;
+  registrationDate: Date;
+  seed?: number;
+  paymentStatus: "PENDING" | "PAID" | "FAILED" | "REFUNDED";
 };
 
 // Groups for group stage formats
