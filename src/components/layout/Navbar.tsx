@@ -21,15 +21,6 @@ const Navbar: React.FC = () => {
   // Create conditionally rendered links based on whether there's a current tournament
   const scoringLink = currentTournament ? `/scoring/${currentTournament.id}` : "/tournaments";
   
-  const handleTournamentClick = () => {
-    if (currentTournament) {
-      console.log("Navigating to current tournament:", currentTournament.id);
-      navigate(`/tournament/${currentTournament.id}`);
-    } else {
-      navigate("/tournaments");
-    }
-  };
-
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4">
@@ -54,15 +45,6 @@ const Navbar: React.FC = () => {
             <Link to="/tournaments" className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
               Tournaments
             </Link>
-            {currentTournament && (
-              <Button 
-                variant="ghost" 
-                className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium"
-                onClick={handleTournamentClick}
-              >
-                Current Tournament
-              </Button>
-            )}
             <Link to={scoringLink} className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
               Scoring
             </Link>
@@ -118,15 +100,6 @@ const Navbar: React.FC = () => {
                   <Link to="/tournaments" className="text-lg font-medium">
                     Tournaments
                   </Link>
-                  {currentTournament && (
-                    <Button 
-                      variant="ghost" 
-                      className="justify-start text-lg font-medium p-0"
-                      onClick={handleTournamentClick}
-                    >
-                      Current Tournament
-                    </Button>
-                  )}
                   <Link to={scoringLink} className="text-lg font-medium">
                     Scoring
                   </Link>
