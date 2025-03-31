@@ -9,6 +9,7 @@ export const useStandaloneScoring = (matchId: string | null) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [scoringMatch, setScoringMatch] = useState<Match | null>(null);
 
   // Load standalone match
   useEffect(() => {
@@ -24,6 +25,10 @@ export const useStandaloneScoring = (matchId: string | null) => {
         await standaloneMatchStore.loadMatchById(matchId);
         if (!standaloneMatchStore.currentMatch) {
           setError('Match not found');
+        } else {
+          // Convert standalone match to scoring match format
+          const converted = convertToScoringMatch(standaloneMatchStore.currentMatch);
+          setScoringMatch(converted);
         }
       } catch (err) {
         setError('Failed to load match');
@@ -34,13 +39,13 @@ export const useStandaloneScoring = (matchId: string | null) => {
     };
 
     loadMatch();
-  }, [matchId]);
+  }, [matchId, standaloneMatchStore]);
 
   const saveMatch = async () => {
-    if (!standaloneMatchStore.currentMatch) return;
+    if (!standaloneMatchStore.currentMatch) return false;
     
     try {
-      await standaloneMatchStore.updateMatch(standaloneMatchStore.currentMatch);
+      await standaloneMatchStore.saveMatch();
       
       toast({
         title: "Match saved",
@@ -69,14 +74,14 @@ export const useStandaloneScoring = (matchId: string | null) => {
       ...standaloneMatch,
       tournamentId: 'standalone',
       division: 'INITIAL',
-      stage: 'INITIAL_ROUND' as TournamentStage, // Use correct enum value from TournamentStage
+      stage: 'INITIAL_ROUND' as TournamentStage,
       category: standaloneMatch.category || { id: 'default', name: 'Default', type: 'MENS_SINGLES' }
     } as Match;
   };
 
   return {
     match: standaloneMatchStore.currentMatch,
-    scoringMatch: convertToScoringMatch(standaloneMatchStore.currentMatch),
+    scoringMatch,
     isLoading,
     error,
     saveMatch,

@@ -103,9 +103,7 @@ const Scoring = () => {
 
   // Handle standalone match case
   if (isStandaloneMatch) {
-    const match = standaloneScoring.match;
-    
-    if (!match) {
+    if (!standaloneScoring.match) {
       return (
         <Layout>
           <div className="max-w-6xl mx-auto py-8 px-4 text-center">

@@ -88,7 +88,7 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
             <div className="flex items-center space-x-4">
               <Button
                 variant="outline"
-                className="rounded-full h-12 w-12 flex items-center justify-center border-2 border-gray-300 hover:border-red-500 hover:bg-red-50"
+                className="rounded-full h-12 w-12 p-0 flex items-center justify-center border-2 border-gray-300 hover:border-red-500 hover:bg-red-50"
                 onClick={() => onScoreChange("team1", false)}
                 aria-label="Decrease Team 1 Score"
               >
@@ -100,7 +100,7 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
               </span>
               
               <Button
-                className="bg-green-500 hover:bg-green-600 rounded-full h-14 w-14 flex items-center justify-center"
+                className="bg-green-500 hover:bg-green-600 rounded-full h-14 w-14 p-0 flex items-center justify-center"
                 onClick={() => onScoreChange("team1", true)}
                 aria-label="Increase Team 1 Score"
               >
@@ -117,7 +117,7 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
             <div className="flex items-center space-x-4">
               <Button
                 variant="outline"
-                className="rounded-full h-12 w-12 flex items-center justify-center border-2 border-gray-300 hover:border-red-500 hover:bg-red-50"
+                className="rounded-full h-12 w-12 p-0 flex items-center justify-center border-2 border-gray-300 hover:border-red-500 hover:bg-red-50"
                 onClick={() => onScoreChange("team2", false)}
                 aria-label="Decrease Team 2 Score"
               >
@@ -129,7 +129,7 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
               </span>
               
               <Button
-                className="bg-green-500 hover:bg-green-600 rounded-full h-14 w-14 flex items-center justify-center"
+                className="bg-green-500 hover:bg-green-600 rounded-full h-14 w-14 p-0 flex items-center justify-center"
                 onClick={() => onScoreChange("team2", true)}
                 aria-label="Increase Team 2 Score"
               >
