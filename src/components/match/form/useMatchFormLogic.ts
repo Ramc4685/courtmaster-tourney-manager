@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -177,8 +178,9 @@ export const useMatchFormLogic = () => {
           description: "Your match has been created successfully",
         });
         
-      // Fix the navigation path to use the correct route format
-      navigate(`/scoring?matchId=${match.id}&type=standalone`);
+        // Navigate to scoring page for the new match
+        navigate(`/scoring?matchId=${match.id}&type=standalone`);
+      }
     } catch (error) {
       toast({
         title: "Error",
