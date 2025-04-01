@@ -8,12 +8,10 @@ import ScoringSettings from "@/components/scoring/ScoringSettings";
 import ScoringConfirmationDialogs from "@/components/scoring/ScoringConfirmationDialogs";
 import ScoringContainer from "@/components/scoring/ScoringContainer";
 import { Match } from "@/types/tournament";
-import { getDefaultScoringSettings } from "@/utils/matchUtils";
 
 interface StandaloneMatchScoringProps {
   isLoading: boolean;
   match: Match | null;
-  scoringMatch: Match | null;
   currentSet: number;
   setCurrentSet: (set: number) => void;
   settingsOpen: boolean;
@@ -27,7 +25,6 @@ interface StandaloneMatchScoringProps {
   handleScoreChange: (team: "team1" | "team2", increment: boolean) => void;
   handleNewSet: () => void;
   handleCompleteMatch: () => void;
-  selectedMatch: Match | null;
   saveMatch?: () => void;
   isPending?: boolean;
 }
@@ -35,7 +32,6 @@ interface StandaloneMatchScoringProps {
 const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
   isLoading,
   match,
-  scoringMatch,
   currentSet,
   setCurrentSet,
   settingsOpen,
@@ -49,7 +45,6 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
   handleScoreChange,
   handleNewSet,
   handleCompleteMatch,
-  selectedMatch,
   saveMatch,
   isPending = false
 }) => {
@@ -62,11 +57,8 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
       </ScoringContainer>
     );
   }
-
-  // Use the scoringMatch for rendering if available, otherwise fall back to other options
-  const matchForScoring = scoringMatch || selectedMatch || match;
   
-  if (!matchForScoring) {
+  if (!match) {
     return (
       <ScoringContainer errorMessage="Match Not Found">
         <p>The requested match could not be found.</p>
@@ -106,7 +98,7 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
       </Button>
       
       <ScoringMatchDetail
-        match={matchForScoring}
+        match={match}
         onScoreChange={handleScoreChange}
         onNewSet={() => setNewSetDialogOpen(true)}
         onCompleteMatch={() => setCompleteMatchDialogOpen(true)}
@@ -127,7 +119,7 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
 
       {/* Confirmation Dialogs for New Set and Complete Match */}
       <ScoringConfirmationDialogs
-        selectedMatch={matchForScoring}
+        selectedMatch={match}
         currentSet={currentSet}
         newSetDialogOpen={newSetDialogOpen}
         setNewSetDialogOpen={setNewSetDialogOpen}

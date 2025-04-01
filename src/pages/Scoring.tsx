@@ -1,15 +1,12 @@
 
-import React, { useEffect, useState, useCallback } from "react";
+import React from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { useScoringLogic } from "@/hooks/scoring/useScoringLogic";
 import { useTournament } from "@/contexts/TournamentContext";
-import { useToast } from "@/hooks/use-toast";
-import { useStandaloneScoring } from "@/hooks/scoring/useStandaloneScoring";
+import { Match } from "@/types/tournament";
 import TournamentScoring from "@/components/scoring/TournamentScoring";
 import StandaloneMatchScoring from "@/components/scoring/StandaloneMatchScoring";
 import ScoringContainer from "@/components/scoring/ScoringContainer";
-import { Match, Court } from "@/types/tournament";
-import { getDefaultScoringSettings } from "@/utils/matchUtils";
+import { useUnifiedScoring } from "@/hooks/scoring/useUnifiedScoring";
 
 const Scoring = () => {
   console.log("Rendering Scoring page");
@@ -20,77 +17,25 @@ const Scoring = () => {
   const tournamentId = params.tournamentId;
   const matchId = searchParams.get("matchId");
   const matchType = searchParams.get("type");
-  const { toast } = useToast();
   
   console.log("Tournament ID from URL params:", tournamentId);
   console.log("Match ID from URL query:", matchId);
   console.log("Match type from URL query:", matchType);
   
   const navigate = useNavigate();
-  const { tournaments, setCurrentTournament, isPending } = useTournament();
-  const [isStandaloneMatch, setIsStandaloneMatch] = useState(false);
-  const [matchSelected, setMatchSelected] = useState(false);
-  const [currentSet, setCurrentSet] = useState(0);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [scoringSettings, setScoringSettings] = useState(getDefaultScoringSettings());
-  const [newSetDialogOpen, setNewSetDialogOpen] = useState(false);
-  const [completeMatchDialogOpen, setCompleteMatchDialogOpen] = useState(false);
+  const { tournaments, setCurrentTournament } = useTournament();
   
   // Determine if we're handling a standalone match
-  useEffect(() => {
-    if (matchType === "standalone" && matchId) {
-      console.log("Setting up for standalone match:", matchId);
-      setIsStandaloneMatch(true);
-    } else {
-      setIsStandaloneMatch(false);
-    }
-  }, [matchId, matchType]);
+  const isStandaloneMatch = matchType === "standalone" && !!matchId;
   
-  // Use standalone scoring hook only when handling a standalone match
-  const standaloneScoring = useStandaloneScoring(isStandaloneMatch ? matchId : null);
-  
-  const {
-    currentTournament,
-    selectedMatch,
-    activeView,
-    handleSelectMatch,
-    handleSelectCourt,
-    handleScoreChange: tournamentHandleScoreChange,
-    handleStartMatch,
-    handleCompleteMatch: tournamentHandleCompleteMatch,
-    handleNewSet: tournamentHandleNewSet,
-    handleUpdateScoringSettings,
-    handleBackToCourts
-  } = useScoringLogic();
-
-  // Update scoring settings when tournament changes
-  useEffect(() => {
-    if (currentTournament?.scoringSettings) {
-      setScoringSettings(currentTournament.scoringSettings);
-    }
-  }, [currentTournament]);
-
-  // Handle standalone match score change
-  const handleStandaloneScoreChange = useCallback((team: "team1" | "team2", increment: boolean) => {
-    if (standaloneScoring.handleScoreChange) {
-      standaloneScoring.handleScoreChange(team, increment, currentSet);
-    }
-  }, [standaloneScoring, currentSet]);
-
-  // Handle standalone match selection once the match is loaded
-  useEffect(() => {
-    if (standaloneScoring.scoringMatch && !matchSelected && isStandaloneMatch) {
-      console.log("Standalone match loaded successfully, setting initial state");
-      
-      setCurrentSet(standaloneScoring.scoringMatch.scores.length > 0 ? 
-                   standaloneScoring.scoringMatch.scores.length - 1 : 0);
-      
-      setMatchSelected(true);
-    }
-  }, [standaloneScoring.scoringMatch, matchSelected, isStandaloneMatch]);
+  // Use our unified scoring hook with the appropriate scorer type
+  const scoring = useUnifiedScoring({
+    scorerType: isStandaloneMatch ? "STANDALONE" : "TOURNAMENT",
+    matchId: isStandaloneMatch ? matchId : undefined
+  });
   
   // Set the current tournament based on the URL parameter
-  useEffect(() => {
+  React.useEffect(() => {
     if (isStandaloneMatch) {
       console.log("Using standalone match, not loading tournament");
       return;
@@ -120,25 +65,23 @@ const Scoring = () => {
   if (isStandaloneMatch) {
     return (
       <StandaloneMatchScoring 
-        isLoading={standaloneScoring.isLoading}
-        match={standaloneScoring.match as Match}
-        scoringMatch={standaloneScoring.scoringMatch as Match}
-        currentSet={currentSet}
-        setCurrentSet={setCurrentSet}
-        settingsOpen={settingsOpen}
-        setSettingsOpen={setSettingsOpen}
-        scoringSettings={scoringSettings}
-        handleUpdateScoringSettings={handleUpdateScoringSettings}
-        newSetDialogOpen={newSetDialogOpen}
-        setNewSetDialogOpen={setNewSetDialogOpen}
-        completeMatchDialogOpen={completeMatchDialogOpen}
-        setCompleteMatchDialogOpen={setCompleteMatchDialogOpen}
-        handleScoreChange={handleStandaloneScoreChange}
-        handleNewSet={standaloneScoring.handleNewSet || (() => {})}
-        handleCompleteMatch={standaloneScoring.handleCompleteMatch || (() => {})}
-        selectedMatch={standaloneScoring.scoringMatch || selectedMatch}
-        saveMatch={standaloneScoring.saveMatch}
-        isPending={isPending}
+        isLoading={scoring.isLoading}
+        match={scoring.match}
+        currentSet={scoring.currentSet}
+        setCurrentSet={scoring.setCurrentSet}
+        settingsOpen={scoring.settingsOpen}
+        setSettingsOpen={scoring.setSettingsOpen}
+        scoringSettings={scoring.scoringSettings}
+        handleUpdateScoringSettings={scoring.handleUpdateScoringSettings}
+        newSetDialogOpen={scoring.newSetDialogOpen}
+        setNewSetDialogOpen={scoring.setNewSetDialogOpen}
+        completeMatchDialogOpen={scoring.completeMatchDialogOpen}
+        setCompleteMatchDialogOpen={scoring.setCompleteMatchDialogOpen}
+        handleScoreChange={scoring.handleScoreChange}
+        handleNewSet={scoring.handleNewSet}
+        handleCompleteMatch={scoring.handleCompleteMatch}
+        saveMatch={scoring.saveMatch}
+        isPending={scoring.isPending}
       />
     );
   }
@@ -153,6 +96,23 @@ const Scoring = () => {
     );
   }
 
+  // For tournament scoring, we'll still use the useScoringLogic hook
+  // This is because TournamentScoring has more complex requirements with courts management
+  const { 
+    currentTournament,
+    selectedMatch,
+    activeView,
+    handleSelectMatch,
+    handleSelectCourt,
+    handleScoreChange,
+    handleStartMatch: originalHandleStartMatch,
+    handleCompleteMatch,
+    handleNewSet,
+    handleUpdateScoringSettings,
+    handleBackToCourts,
+    isPending
+  } = require("@/hooks/scoring/useScoringLogic").useScoringLogic();
+
   // Map activeView from "scoring" to "match" to match TournamentScoring's expected enum
   const mappedActiveView = activeView === "scoring" ? "match" : "courts";
 
@@ -160,7 +120,7 @@ const Scoring = () => {
   const handleStartMatchAdapter = (matchId: string) => {
     const match = currentTournament?.matches.find(m => m.id === matchId);
     if (match) {
-      handleStartMatch(match);
+      originalHandleStartMatch(match);
     } else {
       console.error(`Match with ID ${matchId} not found`);
     }
@@ -172,21 +132,21 @@ const Scoring = () => {
       tournamentId={tournamentId}
       activeView={mappedActiveView}
       selectedMatch={selectedMatch}
-      currentSet={currentSet}
-      settingsOpen={settingsOpen}
-      setSettingsOpen={setSettingsOpen}
-      scoringSettings={scoringSettings}
-      newSetDialogOpen={newSetDialogOpen}
-      setNewSetDialogOpen={setNewSetDialogOpen}
-      completeMatchDialogOpen={completeMatchDialogOpen}
-      setCompleteMatchDialogOpen={setCompleteMatchDialogOpen}
-      setCurrentSet={setCurrentSet}
+      currentSet={scoring.currentSet}
+      settingsOpen={scoring.settingsOpen}
+      setSettingsOpen={scoring.setSettingsOpen}
+      scoringSettings={scoring.scoringSettings}
+      newSetDialogOpen={scoring.newSetDialogOpen}
+      setNewSetDialogOpen={scoring.setNewSetDialogOpen}
+      completeMatchDialogOpen={scoring.completeMatchDialogOpen}
+      setCompleteMatchDialogOpen={scoring.setCompleteMatchDialogOpen}
+      setCurrentSet={scoring.setCurrentSet}
       handleSelectCourt={handleSelectCourt}
       handleSelectMatch={handleSelectMatch}
       handleStartMatch={handleStartMatchAdapter}
-      handleScoreChange={tournamentHandleScoreChange}
-      handleNewSet={tournamentHandleNewSet}
-      handleCompleteMatch={tournamentHandleCompleteMatch}
+      handleScoreChange={handleScoreChange}
+      handleNewSet={handleNewSet}
+      handleCompleteMatch={handleCompleteMatch}
       handleUpdateScoringSettings={handleUpdateScoringSettings}
       handleBackToCourts={handleBackToCourts}
       isPending={isPending}
