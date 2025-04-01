@@ -139,14 +139,18 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
         let team1Score = currentScore.team1Score;
         let team2Score = currentScore.team2Score;
         
-        // Update the appropriate team's score
+        // Calculate the max score possible based on settings
+        const maxAllowedScore = scoringSettings.maxTwoPointLeadScore || 
+                               (scoringSettings.maxPoints + 10);
+        
+        // Update the appropriate team's score with respect to scoring rules
         if (team === "team1") {
           team1Score = increment 
-            ? Math.min(999, team1Score + 1)
+            ? Math.min(maxAllowedScore, team1Score + 1) // Enforce maximum score
             : Math.max(0, team1Score - 1);
         } else {
           team2Score = increment 
-            ? Math.min(999, team2Score + 1)
+            ? Math.min(maxAllowedScore, team2Score + 1) // Enforce maximum score
             : Math.max(0, team2Score - 1);
         }
         
@@ -190,13 +194,17 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
           let team1Score = currentScore.team1Score || 0;
           let team2Score = currentScore.team2Score || 0;
           
+          // Calculate the max score possible based on tournament settings
+          const maxAllowedScore = scoringSettings.maxTwoPointLeadScore || 
+                                 (scoringSettings.maxPoints + 10);
+          
           if (team === "team1") {
             team1Score = increment 
-              ? Math.min(999, team1Score + 1)
+              ? Math.min(maxAllowedScore, team1Score + 1) // Enforce maximum score limit
               : Math.max(0, team1Score - 1);
           } else {
             team2Score = increment 
-              ? Math.min(999, team2Score + 1)
+              ? Math.min(maxAllowedScore, team2Score + 1) // Enforce maximum score limit
               : Math.max(0, team2Score - 1);
           }
           
