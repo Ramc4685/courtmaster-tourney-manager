@@ -115,8 +115,12 @@ const Scoring = () => {
     handleNewSet,
     handleUpdateScoringSettings,
     handleBackToCourts,
-    isPending = false // Provide default value
+    // Extract isPending if it exists, otherwise default to false
+    ...scoringLogicRest
   } = useScoringLogic();
+  
+  // Provide a default value for isPending if it's not returned
+  const isPending = 'isPending' in scoringLogicRest ? scoringLogicRest.isPending : false;
 
   // Map activeView from "scoring" to "match" to match TournamentScoring's expected enum
   const mappedActiveView = activeView === "scoring" ? "match" : "courts";
