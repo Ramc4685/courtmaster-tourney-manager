@@ -7,7 +7,7 @@ import TournamentScoring from "@/components/scoring/TournamentScoring";
 import StandaloneMatchScoring from "@/components/scoring/StandaloneMatchScoring";
 import ScoringContainer from "@/components/scoring/ScoringContainer";
 import { useUnifiedScoring } from "@/hooks/scoring/useUnifiedScoring";
-import { useScoringLogic } from "@/hooks/scoring/useScoringLogic"; // Import properly with ES modules syntax
+import { useScoringLogic } from "@/hooks/scoring/useScoringLogic"; 
 
 const Scoring = () => {
   console.log("Rendering Scoring page");
@@ -119,9 +119,11 @@ const Scoring = () => {
   } = useScoringLogic();
   
   // Handle isPending in a TypeScript-safe way
-  // We're directly accessing using any as a temporary workaround 
-  // since we know the property exists at runtime
-  const isPending = (scoringLogicRest as any).isPending === true;
+  // Use optional chaining or safe type checking to access isPending property
+  const isPending = typeof scoringLogicRest === 'object' && 
+                    scoringLogicRest !== null && 
+                    'isPending' in scoringLogicRest ? 
+                    Boolean(scoringLogicRest.isPending) : false;
 
   // Map activeView from "scoring" to "match" to match TournamentScoring's expected enum
   const mappedActiveView = activeView === "scoring" ? "match" : "courts";

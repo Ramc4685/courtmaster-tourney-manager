@@ -139,9 +139,10 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
         let team1Score = currentScore.team1Score;
         let team2Score = currentScore.team2Score;
         
-        // Calculate the max score possible based on settings
+        // Calculate the max score possible based on scoring settings
+        // Apply maxTwoPointLeadScore if exists, otherwise use maxPoints + reasonable buffer
         const maxAllowedScore = scoringSettings.maxTwoPointLeadScore || 
-                               (scoringSettings.maxPoints + 10);
+                               (scoringSettings.maxPoints + 9); // Allow for extended play
         
         // Update the appropriate team's score with respect to scoring rules
         if (team === "team1") {
@@ -195,8 +196,9 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
           let team2Score = currentScore.team2Score || 0;
           
           // Calculate the max score possible based on tournament settings
+          // Apply maxTwoPointLeadScore if exists, otherwise use maxPoints + reasonable buffer
           const maxAllowedScore = scoringSettings.maxTwoPointLeadScore || 
-                                 (scoringSettings.maxPoints + 10);
+                                 (scoringSettings.maxPoints + 9); // Allow for extended play
           
           if (team === "team1") {
             team1Score = increment 
