@@ -7,6 +7,7 @@ import TournamentScoring from "@/components/scoring/TournamentScoring";
 import StandaloneMatchScoring from "@/components/scoring/StandaloneMatchScoring";
 import ScoringContainer from "@/components/scoring/ScoringContainer";
 import { useUnifiedScoring } from "@/hooks/scoring/useUnifiedScoring";
+import { useScoringLogic } from "@/hooks/scoring/useScoringLogic";
 
 const Scoring = () => {
   console.log("Rendering Scoring page");
@@ -101,8 +102,7 @@ const Scoring = () => {
     );
   }
 
-  // For tournament scoring, we'll still use the useScoringLogic hook
-  // This is because TournamentScoring has more complex requirements with courts management
+  // For tournament scoring, we'll use the imported useScoringLogic hook
   const { 
     currentTournament,
     selectedMatch,
@@ -116,7 +116,7 @@ const Scoring = () => {
     handleUpdateScoringSettings,
     handleBackToCourts,
     isPending
-  } = require("@/hooks/scoring/useScoringLogic").useScoringLogic();
+  } = useScoringLogic();
 
   // Map activeView from "scoring" to "match" to match TournamentScoring's expected enum
   const mappedActiveView = activeView === "scoring" ? "match" : "courts";

@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Match, ScorerType, StandaloneMatch } from '@/types/tournament';
+import { Match, ScorerType, StandaloneMatch, MatchStatus } from '@/types/tournament';
 import { useTournament } from '@/contexts/TournamentContext';
 import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
 import { useToast } from '@/hooks/use-toast';
@@ -69,7 +69,8 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
               division: 'INITIAL',
               stage: 'INITIAL_ROUND',
               category: result.category || { id: 'default', name: 'Default', type: 'MENS_SINGLES' },
-              scores: result.scores || []
+              scores: result.scores || [],
+              status: result.status as MatchStatus // Explicit cast to MatchStatus
             } as Match;
             
             setMatch(convertedMatch);
@@ -153,7 +154,13 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
           // Update local state (immutably)
           const updatedScores = [...scores];
           updatedScores[currentSet] = { team1Score, team2Score };
-          const updatedMatch = { ...match, scores: updatedScores };
+          
+          // Use Match type to ensure compatibility
+          const updatedMatch = { 
+            ...match, 
+            scores: updatedScores
+          } as Match;
+          
           setMatch(updatedMatch);
         }
       } else {
@@ -202,7 +209,13 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
           
           // Update local state
           const updatedScores = [...match.scores, { team1Score: 0, team2Score: 0 }];
-          const updatedMatch = { ...match, scores: updatedScores };
+          
+          // Use proper typing for the match
+          const updatedMatch = { 
+            ...match, 
+            scores: updatedScores
+          } as Match;
+          
           setMatch(updatedMatch);
           setCurrentSet(newSetIndex);
         }
@@ -242,8 +255,12 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
         if (standaloneStore.currentMatch) {
           standaloneStore.completeMatch(match.id);
           
-          // Update local match status
-          const updatedMatch = { ...match, status: 'COMPLETED' };
+          // Update local match status with proper typing
+          const updatedMatch = { 
+            ...match, 
+            status: 'COMPLETED' as MatchStatus // Explicitly cast to MatchStatus
+          } as Match;
+          
           setMatch(updatedMatch);
         }
       } else {
