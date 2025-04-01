@@ -9,6 +9,7 @@ import TournamentScoring from "@/components/scoring/TournamentScoring";
 import StandaloneMatchScoring from "@/components/scoring/StandaloneMatchScoring";
 import ScoringContainer from "@/components/scoring/ScoringContainer";
 import { Match, Court } from "@/types/tournament";
+import { getDefaultScoringSettings } from "@/utils/matchUtils";
 
 const Scoring = () => {
   console.log("Rendering Scoring page");
@@ -29,6 +30,11 @@ const Scoring = () => {
   const { tournaments, setCurrentTournament, isPending } = useTournament();
   const [isStandaloneMatch, setIsStandaloneMatch] = useState(false);
   const [matchSelected, setMatchSelected] = useState(false);
+  const [currentSet, setCurrentSet] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [scoringSettings, setScoringSettings] = useState(getDefaultScoringSettings());
+  const [newSetDialogOpen, setNewSetDialogOpen] = useState(false);
+  const [completeMatchDialogOpen, setCompleteMatchDialogOpen] = useState(false);
   
   // Determine if we're handling a standalone match
   useEffect(() => {
@@ -46,41 +52,42 @@ const Scoring = () => {
   const {
     currentTournament,
     selectedMatch,
-    currentSet,
-    settingsOpen,
     activeView,
-    scoringSettings,
-    newSetDialogOpen,
-    completeMatchDialogOpen,
-    setCurrentSet,
-    setSettingsOpen,
-    setNewSetDialogOpen,
-    setCompleteMatchDialogOpen,
     handleSelectMatch,
     handleSelectCourt,
-    handleScoreChange,
+    handleScoreChange: tournamentHandleScoreChange,
     handleStartMatch,
-    handleCompleteMatch,
-    handleNewSet,
+    handleCompleteMatch: tournamentHandleCompleteMatch,
+    handleNewSet: tournamentHandleNewSet,
     handleUpdateScoringSettings,
     handleBackToCourts
   } = useScoringLogic();
 
+  // Update scoring settings when tournament changes
+  useEffect(() => {
+    if (currentTournament?.scoringSettings) {
+      setScoringSettings(currentTournament.scoringSettings);
+    }
+  }, [currentTournament]);
+
+  // Handle standalone match score change
+  const handleStandaloneScoreChange = useCallback((team: "team1" | "team2", increment: boolean) => {
+    if (standaloneScoring.handleScoreChange) {
+      standaloneScoring.handleScoreChange(team, increment, currentSet);
+    }
+  }, [standaloneScoring, currentSet]);
+
   // Handle standalone match selection once the match is loaded
-  const selectStandaloneMatch = useCallback(() => {
+  useEffect(() => {
     if (standaloneScoring.scoringMatch && !matchSelected && isStandaloneMatch) {
-      console.log("Standalone match loaded successfully, selecting match");
-      handleSelectMatch(standaloneScoring.scoringMatch as Match);
+      console.log("Standalone match loaded successfully, setting initial state");
+      
+      setCurrentSet(standaloneScoring.scoringMatch.scores.length > 0 ? 
+                   standaloneScoring.scoringMatch.scores.length - 1 : 0);
+      
       setMatchSelected(true);
     }
-  }, [standaloneScoring.scoringMatch, matchSelected, handleSelectMatch, isStandaloneMatch]);
-
-  // Only try to select the match when it's available
-  useEffect(() => {
-    if (isStandaloneMatch && standaloneScoring.scoringMatch && !matchSelected) {
-      selectStandaloneMatch();
-    }
-  }, [isStandaloneMatch, standaloneScoring.scoringMatch, matchSelected, selectStandaloneMatch]);
+  }, [standaloneScoring.scoringMatch, matchSelected, isStandaloneMatch]);
   
   // Set the current tournament based on the URL parameter
   useEffect(() => {
@@ -126,9 +133,9 @@ const Scoring = () => {
         setNewSetDialogOpen={setNewSetDialogOpen}
         completeMatchDialogOpen={completeMatchDialogOpen}
         setCompleteMatchDialogOpen={setCompleteMatchDialogOpen}
-        handleScoreChange={handleScoreChange}
-        handleNewSet={handleNewSet}
-        handleCompleteMatch={handleCompleteMatch}
+        handleScoreChange={handleStandaloneScoreChange}
+        handleNewSet={standaloneScoring.handleNewSet || (() => {})}
+        handleCompleteMatch={standaloneScoring.handleCompleteMatch || (() => {})}
         selectedMatch={standaloneScoring.scoringMatch || selectedMatch}
         saveMatch={standaloneScoring.saveMatch}
         isPending={isPending}
@@ -177,9 +184,9 @@ const Scoring = () => {
       handleSelectCourt={handleSelectCourt}
       handleSelectMatch={handleSelectMatch}
       handleStartMatch={handleStartMatchAdapter}
-      handleScoreChange={handleScoreChange}
-      handleNewSet={handleNewSet}
-      handleCompleteMatch={handleCompleteMatch}
+      handleScoreChange={tournamentHandleScoreChange}
+      handleNewSet={tournamentHandleNewSet}
+      handleCompleteMatch={tournamentHandleCompleteMatch}
       handleUpdateScoringSettings={handleUpdateScoringSettings}
       handleBackToCourts={handleBackToCourts}
       isPending={isPending}

@@ -8,6 +8,7 @@ import ScoringSettings from "@/components/scoring/ScoringSettings";
 import ScoringConfirmationDialogs from "@/components/scoring/ScoringConfirmationDialogs";
 import ScoringContainer from "@/components/scoring/ScoringContainer";
 import { Match } from "@/types/tournament";
+import { getDefaultScoringSettings } from "@/utils/matchUtils";
 
 interface StandaloneMatchScoringProps {
   isLoading: boolean;
@@ -62,22 +63,13 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
     );
   }
 
-  if (!match && !scoringMatch) {
-    return (
-      <ScoringContainer errorMessage="Match Not Found">
-        <p>The requested match could not be found.</p>
-      </ScoringContainer>
-    );
-  }
-
-  // Use the scoringMatch for ScoringMatchDetail since it's compatible with the scoring component
-  // Fall back to selectedMatch if available, which is already formatted properly
+  // Use the scoringMatch for rendering if available, otherwise fall back to other options
   const matchForScoring = scoringMatch || selectedMatch || match;
   
   if (!matchForScoring) {
     return (
-      <ScoringContainer errorMessage="Match Data Issue">
-        <p>There was a problem loading the match data. Please try again.</p>
+      <ScoringContainer errorMessage="Match Not Found">
+        <p>The requested match could not be found.</p>
       </ScoringContainer>
     );
   }

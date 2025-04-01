@@ -12,6 +12,7 @@ export const useStandaloneScoring = (matchId: string | null) => {
   const [scoringMatch, setScoringMatch] = useState<Match | null>(null);
   const prevMatchIdRef = useRef<string | null>(null);
   const initialLoadCompleted = useRef(false);
+  const updatingStoreRef = useRef(false);
 
   // Convert standalone match to regular match compatible with scoring components
   const convertToScoringMatch = useCallback((standaloneMatch: StandaloneMatch | null): Match | null => {
@@ -76,20 +77,166 @@ export const useStandaloneScoring = (matchId: string | null) => {
   }, [matchId, standaloneMatchStore, convertToScoringMatch]);
 
   // Update scoringMatch when currentMatch changes in the store
-  // But ONLY after initial load is complete and only when it's a real change
+  // But ONLY after initial load is complete and only when necessary
   useEffect(() => {
     // Skip this effect during initial load to prevent cycles
-    if (!initialLoadCompleted.current) return;
+    if (!initialLoadCompleted.current || updatingStoreRef.current) return;
+    
+    const storeMatch = standaloneMatchStore.currentMatch;
     
     // Only update if there's a currentMatch and it's actually different
-    if (standaloneMatchStore.currentMatch && 
-        (!scoringMatch || 
-         JSON.stringify(standaloneMatchStore.currentMatch.scores) !== 
-         JSON.stringify(scoringMatch?.scores))) {
-      const converted = convertToScoringMatch(standaloneMatchStore.currentMatch);
-      setScoringMatch(converted);
+    if (storeMatch) {
+      // Check if scores are actually different by comparing string representations
+      const storeScoresJson = JSON.stringify(storeMatch.scores || []);
+      const currentScoresJson = JSON.stringify(scoringMatch?.scores || []);
+      
+      if (!scoringMatch || storeScoresJson !== currentScoresJson) {
+        console.log("Store match changed, updating scoring match");
+        const converted = convertToScoringMatch(storeMatch);
+        setScoringMatch(converted);
+      }
     }
   }, [standaloneMatchStore.currentMatch, convertToScoringMatch, scoringMatch]);
+
+  // Update match score in the store
+  const updateMatchScore = useCallback((
+    setIndex: number,
+    team1Score: number,
+    team2Score: number
+  ) => {
+    if (!standaloneMatchStore.currentMatch) return;
+    
+    try {
+      updatingStoreRef.current = true;
+      standaloneMatchStore.updateMatchScore(
+        standaloneMatchStore.currentMatch.id,
+        setIndex,
+        team1Score,
+        team2Score
+      );
+      
+      // Also update local state to avoid waiting for store update
+      if (scoringMatch) {
+        const updatedScores = [...scoringMatch.scores];
+        // Ensure we have enough sets
+        while (updatedScores.length <= setIndex) {
+          updatedScores.push({ team1Score: 0, team2Score: 0 });
+        }
+        updatedScores[setIndex] = { team1Score, team2Score };
+        
+        const updatedMatch = {
+          ...scoringMatch,
+          scores: updatedScores
+        };
+        setScoringMatch(updatedMatch);
+      }
+    } finally {
+      // Reset flag after a short delay to allow state to settle
+      setTimeout(() => {
+        updatingStoreRef.current = false;
+      }, 50);
+    }
+  }, [standaloneMatchStore, scoringMatch]);
+
+  const handleScoreChange = useCallback((
+    team: "team1" | "team2", 
+    increment: boolean, 
+    currentSet: number
+  ) => {
+    if (!scoringMatch) return;
+    
+    // Get current score
+    const scores = [...(scoringMatch.scores || [])];
+    if (scores.length === 0) {
+      scores.push({ team1Score: 0, team2Score: 0 });
+    }
+    
+    // Make sure we have a score entry for this set
+    while (scores.length <= currentSet) {
+      scores.push({ team1Score: 0, team2Score: 0 });
+    }
+    
+    const currentScore = scores[currentSet];
+    let team1Score = currentScore.team1Score;
+    let team2Score = currentScore.team2Score;
+    
+    // Update the appropriate team's score
+    if (team === "team1") {
+      team1Score = increment 
+        ? Math.min(999, team1Score + 1) // Using a high number as max
+        : Math.max(0, team1Score - 1);
+    } else {
+      team2Score = increment 
+        ? Math.min(999, team2Score + 1)
+        : Math.max(0, team2Score - 1);
+    }
+    
+    // Update match score
+    updateMatchScore(currentSet, team1Score, team2Score);
+  }, [scoringMatch, updateMatchScore]);
+
+  // Create a new set for the match
+  const handleNewSet = useCallback(() => {
+    if (!standaloneMatchStore.currentMatch) return false;
+    if (!scoringMatch) return false;
+    
+    const newSetIndex = scoringMatch.scores.length;
+    
+    try {
+      updatingStoreRef.current = true;
+      // Initialize the new set with 0-0 score
+      standaloneMatchStore.updateMatchScore(
+        standaloneMatchStore.currentMatch.id, 
+        newSetIndex, 
+        0, 
+        0
+      );
+      
+      // Update local state
+      const updatedScores = [...scoringMatch.scores, { team1Score: 0, team2Score: 0 }];
+      const updatedMatch = {
+        ...scoringMatch,
+        scores: updatedScores
+      };
+      
+      setScoringMatch(updatedMatch);
+      return true;
+    } catch (err) {
+      console.error('Error creating new set:', err);
+      return false;
+    } finally {
+      // Reset flag after a short delay
+      setTimeout(() => {
+        updatingStoreRef.current = false;
+      }, 50);
+    }
+  }, [standaloneMatchStore, scoringMatch]);
+
+  // Complete the match
+  const handleCompleteMatch = useCallback(async () => {
+    if (!standaloneMatchStore.currentMatch) return false;
+    
+    try {
+      await standaloneMatchStore.completeMatch(standaloneMatchStore.currentMatch.id);
+      
+      toast({
+        title: "Match completed",
+        description: "The match has been marked as complete."
+      });
+      
+      return true;
+    } catch (err) {
+      console.error('Error completing match:', err);
+      
+      toast({
+        title: "Error completing match",
+        description: "There was a problem completing your match.",
+        variant: "destructive"
+      });
+      
+      return false;
+    }
+  }, [standaloneMatchStore, toast]);
 
   const saveMatch = useCallback(async () => {
     if (!standaloneMatchStore.currentMatch) return false;
@@ -123,6 +270,9 @@ export const useStandaloneScoring = (matchId: string | null) => {
     isLoading,
     error,
     saveMatch,
-    updateMatch: standaloneMatchStore.updateMatch
+    updateMatch: standaloneMatchStore.updateMatch,
+    handleScoreChange,
+    handleNewSet,
+    handleCompleteMatch
   };
 };
