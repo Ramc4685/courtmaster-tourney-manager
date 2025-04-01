@@ -88,15 +88,27 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
             </span>
           )}
         </h1>
-        {saveMatch && (
-          <Button 
-            variant="outline" 
-            onClick={saveMatch}
-            disabled={isPending}
-          >
-            Save Match
-          </Button>
-        )}
+        <div className="space-x-2">
+          {match.status !== 'COMPLETED' && (
+            <Button 
+              variant="default" 
+              className="bg-green-600 hover:bg-green-700" 
+              onClick={() => setCompleteMatchDialogOpen(true)}
+              disabled={isPending}
+            >
+              Complete Match
+            </Button>
+          )}
+          {saveMatch && (
+            <Button 
+              variant="outline" 
+              onClick={saveMatch}
+              disabled={isPending}
+            >
+              Save Match
+            </Button>
+          )}
+        </div>
       </div>
       
       <Button 

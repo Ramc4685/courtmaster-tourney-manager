@@ -76,6 +76,9 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
             setMatch(convertedMatch);
             // Set current set to the latest set
             setCurrentSet(convertedMatch.scores.length > 0 ? convertedMatch.scores.length - 1 : 0);
+            
+            // For standalone matches, always use standard badminton scoring
+            setScoringSettings(getDefaultScoringSettings());
           }
         } else {
           // Load tournament match
