@@ -95,7 +95,7 @@ const TournamentScoring: React.FC<TournamentScoringProps> = ({
             matches={currentTournament.matches}
             onCourtSelect={handleSelectCourt}
             onMatchSelect={handleSelectMatch}
-            onStartMatch={handleStartMatch}
+            onStartMatch={(match) => handleStartMatch(match.id)}
           />
         ) : (
           /* Match scoring view */

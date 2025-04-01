@@ -8,14 +8,18 @@ import { CheckCircle2 } from "lucide-react";
 
 interface CourtSelectionPanelProps {
   courts: Court[];
+  matches: Match[]; // Added matches to the interface
   onCourtSelect: (court: Court) => void;
-  onMatchStart: (match: Match) => void;
+  onMatchSelect: (match: Match) => void;
+  onStartMatch: (match: Match) => void;
 }
 
 const CourtSelectionPanel: React.FC<CourtSelectionPanelProps> = ({
   courts,
+  matches, // Accept matches prop
   onCourtSelect,
-  onMatchStart
+  onMatchSelect,
+  onStartMatch
 }) => {
   const [selectedCourt, setSelectedCourt] = React.useState<Court | null>(null);
   const [courtDetailsOpen, setCourtDetailsOpen] = React.useState(false);
@@ -31,7 +35,7 @@ const CourtSelectionPanel: React.FC<CourtSelectionPanelProps> = ({
   };
 
   const handleStartMatch = (match: Match) => {
-    onMatchStart(match);
+    onStartMatch(match);
     setCourtDetailsOpen(false);
   };
 

@@ -33,8 +33,8 @@ const ScoringHeader: React.FC<ScoringHeaderProps> = ({
           <Skeleton className="h-4 w-40" />
         ) : (
           <p className="text-gray-500 text-sm">
-            {/* Use optional chaining for location since it might not exist */}
-            {tournament.location ?? 'No location'} • {new Date(tournament.startDate).toLocaleDateString()}
+            {/* Since location doesn't exist on Tournament type, display "No location" if not present */}
+            {tournament.description ?? 'No location'} • {new Date(tournament.startDate).toLocaleDateString()}
             {tournament.status && ` • ${tournament.status}`}
           </p>
         )}

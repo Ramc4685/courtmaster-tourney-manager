@@ -142,20 +142,18 @@ const Scoring = () => {
     );
   }
 
-  // Create adapter functions to match expected types in TournamentScoring
-  const handleCourtSelectAdapter = (court: Court) => {
-    handleSelectCourt(court);
-  };
+  // Map activeView from "scoring" to "match" to match TournamentScoring's expected enum
+  const mappedActiveView = activeView === "scoring" ? "match" : "courts";
 
+  // Create adapter function for handleStartMatch to convert from matchId to Match
   const handleStartMatchAdapter = (matchId: string) => {
     const match = currentTournament?.matches.find(m => m.id === matchId);
     if (match) {
       handleStartMatch(match);
+    } else {
+      console.error(`Match with ID ${matchId} not found`);
     }
   };
-
-  // Map activeView from "scoring" to "match" to match TournamentScoring's expected enum
-  const mappedActiveView = activeView === "scoring" ? "match" : "courts";
 
   return (
     <TournamentScoring
@@ -172,7 +170,7 @@ const Scoring = () => {
       completeMatchDialogOpen={completeMatchDialogOpen}
       setCompleteMatchDialogOpen={setCompleteMatchDialogOpen}
       setCurrentSet={setCurrentSet}
-      handleSelectCourt={handleCourtSelectAdapter}
+      handleSelectCourt={handleSelectCourt}
       handleSelectMatch={handleSelectMatch}
       handleStartMatch={handleStartMatchAdapter}
       handleScoreChange={handleScoreChange}
