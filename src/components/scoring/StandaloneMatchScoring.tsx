@@ -50,6 +50,7 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
 }) => {
   const navigate = useNavigate();
 
+  // If still loading, show loading indicator
   if (isLoading) {
     return (
       <ScoringContainer isLoading={true}>
@@ -58,10 +59,19 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
     );
   }
   
+  // If match not found, show error
   if (!match) {
     return (
       <ScoringContainer errorMessage="Match Not Found">
         <p>The requested match could not be found.</p>
+        <div className="mt-4">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/quick-match")}
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" /> Return to Quick Match
+          </Button>
+        </div>
       </ScoringContainer>
     );
   }

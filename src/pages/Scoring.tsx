@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTournament } from "@/contexts/TournamentContext";
 import { Match } from "@/types/tournament";
@@ -18,9 +18,14 @@ const Scoring = () => {
   const matchId = searchParams.get("matchId");
   const matchType = searchParams.get("type");
   
-  console.log("Tournament ID from URL params:", tournamentId);
-  console.log("Match ID from URL query:", matchId);
-  console.log("Match type from URL query:", matchType);
+  // Prevent logging on every render to reduce noise
+  const firstRenderRef = React.useRef(true);
+  if (firstRenderRef.current) {
+    console.log("Tournament ID from URL params:", tournamentId);
+    console.log("Match ID from URL query:", matchId);
+    console.log("Match type from URL query:", matchType);
+    firstRenderRef.current = false;
+  }
   
   const navigate = useNavigate();
   const { tournaments, setCurrentTournament } = useTournament();
@@ -28,14 +33,17 @@ const Scoring = () => {
   // Determine if we're handling a standalone match
   const isStandaloneMatch = matchType === "standalone" && !!matchId;
   
+  // We need this state to prevent re-renders from changing scorerType
+  const [scorerTypeState] = useState(isStandaloneMatch ? "STANDALONE" : "TOURNAMENT");
+  
   // Use our unified scoring hook with the appropriate scorer type
   const scoring = useUnifiedScoring({
-    scorerType: isStandaloneMatch ? "STANDALONE" : "TOURNAMENT",
+    scorerType: scorerTypeState as any,
     matchId: isStandaloneMatch ? matchId : undefined
   });
   
-  // Set the current tournament based on the URL parameter
-  React.useEffect(() => {
+  // Set the current tournament based on the URL parameter - only once after mount
+  useEffect(() => {
     if (isStandaloneMatch) {
       console.log("Using standalone match, not loading tournament");
       return;
@@ -46,10 +54,7 @@ const Scoring = () => {
       return;
     }
     
-    console.log("Available tournaments:", tournaments.map(t => t.id));
-    
     const tournament = tournaments.find(t => t.id === tournamentId);
-    console.log("Found tournament:", tournament ? "Yes" : "No");
     
     if (tournament) {
       console.log("Setting current tournament:", tournament.id, tournament.name);
@@ -87,7 +92,7 @@ const Scoring = () => {
   }
 
   // Original tournament-based scoring case
-  if (!tournamentId && !isStandaloneMatch) {
+  if (!tournamentId) {
     console.log("No tournament ID found in URL params");
     return (
       <ScoringContainer errorMessage="No Tournament Selected">

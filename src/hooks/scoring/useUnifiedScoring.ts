@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Match, ScorerType, StandaloneMatch } from '@/types/tournament';
 import { useTournament } from '@/contexts/TournamentContext';
 import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
@@ -27,15 +27,30 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
   const [newSetDialogOpen, setNewSetDialogOpen] = useState(false);
   const [completeMatchDialogOpen, setCompleteMatchDialogOpen] = useState(false);
   const [scoringSettings, setScoringSettings] = useState(getDefaultScoringSettings());
+  
+  // Use refs to track state between renders without causing re-renders
+  const matchIdRef = useRef<string | undefined>(matchId);
+  const initialLoadCompletedRef = useRef(false);
+  const isUpdatingRef = useRef(false);
 
   // Load match data based on scorer type
   useEffect(() => {
-    const loadMatchData = async () => {
-      if (!matchId) {
-        setIsLoading(false);
-        return;
-      }
+    // Skip if the matchId hasn't changed
+    if (matchId === matchIdRef.current && initialLoadCompletedRef.current) {
+      return;
+    }
+    
+    // Update the ref to the current matchId
+    matchIdRef.current = matchId;
+    
+    // Skip if no matchId provided
+    if (!matchId) {
+      setIsLoading(false);
+      return;
+    }
 
+    const loadMatchData = async () => {
+      console.log(`Loading ${scorerType} match with ID: ${matchId}`);
       setIsLoading(true);
       setError(null);
 
@@ -88,6 +103,7 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
         setMatch(null);
       } finally {
         setIsLoading(false);
+        initialLoadCompletedRef.current = true;
       }
     };
 
@@ -98,116 +114,158 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
   const handleScoreChange = useCallback((team: "team1" | "team2", increment: boolean) => {
     if (!match) return;
     
-    if (scorerType === 'STANDALONE') {
-      // Standalone match score change
-      const scores = [...(match.scores || [])];
-      if (scores.length === 0) {
-        scores.push({ team1Score: 0, team2Score: 0 });
-      }
-      
-      // Make sure we have a score entry for this set
-      while (scores.length <= currentSet) {
-        scores.push({ team1Score: 0, team2Score: 0 });
-      }
-      
-      const currentScore = scores[currentSet];
-      let team1Score = currentScore.team1Score;
-      let team2Score = currentScore.team2Score;
-      
-      // Update the appropriate team's score
-      if (team === "team1") {
-        team1Score = increment 
-          ? Math.min(999, team1Score + 1)
-          : Math.max(0, team1Score - 1);
-      } else {
-        team2Score = increment 
-          ? Math.min(999, team2Score + 1)
-          : Math.max(0, team2Score - 1);
-      }
-      
-      // Update match in standalone store
-      if (standaloneStore.currentMatch) {
-        standaloneStore.updateMatchScore(match.id, currentSet, team1Score, team2Score);
-      }
-      
-      // Update local state
-      const updatedScores = [...scores];
-      updatedScores[currentSet] = { team1Score, team2Score };
-      const updatedMatch = { ...match, scores: updatedScores };
-      setMatch(updatedMatch);
-    } else {
-      // Tournament match score change
-      if (tournament.currentTournament) {
-        tournament.updateMatchScore(match.id, currentSet, 
-          team === "team1" 
-            ? (increment ? match.scores[currentSet]?.team1Score + 1 : Math.max(0, match.scores[currentSet]?.team1Score - 1))
-            : match.scores[currentSet]?.team1Score || 0,
-          team === "team2" 
-            ? (increment ? match.scores[currentSet]?.team2Score + 1 : Math.max(0, match.scores[currentSet]?.team2Score - 1))
-            : match.scores[currentSet]?.team2Score || 0
-        );
+    // Prevent multiple updates at once
+    if (isUpdatingRef.current) return;
+    isUpdatingRef.current = true;
+    
+    try {
+      if (scorerType === 'STANDALONE') {
+        // Standalone match score change
+        const scores = [...(match.scores || [])];
+        if (scores.length === 0) {
+          scores.push({ team1Score: 0, team2Score: 0 });
+        }
         
-        // We don't need to update local state as it will be updated through the tournament context
+        // Make sure we have a score entry for this set
+        while (scores.length <= currentSet) {
+          scores.push({ team1Score: 0, team2Score: 0 });
+        }
+        
+        const currentScore = scores[currentSet];
+        let team1Score = currentScore.team1Score;
+        let team2Score = currentScore.team2Score;
+        
+        // Update the appropriate team's score
+        if (team === "team1") {
+          team1Score = increment 
+            ? Math.min(999, team1Score + 1)
+            : Math.max(0, team1Score - 1);
+        } else {
+          team2Score = increment 
+            ? Math.min(999, team2Score + 1)
+            : Math.max(0, team2Score - 1);
+        }
+        
+        // Update match in standalone store
+        if (standaloneStore.currentMatch) {
+          standaloneStore.updateMatchScore(match.id, currentSet, team1Score, team2Score);
+          
+          // Update local state (immutably)
+          const updatedScores = [...scores];
+          updatedScores[currentSet] = { team1Score, team2Score };
+          const updatedMatch = { ...match, scores: updatedScores };
+          setMatch(updatedMatch);
+        }
+      } else {
+        // Tournament match score change
+        if (tournament.currentTournament) {
+          const currentScore = match.scores[currentSet] || { team1Score: 0, team2Score: 0 };
+          let team1Score = currentScore.team1Score || 0;
+          let team2Score = currentScore.team2Score || 0;
+          
+          if (team === "team1") {
+            team1Score = increment 
+              ? Math.min(999, team1Score + 1)
+              : Math.max(0, team1Score - 1);
+          } else {
+            team2Score = increment 
+              ? Math.min(999, team2Score + 1)
+              : Math.max(0, team2Score - 1);
+          }
+          
+          tournament.updateMatchScore(match.id, currentSet, team1Score, team2Score);
+        }
       }
+    } finally {
+      // Reset the updating flag after a short delay to prevent rapid consecutive updates
+      setTimeout(() => {
+        isUpdatingRef.current = false;
+      }, 10);
     }
   }, [match, currentSet, scorerType, tournament, standaloneStore]);
 
   // Create a new set
   const handleNewSet = useCallback(() => {
-    if (!match) return;
+    if (!match) return false;
     
-    const newSetIndex = match.scores.length;
+    // Prevent multiple updates at once
+    if (isUpdatingRef.current) return false;
+    isUpdatingRef.current = true;
     
-    if (scorerType === 'STANDALONE') {
-      if (standaloneStore.currentMatch) {
-        // Initialize the new set with 0-0 score
-        standaloneStore.updateMatchScore(match.id, newSetIndex, 0, 0);
-        
-        // Update local state
-        const updatedScores = [...match.scores, { team1Score: 0, team2Score: 0 }];
-        const updatedMatch = { ...match, scores: updatedScores };
-        setMatch(updatedMatch);
-        setCurrentSet(newSetIndex);
+    try {
+      const newSetIndex = match.scores.length;
+      
+      if (scorerType === 'STANDALONE') {
+        if (standaloneStore.currentMatch) {
+          // Initialize the new set with 0-0 score
+          standaloneStore.updateMatchScore(match.id, newSetIndex, 0, 0);
+          
+          // Update local state
+          const updatedScores = [...match.scores, { team1Score: 0, team2Score: 0 }];
+          const updatedMatch = { ...match, scores: updatedScores };
+          setMatch(updatedMatch);
+          setCurrentSet(newSetIndex);
+        }
+      } else {
+        if (tournament.currentTournament) {
+          tournament.updateMatchScore(match.id, newSetIndex, 0, 0);
+          setCurrentSet(newSetIndex);
+        }
       }
-    } else {
-      if (tournament.currentTournament) {
-        tournament.updateMatchScore(match.id, newSetIndex, 0, 0);
-        setCurrentSet(newSetIndex);
-      }
+      
+      setNewSetDialogOpen(false);
+      
+      toast({
+        title: "New set started",
+        description: `Set ${newSetIndex + 1} has been started.`
+      });
+      
+      return true;
+    } finally {
+      // Reset the updating flag after a short delay
+      setTimeout(() => {
+        isUpdatingRef.current = false;
+      }, 10);
     }
-    
-    setNewSetDialogOpen(false);
-    
-    toast({
-      title: "New set started",
-      description: `Set ${newSetIndex + 1} has been started.`
-    });
-    
-    return true;
   }, [match, scorerType, standaloneStore, tournament, toast]);
 
   // Complete the match
   const handleCompleteMatch = useCallback(() => {
-    if (!match) return;
+    if (!match) return false;
     
-    if (scorerType === 'STANDALONE') {
-      if (standaloneStore.currentMatch) {
-        standaloneStore.completeMatch(match.id);
+    // Prevent multiple updates at once
+    if (isUpdatingRef.current) return false;
+    isUpdatingRef.current = true;
+    
+    try {
+      if (scorerType === 'STANDALONE') {
+        if (standaloneStore.currentMatch) {
+          standaloneStore.completeMatch(match.id);
+          
+          // Update local match status
+          const updatedMatch = { ...match, status: 'COMPLETED' };
+          setMatch(updatedMatch);
+        }
+      } else {
+        if (tournament.currentTournament) {
+          tournament.completeMatch(match.id);
+        }
       }
-    } else {
-      if (tournament.currentTournament) {
-        tournament.completeMatch(match.id);
-      }
+      
+      setCompleteMatchDialogOpen(false);
+      
+      toast({
+        title: "Match completed",
+        description: "The match has been marked as complete."
+      });
+      
+      return true;
+    } finally {
+      // Reset the updating flag after a short delay
+      setTimeout(() => {
+        isUpdatingRef.current = false;
+      }, 10);
     }
-    
-    setCompleteMatchDialogOpen(false);
-    
-    toast({
-      title: "Match completed",
-      description: "The match has been marked as complete."
-    });
-    
-    return true;
   }, [match, scorerType, standaloneStore, tournament, toast]);
 
   // Save standalone match
