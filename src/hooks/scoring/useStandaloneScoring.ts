@@ -11,8 +11,7 @@ export const useStandaloneScoring = (matchId: string | null) => {
   const [error, setError] = useState<string | null>(null);
   const [scoringMatch, setScoringMatch] = useState<Match | null>(null);
   const prevMatchIdRef = useRef<string | null>(null);
-  const isInitialRender = useRef(true);
-  const skipStoreUpdateRef = useRef(false);
+  const initialLoadCompleted = useRef(false);
 
   // Convert standalone match to regular match compatible with scoring components
   const convertToScoringMatch = useCallback((standaloneMatch: StandaloneMatch | null): Match | null => {
@@ -31,11 +30,16 @@ export const useStandaloneScoring = (matchId: string | null) => {
     } as Match;
   }, []);
 
-  // Load standalone match - with proper dependency management
+  // Load standalone match only when matchId changes
   useEffect(() => {
-    // Only run this effect if matchId changes or on initial render
-    if (!matchId || (matchId === prevMatchIdRef.current && !isInitialRender.current)) {
-      if (!matchId) setIsLoading(false);
+    // Skip if no matchId provided
+    if (!matchId) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Skip if this matchId was already loaded (prevents infinite loops)
+    if (prevMatchIdRef.current === matchId && initialLoadCompleted.current) {
       return;
     }
 
@@ -43,7 +47,6 @@ export const useStandaloneScoring = (matchId: string | null) => {
       console.log(`Loading standalone match with ID: ${matchId}`);
       setIsLoading(true);
       setError(null);
-      skipStoreUpdateRef.current = true; // Skip the store update effect during initial load
       
       try {
         const result = await standaloneMatchStore.loadMatchById(matchId);
@@ -65,28 +68,28 @@ export const useStandaloneScoring = (matchId: string | null) => {
         setIsLoading(false);
         // Update the previous matchId for comparison in future renders
         prevMatchIdRef.current = matchId;
-        isInitialRender.current = false;
-        
-        // Reset the skip flag after a short delay to allow state to settle
-        setTimeout(() => {
-          skipStoreUpdateRef.current = false;
-        }, 100);
+        initialLoadCompleted.current = true;
       }
     };
 
     loadMatch();
   }, [matchId, standaloneMatchStore, convertToScoringMatch]);
 
-  // When currentMatch changes in the store, update scoringMatch
+  // Update scoringMatch when currentMatch changes in the store
+  // But ONLY after initial load is complete and only when it's a real change
   useEffect(() => {
-    // Skip this effect if we're currently loading a match or if the skip flag is set
-    if (skipStoreUpdateRef.current) return;
+    // Skip this effect during initial load to prevent cycles
+    if (!initialLoadCompleted.current) return;
     
-    if (standaloneMatchStore.currentMatch) {
+    // Only update if there's a currentMatch and it's actually different
+    if (standaloneMatchStore.currentMatch && 
+        (!scoringMatch || 
+         JSON.stringify(standaloneMatchStore.currentMatch.scores) !== 
+         JSON.stringify(scoringMatch?.scores))) {
       const converted = convertToScoringMatch(standaloneMatchStore.currentMatch);
       setScoringMatch(converted);
     }
-  }, [standaloneMatchStore.currentMatch, convertToScoringMatch]);
+  }, [standaloneMatchStore.currentMatch, convertToScoringMatch, scoringMatch]);
 
   const saveMatch = useCallback(async () => {
     if (!standaloneMatchStore.currentMatch) return false;

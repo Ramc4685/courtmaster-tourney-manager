@@ -40,7 +40,7 @@ const Scoring = () => {
     }
   }, [matchId, matchType]);
   
-  // Use standalone scoring hook when a standalone match is specified
+  // Use standalone scoring hook only when handling a standalone match
   const standaloneScoring = useStandaloneScoring(isStandaloneMatch ? matchId : null);
   
   const {
@@ -129,7 +129,7 @@ const Scoring = () => {
         handleScoreChange={handleScoreChange}
         handleNewSet={handleNewSet}
         handleCompleteMatch={handleCompleteMatch}
-        selectedMatch={selectedMatch}
+        selectedMatch={standaloneScoring.scoringMatch || selectedMatch}
         saveMatch={standaloneScoring.saveMatch}
         isPending={isPending}
       />

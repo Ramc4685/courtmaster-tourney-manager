@@ -62,7 +62,7 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
     );
   }
 
-  if (!match) {
+  if (!match && !scoringMatch) {
     return (
       <ScoringContainer errorMessage="Match Not Found">
         <p>The requested match could not be found.</p>
@@ -71,7 +71,16 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
   }
 
   // Use the scoringMatch for ScoringMatchDetail since it's compatible with the scoring component
-  const matchForScoring = scoringMatch || match;
+  // Fall back to selectedMatch if available, which is already formatted properly
+  const matchForScoring = scoringMatch || selectedMatch || match;
+  
+  if (!matchForScoring) {
+    return (
+      <ScoringContainer errorMessage="Match Data Issue">
+        <p>There was a problem loading the match data. Please try again.</p>
+      </ScoringContainer>
+    );
+  }
 
   return (
     <ScoringContainer>
@@ -104,17 +113,15 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
         <ChevronLeft className="mr-1 h-4 w-4" /> Back to Quick Match
       </Button>
       
-      {matchForScoring && (
-        <ScoringMatchDetail
-          match={matchForScoring}
-          onScoreChange={handleScoreChange}
-          onNewSet={() => setNewSetDialogOpen(true)}
-          onCompleteMatch={() => setCompleteMatchDialogOpen(true)}
-          currentSet={currentSet}
-          onSetChange={setCurrentSet}
-          isPending={isPending}
-        />
-      )}
+      <ScoringMatchDetail
+        match={matchForScoring}
+        onScoreChange={handleScoreChange}
+        onNewSet={() => setNewSetDialogOpen(true)}
+        onCompleteMatch={() => setCompleteMatchDialogOpen(true)}
+        currentSet={currentSet}
+        onSetChange={setCurrentSet}
+        isPending={isPending}
+      />
 
       {/* Scoring Settings Dialog */}
       <ScoringSettings 
@@ -128,7 +135,7 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
 
       {/* Confirmation Dialogs for New Set and Complete Match */}
       <ScoringConfirmationDialogs
-        selectedMatch={selectedMatch || matchForScoring}
+        selectedMatch={matchForScoring}
         currentSet={currentSet}
         newSetDialogOpen={newSetDialogOpen}
         setNewSetDialogOpen={setNewSetDialogOpen}
