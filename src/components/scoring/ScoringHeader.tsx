@@ -8,13 +8,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 interface ScoringHeaderProps {
   tournament: Tournament;
   onOpenSettings: () => void;
-  isPending?: boolean; // Add isPending prop
+  isPending?: boolean;
 }
 
 const ScoringHeader: React.FC<ScoringHeaderProps> = ({ 
   tournament, 
   onOpenSettings,
-  isPending = false // Default to false
+  isPending = false
 }) => {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-4 mb-4">
@@ -33,7 +33,8 @@ const ScoringHeader: React.FC<ScoringHeaderProps> = ({
           <Skeleton className="h-4 w-40" />
         ) : (
           <p className="text-gray-500 text-sm">
-            {tournament.location} • {new Date(tournament.startDate).toLocaleDateString()}
+            {/* Use optional chaining for location since it might not exist */}
+            {tournament.location ?? 'No location'} • {new Date(tournament.startDate).toLocaleDateString()}
             {tournament.status && ` • ${tournament.status}`}
           </p>
         )}

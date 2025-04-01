@@ -8,7 +8,7 @@ import { useStandaloneScoring } from "@/hooks/scoring/useStandaloneScoring";
 import TournamentScoring from "@/components/scoring/TournamentScoring";
 import StandaloneMatchScoring from "@/components/scoring/StandaloneMatchScoring";
 import ScoringContainer from "@/components/scoring/ScoringContainer";
-import { Match } from "@/types/tournament";
+import { Match, Court } from "@/types/tournament";
 
 const Scoring = () => {
   console.log("Rendering Scoring page");
@@ -142,11 +142,26 @@ const Scoring = () => {
     );
   }
 
+  // Create adapter functions to match expected types in TournamentScoring
+  const handleCourtSelectAdapter = (court: Court) => {
+    handleSelectCourt(court);
+  };
+
+  const handleStartMatchAdapter = (matchId: string) => {
+    const match = currentTournament?.matches.find(m => m.id === matchId);
+    if (match) {
+      handleStartMatch(match);
+    }
+  };
+
+  // Map activeView from "scoring" to "match" to match TournamentScoring's expected enum
+  const mappedActiveView = activeView === "scoring" ? "match" : "courts";
+
   return (
     <TournamentScoring
       currentTournament={currentTournament}
       tournamentId={tournamentId}
-      activeView={activeView}
+      activeView={mappedActiveView}
       selectedMatch={selectedMatch}
       currentSet={currentSet}
       settingsOpen={settingsOpen}
@@ -157,15 +172,15 @@ const Scoring = () => {
       completeMatchDialogOpen={completeMatchDialogOpen}
       setCompleteMatchDialogOpen={setCompleteMatchDialogOpen}
       setCurrentSet={setCurrentSet}
-      handleSelectCourt={handleSelectCourt}
+      handleSelectCourt={handleCourtSelectAdapter}
       handleSelectMatch={handleSelectMatch}
-      handleStartMatch={handleStartMatch}
+      handleStartMatch={handleStartMatchAdapter}
       handleScoreChange={handleScoreChange}
       handleNewSet={handleNewSet}
       handleCompleteMatch={handleCompleteMatch}
       handleUpdateScoringSettings={handleUpdateScoringSettings}
       handleBackToCourts={handleBackToCourts}
-      isPending={isPending} // Pass isPending to the component
+      isPending={isPending}
     />
   );
 };

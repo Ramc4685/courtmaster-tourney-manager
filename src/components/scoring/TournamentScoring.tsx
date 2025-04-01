@@ -9,13 +9,13 @@ import ScoringMatchDetail from "@/components/scoring/ScoringMatchDetail";
 import ScoringHeader from "@/components/scoring/ScoringHeader";
 import ScoringSettings from "@/components/scoring/ScoringSettings";
 import ScoringConfirmationDialogs from "@/components/scoring/ScoringConfirmationDialogs";
-import { Match, Tournament } from "@/types/tournament";
+import { Match, Tournament, Court } from "@/types/tournament";
 
-// This interface was already defined in the original file
+// Fixed interface with correct types
 interface TournamentScoringProps {
   currentTournament: Tournament | null;
   tournamentId: string | undefined;
-  activeView: "courts" | "match";
+  activeView: "courts" | "match"; // Keep as "courts" | "match" to match existing code
   selectedMatch: Match | null;
   currentSet: number;
   settingsOpen: boolean;
@@ -26,15 +26,15 @@ interface TournamentScoringProps {
   completeMatchDialogOpen: boolean;
   setCompleteMatchDialogOpen: (open: boolean) => void;
   setCurrentSet: (set: number) => void;
-  handleSelectCourt: (courtNumber: number) => void;
+  handleSelectCourt: (court: Court) => void; // Changed from courtNumber: number
   handleSelectMatch: (match: Match) => void;
-  handleStartMatch: (matchId: string) => void;
+  handleStartMatch: (matchId: string) => void; // Keep as string to match existing code
   handleScoreChange: (team: "team1" | "team2", increment: boolean) => void;
   handleNewSet: () => void;
   handleCompleteMatch: () => void;
   handleUpdateScoringSettings: (settings: any) => void;
   handleBackToCourts: () => void;
-  isPending?: boolean; // Add isPending prop
+  isPending?: boolean;
 }
 
 const TournamentScoring: React.FC<TournamentScoringProps> = ({

@@ -502,6 +502,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       value={{
         tournaments,
         currentTournament,
+        isPending: false, // Add the missing isPending property
         setCurrentTournament: async (tournament) => {
           if (tournament) {
             await tournamentService.setCurrentTournament(tournament);
