@@ -119,7 +119,6 @@ const Scoring = () => {
   } = useScoringLogic();
   
   // Handle isPending in a TypeScript-safe way
-  // Use optional chaining or safe type checking to access isPending property
   const isPending = typeof scoringLogicRest === 'object' && 
                     scoringLogicRest !== null && 
                     'isPending' in scoringLogicRest ? 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Match, ScorerType, StandaloneMatch, MatchStatus } from '@/types/tournament';
 import { useTournament } from '@/contexts/TournamentContext';
@@ -139,19 +138,18 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
         let team1Score = currentScore.team1Score;
         let team2Score = currentScore.team2Score;
         
-        // Calculate the max score possible based on scoring settings
-        // Apply maxTwoPointLeadScore if exists, otherwise use maxPoints + reasonable buffer
-        const maxAllowedScore = scoringSettings.maxTwoPointLeadScore || 
-                               (scoringSettings.maxPoints + 9); // Allow for extended play
+        // Apply strict badminton scoring rules
+        // Get the absolute maximum score possible (maxTwoPointLeadScore from settings)
+        const absoluteMaxScore = scoringSettings.maxTwoPointLeadScore || 30; 
         
         // Update the appropriate team's score with respect to scoring rules
         if (team === "team1") {
           team1Score = increment 
-            ? Math.min(maxAllowedScore, team1Score + 1) // Enforce maximum score
+            ? Math.min(absoluteMaxScore, team1Score + 1) // Never exceed absolute maximum
             : Math.max(0, team1Score - 1);
         } else {
           team2Score = increment 
-            ? Math.min(maxAllowedScore, team2Score + 1) // Enforce maximum score
+            ? Math.min(absoluteMaxScore, team2Score + 1) // Never exceed absolute maximum
             : Math.max(0, team2Score - 1);
         }
         
@@ -195,18 +193,17 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
           let team1Score = currentScore.team1Score || 0;
           let team2Score = currentScore.team2Score || 0;
           
-          // Calculate the max score possible based on tournament settings
-          // Apply maxTwoPointLeadScore if exists, otherwise use maxPoints + reasonable buffer
-          const maxAllowedScore = scoringSettings.maxTwoPointLeadScore || 
-                                 (scoringSettings.maxPoints + 9); // Allow for extended play
+          // Apply strict badminton scoring rules
+          // Get the absolute maximum score possible (maxTwoPointLeadScore from settings)
+          const absoluteMaxScore = scoringSettings.maxTwoPointLeadScore || 30;
           
           if (team === "team1") {
             team1Score = increment 
-              ? Math.min(maxAllowedScore, team1Score + 1) // Enforce maximum score limit
+              ? Math.min(absoluteMaxScore, team1Score + 1) // Never exceed absolute maximum
               : Math.max(0, team1Score - 1);
           } else {
             team2Score = increment 
-              ? Math.min(maxAllowedScore, team2Score + 1) // Enforce maximum score limit
+              ? Math.min(absoluteMaxScore, team2Score + 1) // Never exceed absolute maximum
               : Math.max(0, team2Score - 1);
           }
           
