@@ -26,23 +26,39 @@ export const useScoringStore = create<ScoringState>((set, get) => {
     setCompleteMatchDialogOpen: (open) => set({ completeMatchDialogOpen: open }),
     setScoringSettings: (settings) => set({ scoringSettings: settings }),
     
+    // Safe setter for selected match to avoid infinite loops
+    safeSetSelectedMatch: (match) => {
+      const currentMatch = get().selectedMatch;
+      // Only update if the match is different (by ID)
+      if (!currentMatch || currentMatch.id !== match?.id) {
+        set({ selectedMatch: match });
+      }
+    },
+    
     // Standalone match scoring methods
     handleStandaloneScoreChange: (team, increment, standaloneStore) => {
       const { selectedMatch, currentSet, scoringSettings } = get();
-      if (!selectedMatch || !standaloneStore.currentMatch) {
+      if (!selectedMatch) {
         console.error('[ERROR] Cannot update score: No match selected.');
         return;
       }
       
-      let scores = [...selectedMatch.scores];
+      // Get current score, ensure we have valid scores array
+      const scores = [...(selectedMatch.scores || [])];
       if (scores.length === 0) {
-        scores = [{ team1Score: 0, team2Score: 0 }];
+        scores.push({ team1Score: 0, team2Score: 0 });
       }
       
-      const currentScore = scores[currentSet] || { team1Score: 0, team2Score: 0 };
+      // Make sure we have a score entry for this set
+      while (scores.length <= currentSet) {
+        scores.push({ team1Score: 0, team2Score: 0 });
+      }
+      
+      const currentScore = scores[currentSet];
       let team1Score = currentScore.team1Score;
       let team2Score = currentScore.team2Score;
       
+      // Update the appropriate team's score
       if (team === "team1") {
         team1Score = increment 
           ? Math.min(scoringSettings.maxPoints + 10, team1Score + 1)
@@ -53,16 +69,11 @@ export const useScoringStore = create<ScoringState>((set, get) => {
           : Math.max(0, team2Score - 1);
       }
       
-      // Update match score in the standalone store
+      // Update match score in the standalone store - but don't wait for it
       standaloneStore.updateMatchScore(selectedMatch.id, currentSet, team1Score, team2Score);
       
-      // Update local state
-      const updatedScores = [...selectedMatch.scores];
-      if (updatedScores.length <= currentSet) {
-        while (updatedScores.length <= currentSet) {
-          updatedScores.push({ team1Score: 0, team2Score: 0 });
-        }
-      }
+      // Update local state immediately
+      const updatedScores = [...scores];
       updatedScores[currentSet] = { team1Score, team2Score };
       
       const updatedMatch = {
@@ -70,8 +81,6 @@ export const useScoringStore = create<ScoringState>((set, get) => {
         scores: updatedScores
       };
       set({ selectedMatch: updatedMatch });
-      
-      // Check for set or match completion logic would be handled by the scorer component
     },
     
     handleStandaloneStartMatch: (matchId, standaloneStore) => {

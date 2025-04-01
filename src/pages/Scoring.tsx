@@ -128,6 +128,7 @@ const Scoring = () => {
         handleCompleteMatch={handleCompleteMatch}
         selectedMatch={selectedMatch}
         saveMatch={standaloneScoring.saveMatch}
+        isPending={isPending}
       />
     );
   }

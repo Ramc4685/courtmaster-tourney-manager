@@ -1,3 +1,4 @@
+
 import { useScoringStore } from "@/stores/scoring";
 import { useTournamentStore } from "@/stores/tournamentStore";
 import { useTournament } from "@/contexts/TournamentContext";
@@ -60,77 +61,74 @@ export const useScoringAdapter = ({
     initializeScoring();
   }, [scorerType, matchId]);
   
-  // Import original implementation
-  // This would need to be adapted to match your project structure
+  // If we're using Zustand and it's a standalone match, return the appropriate store implementation
+  if (currentScorerType === "STANDALONE") {
+    return {
+      ...scoringStore,
+      currentMatch: standaloneStore.currentMatch,
+      currentTournament: null, // No tournament for standalone matches
+      matchDetails: standaloneStore.currentMatch ? {
+        courtName: standaloneStore.currentMatch.courtName,
+        tournamentName: standaloneStore.currentMatch.tournamentName,
+        categoryName: standaloneStore.currentMatch.categoryName,
+      } : null,
+    
+      // Override methods to use standalone match service
+      handleScoreChange: (team: "team1" | "team2", increment: boolean) => {
+        scoringStore.handleStandaloneScoreChange(team, increment, standaloneStore);
+      },
+      handleStartMatch: (match: Match | StandaloneMatch) => {
+        if ('tournamentId' in match) {
+          // It's a regular match from tournament
+          scoringStore.handleStartMatch(match);
+        } else {
+          // It's a standalone match
+          scoringStore.handleStandaloneStartMatch(match.id, standaloneStore);
+        }
+      },
+      handleCompleteMatch: () => {
+        // Check what type of match is currently selected
+        const match = scoringStore.selectedMatch;
+        if (match && !('tournamentId' in match)) {
+          // It's a standalone match
+          scoringStore.handleStandaloneCompleteMatch(standaloneStore);
+        } else {
+          // It's a regular tournament match
+          scoringStore.handleCompleteMatch();
+        }
+      },
+      handleNewSet: () => {
+        // Check what type of match is currently selected
+        const match = scoringStore.selectedMatch;
+        if (match && !('tournamentId' in match)) {
+          // It's a standalone match
+          scoringStore.handleStandaloneNewSet(standaloneStore);
+        } else {
+          // It's a regular tournament match
+          scoringStore.handleNewSet();
+        }
+      }
+    };
+  }
+  
+  // Default to tournament implementation or original implementation
   try {
     const { default: useOriginalScoringLogic } = require('@/components/scoring/useScoringLogic');
     const originalImplementation = useOriginalScoringLogic();
   
-    // If we're using Zustand, return the appropriate store implementation
-    if (USE_ZUSTAND) {
-      if (currentScorerType === "STANDALONE") {
-        return {
-          ...scoringStore,
-          currentMatch: standaloneStore.currentMatch,
-          currentTournament: null, // No tournament for standalone matches
-          matchDetails: standaloneStore.currentMatch ? {
-            courtName: standaloneStore.currentMatch.courtName,
-            tournamentName: standaloneStore.currentMatch.tournamentName,
-            categoryName: standaloneStore.currentMatch.categoryName,
-          } : null,
-        
-          // Override methods to use standalone match service
-          handleScoreChange: (team: "team1" | "team2", increment: boolean) => {
-            scoringStore.handleStandaloneScoreChange(team, increment, standaloneStore);
-          },
-          handleStartMatch: (match: Match | StandaloneMatch) => {
-            if ('tournamentId' in match) {
-              // It's a regular match from tournament
-              scoringStore.handleStartMatch(match);
-            } else {
-              // It's a standalone match
-              scoringStore.handleStandaloneStartMatch(match.id, standaloneStore);
-            }
-          },
-          handleCompleteMatch: () => {
-            // Check what type of match is currently selected
-            const match = scoringStore.selectedMatch;
-            if (match && !('tournamentId' in match)) {
-              // It's a standalone match
-              scoringStore.handleStandaloneCompleteMatch(standaloneStore);
-            } else {
-              // It's a regular tournament match
-              scoringStore.handleCompleteMatch();
-            }
-          },
-          handleNewSet: () => {
-            // Check what type of match is currently selected
-            const match = scoringStore.selectedMatch;
-            if (match && !('tournamentId' in match)) {
-              // It's a standalone match
-              scoringStore.handleStandaloneNewSet(standaloneStore);
-            } else {
-              // It's a regular tournament match
-              scoringStore.handleNewSet();
-            }
-          }
-        };
-      }
-      
-      // Default to tournament implementation
-      return {
-        ...scoringStore,
-        currentTournament: tournamentStore.currentTournament,
-      };
+    // Use the original implementation if not using Zustand
+    if (!USE_ZUSTAND) {
+      return originalImplementation;
     }
-    
-    // Use the original implementation
-    return originalImplementation;
   } catch (e) {
     console.error("Error loading scoring logic:", e);
-    // Fallback to basic store
-    return scoringStore;
   }
+  
+  // Default to basic store with tournament data
+  return {
+    ...scoringStore,
+    currentTournament: tournamentStore.currentTournament,
+  };
 };
 
 export default useScoringAdapter;

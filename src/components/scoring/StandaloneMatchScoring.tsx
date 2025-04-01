@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ChevronLeft, AlertTriangle } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ScoringMatchDetail from "@/components/scoring/ScoringMatchDetail";
 import ScoringSettings from "@/components/scoring/ScoringSettings";
@@ -28,6 +28,7 @@ interface StandaloneMatchScoringProps {
   handleCompleteMatch: () => void;
   selectedMatch: Match | null;
   saveMatch?: () => void;
+  isPending?: boolean;
 }
 
 const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
@@ -48,7 +49,8 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
   handleNewSet,
   handleCompleteMatch,
   selectedMatch,
-  saveMatch
+  saveMatch,
+  isPending = false
 }) => {
   const navigate = useNavigate();
 
@@ -73,11 +75,18 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
       <div className="flex justify-between items-center border-b pb-4 mb-6">
         <h1 className="text-2xl font-bold">
           Standalone Match Scoring
+          {isPending && (
+            <span className="ml-2 inline-flex items-center text-amber-600 text-sm font-normal">
+              <span className="animate-pulse rounded-full w-2 h-2 bg-amber-500 mr-1"></span>
+              Processing...
+            </span>
+          )}
         </h1>
         {saveMatch && (
           <Button 
             variant="outline" 
             onClick={saveMatch}
+            disabled={isPending}
           >
             Save Match
           </Button>
@@ -100,6 +109,7 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
           onCompleteMatch={() => setCompleteMatchDialogOpen(true)}
           currentSet={currentSet}
           onSetChange={setCurrentSet}
+          isPending={isPending}
         />
       )}
 

@@ -43,15 +43,15 @@ export const useStandaloneScoring = (matchId: string | null) => {
       setIsLoading(true);
       setError(null);
       try {
-        await standaloneMatchStore.loadMatchById(matchId);
-        if (!standaloneMatchStore.currentMatch) {
-          console.log("Match not found in store after loading");
+        const result = await standaloneMatchStore.loadMatchById(matchId);
+        if (!result) {
+          console.log("Match not found after loading");
           setError('Match not found');
           setScoringMatch(null);
         } else {
-          console.log("Successfully loaded match from store");
+          console.log("Successfully loaded match");
           // Convert standalone match to scoring match format
-          const converted = convertToScoringMatch(standaloneMatchStore.currentMatch);
+          const converted = convertToScoringMatch(result);
           setScoringMatch(converted);
         }
       } catch (err) {
@@ -68,6 +68,14 @@ export const useStandaloneScoring = (matchId: string | null) => {
 
     loadMatch();
   }, [matchId, standaloneMatchStore, convertToScoringMatch]);
+
+  // When currentMatch changes in the store, update scoringMatch
+  useEffect(() => {
+    if (standaloneMatchStore.currentMatch) {
+      const converted = convertToScoringMatch(standaloneMatchStore.currentMatch);
+      setScoringMatch(converted);
+    }
+  }, [standaloneMatchStore.currentMatch, convertToScoringMatch]);
 
   const saveMatch = useCallback(async () => {
     if (!standaloneMatchStore.currentMatch) return false;
