@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Match, ScorerType, StandaloneMatch, MatchStatus } from '@/types/tournament';
 import { useTournament } from '@/contexts/TournamentContext';
@@ -208,7 +207,17 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
       } else {
         // Tournament match score change
         if (tournament.currentTournament) {
-          const currentScore = currentMatch.scores[currentSet] || { team1Score: 0, team2Score: 0 };
+          const scores = [...(currentMatch.scores || [])];
+          if (scores.length === 0) {
+            scores.push({ team1Score: 0, team2Score: 0 });
+          }
+          
+          // Make sure we have a score entry for this set
+          while (scores.length <= currentSet) {
+            scores.push({ team1Score: 0, team2Score: 0 });
+          }
+          
+          const currentScore = scores[currentSet];
           let team1Score = currentScore.team1Score || 0;
           let team2Score = currentScore.team2Score || 0;
           
@@ -228,11 +237,8 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
           
           tournament.updateMatchScore(currentMatch.id, currentSet, team1Score, team2Score);
           
-          // Also update our local state to match
-          const updatedScores = [...currentMatch.scores];
-          while (updatedScores.length <= currentSet) {
-            updatedScores.push({ team1Score: 0, team2Score: 0 });
-          }
+          // Update our local state to match
+          const updatedScores = [...scores];
           updatedScores[currentSet] = { team1Score, team2Score };
           
           const updatedMatch = { 
