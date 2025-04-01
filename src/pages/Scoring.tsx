@@ -7,7 +7,7 @@ import TournamentScoring from "@/components/scoring/TournamentScoring";
 import StandaloneMatchScoring from "@/components/scoring/StandaloneMatchScoring";
 import ScoringContainer from "@/components/scoring/ScoringContainer";
 import { useUnifiedScoring } from "@/hooks/scoring/useUnifiedScoring";
-import { useScoringLogic } from "@/hooks/scoring/useScoringLogic"; // Import properly instead of using require
+import { useScoringLogic } from "@/hooks/scoring/useScoringLogic"; // Import properly with ES modules syntax
 
 const Scoring = () => {
   console.log("Rendering Scoring page");
@@ -115,12 +115,15 @@ const Scoring = () => {
     handleNewSet,
     handleUpdateScoringSettings,
     handleBackToCourts,
-    // Extract isPending if it exists, otherwise default to false
+    // Extract other props
     ...scoringLogicRest
   } = useScoringLogic();
   
-  // Provide a default value for isPending if it's not returned
-  const isPending = 'isPending' in scoringLogicRest ? scoringLogicRest.isPending : false;
+  // Type-safe way to extract isPending with a default value
+  // Using type assertion to tell TypeScript that scoringLogicRest might have isPending
+  const isPending = typeof (scoringLogicRest as {isPending?: boolean}).isPending === 'boolean' 
+    ? (scoringLogicRest as {isPending: boolean}).isPending 
+    : false;
 
   // Map activeView from "scoring" to "match" to match TournamentScoring's expected enum
   const mappedActiveView = activeView === "scoring" ? "match" : "courts";
