@@ -115,15 +115,15 @@ const Scoring = () => {
     handleNewSet,
     handleUpdateScoringSettings,
     handleBackToCourts,
-    // Extract other props
     ...scoringLogicRest
   } = useScoringLogic();
   
-  // Type-safe way to extract isPending with a default value
-  // Using type assertion to tell TypeScript that scoringLogicRest might have isPending
-  const isPending = typeof (scoringLogicRest as {isPending?: boolean}).isPending === 'boolean' 
-    ? (scoringLogicRest as {isPending: boolean}).isPending 
-    : false;
+  // Safe way to check for isPending without type assertions
+  // This avoids the TypeScript error by checking if the property actually exists
+  const isPending = scoringLogicRest && 
+    Object.prototype.hasOwnProperty.call(scoringLogicRest, 'isPending') ? 
+    Boolean(scoringLogicRest.isPending) : 
+    false;
 
   // Map activeView from "scoring" to "match" to match TournamentScoring's expected enum
   const mappedActiveView = activeView === "scoring" ? "match" : "courts";
