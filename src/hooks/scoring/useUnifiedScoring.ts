@@ -4,7 +4,7 @@ import { Match, ScorerType, StandaloneMatch, MatchStatus } from '@/types/tournam
 import { useTournament } from '@/contexts/TournamentContext';
 import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
 import { useToast } from '@/hooks/use-toast';
-import { getDefaultScoringSettings } from '@/utils/matchUtils';
+import { getDefaultScoringSettings, isSetComplete, isMatchComplete } from '@/utils/matchUtils';
 
 interface UnifiedScoringOptions {
   scorerType: ScorerType;
@@ -162,6 +162,23 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
           } as Match;
           
           setMatch(updatedMatch);
+          
+          // Check if this set or match is complete based on scoring settings
+          const setComplete = isSetComplete(team1Score, team2Score, scoringSettings);
+          if (setComplete) {
+            console.log(`Set complete: ${team1Score}-${team2Score}`);
+            
+            // Check if match is complete
+            const matchComplete = isMatchComplete(updatedMatch, scoringSettings);
+            
+            if (matchComplete) {
+              console.log('Match complete based on scoring rules');
+              setCompleteMatchDialogOpen(true);
+            } else if (updatedMatch.scores.length < scoringSettings.maxSets) {
+              console.log('Set complete but match is not, prompting for new set');
+              setNewSetDialogOpen(true);
+            }
+          }
         }
       } else {
         // Tournament match score change
@@ -181,6 +198,28 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
           }
           
           tournament.updateMatchScore(match.id, currentSet, team1Score, team2Score);
+          
+          // Check if this set or match is complete based on scoring settings
+          const setComplete = isSetComplete(team1Score, team2Score, scoringSettings);
+          if (setComplete) {
+            console.log(`Set complete: ${team1Score}-${team2Score}`);
+            
+            // Create an updated match object to check if match is complete
+            const updatedScores = [...match.scores];
+            updatedScores[currentSet] = { team1Score, team2Score };
+            const updatedMatch = { ...match, scores: updatedScores };
+            
+            // Check if match is complete
+            const matchComplete = isMatchComplete(updatedMatch, scoringSettings);
+            
+            if (matchComplete) {
+              console.log('Match complete based on scoring rules');
+              setCompleteMatchDialogOpen(true);
+            } else if (updatedMatch.scores.length < scoringSettings.maxSets) {
+              console.log('Set complete but match is not, prompting for new set');
+              setNewSetDialogOpen(true);
+            }
+          }
         }
       }
     } finally {
@@ -189,7 +228,7 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
         isUpdatingRef.current = false;
       }, 10);
     }
-  }, [match, currentSet, scorerType, tournament, standaloneStore]);
+  }, [match, currentSet, scorerType, tournament, standaloneStore, scoringSettings]);
 
   // Create a new set
   const handleNewSet = useCallback(() => {

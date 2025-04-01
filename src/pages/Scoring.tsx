@@ -115,7 +115,7 @@ const Scoring = () => {
     handleNewSet,
     handleUpdateScoringSettings,
     handleBackToCourts,
-    isPending
+    isPending = false // Provide a default value to fix the TypeScript error
   } = useScoringLogic();
 
   // Map activeView from "scoring" to "match" to match TournamentScoring's expected enum
