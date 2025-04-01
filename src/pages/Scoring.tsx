@@ -7,6 +7,7 @@ import TournamentScoring from "@/components/scoring/TournamentScoring";
 import StandaloneMatchScoring from "@/components/scoring/StandaloneMatchScoring";
 import ScoringContainer from "@/components/scoring/ScoringContainer";
 import { useUnifiedScoring } from "@/hooks/scoring/useUnifiedScoring";
+import { useScoringLogic } from "@/hooks/scoring/useScoringLogic"; // Import properly instead of using require
 
 const Scoring = () => {
   console.log("Rendering Scoring page");
@@ -100,9 +101,6 @@ const Scoring = () => {
       </ScoringContainer>
     );
   }
-
-  // Import the hook using dynamic import to avoid 'require' issues
-  const { useScoringLogic } = require('@/hooks/scoring/useScoringLogic');
 
   // For tournament scoring, we'll use the imported useScoringLogic hook
   const { 
