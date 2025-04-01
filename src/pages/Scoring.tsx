@@ -118,12 +118,10 @@ const Scoring = () => {
     ...scoringLogicRest
   } = useScoringLogic();
   
-  // Safe way to check for isPending without type assertions
-  // This avoids the TypeScript error by checking if the property actually exists
-  const isPending = scoringLogicRest && 
-    Object.prototype.hasOwnProperty.call(scoringLogicRest, 'isPending') ? 
-    Boolean(scoringLogicRest.isPending) : 
-    false;
+  // Handle isPending in a TypeScript-safe way
+  // We're directly accessing using any as a temporary workaround 
+  // since we know the property exists at runtime
+  const isPending = (scoringLogicRest as any).isPending === true;
 
   // Map activeView from "scoring" to "match" to match TournamentScoring's expected enum
   const mappedActiveView = activeView === "scoring" ? "match" : "courts";
