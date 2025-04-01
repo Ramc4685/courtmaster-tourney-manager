@@ -1,4 +1,3 @@
-
 import { Match, ScoringSettings, Team, Tournament, Division, TournamentStage, TournamentCategory } from "@/types/tournament";
 import { generateId } from "./tournamentUtils";
 
@@ -12,7 +11,7 @@ export const getDefaultScoringSettings = (): ScoringSettings => {
   };
 };
 
-// Determine if a set is complete
+// Determine if a set is complete based on badminton rules
 export const isSetComplete = (
   team1Score: number,
   team2Score: number,
@@ -20,28 +19,26 @@ export const isSetComplete = (
 ): boolean => {
   const { maxPoints, requireTwoPointLead, maxTwoPointLeadScore } = settings;
   
-  // Regular win condition: reached max points
-  if (team1Score >= maxPoints || team2Score >= maxPoints) {
-    // If 2-point lead is required
+  // First check if regular win condition has been met (reached maxPoints with at least 2-point lead)
+  if ((team1Score >= maxPoints || team2Score >= maxPoints)) {
+    const scoreDifference = Math.abs(team1Score - team2Score);
+    
+    // Win by 2+ points condition
     if (requireTwoPointLead) {
-      const scoreDifference = Math.abs(team1Score - team2Score);
-      
-      // Win by 2 points
       if (scoreDifference >= 2) {
         return true;
       }
-      
-      // Or reached the maximum extended score with at least 1 point lead
-      if ((team1Score >= maxTwoPointLeadScore || team2Score >= maxTwoPointLeadScore) && scoreDifference >= 1) {
-        return true;
-      }
-      
-      // Still playing to get a 2-point lead
-      return false;
+    } else {
+      // No 2-point lead required, just reaching max points is enough
+      return true;
     }
     
-    // No 2-point lead required, reaching max points is enough
-    return true;
+    // Special case: if either player reaches the absolute maximum score
+    const maxScore = Math.max(team1Score, team2Score);
+    if (maxScore >= (maxTwoPointLeadScore || 30)) {
+      // At max allowed score, only need a 1-point lead
+      return scoreDifference >= 1;
+    }
   }
   
   return false;

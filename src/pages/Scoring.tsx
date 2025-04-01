@@ -115,6 +115,7 @@ const Scoring = () => {
     handleNewSet,
     handleUpdateScoringSettings,
     handleBackToCourts,
+    scoringSettings,
     ...scoringLogicRest
   } = useScoringLogic();
   
@@ -146,7 +147,7 @@ const Scoring = () => {
       currentSet={scoring.currentSet}
       settingsOpen={scoring.settingsOpen}
       setSettingsOpen={scoring.setSettingsOpen}
-      scoringSettings={scoring.scoringSettings}
+      scoringSettings={scoringSettings}
       newSetDialogOpen={scoring.newSetDialogOpen}
       setNewSetDialogOpen={scoring.setNewSetDialogOpen}
       completeMatchDialogOpen={scoring.completeMatchDialogOpen}
