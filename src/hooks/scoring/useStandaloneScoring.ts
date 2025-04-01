@@ -12,6 +12,7 @@ export const useStandaloneScoring = (matchId: string | null) => {
   const [scoringMatch, setScoringMatch] = useState<Match | null>(null);
   const prevMatchIdRef = useRef<string | null>(null);
   const isInitialRender = useRef(true);
+  const skipStoreUpdateRef = useRef(false);
 
   // Convert standalone match to regular match compatible with scoring components
   const convertToScoringMatch = useCallback((standaloneMatch: StandaloneMatch | null): Match | null => {
@@ -42,6 +43,8 @@ export const useStandaloneScoring = (matchId: string | null) => {
       console.log(`Loading standalone match with ID: ${matchId}`);
       setIsLoading(true);
       setError(null);
+      skipStoreUpdateRef.current = true; // Skip the store update effect during initial load
+      
       try {
         const result = await standaloneMatchStore.loadMatchById(matchId);
         if (!result) {
@@ -63,6 +66,11 @@ export const useStandaloneScoring = (matchId: string | null) => {
         // Update the previous matchId for comparison in future renders
         prevMatchIdRef.current = matchId;
         isInitialRender.current = false;
+        
+        // Reset the skip flag after a short delay to allow state to settle
+        setTimeout(() => {
+          skipStoreUpdateRef.current = false;
+        }, 100);
       }
     };
 
@@ -71,6 +79,9 @@ export const useStandaloneScoring = (matchId: string | null) => {
 
   // When currentMatch changes in the store, update scoringMatch
   useEffect(() => {
+    // Skip this effect if we're currently loading a match or if the skip flag is set
+    if (skipStoreUpdateRef.current) return;
+    
     if (standaloneMatchStore.currentMatch) {
       const converted = convertToScoringMatch(standaloneMatchStore.currentMatch);
       setScoringMatch(converted);
@@ -82,12 +93,7 @@ export const useStandaloneScoring = (matchId: string | null) => {
     
     try {
       // Ensure the standaloneMatchStore has a saveMatch method
-      if (typeof standaloneMatchStore.saveMatch === 'function') {
-        await standaloneMatchStore.saveMatch();
-      } else {
-        // Fallback to updateMatch if saveMatch doesn't exist
-        await standaloneMatchStore.updateMatch(standaloneMatchStore.currentMatch);
-      }
+      await standaloneMatchStore.saveMatch();
       
       toast({
         title: "Match saved",

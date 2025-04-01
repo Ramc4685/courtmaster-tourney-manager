@@ -30,8 +30,18 @@ const Scoring = () => {
   const [isStandaloneMatch, setIsStandaloneMatch] = useState(false);
   const [matchSelected, setMatchSelected] = useState(false);
   
+  // Determine if we're handling a standalone match
+  useEffect(() => {
+    if (matchType === "standalone" && matchId) {
+      console.log("Setting up for standalone match:", matchId);
+      setIsStandaloneMatch(true);
+    } else {
+      setIsStandaloneMatch(false);
+    }
+  }, [matchId, matchType]);
+  
   // Use standalone scoring hook when a standalone match is specified
-  const standaloneScoring = useStandaloneScoring(matchType === "standalone" ? matchId : null);
+  const standaloneScoring = useStandaloneScoring(isStandaloneMatch ? matchId : null);
   
   const {
     currentTournament,
@@ -58,21 +68,13 @@ const Scoring = () => {
 
   // Handle standalone match selection once the match is loaded
   const selectStandaloneMatch = useCallback(() => {
-    if (standaloneScoring.scoringMatch && !matchSelected) {
+    if (standaloneScoring.scoringMatch && !matchSelected && isStandaloneMatch) {
       console.log("Standalone match loaded successfully, selecting match");
       handleSelectMatch(standaloneScoring.scoringMatch as Match);
       setMatchSelected(true);
     }
-  }, [standaloneScoring.scoringMatch, matchSelected, handleSelectMatch]);
+  }, [standaloneScoring.scoringMatch, matchSelected, handleSelectMatch, isStandaloneMatch]);
 
-  // Load standalone match if specified in URL - with fixed dependencies
-  useEffect(() => {
-    if (matchType === "standalone" && matchId) {
-      console.log("Setting up for standalone match:", matchId);
-      setIsStandaloneMatch(true);
-    }
-  }, [matchId, matchType]);
-  
   // Only try to select the match when it's available
   useEffect(() => {
     if (isStandaloneMatch && standaloneScoring.scoringMatch && !matchSelected) {
@@ -82,27 +84,28 @@ const Scoring = () => {
   
   // Set the current tournament based on the URL parameter
   useEffect(() => {
-    console.log("Scoring useEffect - tournamentId:", tournamentId);
-    
     if (isStandaloneMatch) {
       console.log("Using standalone match, not loading tournament");
       return;
     }
     
+    if (!tournamentId) {
+      console.log("No tournament ID found in URL params");
+      return;
+    }
+    
     console.log("Available tournaments:", tournaments.map(t => t.id));
     
-    if (tournamentId) {
-      const tournament = tournaments.find(t => t.id === tournamentId);
-      console.log("Found tournament:", tournament ? "Yes" : "No");
-      
-      if (tournament) {
-        console.log("Setting current tournament:", tournament.id, tournament.name);
-        setCurrentTournament(tournament);
-      } else {
-        // Tournament not found, redirect to tournaments page
-        console.log("Tournament not found, redirecting to tournaments page");
-        navigate("/tournaments");
-      }
+    const tournament = tournaments.find(t => t.id === tournamentId);
+    console.log("Found tournament:", tournament ? "Yes" : "No");
+    
+    if (tournament) {
+      console.log("Setting current tournament:", tournament.id, tournament.name);
+      setCurrentTournament(tournament);
+    } else {
+      // Tournament not found, redirect to tournaments page
+      console.log("Tournament not found, redirecting to tournaments page");
+      navigate("/tournaments");
     }
   }, [tournamentId, tournaments, setCurrentTournament, navigate, isStandaloneMatch]);
 

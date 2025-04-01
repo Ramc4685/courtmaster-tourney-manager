@@ -70,6 +70,9 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
     );
   }
 
+  // Use the scoringMatch for ScoringMatchDetail since it's compatible with the scoring component
+  const matchForScoring = scoringMatch || match;
+
   return (
     <ScoringContainer>
       <div className="flex justify-between items-center border-b pb-4 mb-6">
@@ -101,9 +104,9 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
         <ChevronLeft className="mr-1 h-4 w-4" /> Back to Quick Match
       </Button>
       
-      {scoringMatch && (
+      {matchForScoring && (
         <ScoringMatchDetail
-          match={scoringMatch}
+          match={matchForScoring}
           onScoreChange={handleScoreChange}
           onNewSet={() => setNewSetDialogOpen(true)}
           onCompleteMatch={() => setCompleteMatchDialogOpen(true)}
@@ -125,7 +128,7 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
 
       {/* Confirmation Dialogs for New Set and Complete Match */}
       <ScoringConfirmationDialogs
-        selectedMatch={selectedMatch}
+        selectedMatch={selectedMatch || matchForScoring}
         currentSet={currentSet}
         newSetDialogOpen={newSetDialogOpen}
         setNewSetDialogOpen={setNewSetDialogOpen}
