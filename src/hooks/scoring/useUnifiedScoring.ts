@@ -34,21 +34,25 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
   const isUpdatingRef = useRef(false);
   const matchRef = useRef<Match | null>(null);
   const scoringSettingsRef = useRef(scoringSettings);
+  const scorerTypeRef = useRef(scorerType); // Add ref for scorer type to prevent dependency changes
 
   // Update scoringSettingsRef when scoringSettings changes
   useEffect(() => {
     scoringSettingsRef.current = scoringSettings;
   }, [scoringSettings]);
 
-  // Load match data based on scorer type
+  // Load match data based on scorer type - with stabilized dependencies
   useEffect(() => {
-    // Skip if the matchId hasn't changed and initial load is completed
-    if (matchId === matchIdRef.current && initialLoadCompletedRef.current) {
+    // Skip if the matchId or scorer type hasn't changed and initial load is completed
+    if (matchId === matchIdRef.current && 
+        scorerType === scorerTypeRef.current && 
+        initialLoadCompletedRef.current) {
       return;
     }
     
-    // Update the ref to the current matchId
+    // Update the refs to the current values
     matchIdRef.current = matchId;
+    scorerTypeRef.current = scorerType;
     
     // Skip if no matchId provided
     if (!matchId) {
@@ -134,7 +138,8 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
     };
 
     loadMatchData();
-  }, [matchId, scorerType, tournament, standaloneStore]);
+  // Remove dependency on scorerType and matchId to avoid loops, use refs instead
+  }, [tournament, standaloneStore]); 
 
   // Handle score change for standalone matches
   const handleStandaloneScoreChange = useCallback((team: "team1" | "team2", increment: boolean) => {
@@ -178,7 +183,8 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
           : Math.max(0, team2Score - 1);
       }
       
-      // Update match in standalone store
+      // Update match in standalone store - but don't await the response
+      // This prevents the state update cycle from being tied to API response
       standaloneStore.updateMatchScore(currentMatch.id, currentSet, team1Score, team2Score);
         
       // Update local state (immutably)
@@ -192,8 +198,8 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
       } as Match;
       
       // Update both the state and the ref
-      setMatch(updatedMatch);
-      matchRef.current = updatedMatch;
+      matchRef.current = updatedMatch; // Update ref first
+      setMatch(updatedMatch); // Then update state
       
       // Check if this set or match is complete based on scoring settings
       const setComplete = isSetComplete(team1Score, team2Score, currentSettings);
@@ -215,7 +221,7 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
       // Reset flag after a short delay to prevent rapid consecutive updates
       setTimeout(() => {
         isUpdatingRef.current = false;
-      }, 10);
+      }, 50); // Increased delay to ensure updates are processed
     }
   }, [currentSet, standaloneStore]);
 
@@ -258,10 +264,10 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
           : Math.max(0, team2Score - 1);
       }
       
-      // Update in tournament context
+      // Update in tournament context - but don't wait for the update to complete
       tournament.updateMatchScore(currentMatch.id, currentSet, team1Score, team2Score);
       
-      // Update our local state to match
+      // Update our local state immediately
       const updatedScores = [...scores];
       updatedScores[currentSet] = { team1Score, team2Score };
       
@@ -270,8 +276,9 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
         scores: updatedScores
       } as Match;
       
-      setMatch(updatedMatch);
+      // Update ref first, then state
       matchRef.current = updatedMatch;
+      setMatch(updatedMatch);
       
       // Check if this set or match is complete based on scoring settings
       const setComplete = isSetComplete(team1Score, team2Score, currentSettings);
@@ -290,21 +297,24 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
         }
       }
     } finally {
-      // Reset flag after a short delay
+      // Reset flag after a short delay to prevent rapid consecutive updates
       setTimeout(() => {
         isUpdatingRef.current = false;
-      }, 10);
+      }, 50); // Increased delay to ensure updates are processed
     }
   }, [currentSet, tournament]);
 
   // Route score change to the appropriate handler based on scorer type
   const handleScoreChange = useCallback((team: "team1" | "team2", increment: boolean) => {
-    if (scorerType === 'STANDALONE') {
+    // Use the current scorerType from ref to ensure stability
+    const currentScorerType = scorerTypeRef.current;
+    
+    if (currentScorerType === 'STANDALONE') {
       handleStandaloneScoreChange(team, increment);
     } else {
       handleTournamentScoreChange(team, increment);
     }
-  }, [scorerType, handleStandaloneScoreChange, handleTournamentScoreChange]);
+  }, [handleStandaloneScoreChange, handleTournamentScoreChange]);
 
   // Create a new set
   const handleNewSet = useCallback(() => {
@@ -317,8 +327,9 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
     
     try {
       const newSetIndex = currentMatch.scores.length;
+      const currentScorerType = scorerTypeRef.current; // Use ref for stability
       
-      if (scorerType === 'STANDALONE') {
+      if (currentScorerType === 'STANDALONE') {
         // Initialize the new set with 0-0 score
         standaloneStore.updateMatchScore(currentMatch.id, newSetIndex, 0, 0);
         
@@ -331,8 +342,9 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
           scores: updatedScores
         } as Match;
         
-        setMatch(updatedMatch);
+        // Update ref first, then state
         matchRef.current = updatedMatch;
+        setMatch(updatedMatch);
         setCurrentSet(newSetIndex);
       } else {
         if (tournament.currentTournament) {
@@ -345,8 +357,9 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
             scores: updatedScores
           } as Match;
           
-          setMatch(updatedMatch);
+          // Update ref first, then state
           matchRef.current = updatedMatch;
+          setMatch(updatedMatch);
           setCurrentSet(newSetIndex);
         }
       }
@@ -363,9 +376,9 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
       // Reset the updating flag after a short delay
       setTimeout(() => {
         isUpdatingRef.current = false;
-      }, 10);
+      }, 50);
     }
-  }, [scorerType, standaloneStore, tournament, toast]);
+  }, [standaloneStore, tournament, toast]);
 
   // Complete the match
   const handleCompleteMatch = useCallback(() => {
@@ -377,7 +390,9 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
     isUpdatingRef.current = true;
     
     try {
-      if (scorerType === 'STANDALONE') {
+      const currentScorerType = scorerTypeRef.current; // Use ref for stability
+      
+      if (currentScorerType === 'STANDALONE') {
         standaloneStore.completeMatch(currentMatch.id);
         
         // Update local match status with proper typing
@@ -386,8 +401,9 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
           status: 'COMPLETED' as MatchStatus // Explicitly cast to MatchStatus
         } as Match;
         
-        setMatch(updatedMatch);
+        // Update ref first, then state
         matchRef.current = updatedMatch;
+        setMatch(updatedMatch);
       } else {
         if (tournament.currentTournament) {
           tournament.completeMatch(currentMatch.id);
@@ -398,8 +414,9 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
             status: 'COMPLETED' as MatchStatus
           } as Match;
           
-          setMatch(updatedMatch);
+          // Update ref first, then state
           matchRef.current = updatedMatch;
+          setMatch(updatedMatch);
         }
       }
       
@@ -415,13 +432,15 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
       // Reset the updating flag after a short delay
       setTimeout(() => {
         isUpdatingRef.current = false;
-      }, 10);
+      }, 50);
     }
-  }, [scorerType, standaloneStore, tournament, toast]);
+  }, [standaloneStore, tournament, toast]);
 
   // Save standalone match
   const saveMatch = useCallback(async () => {
-    if (scorerType !== 'STANDALONE' || !standaloneStore.currentMatch) return false;
+    const currentScorerType = scorerTypeRef.current; // Use ref for stability
+    
+    if (currentScorerType !== 'STANDALONE' || !standaloneStore.currentMatch) return false;
     
     try {
       await standaloneStore.saveMatch();
@@ -443,22 +462,26 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
       
       return false;
     }
-  }, [scorerType, standaloneStore, toast]);
+  }, [standaloneStore, toast]);
 
   // Update scoring settings
   const handleUpdateScoringSettings = useCallback((newSettings: any) => {
-    setScoringSettings(newSettings);
+    // Update both the state and the ref
     scoringSettingsRef.current = newSettings;
+    setScoringSettings(newSettings);
     
-    if (scorerType === 'TOURNAMENT' && tournament.currentTournament) {
+    const currentScorerType = scorerTypeRef.current; // Use ref for stability
+    
+    if (currentScorerType === 'TOURNAMENT' && tournament.currentTournament) {
       const updatedTournament = {
         ...tournament.currentTournament,
         scoringSettings: newSettings,
         updatedAt: new Date()
       };
+      // Call tournament context update but don't wait for it
       tournament.updateTournament(updatedTournament);
     }
-  }, [scorerType, tournament]);
+  }, [tournament]);
 
   return {
     isLoading,
@@ -478,7 +501,7 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
     handleNewSet,
     handleCompleteMatch,
     saveMatch,
-    isStandalone: scorerType === 'STANDALONE',
+    isStandalone: scorerTypeRef.current === 'STANDALONE', // Use ref for stability
     isPending: tournament.isPending
   };
 };
