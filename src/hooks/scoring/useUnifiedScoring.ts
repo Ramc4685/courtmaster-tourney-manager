@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Match, ScorerType, StandaloneMatch, MatchStatus } from '@/types/tournament';
 import { useTournament } from '@/contexts/TournamentContext';
@@ -31,7 +32,13 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
   const matchIdRef = useRef<string | undefined>(matchId);
   const initialLoadCompletedRef = useRef(false);
   const isUpdatingRef = useRef(false);
-  const matchRef = useRef<Match | null>(null); // Store match in a ref to avoid dependency issues
+  const matchRef = useRef<Match | null>(null);
+  const scoringSettingsRef = useRef(scoringSettings);
+
+  // Update scoringSettingsRef when scoringSettings changes
+  useEffect(() => {
+    scoringSettingsRef.current = scoringSettings;
+  }, [scoringSettings]);
 
   // Load match data based on scorer type
   useEffect(() => {
@@ -71,7 +78,7 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
               stage: 'INITIAL_ROUND',
               category: result.category || { id: 'default', name: 'Default', type: 'MENS_SINGLES' },
               scores: result.scores || [],
-              status: result.status as MatchStatus // Explicit cast to MatchStatus
+              status: result.status as MatchStatus
             } as Match;
             
             // Update state safely without causing infinite loops
@@ -129,8 +136,8 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
     loadMatchData();
   }, [matchId, scorerType, tournament, standaloneStore]);
 
-  // Handle score change for both tournament and standalone matches
-  const handleScoreChange = useCallback((team: "team1" | "team2", increment: boolean) => {
+  // Handle score change for standalone matches
+  const handleStandaloneScoreChange = useCallback((team: "team1" | "team2", increment: boolean) => {
     // Use the ref to get current match to avoid stale state issues
     const currentMatch = matchRef.current;
     if (!currentMatch) return;
@@ -140,140 +147,164 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
     isUpdatingRef.current = true;
     
     try {
-      if (scorerType === 'STANDALONE') {
-        // Standalone match score change
-        const scores = [...(currentMatch.scores || [])];
-        if (scores.length === 0) {
-          scores.push({ team1Score: 0, team2Score: 0 });
-        }
-        
-        // Make sure we have a score entry for this set
-        while (scores.length <= currentSet) {
-          scores.push({ team1Score: 0, team2Score: 0 });
-        }
-        
-        const currentScore = scores[currentSet];
-        let team1Score = currentScore.team1Score;
-        let team2Score = currentScore.team2Score;
-        
-        // Apply strict badminton scoring rules
-        // Get the absolute maximum score possible (maxTwoPointLeadScore from settings)
-        const absoluteMaxScore = scoringSettings.maxTwoPointLeadScore || 30; 
-        
-        // Update the appropriate team's score with respect to scoring rules
-        if (team === "team1") {
-          team1Score = increment 
-            ? Math.min(absoluteMaxScore, team1Score + 1) // Never exceed absolute maximum
-            : Math.max(0, team1Score - 1);
-        } else {
-          team2Score = increment 
-            ? Math.min(absoluteMaxScore, team2Score + 1) // Never exceed absolute maximum
-            : Math.max(0, team2Score - 1);
-        }
-        
-        // Update match in standalone store
-        standaloneStore.updateMatchScore(currentMatch.id, currentSet, team1Score, team2Score);
-          
-        // Update local state (immutably)
-        const updatedScores = [...scores];
-        updatedScores[currentSet] = { team1Score, team2Score };
-        
-        // Use Match type to ensure compatibility
-        const updatedMatch = { 
-          ...currentMatch, 
-          scores: updatedScores
-        } as Match;
-        
-        // Update both the state and the ref
-        setMatch(updatedMatch);
-        matchRef.current = updatedMatch;
-        
-        // Check if this set or match is complete based on scoring settings
-        const setComplete = isSetComplete(team1Score, team2Score, scoringSettings);
-        if (setComplete) {
-          console.log(`Set complete: ${team1Score}-${team2Score}`);
-          
-          // Check if match is complete
-          const matchComplete = isMatchComplete(updatedMatch, scoringSettings);
-          
-          if (matchComplete) {
-            console.log('Match complete based on scoring rules');
-            setCompleteMatchDialogOpen(true);
-          } else if (updatedMatch.scores.length < scoringSettings.maxSets) {
-            console.log('Set complete but match is not, prompting for new set');
-            setNewSetDialogOpen(true);
-          }
-        }
+      // Create a copy of scores to work with
+      const scores = [...(currentMatch.scores || [])];
+      if (scores.length === 0) {
+        scores.push({ team1Score: 0, team2Score: 0 });
+      }
+      
+      // Make sure we have a score entry for this set
+      while (scores.length <= currentSet) {
+        scores.push({ team1Score: 0, team2Score: 0 });
+      }
+      
+      const currentScore = scores[currentSet];
+      let team1Score = currentScore.team1Score;
+      let team2Score = currentScore.team2Score;
+      
+      // Apply strict badminton scoring rules
+      // Get the absolute maximum score possible (maxTwoPointLeadScore from settings)
+      const currentSettings = scoringSettingsRef.current;
+      const absoluteMaxScore = currentSettings.maxTwoPointLeadScore || 30; 
+      
+      // Update the appropriate team's score with respect to scoring rules
+      if (team === "team1") {
+        team1Score = increment 
+          ? Math.min(absoluteMaxScore, team1Score + 1) // Never exceed absolute maximum
+          : Math.max(0, team1Score - 1);
       } else {
-        // Tournament match score change
-        if (tournament.currentTournament) {
-          const scores = [...(currentMatch.scores || [])];
-          if (scores.length === 0) {
-            scores.push({ team1Score: 0, team2Score: 0 });
-          }
-          
-          // Make sure we have a score entry for this set
-          while (scores.length <= currentSet) {
-            scores.push({ team1Score: 0, team2Score: 0 });
-          }
-          
-          const currentScore = scores[currentSet];
-          let team1Score = currentScore.team1Score || 0;
-          let team2Score = currentScore.team2Score || 0;
-          
-          // Apply strict badminton scoring rules
-          // Get the absolute maximum score possible (maxTwoPointLeadScore from settings)
-          const absoluteMaxScore = scoringSettings.maxTwoPointLeadScore || 30;
-          
-          if (team === "team1") {
-            team1Score = increment 
-              ? Math.min(absoluteMaxScore, team1Score + 1) // Never exceed absolute maximum
-              : Math.max(0, team1Score - 1);
-          } else {
-            team2Score = increment 
-              ? Math.min(absoluteMaxScore, team2Score + 1) // Never exceed absolute maximum
-              : Math.max(0, team2Score - 1);
-          }
-          
-          tournament.updateMatchScore(currentMatch.id, currentSet, team1Score, team2Score);
-          
-          // Update our local state to match
-          const updatedScores = [...scores];
-          updatedScores[currentSet] = { team1Score, team2Score };
-          
-          const updatedMatch = { 
-            ...currentMatch, 
-            scores: updatedScores
-          } as Match;
-          
-          setMatch(updatedMatch);
-          matchRef.current = updatedMatch;
-          
-          // Check if this set or match is complete based on scoring settings
-          const setComplete = isSetComplete(team1Score, team2Score, scoringSettings);
-          if (setComplete) {
-            console.log(`Set complete: ${team1Score}-${team2Score}`);
-            
-            // Check if match is complete
-            const matchComplete = isMatchComplete(updatedMatch, scoringSettings);
-            
-            if (matchComplete) {
-              console.log('Match complete based on scoring rules');
-              setCompleteMatchDialogOpen(true);
-            } else if (updatedMatch.scores.length < scoringSettings.maxSets) {
-              console.log('Set complete but match is not, prompting for new set');
-              setNewSetDialogOpen(true);
-            }
-          }
+        team2Score = increment 
+          ? Math.min(absoluteMaxScore, team2Score + 1) // Never exceed absolute maximum
+          : Math.max(0, team2Score - 1);
+      }
+      
+      // Update match in standalone store
+      standaloneStore.updateMatchScore(currentMatch.id, currentSet, team1Score, team2Score);
+        
+      // Update local state (immutably)
+      const updatedScores = [...scores];
+      updatedScores[currentSet] = { team1Score, team2Score };
+      
+      // Use Match type to ensure compatibility
+      const updatedMatch = { 
+        ...currentMatch, 
+        scores: updatedScores
+      } as Match;
+      
+      // Update both the state and the ref
+      setMatch(updatedMatch);
+      matchRef.current = updatedMatch;
+      
+      // Check if this set or match is complete based on scoring settings
+      const setComplete = isSetComplete(team1Score, team2Score, currentSettings);
+      if (setComplete) {
+        console.log(`Set complete: ${team1Score}-${team2Score}`);
+        
+        // Check if match is complete
+        const matchComplete = isMatchComplete(updatedMatch, currentSettings);
+        
+        if (matchComplete) {
+          console.log('Match complete based on scoring rules');
+          setCompleteMatchDialogOpen(true);
+        } else if (updatedMatch.scores.length < currentSettings.maxSets) {
+          console.log('Set complete but match is not, prompting for new set');
+          setNewSetDialogOpen(true);
         }
       }
     } finally {
-      // Reset the updating flag after a short delay to prevent rapid consecutive updates
+      // Reset flag after a short delay to prevent rapid consecutive updates
       setTimeout(() => {
         isUpdatingRef.current = false;
       }, 10);
     }
-  }, [currentSet, scorerType, tournament, standaloneStore, scoringSettings]);
+  }, [currentSet, standaloneStore]);
+
+  // Handle score change for tournament matches
+  const handleTournamentScoreChange = useCallback((team: "team1" | "team2", increment: boolean) => {
+    const currentMatch = matchRef.current;
+    if (!currentMatch || !tournament.currentTournament) return;
+    
+    // Prevent multiple updates at once
+    if (isUpdatingRef.current) return;
+    isUpdatingRef.current = true;
+    
+    try {
+      // Create a copy of scores to work with
+      const scores = [...(currentMatch.scores || [])];
+      if (scores.length === 0) {
+        scores.push({ team1Score: 0, team2Score: 0 });
+      }
+      
+      // Make sure we have a score entry for this set
+      while (scores.length <= currentSet) {
+        scores.push({ team1Score: 0, team2Score: 0 });
+      }
+      
+      const currentScore = scores[currentSet];
+      let team1Score = currentScore.team1Score || 0;
+      let team2Score = currentScore.team2Score || 0;
+      
+      // Apply strict badminton scoring rules
+      const currentSettings = scoringSettingsRef.current;
+      const absoluteMaxScore = currentSettings.maxTwoPointLeadScore || 30;
+      
+      if (team === "team1") {
+        team1Score = increment 
+          ? Math.min(absoluteMaxScore, team1Score + 1) // Never exceed absolute maximum
+          : Math.max(0, team1Score - 1);
+      } else {
+        team2Score = increment 
+          ? Math.min(absoluteMaxScore, team2Score + 1) // Never exceed absolute maximum
+          : Math.max(0, team2Score - 1);
+      }
+      
+      // Update in tournament context
+      tournament.updateMatchScore(currentMatch.id, currentSet, team1Score, team2Score);
+      
+      // Update our local state to match
+      const updatedScores = [...scores];
+      updatedScores[currentSet] = { team1Score, team2Score };
+      
+      const updatedMatch = { 
+        ...currentMatch, 
+        scores: updatedScores
+      } as Match;
+      
+      setMatch(updatedMatch);
+      matchRef.current = updatedMatch;
+      
+      // Check if this set or match is complete based on scoring settings
+      const setComplete = isSetComplete(team1Score, team2Score, currentSettings);
+      if (setComplete) {
+        console.log(`Set complete: ${team1Score}-${team2Score}`);
+        
+        // Check if match is complete
+        const matchComplete = isMatchComplete(updatedMatch, currentSettings);
+        
+        if (matchComplete) {
+          console.log('Match complete based on scoring rules');
+          setCompleteMatchDialogOpen(true);
+        } else if (updatedMatch.scores.length < currentSettings.maxSets) {
+          console.log('Set complete but match is not, prompting for new set');
+          setNewSetDialogOpen(true);
+        }
+      }
+    } finally {
+      // Reset flag after a short delay
+      setTimeout(() => {
+        isUpdatingRef.current = false;
+      }, 10);
+    }
+  }, [currentSet, tournament]);
+
+  // Route score change to the appropriate handler based on scorer type
+  const handleScoreChange = useCallback((team: "team1" | "team2", increment: boolean) => {
+    if (scorerType === 'STANDALONE') {
+      handleStandaloneScoreChange(team, increment);
+    } else {
+      handleTournamentScoreChange(team, increment);
+    }
+  }, [scorerType, handleStandaloneScoreChange, handleTournamentScoreChange]);
 
   // Create a new set
   const handleNewSet = useCallback(() => {
@@ -417,6 +448,7 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
   // Update scoring settings
   const handleUpdateScoringSettings = useCallback((newSettings: any) => {
     setScoringSettings(newSettings);
+    scoringSettingsRef.current = newSettings;
     
     if (scorerType === 'TOURNAMENT' && tournament.currentTournament) {
       const updatedTournament = {
