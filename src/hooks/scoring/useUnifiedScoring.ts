@@ -34,7 +34,7 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
   const isUpdatingRef = useRef(false);
   const matchRef = useRef<Match | null>(null);
   const scoringSettingsRef = useRef(scoringSettings);
-  const scorerTypeRef = useRef(scorerType); // Add ref for scorer type to prevent dependency changes
+  const scorerTypeRef = useRef(scorerType); // Use ref for scorer type to prevent dependency changes
 
   // Update scoringSettingsRef when scoringSettings changes
   useEffect(() => {
@@ -86,8 +86,8 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
             } as Match;
             
             // Update state safely without causing infinite loops
-            setMatch(convertedMatch);
-            matchRef.current = convertedMatch;
+            matchRef.current = convertedMatch; // Update ref first
+            setMatch(convertedMatch); // Then update state
             
             // Set current set to the latest set
             if (convertedMatch.scores.length > 0) {
@@ -111,8 +111,8 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
               matchRef.current = null;
             } else {
               // Update state safely
-              setMatch(tournamentMatch);
-              matchRef.current = tournamentMatch;
+              matchRef.current = tournamentMatch; // Update ref first
+              setMatch(tournamentMatch); // Then update state
               
               // Set current set
               if (tournamentMatch.scores.length > 0) {
@@ -164,13 +164,14 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
       }
       
       const currentScore = scores[currentSet];
-      let team1Score = currentScore.team1Score;
-      let team2Score = currentScore.team2Score;
+      let team1Score = currentScore.team1Score || 0;
+      let team2Score = currentScore.team2Score || 0;
       
-      // Apply strict badminton scoring rules
-      // Get the absolute maximum score possible (maxTwoPointLeadScore from settings)
+      // Apply strict badminton scoring rules (same logic for standalone and tournament)
+      // Get the current settings from the ref for consistency
       const currentSettings = scoringSettingsRef.current;
-      const absoluteMaxScore = currentSettings.maxTwoPointLeadScore || 30; 
+      const maxPoints = currentSettings.maxPoints || 21;
+      const absoluteMaxScore = currentSettings.maxTwoPointLeadScore || 30;
       
       // Update the appropriate team's score with respect to scoring rules
       if (team === "team1") {
@@ -184,22 +185,20 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
       }
       
       // Update match in standalone store - but don't await the response
-      // This prevents the state update cycle from being tied to API response
       standaloneStore.updateMatchScore(currentMatch.id, currentSet, team1Score, team2Score);
         
       // Update local state (immutably)
       const updatedScores = [...scores];
       updatedScores[currentSet] = { team1Score, team2Score };
       
-      // Use Match type to ensure compatibility
       const updatedMatch = { 
         ...currentMatch, 
         scores: updatedScores
       } as Match;
       
-      // Update both the state and the ref
-      matchRef.current = updatedMatch; // Update ref first
-      setMatch(updatedMatch); // Then update state
+      // Update both the ref and the state (in this order)
+      matchRef.current = updatedMatch;
+      setMatch(updatedMatch);
       
       // Check if this set or match is complete based on scoring settings
       const setComplete = isSetComplete(team1Score, team2Score, currentSettings);
@@ -211,17 +210,21 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
         
         if (matchComplete) {
           console.log('Match complete based on scoring rules');
-          setCompleteMatchDialogOpen(true);
+          setTimeout(() => {
+            setCompleteMatchDialogOpen(true);
+          }, 0);
         } else if (updatedMatch.scores.length < currentSettings.maxSets) {
           console.log('Set complete but match is not, prompting for new set');
-          setNewSetDialogOpen(true);
+          setTimeout(() => {
+            setNewSetDialogOpen(true);
+          }, 0);
         }
       }
     } finally {
       // Reset flag after a short delay to prevent rapid consecutive updates
       setTimeout(() => {
         isUpdatingRef.current = false;
-      }, 50); // Increased delay to ensure updates are processed
+      }, 50);
     }
   }, [currentSet, standaloneStore]);
 
@@ -250,8 +253,9 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
       let team1Score = currentScore.team1Score || 0;
       let team2Score = currentScore.team2Score || 0;
       
-      // Apply strict badminton scoring rules
+      // Apply strict badminton scoring rules (same logic for standalone and tournament)
       const currentSettings = scoringSettingsRef.current;
+      const maxPoints = currentSettings.maxPoints || 21;
       const absoluteMaxScore = currentSettings.maxTwoPointLeadScore || 30;
       
       if (team === "team1") {
@@ -276,7 +280,7 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
         scores: updatedScores
       } as Match;
       
-      // Update ref first, then state
+      // Update both the ref and the state (in this order)
       matchRef.current = updatedMatch;
       setMatch(updatedMatch);
       
@@ -290,17 +294,21 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
         
         if (matchComplete) {
           console.log('Match complete based on scoring rules');
-          setCompleteMatchDialogOpen(true);
+          setTimeout(() => {
+            setCompleteMatchDialogOpen(true);
+          }, 0);
         } else if (updatedMatch.scores.length < currentSettings.maxSets) {
           console.log('Set complete but match is not, prompting for new set');
-          setNewSetDialogOpen(true);
+          setTimeout(() => {
+            setNewSetDialogOpen(true);
+          }, 0);
         }
       }
     } finally {
       // Reset flag after a short delay to prevent rapid consecutive updates
       setTimeout(() => {
         isUpdatingRef.current = false;
-      }, 50); // Increased delay to ensure updates are processed
+      }, 50);
     }
   }, [currentSet, tournament]);
 
