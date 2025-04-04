@@ -71,11 +71,11 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
         const defaultAuditLog: AuditLog = {
           timestamp: new Date(),
           action: 'Match created',
-          details: { message: `Match ${id} created` },
+          details: { message: `Match ${id} created`, creator: 'admin' },
           user_id: 'system'
         };
 
-        // Create the new match
+        // Create the new match with all defaults needed for quick match
         const newMatch: StandaloneMatch = {
           id,
           matchNumber,
@@ -84,12 +84,15 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
           scores: matchData.scores || [],
           status: (matchData.status as MatchStatus) || 'SCHEDULED',
           scheduledTime: matchData.scheduledTime || new Date(),
-          courtNumber: matchData.courtNumber,
-          courtName: matchData.courtName,
+          courtNumber: matchData.courtNumber || 1,
+          courtName: matchData.courtName || 'Court 1',
           // Convert string dates to Date objects if needed
           createdAt: matchData.createdAt instanceof Date ? matchData.createdAt : new Date(),
           updatedAt: matchData.updatedAt instanceof Date ? matchData.updatedAt : new Date(),
-          auditLogs: matchData.auditLogs || [defaultAuditLog]
+          auditLogs: matchData.auditLogs || [defaultAuditLog],
+          scorerName: matchData.scorerName || 'admin',
+          categoryName: matchData.categoryName || 'Quick Match',
+          tournamentName: matchData.tournamentName || 'Standalone Tournament'
         };
 
         // Add the new match to the store
@@ -244,7 +247,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
           const statusAuditLog: AuditLog = {
             timestamp: new Date(),
             action: `Status changed to ${status}`,
-            details: { newStatus: status },
+            details: { newStatus: status, changedBy: 'admin' },
             user_id: 'system'
           };
 
@@ -333,7 +336,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
           const courtAuditLog: AuditLog = {
             timestamp: new Date(),
             action: 'Court assigned',
-            details: { courtNumber },
+            details: { courtNumber, assignedBy: 'admin' },
             user_id: 'system'
           };
 

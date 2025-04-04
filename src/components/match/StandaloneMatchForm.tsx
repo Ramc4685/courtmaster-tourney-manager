@@ -15,8 +15,8 @@ const matchFormSchema = z.object({
   team2Players: z.array(z.string()),
   scheduledDate: z.date().optional(),
   courtName: z.string().optional(),
-  tournamentName: z.string().optional(),
-  categoryName: z.string().optional(),
+  tournamentName: z.string().optional().default("Standalone Tournament"),
+  categoryName: z.string().optional().default("Quick Match"),
   isPublic: z.boolean().default(false)
 });
 
