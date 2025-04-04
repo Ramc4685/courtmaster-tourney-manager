@@ -19,7 +19,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Team, Court, TournamentCategory } from "@/types/tournament";
-import { useTournament } from "@/contexts/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament";
 
 interface MatchCreateDialogProps {
   open: boolean;
