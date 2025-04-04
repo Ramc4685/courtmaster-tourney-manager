@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +11,7 @@ import { generateTeamName } from "@/utils/teamNameUtils";
 import { FormValues } from "../StandaloneMatchForm";
 
 export const useMatchFormLogic = () => {
-  const { createMatch } = useStandaloneMatchStore();
+  const standaloneMatchStore = useStandaloneMatchStore();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [team1Players, setTeam1Players] = useState<string[]>(['']);
@@ -169,7 +170,7 @@ export const useMatchFormLogic = () => {
       }
       
       // Create match with the prepared data
-      const match = createMatch(matchData);
+      const match = standaloneMatchStore.createMatch(matchData);
       
       toast({
         title: "Match created",

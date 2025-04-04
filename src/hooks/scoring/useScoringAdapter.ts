@@ -1,3 +1,4 @@
+
 import { useScoringStore } from "@/stores/scoring";
 import { useTournamentStore } from "@/stores/tournamentStore";
 import { useTournament } from "@/contexts/tournament/TournamentContext";
@@ -37,7 +38,7 @@ export const useScoringAdapter = ({
       if (scorerType === "STANDALONE") {
         if (matchId) {
           // Load the specified standalone match
-          await standaloneStore.loadMatchById(matchId);
+          const match = standaloneStore.loadMatchById(matchId);
           
           // Select the match in the scoring store if it was found
           if (standaloneStore.currentMatch) {

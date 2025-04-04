@@ -8,31 +8,36 @@ interface TournamentStatusBadgeProps {
 }
 
 const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ status }) => {
-  let variant: "default" | "destructive" | "outline" | "secondary" | "success" = "default";
-  
-  switch(status) {
+  let variant: 'default' | 'secondary' | 'destructive' | 'outline';
+  let label: string;
+
+  switch (status) {
     case 'DRAFT':
-      variant = "outline";
+      variant = 'outline';
+      label = 'Draft';
       break;
     case 'PUBLISHED':
-      variant = "secondary";
+      variant = 'default';
+      label = 'Published';
       break;
     case 'IN_PROGRESS':
-      variant = "default";
+      variant = 'secondary';
+      label = 'In Progress';
       break;
     case 'COMPLETED':
-      variant = "secondary";
+      variant = 'default';
+      label = 'Completed';
       break;
     case 'CANCELLED':
-      variant = "destructive";
+      variant = 'destructive';
+      label = 'Cancelled';
       break;
+    default:
+      variant = 'outline';
+      label = status;
   }
-  
-  return (
-    <Badge variant={variant}>
-      {status.replace(/_/g, ' ')}
-    </Badge>
-  );
+
+  return <Badge variant={variant}>{label}</Badge>;
 };
 
 export default TournamentStatusBadge;

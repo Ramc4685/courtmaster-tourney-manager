@@ -11,7 +11,7 @@ interface MatchAuditInfoProps {
 const MatchAuditInfo: React.FC<MatchAuditInfoProps> = ({ match }) => {
   // Format date for display
   const formatDate = (date: Date | string | undefined) => {
-    if (!date) return 'Not specified';
+    if (!date) return 'Not available';
     try {
       return new Date(date).toLocaleString();
     } catch (e) {

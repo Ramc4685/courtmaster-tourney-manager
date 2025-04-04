@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +8,9 @@ import PageHeader from '@/components/shared/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
-import { nanoid } from 'nanoid'; // Using nanoid instead of uuid
+import { nanoid } from 'nanoid';
 
-const StandaloneScoring = () => {
+const StandaloneScoring: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [teamOneName, setTeamOneName] = useState('Team 1');
@@ -68,13 +67,11 @@ const StandaloneScoring = () => {
 
   // Delete a match
   const handleDeleteMatch = (match: any) => {
-    if (standaloneMatchStore.deleteMatch) {
-      standaloneMatchStore.deleteMatch(match.id);
-      toast({
-        title: "Match deleted",
-        description: "The match has been removed from your history."
-      });
-    }
+    standaloneMatchStore.deleteMatch(match.id);
+    toast({
+      title: "Match deleted",
+      description: "The match has been removed from your history."
+    });
   };
 
   // Get existing standalone matches
