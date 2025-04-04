@@ -16,6 +16,11 @@ export interface TournamentContextType {
   loadSampleData: (format?: TournamentFormat) => void;
   updateMatch: (match: Match) => void;
   loadCategoryDemoData: (tournamentId: string, categoryId: string, format: TournamentFormat) => void;
+  generateMultiStageTournament: () => void;
+  advanceToNextStage: () => void;
+  addCategory: (category: TournamentCategory) => void;
+  removeCategory: (categoryId: string) => void;
+  updateCategory: (category: TournamentCategory) => void;
   
   // Retain all existing properties
   updateTournament: (tournament: Tournament) => void;

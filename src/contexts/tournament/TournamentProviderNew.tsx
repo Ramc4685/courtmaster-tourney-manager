@@ -203,7 +203,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Update match score
-  const updateMatchScore = async (matchId: string, setIndex: number, team1Score: number, team2Score: number) => {
+  const updateMatchScore = async (matchId: string, setIndex: number, team1Score: number, team2Score: number, scorerName?: string) => {
     if (!currentTournament) return;
     
     try {
@@ -212,7 +212,8 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         matchId,
         setIndex,
         team1Score,
-        team2Score
+        team2Score,
+        scorerName
       );
       
       if (updatedTournament) {
@@ -225,11 +226,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Complete a match and auto-assign court to next match
-  const completeMatch = async (matchId: string) => {
+  const completeMatch = async (matchId: string, scorerName?: string) => {
     if (!currentTournament) return;
     
     try {
-      const updatedTournament = await matchService.completeMatch(currentTournament.id, matchId);
+      const updatedTournament = await matchService.completeMatch(currentTournament.id, matchId, scorerName);
       if (updatedTournament) {
         setCurrentTournament(updatedTournament);
         setTournaments(prev => prev.map(t => t.id === updatedTournament.id ? updatedTournament : t));
@@ -515,7 +516,6 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         addTeam,
         importTeams,
         updateMatch,
-        updateCourt,
         assignCourt,
         updateMatchStatus,
         updateMatchScore,

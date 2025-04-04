@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,7 +5,7 @@ import { z } from "zod";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useStandaloneMatchStore } from "@/stores/standaloneMatchStore";
-import { Team } from "@/types/tournament";
+import { Team, StandaloneMatch } from "@/types/tournament";
 import { generateTeamName } from "@/utils/teamNameUtils";
 import { FormValues } from "../StandaloneMatchForm";
 
@@ -149,8 +148,7 @@ export const useMatchFormLogic = () => {
         }))
       };
       
-      // Create the match - fix argument count
-      // Wrap the team1 and team2 in an object with scheduled date
+      // Create the match with proper type annotation
       const matchData: Partial<StandaloneMatch> = {
         team1,
         team2,

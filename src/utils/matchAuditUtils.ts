@@ -1,5 +1,5 @@
 
-import { Match, AuditLog, Tournament, StandaloneMatch } from "@/types/tournament";
+import { Match, AuditLog, Tournament, StandaloneMatch, isStandaloneMatch } from "@/types/tournament";
 import { getCurrentUserId } from "@/utils/auditUtils";
 
 /**
@@ -65,13 +65,19 @@ export function addScoringAuditInfo(
   // Only set the endTime if the match is being completed
   const endTime = match.status === 'COMPLETED' ? now : match.endTime;
   
-  const updatedMatch = {
-    ...match,
+  // Create basic update with shared properties
+  const basicUpdate = {
     scorerName,
     courtNumber: courtNumber || match.courtNumber,
     endTime,
     updatedAt: now,
     updated_by: userId
+  };
+  
+  // Combine with the match object, preserving the correct type
+  const updatedMatch = {
+    ...match,
+    ...basicUpdate
   };
   
   // Add an audit log entry for this update

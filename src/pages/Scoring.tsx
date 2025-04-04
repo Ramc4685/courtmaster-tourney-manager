@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTournament } from "@/contexts/TournamentContext";
@@ -90,15 +89,15 @@ const Scoring = () => {
         settingsOpen={scoring.settingsOpen}
         setSettingsOpen={scoring.setSettingsOpen}
         scoringSettings={scoring.scoringSettings}
-        handleUpdateScoringSettings={scoring.handleUpdateScoringSettings}
+        updateScoringSettings={scoring.handleUpdateScoringSettings}
         newSetDialogOpen={scoring.newSetDialogOpen}
         setNewSetDialogOpen={scoring.setNewSetDialogOpen}
         completeMatchDialogOpen={scoring.completeMatchDialogOpen}
         setCompleteMatchDialogOpen={scoring.setCompleteMatchDialogOpen}
-        handleScoreChange={scoring.handleScoreChange}
-        handleNewSet={scoring.handleNewSet}
-        handleCompleteMatch={scoring.handleCompleteMatch}
-        saveMatch={scoring.saveMatch}
+        onScoreChange={scoring.handleScoreChange}
+        onNewSet={scoring.handleNewSet}
+        onCompleteMatch={scoring.handleCompleteMatch}
+        onSave={scoring.saveMatch}
         isPending={scoring.isPending}
         scorerName={scorerName}
         onScorerNameChange={scoring.updateScorerName}
@@ -159,22 +158,22 @@ const Scoring = () => {
       activeView={mappedActiveView}
       selectedMatch={selectedMatch}
       currentSet={scoring.currentSet}
+      setCurrentSet={scoring.setCurrentSet}
       settingsOpen={scoring.settingsOpen}
       setSettingsOpen={scoring.setSettingsOpen}
       scoringSettings={scoringSettings}
+      updateScoringSettings={handleUpdateScoringSettings}
       newSetDialogOpen={scoring.newSetDialogOpen}
       setNewSetDialogOpen={scoring.setNewSetDialogOpen}
       completeMatchDialogOpen={scoring.completeMatchDialogOpen}
       setCompleteMatchDialogOpen={scoring.setCompleteMatchDialogOpen}
-      setCurrentSet={scoring.setCurrentSet}
-      handleSelectCourt={handleSelectCourt}
-      handleSelectMatch={handleSelectMatch}
-      handleStartMatch={handleStartMatchAdapter}
-      handleScoreChange={handleScoreChange}
-      handleNewSet={handleNewSet}
-      handleCompleteMatch={handleCompleteMatch}
-      handleUpdateScoringSettings={handleUpdateScoringSettings}
-      handleBackToCourts={handleBackToCourts}
+      setActiveView={handleBackToCourts}
+      onSelectMatch={handleSelectMatch}
+      onSelectCourt={handleSelectCourt}
+      courts={currentTournament?.courts || []}
+      onScoreChange={handleScoreChange}
+      onNewSet={handleNewSet}
+      onCompleteMatch={handleCompleteMatch}
       isPending={isPending}
       scorerName={scorerName}
       onScorerNameChange={scoring.updateScorerName}

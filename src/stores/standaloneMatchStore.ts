@@ -5,6 +5,7 @@ import { Match, StandaloneMatch, MatchStatus } from '@/types/tournament';
 import { generateId } from '@/utils/tournamentUtils';
 import { addScoringAuditInfo } from '@/utils/matchAuditUtils'; 
 import { getCurrentUserId } from '@/utils/auditUtils';
+import { isStandaloneMatch } from '@/types/tournament';
 
 // Define the store state type
 interface StandaloneMatchStore {
@@ -48,14 +49,9 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
           updatedAt: now,
           created_by: userId,
           updated_by: userId,
-          // Generate match number using a format compatible with StandaloneMatch
-          ...matchData
+          // Generate match number if not provided
+          matchNumber: matchData.matchNumber || `SM-${now.toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`
         };
-        
-        // Add match number if not already present
-        if (!newMatch.matchNumber) {
-          newMatch.matchNumber = `SM-${now.toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
-        }
         
         set(state => ({
           matches: [...state.matches, newMatch],
@@ -69,7 +65,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
         const match = get().matches.find(m => m.id === matchId);
         if (!match) return null;
         
-        const updatedMatch = {
+        const updatedMatch: StandaloneMatch = {
           ...match,
           ...updates,
           updatedAt: new Date(),
@@ -118,23 +114,25 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
         scores[setIndex] = { team1Score, team2Score };
         
         // Add audit information - ensure we're casting correctly
-        const matchToUpdate = {
+        const matchToUpdate: StandaloneMatch = {
           ...match,
           scores,
           updatedAt: new Date(),
           updated_by: getCurrentUserId()
         };
         
-        const updatedMatch = addScoringAuditInfo(
-          matchToUpdate,
-          scorerName || getCurrentUserId(), 
-          match.courtNumber
-        ) as StandaloneMatch;
-        
-        set(state => ({
-          matches: state.matches.map(m => m.id === matchId ? updatedMatch : m),
-          currentMatch: state.currentMatch?.id === matchId ? updatedMatch : state.currentMatch
-        }));
+        if (isStandaloneMatch(matchToUpdate)) {
+          const updatedMatch = addScoringAuditInfo(
+            matchToUpdate,
+            scorerName || getCurrentUserId(), 
+            match.courtNumber
+          ) as StandaloneMatch;
+          
+          set(state => ({
+            matches: state.matches.map(m => m.id === matchId ? updatedMatch : m),
+            currentMatch: state.currentMatch?.id === matchId ? updatedMatch : state.currentMatch
+          }));
+        }
       },
       
       completeMatch: (matchId, scorerName) => {
@@ -144,7 +142,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
         const now = new Date();
         
         // Add audit information with completion details
-        const matchToUpdate = {
+        const matchToUpdate: StandaloneMatch = {
           ...match,
           status: 'COMPLETED' as MatchStatus,
           endTime: now,
@@ -152,16 +150,18 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
           updated_by: getCurrentUserId()
         };
         
-        const updatedMatch = addScoringAuditInfo(
-          matchToUpdate,
-          scorerName || getCurrentUserId(), 
-          match.courtNumber
-        ) as StandaloneMatch;
-        
-        set(state => ({
-          matches: state.matches.map(m => m.id === matchId ? updatedMatch : m),
-          currentMatch: state.currentMatch?.id === matchId ? updatedMatch : state.currentMatch
-        }));
+        if (isStandaloneMatch(matchToUpdate)) {
+          const updatedMatch = addScoringAuditInfo(
+            matchToUpdate,
+            scorerName || getCurrentUserId(), 
+            match.courtNumber
+          ) as StandaloneMatch;
+          
+          set(state => ({
+            matches: state.matches.map(m => m.id === matchId ? updatedMatch : m),
+            currentMatch: state.currentMatch?.id === matchId ? updatedMatch : state.currentMatch
+          }));
+        }
       },
       
       saveMatch: async () => {

@@ -12,7 +12,7 @@ interface StandaloneMatchContextType {
   // CRUD operations
   loadMatches: () => Promise<void>;
   loadMatchById: (id: string) => Promise<StandaloneMatch | null>;
-  createMatch: (team1: any, team2: any, scheduledTime?: Date) => Promise<StandaloneMatch>;
+  createMatch: (match: Partial<StandaloneMatch>) => StandaloneMatch;
   updateMatch: (match: StandaloneMatch) => Promise<StandaloneMatch>;
   deleteMatch: (id: string) => Promise<void>;
   setCurrentMatch: (match: StandaloneMatch | null) => void;
@@ -30,6 +30,20 @@ export const StandaloneMatchProvider: React.FC<{ children: ReactNode }> = ({ chi
     error: null,      // Default value
     loadMatches: async () => {
       // Implementation would load matches from store or API
+      return Promise.resolve();
+    },
+    loadMatchById: async (id: string) => {
+      // Wrap the synchronous store function in a promise to match the type
+      const match = standaloneStore.loadMatchById(id);
+      return Promise.resolve(match);
+    },
+    updateMatch: async (match: StandaloneMatch) => {
+      // Wrap the synchronous store function in a promise to match the type
+      const updatedMatch = standaloneStore.updateMatch(match.id, match);
+      return Promise.resolve(updatedMatch || match);
+    },
+    deleteMatch: async (id: string) => {
+      standaloneStore.deleteMatch(id);
       return Promise.resolve();
     }
   };
