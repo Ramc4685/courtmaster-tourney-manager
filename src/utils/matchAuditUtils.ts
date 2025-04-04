@@ -1,5 +1,5 @@
 
-import { Match, AuditLog, Tournament, StandaloneMatch, isStandaloneMatch } from "@/types/tournament";
+import { Match, AuditLog, Tournament, StandaloneMatch } from "@/types/tournament";
 import { getCurrentUserId } from "@/utils/auditUtils";
 
 /**
@@ -20,6 +20,13 @@ export function generateMatchNumber(tournament: Tournament): string {
   
   // Create the match number: TRN prefix + date + sequence
   return `TRN-${dateStr}-${paddedNumber}`;
+}
+
+/**
+ * Type guard to check if a match is a standalone match
+ */
+export function isStandaloneMatch(match: Match | StandaloneMatch): match is StandaloneMatch {
+  return !('tournamentId' in match);
 }
 
 /**
@@ -114,12 +121,10 @@ export function addScoringAuditInfo(
  */
 export function addCourtAssignmentAuditInfo(
   match: Match | StandaloneMatch,
-  courtNumber: number,
-  courtName?: string
+  courtNumber: number
 ): Match | StandaloneMatch {
   const auditDetails = {
     courtNumber,
-    courtName,
     timestamp: new Date(),
     action: "COURT_ASSIGNMENT"
   };
@@ -127,8 +132,8 @@ export function addCourtAssignmentAuditInfo(
   // Update the match with court information
   const updatedMatch = {
     ...match,
-    courtNumber,
-    courtName: courtName || match.courtName
+    courtNumber
+    // courtName is not included since it doesn't exist on both match types
   };
   
   return addMatchAuditLog(updatedMatch, 'COURT_ASSIGNMENT', auditDetails);

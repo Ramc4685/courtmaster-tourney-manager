@@ -1,44 +1,37 @@
 
-import { Match, Tournament, Court, ScoringSettings, StandaloneMatch } from '@/types/tournament';
+import { Match, StandaloneMatch } from './tournament';
 
-export interface BaseScoringProps {
+export interface ScoringSettings {
+  maxPoints: number;
+  winByTwo: boolean;
+  maxSets: number;
+  bestOf: boolean;
+}
+
+export interface StandaloneMatchScoringProps {
   isLoading: boolean;
-  match: Match | null;
+  match: StandaloneMatch | Match | null;
   currentSet: number;
-  setCurrentSet: (index: number) => void;
+  setCurrentSet: (set: number) => void;
   settingsOpen: boolean;
   setSettingsOpen: (open: boolean) => void;
   scoringSettings: ScoringSettings;
-  updateScoringSettings: (settings: ScoringSettings) => void;
-  newSetDialogOpen: boolean;
   setNewSetDialogOpen: (open: boolean) => void;
+  newSetDialogOpen: boolean;
   completeMatchDialogOpen: boolean;
   setCompleteMatchDialogOpen: (open: boolean) => void;
-  onScoreChange: (team: 'team1' | 'team2', increment: boolean) => void;
+  onScoreChange: (team: "team1" | "team2", increment: boolean) => void;
   onNewSet: () => void;
   onCompleteMatch: () => void;
+  onSave: () => void;
   isPending?: boolean;
-  scorerName?: string; // Add scorerName prop
-  onScorerNameChange?: (name: string) => void; // Add scorerName change handler
-}
-
-export interface StandaloneMatchScoringProps extends BaseScoringProps {
-  // Standalone-specific props
-  onSave?: () => void;
   scorerName?: string;
   onScorerNameChange?: (name: string) => void;
+  onCourtChange?: (courtNumber: number) => void;
 }
 
-export interface TournamentScoringProps extends BaseScoringProps {
-  // Tournament-specific props
-  currentTournament: Tournament;
-  tournamentId: string;
-  activeView: 'courts' | 'match';
-  selectedMatch: Match;
-  setActiveView: (view: 'courts' | 'match') => void;
-  onSelectMatch: (match: Match) => void;
-  onSelectCourt: (court: Court) => void;
-  courts: Court[];
+export interface TournamentScorerOptions {
+  scorerType: "TOURNAMENT" | "STANDALONE";
+  matchId?: string;
   scorerName?: string;
-  onScorerNameChange?: (name: string) => void;
 }

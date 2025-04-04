@@ -131,7 +131,6 @@ const Scoring = () => {
     selectedMatch,
     activeView,
     handleSelectMatch,
-    handleSelectCourt,
     handleScoreChange,
     handleStartMatch: originalHandleStartMatch,
     handleCompleteMatch,
@@ -158,6 +157,21 @@ const Scoring = () => {
       originalHandleStartMatch(match);
     } else {
       console.error(`Match with ID ${matchId} not found`);
+    }
+  };
+  
+  // Create adapter for court selection - handles both court objects and court numbers
+  const handleSelectCourtAdapter = (courtIdOrNumber: number) => {
+    // In tournament scoring, we expect courtNumber
+    if (typeof courtIdOrNumber === 'number') {
+      const court = currentTournament?.courts.find(c => c.number === courtIdOrNumber);
+      if (court) {
+        handleSelectCourt(court);
+      } else {
+        console.error(`Court with number ${courtIdOrNumber} not found`);
+      }
+    } else {
+      console.error('Expected a court number but received', courtIdOrNumber);
     }
   };
   
@@ -192,7 +206,7 @@ const Scoring = () => {
       completeMatchDialogOpen={scoring.completeMatchDialogOpen}
       setCompleteMatchDialogOpen={scoring.setCompleteMatchDialogOpen}
       onSelectMatch={handleSelectMatch}
-      onSelectCourt={handleSelectCourt}
+      onSelectCourt={handleSelectCourtAdapter}
       courts={currentTournament?.courts || []}
       onScoreChange={handleScoreChange}
       onNewSet={handleNewSet}
