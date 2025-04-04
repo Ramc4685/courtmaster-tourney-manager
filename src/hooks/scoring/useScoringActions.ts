@@ -1,7 +1,7 @@
 
 import { useCallback } from "react";
 import { Match, Court } from "@/types/tournament";
-import { useTournament } from "@/contexts/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament";
 import { useToast } from "@/hooks/use-toast";
 import { isSetComplete, isMatchComplete } from "@/utils/matchUtils";
 
