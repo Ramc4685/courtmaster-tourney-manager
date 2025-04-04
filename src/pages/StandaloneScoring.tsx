@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import ScoringContainer from '@/components/scoring/ScoringContainer';
 import PageHeader from '@/components/shared/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
+import { StandaloneMatch } from '@/types/tournament';
 
 const StandaloneScoring = () => {
   const { toast } = useToast();
@@ -30,7 +30,8 @@ const StandaloneScoring = () => {
         id: `team2-${Date.now()}`,
         name: teamTwoName,
         players: [{ id: `player2-${Date.now()}`, name: 'Player 2' }]
-      }
+      },
+      matchNumber: `SM-${Math.floor(1000 + Math.random() * 9000)}` // Generate a match number
     });
 
     if (newMatch) {
@@ -46,6 +47,23 @@ const StandaloneScoring = () => {
         title: "Error creating match",
         description: "Could not create a standalone match.",
         variant: "destructive"
+      });
+    }
+  };
+
+  // Format date for display
+  const formatDate = (date: Date | string | undefined) => {
+    if (!date) return 'Not available';
+    return new Date(date).toLocaleString();
+  };
+
+  // Delete a match
+  const handleDeleteMatch = (match: StandaloneMatch) => {
+    if (standaloneMatchStore.deleteMatch) {
+      standaloneMatchStore.deleteMatch(match.id);
+      toast({
+        title: "Match deleted",
+        description: "The match has been removed from your history."
       });
     }
   };
@@ -118,16 +136,27 @@ const StandaloneScoring = () => {
                               <h3 className="font-medium">
                                 {match.team1?.name || 'Team 1'} vs {match.team2?.name || 'Team 2'}
                               </h3>
-                              <p className="text-sm text-gray-500">
-                                Status: {match.status}
-                              </p>
+                              <div className="text-sm text-gray-500 space-y-1">
+                                <p>Status: {match.status}</p>
+                                <p>Match #: {match.matchNumber || 'Not assigned'}</p>
+                                <p>Created: {formatDate(match.createdAt)}</p>
+                              </div>
                             </div>
-                            <Button
-                              onClick={() => navigate(`/scoring/standalone/${match.id}`)}
-                              variant="outline"
-                            >
-                              View / Score
-                            </Button>
+                            <div className="flex space-x-2">
+                              <Button
+                                onClick={() => navigate(`/scoring/standalone/${match.id}`)}
+                                variant="outline"
+                              >
+                                View / Score
+                              </Button>
+                              <Button
+                                onClick={() => handleDeleteMatch(match)}
+                                variant="destructive"
+                                size="sm"
+                              >
+                                Delete
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>

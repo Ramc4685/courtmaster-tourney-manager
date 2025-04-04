@@ -16,13 +16,25 @@ type StandaloneMatchStore = {
   updateCourtNumber: (matchId: string, courtNumber: number) => void;
   saveMatch: () => void;
   setCurrentMatch: (match: StandaloneMatch | null) => void;
+  deleteMatch?: (matchId: string) => void; // Optional method
 };
 
 // Persist matches to localStorage
 const loadMatches = (): StandaloneMatch[] => {
   try {
     const storedMatches = localStorage.getItem('standaloneMatches');
-    return storedMatches ? JSON.parse(storedMatches) : [];
+    if (!storedMatches) return [];
+    
+    // Parse matches and convert string dates back to Date objects
+    const parsedMatches = JSON.parse(storedMatches);
+    return parsedMatches.map((match: any) => ({
+      ...match,
+      createdAt: match.createdAt ? new Date(match.createdAt) : new Date(),
+      updatedAt: match.updatedAt ? new Date(match.updatedAt) : new Date(),
+      completedAt: match.completedAt ? new Date(match.completedAt) : undefined,
+      scheduledTime: match.scheduledTime ? new Date(match.scheduledTime) : undefined,
+      endTime: match.endTime ? new Date(match.endTime) : undefined
+    }));
   } catch (error) {
     console.error('Error loading standalone matches:', error);
     return [];
@@ -45,6 +57,7 @@ const standaloneMatchStore = createStore<StandaloneMatchStore>((set, get) => ({
   createMatch: (matchData) => {
     const newMatch: StandaloneMatch = {
       id: `standalone-${Date.now()}`,
+      matchNumber: `SM-${Math.floor(Math.random() * 1000)}`,
       team1: {
         id: `team1-${Date.now()}`,
         name: matchData.team1?.name || 'Team 1',
@@ -70,10 +83,11 @@ const standaloneMatchStore = createStore<StandaloneMatchStore>((set, get) => ({
       }
     };
     
-    set(state => {
+    set((state): StandaloneMatchStore => {
       const updatedMatches = [...state.matches, newMatch];
       saveMatches(updatedMatches);
       return {
+        ...state,
         matches: updatedMatches,
         currentMatch: newMatch
       };
@@ -94,20 +108,28 @@ const standaloneMatchStore = createStore<StandaloneMatchStore>((set, get) => ({
   },
   
   updateMatch: (match) => {
-    set(state => {
+    set((state): StandaloneMatchStore => {
+      const updatedMatch = { 
+        ...match, 
+        updatedAt: new Date() 
+      };
+      
       const updatedMatches = state.matches.map(m => 
-        m.id === match.id ? { ...match, updatedAt: new Date() } : m
+        m.id === match.id ? updatedMatch : m
       );
+      
       saveMatches(updatedMatches);
+      
       return {
+        ...state,
         matches: updatedMatches,
-        currentMatch: match
+        currentMatch: updatedMatch
       };
     });
   },
   
   updateMatchScore: (matchId, setIndex, team1Score, team2Score, scorerName) => {
-    set(state => {
+    set((state): StandaloneMatchStore => {
       const match = state.matches.find(m => m.id === matchId);
       
       if (!match) return state;
@@ -136,6 +158,7 @@ const standaloneMatchStore = createStore<StandaloneMatchStore>((set, get) => ({
       saveMatches(updatedMatches);
       
       return {
+        ...state,
         matches: updatedMatches,
         currentMatch: updatedMatch
       };
@@ -145,7 +168,7 @@ const standaloneMatchStore = createStore<StandaloneMatchStore>((set, get) => ({
   completeMatch: (matchId, scorerName) => {
     let success = false;
     
-    set(state => {
+    set((state): StandaloneMatchStore => {
       const match = state.matches.find(m => m.id === matchId);
       
       if (!match) return state;
@@ -166,6 +189,7 @@ const standaloneMatchStore = createStore<StandaloneMatchStore>((set, get) => ({
       success = true;
       
       return {
+        ...state,
         matches: updatedMatches,
         currentMatch: updatedMatch
       };
@@ -175,7 +199,7 @@ const standaloneMatchStore = createStore<StandaloneMatchStore>((set, get) => ({
   },
   
   updateCourtNumber: (matchId, courtNumber) => {
-    set(state => {
+    set((state): StandaloneMatchStore => {
       const match = state.matches.find(m => m.id === matchId);
       
       if (!match) return state;
@@ -193,6 +217,7 @@ const standaloneMatchStore = createStore<StandaloneMatchStore>((set, get) => ({
       saveMatches(updatedMatches);
       
       return {
+        ...state,
         matches: updatedMatches,
         currentMatch: updatedMatch
       };
@@ -206,6 +231,19 @@ const standaloneMatchStore = createStore<StandaloneMatchStore>((set, get) => ({
 
   setCurrentMatch: (match) => {
     set({ currentMatch: match });
+  },
+  
+  // Add optional delete functionality
+  deleteMatch: (matchId) => {
+    set((state) => {
+      const updatedMatches = state.matches.filter(m => m.id !== matchId);
+      saveMatches(updatedMatches);
+      return { 
+        ...state,
+        matches: updatedMatches,
+        currentMatch: state.currentMatch?.id === matchId ? null : state.currentMatch
+      };
+    });
   }
 }));
 
