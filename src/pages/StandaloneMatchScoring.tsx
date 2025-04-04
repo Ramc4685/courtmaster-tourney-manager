@@ -39,8 +39,16 @@ const StandaloneMatchScoring = () => {
     if (!match && !isLoading) {
       // Create a new standalone match if one doesn't exist
       const newMatch = standaloneMatchStore.createMatch({
-        team1: { name: 'Team 1', players: [{ name: 'Player 1' }] },
-        team2: { name: 'Team 2', players: [{ name: 'Player 2' }] },
+        team1: { 
+          id: `team1-${Date.now()}`,
+          name: 'Team 1', 
+          players: [{ id: `player1-${Date.now()}`, name: 'Player 1' }] 
+        },
+        team2: { 
+          id: `team2-${Date.now()}`,
+          name: 'Team 2', 
+          players: [{ id: `player2-${Date.now()}`, name: 'Player 2' }] 
+        },
       });
       
       if (newMatch) {

@@ -21,8 +21,16 @@ const StandaloneScoring = () => {
   // Create a quick standalone match
   const createQuickMatch = () => {
     const newMatch = standaloneMatchStore.createMatch({
-      team1: { name: teamOneName },
-      team2: { name: teamTwoName }
+      team1: { 
+        id: `team1-${Date.now()}`,
+        name: teamOneName,
+        players: [{ id: `player1-${Date.now()}`, name: 'Player 1' }]
+      },
+      team2: {
+        id: `team2-${Date.now()}`,
+        name: teamTwoName,
+        players: [{ id: `player2-${Date.now()}`, name: 'Player 2' }]
+      }
     });
 
     if (newMatch) {

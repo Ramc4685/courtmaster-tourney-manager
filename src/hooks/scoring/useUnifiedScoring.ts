@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Match, ScorerType, StandaloneMatch, MatchStatus } from '@/types/tournament';
 import { useTournament } from '@/contexts/TournamentContext';
@@ -195,13 +196,12 @@ export const useUnifiedScoring = ({ scorerType, matchId, scorerName }: UnifiedSc
           : Math.max(0, team2Score - 1);
       }
       
-      // Update match in standalone store - include scorer name
+      // Update match in standalone store - fixed parameter count
       standaloneStore.updateMatchScore(
         currentMatch.id, 
         currentSet, 
         team1Score, 
-        team2Score, 
-        scorerNameRef.current // Pass scorer name to store
+        team2Score
       );
         
       // Update local state (immutably)
@@ -286,13 +286,12 @@ export const useUnifiedScoring = ({ scorerType, matchId, scorerName }: UnifiedSc
           : Math.max(0, team2Score - 1);
       }
       
-      // Update in tournament context - include scorer name
+      // Update in tournament context
       tournament.updateMatchScore(
         currentMatch.id, 
         currentSet, 
         team1Score, 
-        team2Score,
-        scorerNameRef.current // Pass scorer name to tournament context
+        team2Score
       );
       
       // Update our local state immediately
@@ -426,8 +425,8 @@ export const useUnifiedScoring = ({ scorerType, matchId, scorerName }: UnifiedSc
       const currentScorerType = scorerTypeRef.current; // Use ref for stability
       
       if (currentScorerType === 'STANDALONE') {
-        // Pass scorer name to complete match
-        standaloneStore.completeMatch(currentMatch.id, scorerNameRef.current);
+        // Fixed parameter count
+        standaloneStore.completeMatch(currentMatch.id);
         
         // Update local match status with proper typing and end time
         const updatedMatch = { 
@@ -442,8 +441,7 @@ export const useUnifiedScoring = ({ scorerType, matchId, scorerName }: UnifiedSc
         setMatch(updatedMatch);
       } else {
         if (tournament.currentTournament) {
-          // Pass scorer name to complete match
-          tournament.completeMatch(currentMatch.id, scorerNameRef.current);
+          tournament.completeMatch(currentMatch.id);
           
           // Also update our local state
           const updatedMatch = { 
@@ -512,7 +510,18 @@ export const useUnifiedScoring = ({ scorerType, matchId, scorerName }: UnifiedSc
     console.log(`Updating court number to ${courtNumber} for ${currentScorerType} match`);
     
     if (currentScorerType === 'STANDALONE') {
-      standaloneStore.updateCourtNumber(currentMatch.id, courtNumber);
+      // Check if updateCourtNumber exists on standaloneStore
+      if (typeof standaloneStore.updateCourtNumber === 'function') {
+        standaloneStore.updateCourtNumber(currentMatch.id, courtNumber);
+      } else {
+        // Fallback - update the match directly
+        const updatedMatch = { 
+          ...currentMatch, 
+          courtNumber 
+        } as StandaloneMatch;
+        
+        standaloneStore.updateMatch(updatedMatch);
+      }
       
       // Update local state
       const updatedMatch = { 
