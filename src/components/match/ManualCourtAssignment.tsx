@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Match, Court } from "@/types/tournament";
 import { MapPin, X } from "lucide-react";
-import { useTournament } from "@/contexts/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
