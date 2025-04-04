@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import TournamentCreateComponent from './tournament/TournamentCreate';
-import { useTournament } from '@/contexts/TournamentContext';
+import { useTournament } from '@/contexts/tournament/useTournament';
 import { Tournament } from '@/types/tournament';
 
 // This is a wrapper component that redirects properly after tournament creation

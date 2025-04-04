@@ -1,248 +1,231 @@
-import { Tournament, Match, MatchStatus, CourtStatus } from "@/types/tournament";
-import { findMatchById, findCourtByNumber, updateMatchInTournament } from "@/utils/tournamentUtils";
-import { determineMatchWinnerAndLoser, updateBracketProgression, getDefaultScoringSettings } from "@/utils/matchUtils";
-import { addScoringAuditInfo, addMatchAuditLog } from "@/utils/matchAuditUtils";
-import { getCurrentUserId } from "@/utils/auditUtils";
+import { Tournament, Match, Team, Court, MatchStatus, Division, TournamentStage, TournamentFormat, TournamentCategory, StandaloneMatch } from "@/types/tournament";
+import { generateId, findMatchById, updateMatchInTournament } from "@/utils/tournamentUtils";
+import { addMatchAuditLog, addScoringAuditInfo } from "@/utils/matchAuditUtils";
 
-// Update match score
-export const updateMatchScoreInTournament = (
-  matchId: string, 
-  setIndex: number, 
-  team1Score: number, 
-  team2Score: number,
-  currentTournament: Tournament,
-  scorerName?: string // New parameter for scorer name
-): Tournament => {
-  console.log(`[DEBUG] Updating match ${matchId} score at set ${setIndex}: ${team1Score}-${team2Score}`);
-  
-  const match = findMatchById(currentTournament, matchId);
-  if (!match) {
-    console.error(`[ERROR] Match not found: ${matchId}. Cannot update score.`);
-    return currentTournament;
+/**
+ * Creates a new tournament
+ */
+export const createNewTournament = (
+  tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">,
+  tournaments: Tournament[]
+): { tournament: Tournament; tournaments: Tournament[] } => {
+  const tournament: Tournament = {
+    id: generateId(),
+    ...tournamentData,
+    matches: [],
+    currentStage: "INITIAL_ROUND",
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+
+  const updatedTournaments = [...tournaments, tournament];
+  return { tournament, tournaments: updatedTournaments };
+};
+
+/**
+ * Deletes a tournament
+ */
+export const deleteTournament = (
+  tournamentId: string,
+  tournaments: Tournament[],
+  currentTournament: Tournament | null
+): { tournaments: Tournament[]; currentTournament: Tournament | null } => {
+  const updatedTournaments = tournaments.filter(t => t.id !== tournamentId);
+  let updatedCurrentTournament = currentTournament;
+
+  if (currentTournament?.id === tournamentId) {
+    updatedCurrentTournament = null;
   }
-  
+
+  return { tournaments: updatedTournaments, currentTournament: updatedCurrentTournament };
+};
+
+/**
+ * Adds a team to a tournament
+ */
+export const addTeamToTournament = (team: Team, tournament: Tournament): Tournament => {
+  const updatedTournament = {
+    ...tournament,
+    teams: [...tournament.teams, team],
+    updatedAt: new Date()
+  };
+  return updatedTournament;
+};
+
+/**
+ * Imports teams to a tournament
+ */
+export const importTeamsToTournament = (teams: Team[], tournament: Tournament): Tournament => {
+  const updatedTournament = {
+    ...tournament,
+    teams: [...tournament.teams, ...teams],
+    updatedAt: new Date()
+  };
+  return updatedTournament;
+};
+
+/**
+ * Moves a team to a different division
+ */
+export const moveTeamToDivision = (teamId: string, fromDivision: Division, toDivision: Division, tournament: Tournament): Tournament => {
+  // Find the team
+  const team = tournament.teams.find(t => t.id === teamId);
+  if (!team) return tournament;
+
+  // Update the team's division
+  const updatedTeam = { ...team, division: toDivision };
+
+  // Update the tournament's teams
+  const updatedTeams = tournament.teams.map(t => t.id === teamId ? updatedTeam : t);
+
+  // Update the tournament
+  const updatedTournament = {
+    ...tournament,
+    teams: updatedTeams,
+    updatedAt: new Date()
+  };
+
+  return updatedTournament;
+};
+
+/**
+ * Schedules a match in a tournament
+ */
+export const scheduleMatchInTournament = (
+  team1Id: string,
+  team2Id: string,
+  scheduledTime: Date,
+  tournament: Tournament,
+  courtId?: string,
+  categoryId?: string
+): Tournament => {
+  // Find teams
+  const team1 = tournament.teams.find(t => t.id === team1Id);
+  const team2 = tournament.teams.find(t => t.id === team2Id);
+
+  if (!team1 || !team2) {
+    console.error("Team not found");
+    return tournament;
+  }
+
+  // Find category if provided
+  let category = tournament.categories[0]; // Default to first category
+  if (categoryId) {
+    const foundCategory = tournament.categories.find(c => c.id === categoryId);
+    if (foundCategory) category = foundCategory;
+  }
+
+  // Create the match
+  const newMatch: Match = {
+    id: generateId(),
+    tournamentId: tournament.id,
+    team1,
+    team2,
+    scores: [],
+    division: "INITIAL",
+    stage: tournament.currentStage,
+    scheduledTime,
+    status: "SCHEDULED",
+    category
+  };
+
+  // Assign court if provided
+  if (courtId) {
+    const court = tournament.courts.find(c => c.id === courtId);
+    if (court) {
+      newMatch.courtNumber = court.number;
+    }
+  }
+
+  // Update tournament with new match
+  const updatedTournament = {
+    ...tournament,
+    matches: [...tournament.matches, newMatch],
+    updatedAt: new Date()
+  };
+
+  return updatedTournament;
+};
+
+/**
+ * Updates match score in a tournament
+ */
+export const updateMatchScoreInTournament = (
+  matchId: string,
+  setIndex: number,
+  team1Score: number,
+  team2Score: number,
+  tournament: Tournament,
+  scorerName?: string
+): Tournament => {
+  const match = findMatchById(tournament, matchId);
+  if (!match) return tournament;
+
+  // Create a copy of the scores array
   const updatedScores = [...match.scores];
-  
-  // Ensure we have enough sets
+
+  // Add empty sets if needed
   while (updatedScores.length <= setIndex) {
     updatedScores.push({ team1Score: 0, team2Score: 0 });
   }
-  
-  // Update the score at the specified index
-  updatedScores[setIndex] = { team1Score, team2Score };
-  
-  console.log(`[DEBUG] Updated match scores for ${match.team1.name} vs ${match.team2.name}:`, 
-              updatedScores.map(s => `${s.team1Score}-${s.team2Score}`).join(', '));
-  
-  // Add audit information to the match, but first convert to Match type
-  const userId = getCurrentUserId();
-  const updatedMatchData = {
-    ...match,
-    scores: updatedScores,
-    scorerName: scorerName || userId // Use provided scorer name or default to user ID
-  };
-  
-  // Explicitly cast to Match to avoid type errors
-  const updatedMatch = addScoringAuditInfo(updatedMatchData as Match, scorerName || userId, match.courtNumber) as Match;
-  
-  return updateMatchInTournament(currentTournament, updatedMatch);
-};
 
-// Update match status
-export const updateMatchStatusInTournament = (
-  matchId: string, 
-  status: MatchStatus, 
-  currentTournament: Tournament
-): Tournament => {
-  console.log(`[DEBUG] Updating match ${matchId} status to: ${status}`);
-  
-  const match = findMatchById(currentTournament, matchId);
-  if (!match) {
-    console.error(`[ERROR] Match not found: ${matchId}. Cannot update status.`);
-    return currentTournament;
-  }
-  
+  // Update the score for the specified set
+  updatedScores[setIndex] = { team1Score, team2Score };
+
   const updatedMatch = {
     ...match,
-    status
-  };
-  
-  console.log(`[DEBUG] Changing match status for ${match.team1.name} vs ${match.team2.name} from ${match.status} to ${status}`);
-  
-  // If the match is completed or cancelled, free up the court
-  if ((status === "COMPLETED" || status === "CANCELLED") && match.courtNumber) {
-    console.log(`[DEBUG] Match ${matchId} is ${status}, freeing up court #${match.courtNumber}`);
-    const courtToUpdate = findCourtByNumber(currentTournament, match.courtNumber);
-    
-    if (courtToUpdate) {
-      console.log(`[DEBUG] Found court to update: ${courtToUpdate.id} (Court #${courtToUpdate.number})`);
-      const updatedCourt = {
-        ...courtToUpdate,
-        status: "AVAILABLE" as CourtStatus,
-        currentMatch: undefined
-      };
-      
-      const updatedCourts = currentTournament.courts.map(c => 
-        c.id === courtToUpdate.id ? updatedCourt : c
-      );
-      
-      const updatedMatches = currentTournament.matches.map(m => 
-        m.id === matchId ? updatedMatch : m
-      );
-      
-      console.log(`[DEBUG] Updated court status to AVAILABLE. Updated match status to ${status}`);
-      
-      return {
-        ...currentTournament,
-        matches: updatedMatches,
-        courts: updatedCourts,
-        updatedAt: new Date()
-      };
-    } else {
-      console.warn(`[WARN] Court #${match.courtNumber} not found to free up for match ${matchId}`);
-    }
-  }
-  
-  // If no court update needed, just update the match
-  const updatedMatches = currentTournament.matches.map(m => 
-    m.id === matchId ? updatedMatch : m
-  );
-  
-  return {
-    ...currentTournament,
-    matches: updatedMatches,
+    scores: updatedScores,
     updatedAt: new Date()
   };
+
+  const auditedMatch = addScoringAuditInfo(updatedMatch, scorerName || "Unknown Scorer");
+  const updatedTournament = updateMatchInTournament(tournament, auditedMatch);
+  return updatedTournament;
 };
 
-// Complete a match and auto-assign court to next match
-export const completeMatchInTournament = (
-  matchId: string, 
-  currentTournament: Tournament,
-  scorerName?: string // New parameter for scorer name
+/**
+ * Updates match status in a tournament
+ */
+export const updateMatchStatusInTournament = (
+  matchId: string,
+  status: MatchStatus,
+  tournament: Tournament
 ): Tournament => {
-  console.log(`[DEBUG] Completing match ${matchId}`);
-  
-  const match = findMatchById(currentTournament, matchId);
-  if (!match) {
-    console.error(`[ERROR] Match not found: ${matchId}. Cannot complete match.`);
-    return currentTournament;
-  }
-  
-  // Get scoring settings from tournament or use defaults
-  const scoringSettings = currentTournament.scoringSettings || getDefaultScoringSettings();
-  console.log(`[DEBUG] Using scoring settings:`, scoringSettings);
-  
-  // Determine winner based on scores
-  const result = determineMatchWinnerAndLoser(match, scoringSettings);
-  if (!result) {
-    console.error(`[ERROR] Unable to determine winner and loser for match: ${matchId}`);
-    console.log(`[DEBUG] Match scores:`, match.scores);
-    return currentTournament;
-  }
-  
-  const { winner, loser } = result;
-  const userId = getCurrentUserId();
-  const now = new Date();
-  
-  console.log(`[DEBUG] Match ${matchId} completed. Winner: ${winner.name}, Loser: ${loser.name}`);
-  console.log(`[DEBUG] Final scores:`, match.scores.map(s => `${s.team1Score}-${s.team2Score}`).join(', '));
-  
-  // Create updated match with completion details and audit information
-  const updatedMatch = addScoringAuditInfo({
-    ...match,
-    status: "COMPLETED" as MatchStatus,
-    winner,
-    loser,
-    endTime: now,
-    scorerName: scorerName || userId, // Use provided scorer name or default to user ID
-  }, scorerName || userId, match.courtNumber);
-  
-  // Free up the court
-  let updatedTournament = { ...currentTournament };
-  let freedCourtId = null;
-  
-  if (match.courtNumber) {
-    console.log(`[DEBUG] Freeing up court #${match.courtNumber} after match completion`);
-    const courtIndex = updatedTournament.courts.findIndex(c => c.number === match.courtNumber);
-    if (courtIndex >= 0) {
-      freedCourtId = updatedTournament.courts[courtIndex].id;
-      updatedTournament.courts[courtIndex] = {
-        ...updatedTournament.courts[courtIndex],
-        status: "AVAILABLE" as CourtStatus,
-        currentMatch: undefined
-      };
-      console.log(`[DEBUG] Court #${match.courtNumber} (ID: ${freedCourtId}) now available`);
-    } else {
-      console.warn(`[WARN] Court #${match.courtNumber} not found in tournament courts`);
-    }
-  }
-  
-  const updatedMatches = updatedTournament.matches.map(m => 
-    m.id === matchId ? updatedMatch : m
-  );
-  
-  // Update the tournament with the completed match first
-  updatedTournament = {
-    ...updatedTournament,
-    matches: updatedMatches,
-    updatedAt: now
-  };
-  
-  // Now update bracket progression with the winner
-  console.log(`[DEBUG] Updating bracket progression with winner ${winner.name}`);
-  updatedTournament = updateBracketProgression(updatedTournament, updatedMatch, winner);
-  
-  console.log(`[DEBUG] Tournament updated with match completion and bracket progression`);
-  
-  // Auto-assign freed court to next scheduled match if enabled
-  if (updatedTournament.autoAssignCourts && freedCourtId) {
-    console.log(`[DEBUG] Auto-assign courts is enabled. Looking for next scheduled match to use court #${match.courtNumber}`);
-    const nextScheduledMatch = updatedTournament.matches.find(
-      m => m.status === "SCHEDULED" && !m.courtNumber
-    );
-    
-    if (nextScheduledMatch) {
-      console.log(`[DEBUG] Found next scheduled match: ${nextScheduledMatch.id} (${nextScheduledMatch.team1.name} vs ${nextScheduledMatch.team2.name})`);
-      const nextMatch = findMatchById(updatedTournament, nextScheduledMatch.id);
-      const court = updatedTournament.courts.find(c => c.id === freedCourtId);
-      
-      if (nextMatch && court) {
-        console.log(`[DEBUG] Assigning court #${court.number} to next match ${nextMatch.id}`);
-        // Update the match with court number
-        const matchWithCourt = {
-          ...nextMatch,
-          courtNumber: court.number
-        };
-        
-        // Update the court status and current match
-        const updatedCourt = {
-          ...court,
-          status: "IN_USE" as CourtStatus,
-          currentMatch: matchWithCourt
-        };
-        
-        // Update both in the tournament
-        const updatedMatchesWithAssignment = updatedTournament.matches.map(m => 
-          m.id === matchWithCourt.id ? matchWithCourt : m
-        );
-        
-        const updatedCourtsWithAssignment = updatedTournament.courts.map(c => 
-          c.id === updatedCourt.id ? updatedCourt : c
-        );
-        
-        updatedTournament = {
-          ...updatedTournament,
-          matches: updatedMatchesWithAssignment,
-          courts: updatedCourtsWithAssignment
-        };
-        
-        console.log(`[DEBUG] Court #${court.number} assigned to match ${nextMatch.id}`);
-      }
-    } else {
-      console.log(`[DEBUG] No scheduled matches without a court found. Court remains available.`);
-    }
-  }
-  
+  const match = findMatchById(tournament, matchId);
+  if (!match) return tournament;
+
+  const updatedMatch = { ...match, status, updatedAt: new Date() };
+  const auditedMatch = addMatchAuditLog(updatedMatch, `Match status updated to ${status}`);
+  const updatedTournament = updateMatchInTournament(tournament, auditedMatch);
   return updatedTournament;
+};
+
+/**
+ * Completes a match in a tournament
+ */
+export const completeMatchInTournament = (
+  matchId: string,
+  tournament: Tournament,
+  scorerName?: string
+): Tournament => {
+  const match = findMatchById(tournament, matchId);
+  if (!match) return tournament;
+
+  const updatedMatch = { ...match, status: "COMPLETED", updatedAt: new Date() };
+  const auditedMatch = addScoringAuditInfo(updatedMatch, scorerName || "Unknown Scorer");
+  const updatedTournament = updateMatchInTournament(tournament, auditedMatch);
+  return updatedTournament;
+};
+
+/**
+ * Generates a multi-stage tournament
+ */
+export const generateMultiStageTournament = (tournament: Tournament): Tournament => {
+  // Implementation would go here
+  console.log("Generating multi-stage tournament");
+  return tournament;
+};
+
+const isStandardMatch = (match: Match | StandaloneMatch): match is Match => {
+  return 'tournamentId' in match && 'division' in match && 'stage' in match;
 };

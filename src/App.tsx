@@ -17,7 +17,7 @@ import Login from "@/pages/Login";
 
 // Import necessary providers
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { TournamentProvider } from "@/contexts/TournamentContext";
+import { TournamentProvider } from "@/contexts/tournament/TournamentContext";
 import { StandaloneMatchProvider } from "@/contexts/StandaloneMatchContext";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/auth/AuthContext";
