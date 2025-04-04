@@ -1,5 +1,5 @@
 
-import { Match, AuditLog, Tournament } from "@/types/tournament";
+import { Match, AuditLog, Tournament, StandaloneMatch } from "@/types/tournament";
 import { getCurrentUserId } from "@/utils/auditUtils";
 
 /**
@@ -26,10 +26,10 @@ export function generateMatchNumber(tournament: Tournament): string {
  * Adds an audit log entry to a match
  */
 export function addMatchAuditLog(
-  match: Match,
+  match: Match | StandaloneMatch,
   action: string,
   details?: Record<string, any>
-): Match {
+): Match | StandaloneMatch {
   const userId = getCurrentUserId();
   const now = new Date();
   
@@ -55,10 +55,10 @@ export function addMatchAuditLog(
  * Adds scoring audit information to a match
  */
 export function addScoringAuditInfo(
-  match: Match, 
+  match: Match | StandaloneMatch, 
   scorerName: string, 
   courtNumber?: number
-): Match {
+): Match | StandaloneMatch {
   const now = new Date();
   const userId = getCurrentUserId();
   

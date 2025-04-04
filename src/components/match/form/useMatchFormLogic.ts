@@ -149,38 +149,37 @@ export const useMatchFormLogic = () => {
         }))
       };
       
-      // Create the match
-      const match = await createMatch(team1, team2, data.scheduledDate);
+      // Create the match - fix argument count
+      // Wrap the team1 and team2 in an object with scheduled date
+      const matchData: Partial<StandaloneMatch> = {
+        team1,
+        team2,
+        scheduledTime: data.scheduledDate
+      };
       
-      // Update additional fields if provided
-      if (match) {
-        let updatedMatch = { ...match };
-        
-        if (data.courtName) {
-          updatedMatch.courtName = data.courtName;
-        }
-        
-        if (data.tournamentName) {
-          updatedMatch.tournamentName = data.tournamentName;
-        }
-        
-        if (data.categoryName) {
-          updatedMatch.categoryName = data.categoryName;
-        }
-        
-        // If match has been updated with additional fields, save it
-        if (updatedMatch !== match) {
-          await useStandaloneMatchStore.getState().updateMatch(updatedMatch);
-        }
-        
-        toast({
-          title: "Match created",
-          description: "Your match has been created successfully",
-        });
-        
-        // Navigate to scoring page for the new match
-        navigate(`/scoring?matchId=${match.id}&type=standalone`);
+      // Add additional fields if provided
+      if (data.courtName) {
+        matchData.courtName = data.courtName;
       }
+      
+      if (data.tournamentName) {
+        matchData.tournamentName = data.tournamentName;
+      }
+      
+      if (data.categoryName) {
+        matchData.categoryName = data.categoryName;
+      }
+      
+      // Create match with the prepared data
+      const match = createMatch(matchData);
+      
+      toast({
+        title: "Match created",
+        description: "Your match has been created successfully",
+      });
+      
+      // Navigate to scoring page for the new match
+      navigate(`/scoring?matchId=${match.id}&type=standalone`);
     } catch (error) {
       toast({
         title: "Error",

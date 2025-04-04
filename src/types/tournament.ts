@@ -197,24 +197,28 @@ export type Group = {
 // New type for standalone matches (not part of a tournament)
 export type StandaloneMatch = {
   id: string;
+  matchNumber?: string; // Add matchNumber field
   team1: Team;
   team2: Team;
   scores: MatchScore[];
   courtNumber?: number;
-  courtName?: string; // Added field for court name
+  courtName?: string; 
   scheduledTime?: Date;
   status: MatchStatus;
   winner?: Team;
   loser?: Team;
-  category?: TournamentCategory; // Optional as standalone matches might not have a category
-  categoryName?: string; // Added field for category name text
-  tournamentName?: string; // Added field for tournament name
+  category?: TournamentCategory;
+  categoryName?: string;
+  tournamentName?: string;
   createdAt: Date;
   updatedAt?: Date;
   created_by?: string;
   updated_by?: string;
-  isPublic?: boolean; // Whether the match is publicly viewable
-  shareCode?: string; // Code for sharing the match
+  isPublic?: boolean;
+  shareCode?: string;
+  endTime?: Date;       // Adding the endTime property
+  scorerName?: string;  // Adding the scorerName property
+  auditLogs?: AuditLog[]; // Adding the auditLogs property
 };
 
 // Type to distinguish between scoring sources

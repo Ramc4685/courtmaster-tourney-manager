@@ -21,10 +21,21 @@ interface StandaloneMatchContextType {
 const StandaloneMatchContext = createContext<StandaloneMatchContextType | undefined>(undefined);
 
 export const StandaloneMatchProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const standaloneMatchStore = useStandaloneMatchStore();
+  const standaloneStore = useStandaloneMatchStore();
+  
+  // Create a wrapper with the missing properties to satisfy TypeScript
+  const contextValue: StandaloneMatchContextType = {
+    ...standaloneStore,
+    isLoading: false, // Default value
+    error: null,      // Default value
+    loadMatches: async () => {
+      // Implementation would load matches from store or API
+      return Promise.resolve();
+    }
+  };
   
   return (
-    <StandaloneMatchContext.Provider value={standaloneMatchStore}>
+    <StandaloneMatchContext.Provider value={contextValue}>
       {children}
     </StandaloneMatchContext.Provider>
   );
