@@ -9,8 +9,7 @@ import PageHeader from '@/components/shared/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
-import { StandaloneMatch } from '@/types/tournament';
-import { v4 as uuidv4 } from 'uuid';
+import { nanoid } from 'nanoid'; // Using nanoid instead of uuid
 
 const StandaloneScoring = () => {
   const { toast } = useToast();
@@ -18,19 +17,29 @@ const StandaloneScoring = () => {
   const [teamOneName, setTeamOneName] = useState('Team 1');
   const [teamTwoName, setTeamTwoName] = useState('Team 2');
   const standaloneMatchStore = useStandaloneMatchStore();
-  
+
   // Create a quick standalone match
   const createQuickMatch = () => {
     const newMatch = standaloneMatchStore.createMatch({
-      team1: { 
-        id: `team1-${uuidv4()}`,
+      team1: {
+        id: `team1-${nanoid(6)}`,
         name: teamOneName,
-        players: [{ id: `player1-${uuidv4()}`, name: 'Player 1' }]
+        players: [
+          {
+            id: `player1-${nanoid(6)}`,
+            name: 'Player 1'
+          }
+        ]
       },
       team2: {
-        id: `team2-${uuidv4()}`,
+        id: `team2-${nanoid(6)}`,
         name: teamTwoName,
-        players: [{ id: `player2-${uuidv4()}`, name: 'Player 2' }]
+        players: [
+          {
+            id: `player2-${nanoid(6)}`,
+            name: 'Player 2'
+          }
+        ]
       },
       matchNumber: `SM-${Math.floor(1000 + Math.random() * 9000)}` // Generate a match number
     });
@@ -40,7 +49,6 @@ const StandaloneScoring = () => {
         title: "Match created",
         description: "You can now start scoring this match."
       });
-      
       // Navigate to the scoring screen with the match ID
       navigate(`/scoring/standalone/${newMatch.id}`);
     } else {
@@ -59,7 +67,7 @@ const StandaloneScoring = () => {
   };
 
   // Delete a match
-  const handleDeleteMatch = (match: StandaloneMatch) => {
+  const handleDeleteMatch = (match: any) => {
     if (standaloneMatchStore.deleteMatch) {
       standaloneMatchStore.deleteMatch(match.id);
       toast({
@@ -75,17 +83,17 @@ const StandaloneScoring = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="space-y-6">
-        <PageHeader
-          title="Standalone Match Scoring"
+        <PageHeader 
+          title="Standalone Match Scoring" 
           description="Score matches that aren't part of a tournament"
         />
-        
+
         <Tabs defaultValue="quick" className="space-y-4">
           <TabsList>
             <TabsTrigger value="quick">Quick Match</TabsTrigger>
             <TabsTrigger value="history">Match History</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="quick" className="space-y-4">
             <Card>
               <CardHeader>
@@ -94,24 +102,24 @@ const StandaloneScoring = () => {
               <CardContent className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Team 1 Name</label>
-                  <Input 
-                    value={teamOneName} 
+                  <Input
+                    value={teamOneName}
                     onChange={(e) => setTeamOneName(e.target.value)}
                     placeholder="Enter team 1 name"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-1">Team 2 Name</label>
-                  <Input 
-                    value={teamTwoName} 
+                  <Input
+                    value={teamTwoName}
                     onChange={(e) => setTeamTwoName(e.target.value)}
                     placeholder="Enter team 2 name"
                   />
                 </div>
-                
-                <Button 
-                  onClick={createQuickMatch} 
+
+                <Button
+                  onClick={createQuickMatch}
                   className="w-full"
                 >
                   <PlusCircle className="h-4 w-4 mr-2" />
@@ -120,7 +128,7 @@ const StandaloneScoring = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="history">
             <Card>
               <CardHeader>
@@ -129,7 +137,7 @@ const StandaloneScoring = () => {
               <CardContent>
                 {matches.length > 0 ? (
                   <div className="space-y-4">
-                    {matches.map(match => (
+                    {matches.map((match) => (
                       <Card key={match.id} className="bg-gray-50">
                         <CardContent className="p-4">
                           <div className="flex justify-between items-center">
@@ -144,15 +152,15 @@ const StandaloneScoring = () => {
                               </div>
                             </div>
                             <div className="flex space-x-2">
-                              <Button
-                                onClick={() => navigate(`/scoring/standalone/${match.id}`)}
+                              <Button 
+                                onClick={() => navigate(`/scoring/standalone/${match.id}`)} 
                                 variant="outline"
                               >
                                 View / Score
                               </Button>
-                              <Button
-                                onClick={() => handleDeleteMatch(match)}
-                                variant="destructive"
+                              <Button 
+                                onClick={() => handleDeleteMatch(match)} 
+                                variant="destructive" 
                                 size="sm"
                               >
                                 Delete

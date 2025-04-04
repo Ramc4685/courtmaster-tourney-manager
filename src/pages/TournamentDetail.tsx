@@ -19,7 +19,8 @@ import { useAuth } from "@/contexts/auth/AuthContext";
 import ScoreEntrySection from "@/components/tournament/score-entry/ScoreEntrySection";
 import CategoryTabs from "@/components/tournament/tabs/CategoryTabs";
 import { schedulingService } from "@/services/tournament/SchedulingService";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast"; // Updated to correct path
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const TournamentDetail = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
@@ -30,6 +31,7 @@ const TournamentDetail = () => {
     currentTournament,
     setCurrentTournament,
     updateTournament,
+    deleteTournament,
     addTeam,
     importTeams,
     updateMatch,
@@ -47,6 +49,7 @@ const TournamentDetail = () => {
   const [addCourtDialogOpen, setAddCourtDialogOpen] = useState(false);
   const [addMatchDialogOpen, setAddMatchDialogOpen] = useState(false);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     console.log("TournamentDetail component - Received tournamentId:", tournamentId);
@@ -220,6 +223,23 @@ const TournamentDetail = () => {
     }
   };
 
+  // Handle tournament deletion
+  const handleDeleteTournament = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteTournament = () => {
+    if (deleteTournament && currentTournament) {
+      deleteTournament(currentTournament.id);
+      toast({
+        title: "Tournament deleted",
+        description: `${currentTournament.name} has been deleted.`,
+      });
+      navigate("/tournaments");
+    }
+    setDeleteDialogOpen(false);
+  };
+
   const isUserAdmin = user ? user.role === 'admin' : false;
   const hasCategoriesEnabled = currentTournament.categories && currentTournament.categories.length > 0;
 
@@ -228,7 +248,7 @@ const TournamentDetail = () => {
       <TournamentHeader
         tournament={currentTournament}
         updateTournament={updateTournament}
-        deleteTournament={() => {}} // This will be implemented later
+        deleteTournament={handleDeleteTournament}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -350,6 +370,27 @@ const TournamentDetail = () => {
         open={scheduleDialogOpen}
         onOpenChange={setScheduleDialogOpen}
       />
+
+      {/* Delete Tournament Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Tournament</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this tournament? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteTournament}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

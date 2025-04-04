@@ -3,7 +3,7 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './pages/home'; // lowercase 'h' instead of uppercase 'H'
 import Tournaments from './pages/Tournaments';
-import TournamentDetails from './pages/tournament/TournamentDetails'; // Corrected path
+import TournamentDetail from './pages/TournamentDetail'; // Updated to correct path
 import TournamentCreate from './pages/TournamentCreate';
 import Scoring from './pages/Scoring';
 import PublicView from './pages/PublicView';
@@ -27,7 +27,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/tournaments" element={<Tournaments />} />
               <Route path="/tournament/create" element={<TournamentCreate />} />
-              <Route path="/tournament/:tournamentId" element={<TournamentDetails />} />
+              <Route path="/tournament/:tournamentId" element={<TournamentDetail />} />
               <Route path="/scoring/:tournamentId" element={<Scoring />} />
               <Route path="/public/:tournamentId" element={<PublicView />} />
               <Route path="/scoring/standalone" element={<StandaloneScoring />} />

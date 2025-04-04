@@ -11,7 +11,7 @@ interface MatchAuditInfoProps {
 const MatchAuditInfo: React.FC<MatchAuditInfoProps> = ({ match }) => {
   // Format date for display
   const formatDate = (date: Date | string | undefined) => {
-    if (!date) return 'Unknown';
+    if (!date) return 'Not specified';
     try {
       return new Date(date).toLocaleString();
     } catch (e) {
@@ -31,12 +31,12 @@ const MatchAuditInfo: React.FC<MatchAuditInfoProps> = ({ match }) => {
         <CardContent className="space-y-3 pt-0">
           <div>
             <div className="text-sm font-medium mb-1">Match Number:</div>
-            <div className="text-gray-700">{match.matchNumber || 'Not assigned'}</div>
+            <div className="text-gray-700">{match.matchNumber || match.id.substring(0, 8)}</div>
           </div>
           
           <div>
             <div className="text-sm font-medium mb-1">Teams:</div>
-            <div className="text-gray-700">{match.team1?.name} vs {match.team2?.name}</div>
+            <div className="text-gray-700">{match.team1?.name || 'TBD'} vs {match.team2?.name || 'TBD'}</div>
           </div>
           
           <div>
