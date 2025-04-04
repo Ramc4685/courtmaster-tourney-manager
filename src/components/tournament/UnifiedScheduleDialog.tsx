@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Dialog,
@@ -143,6 +142,16 @@ const UnifiedScheduleDialog: React.FC<UnifiedScheduleDialogProps> = ({
     setLoading(true);
     
     try {
+      console.log("Scheduling matches with options:", {
+        date,
+        startTime,
+        matchDuration,
+        assignCourts,
+        autoStartMatches,
+        division: selectedDivision,
+        pairsCount: suggestedPairs.length
+      });
+      
       const options: SchedulingOptions = {
         date,
         startTime,
@@ -152,7 +161,9 @@ const UnifiedScheduleDialog: React.FC<UnifiedScheduleDialogProps> = ({
         division: selectedDivision
       };
       
+      console.log("Calling scheduleMatches with pairs:", suggestedPairs);
       const result = await scheduleMatches(suggestedPairs, options);
+      console.log("Schedule result:", result);
       
       // Show success message
       toast({
@@ -310,17 +321,17 @@ const UnifiedScheduleDialog: React.FC<UnifiedScheduleDialogProps> = ({
               </div>
             </TabsContent>
           </ScrollArea>
-          
-          <DialogFooter className="mt-6">
-            <Button
-              className="w-full"
-              disabled={loading || suggestedPairs.length === 0}
-              onClick={handleSchedule}
-            >
-              {loading ? "Scheduling..." : "Schedule & Start Matches"}
-            </Button>
-          </DialogFooter>
         </Tabs>
+        
+        <DialogFooter className="mt-6">
+          <Button
+            className="w-full"
+            disabled={loading || suggestedPairs.length === 0}
+            onClick={handleSchedule}
+          >
+            {loading ? "Scheduling..." : "Schedule & Start Matches"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

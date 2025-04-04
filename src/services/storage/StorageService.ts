@@ -35,7 +35,12 @@ export class LocalStorageService implements StorageService {
 }
 
 // Supabase implementation
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
+
+// Helper function to check if Supabase is properly configured
+export const isSupabaseConfigured = (): boolean => {
+  return !!supabase.auth.getSession;
+};
 
 export class SupabaseStorageService implements StorageService {
   private async getUserId(): Promise<string | null> {

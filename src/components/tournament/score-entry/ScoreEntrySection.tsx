@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Match, MatchStatus, Court, CourtStatus } from "@/types/tournament";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,12 +21,17 @@ const ScoreEntrySection: React.FC<ScoreEntrySectionProps> = ({ matches, onMatchU
   
   // Filter matches that are in progress or scheduled (not completed)
   const availableMatches = matches.filter(
-    match => match.status !== "COMPLETED" && match.status !== "CANCELLED"
+    match => match.status !== "COMPLETED" && 
+             match.status !== "CANCELLED" &&
+             match.team1 && 
+             match.team2
   );
 
   // Get matches in progress for quick access
   const inProgressMatches = matches.filter(
-    match => match.status === "IN_PROGRESS"
+    match => match.status === "IN_PROGRESS" &&
+             match.team1 &&
+             match.team2
   );
 
   const selectedMatch = matches.find(match => match.id === selectedMatchId);

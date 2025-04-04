@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Match } from "@/types/tournament";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,7 +26,7 @@ const MatchSelector: React.FC<MatchSelectorProps> = ({
           <SelectContent>
             {matches.map((match) => (
               <SelectItem key={match.id} value={match.id}>
-                {match.team1.name} vs {match.team2.name} 
+                {match.team1?.name || 'TBD'} vs {match.team2?.name || 'TBD'} 
                 {match.status === "IN_PROGRESS" ? " (In Progress)" : ""}
               </SelectItem>
             ))}

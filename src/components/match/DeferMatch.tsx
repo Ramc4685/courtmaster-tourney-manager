@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { 
   Dialog,
@@ -10,7 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useTournament } from "@/contexts/TournamentContext";
+import { useTournament } from "@/contexts/tournament/TournamentContext";
 import { Match } from "@/types/tournament";
 import { Calendar, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";

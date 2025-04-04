@@ -1,16 +1,22 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { prepareUpdatedEntity } from '@/utils/auditUtils';
 import { TournamentContextType } from './types';
+import { Tournament, Team, Match, TournamentFormat, TournamentStage, MatchStatus, Division, CourtStatus } from "@/types/tournament";
+import { getCategoryDemoData } from "@/utils/tournamentSampleData";
+import { SchedulingOptions, SchedulingResult } from "@/services/tournament/SchedulingService";
+import { generateId } from "@/utils/tournamentUtils";
+import { schedulingService } from "@/services/tournament/SchedulingService";
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
-export const useTournament = () => {
+// Export the hook as a named export
+export function useTournament(): TournamentContextType {
   const context = useContext(TournamentContext);
   if (!context) {
     throw new Error('useTournament must be used within a TournamentProvider');
   }
   return context;
-};
+}
 
 const getInitialTournaments = () => {
   try {
@@ -146,7 +152,7 @@ const completeMatchInTournament = (
   };
 };
 
-export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function TournamentProvider({ children }: { children: React.ReactNode }) {
   const [tournaments, setTournaments] = useState(getInitialTournaments());
   const [currentTournament, setCurrentTournament] = useState<any>(null);
   const [isPending, setIsPending] = useState(false);
@@ -374,53 +380,31 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  // Schedule multiple matches
-  const scheduleMatches = async (teamPairs: any[], options: any) => {
+  // Schedule matches with court assignments
+  const scheduleMatches = async (teamPairs: { team1: Team; team2: Team }[], options: SchedulingOptions): Promise<SchedulingResult> => {
     if (!currentTournament) {
-      throw new Error('No active tournament');
+      throw new Error('No current tournament selected');
     }
-    
+
     try {
-      // Mock implementation for now - in real app would use schedulingService
-      const now = new Date();
-      const scheduledMatches = teamPairs.map((pair, index) => {
-        const scheduledTime = new Date(now.getTime() + index * options.matchDuration * 60000);
-        return {
-          id: `match-${Date.now()}-${index}`,
-          tournamentId: currentTournament.id,
-          team1: pair.team1,
-          team2: pair.team2,
-          scores: [],
-          division: options.division,
-          stage: currentTournament.currentStage,
-          scheduledTime,
-          status: 'SCHEDULED',
-          category: currentTournament.categories[0] // Default to first category
-        };
-      });
+      console.log('Scheduling matches:', teamPairs.length, 'pairs');
+      console.log('Scheduling options:', options);
       
-      const updatedTournament = {
-        ...currentTournament,
-        matches: [...currentTournament.matches, ...scheduledMatches],
-        updatedAt: new Date()
-      };
+      // Use the schedulingService to handle the scheduling
+      const result = schedulingService.scheduleMatches(currentTournament, teamPairs, options);
       
-      await updateTournament(updatedTournament);
+      // Update the tournament with the result
+      await updateTournament(result.tournament);
       
-      return {
-        scheduledMatches: scheduledMatches.length,
-        assignedCourts: 0,
-        startedMatches: 0,
-        tournament: updatedTournament
-      };
+      return result;
     } catch (error) {
-      console.error('Error scheduling matches:', error);
+      console.error("Error scheduling matches:", error);
       throw error;
     }
   };
 
   // Load category demo data
-  const loadCategoryDemoData = async (tournamentId: string, categoryId: string, format: string) => {
+  const loadCategoryDemoData = async (tournamentId: string, categoryId: string, format: TournamentFormat) => {
     if (!currentTournament) {
       console.error('No current tournament selected');
       return;
@@ -430,39 +414,14 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       console.log(`Loading demo data for category ID ${categoryId} with format ${format}`);
       
       // Find the category
-      const category = currentTournament.categories.find((c: any) => c.id === categoryId);
+      const category = currentTournament.categories.find(c => c.id === categoryId);
       if (!category) {
         console.error(`Category with ID ${categoryId} not found`);
         return;
       }
       
-      // Mock implementation - create some teams and matches for this category
-      const teams = Array(8).fill(null).map((_, i) => ({
-        id: `demo-team-${categoryId}-${i}`,
-        name: `Demo Team ${i + 1}`,
-        players: [
-          { id: `player-${i * 2}`, name: `Player ${i * 2 + 1}` },
-          { id: `player-${i * 2 + 1}`, name: `Player ${i * 2 + 2}` }
-        ],
-        category
-      }));
-      
-      // Create some matches between these teams
-      const matches = [];
-      for (let i = 0; i < teams.length; i += 2) {
-        matches.push({
-          id: `demo-match-${categoryId}-${i / 2}`,
-          tournamentId: currentTournament.id,
-          team1: teams[i],
-          team2: teams[i + 1],
-          scores: [],
-          division: 'INITIAL',
-          stage: currentTournament.currentStage,
-          scheduledTime: new Date(Date.now() + i * 30 * 60000),
-          status: 'SCHEDULED',
-          category
-        });
-      }
+      // Get demo data for this category and format
+      const { teams, matches } = getCategoryDemoData(format, category);
       
       // Add the teams and matches to the current tournament
       const updatedTournament = {
@@ -521,10 +480,110 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
+  // Generate multi-stage tournament brackets
+  const generateMultiStageTournament = async () => {
+    if (!currentTournament) {
+      console.error('No current tournament selected');
+      return;
+    }
+
+    try {
+      console.log('Generating multi-stage tournament brackets');
+      
+      // Group teams by category
+      const teamsByCategory = new Map<string, Team[]>();
+      currentTournament.teams.forEach(team => {
+        if (team.category?.id) {
+          const teams = teamsByCategory.get(team.category.id) || [];
+          teams.push(team);
+          teamsByCategory.set(team.category.id, teams);
+        }
+      });
+
+      const newMatches: Match[] = [];
+
+      // Generate matches for each category
+      for (const category of currentTournament.categories) {
+        const teams = teamsByCategory.get(category.id) || [];
+        if (teams.length < 2) {
+          console.warn(`Not enough teams in category ${category.name} to generate matches`);
+          continue;
+        }
+
+        // Initial qualification matches
+        const qualificationMatches = teams.reduce<Match[]>((matches, team, index, array) => {
+          if (index % 2 === 0 && index + 1 < array.length) {
+            matches.push({
+              id: generateId(),
+              tournamentId: currentTournament.id,
+              team1: team,
+              team2: array[index + 1],
+              scores: [],
+              division: "INITIAL" as Division,
+              stage: "INITIAL_ROUND" as TournamentStage,
+              status: "SCHEDULED" as MatchStatus,
+              scheduledTime: new Date(Date.now() + 3600000 * (index / 2)),
+              category: category,
+              groupName: "Qualification Round"
+            });
+          }
+          return matches;
+        }, []);
+
+        // Division placement matches (will be filled after qualification)
+        const divisionPlacementMatches = Array(Math.floor(teams.length / 4)).fill(null).map((_, index) => ({
+          id: generateId(),
+          tournamentId: currentTournament.id,
+          team1: null, // Will be filled after qualification
+          team2: null, // Will be filled after qualification
+          scores: [],
+          division: (index === 0 ? "DIVISION_1" : "DIVISION_2") as Division,
+          stage: "DIVISION_PLACEMENT" as TournamentStage,
+          status: "SCHEDULED" as MatchStatus,
+          scheduledTime: new Date(Date.now() + 86400000), // Next day
+          category: category,
+          groupName: `Division ${index + 1} Placement`
+        }));
+
+        // Playoff matches (will be filled after division placement)
+        const playoffMatches = Array(Math.floor(teams.length / 8)).fill(null).map((_, index) => ({
+          id: generateId(),
+          tournamentId: currentTournament.id,
+          team1: null, // Will be filled after division placement
+          team2: null, // Will be filled after division placement
+          scores: [],
+          division: "DIVISION_1" as Division,
+          stage: "PLAYOFF_KNOCKOUT" as TournamentStage,
+          status: "SCHEDULED" as MatchStatus,
+          scheduledTime: new Date(Date.now() + 172800000), // Two days later
+          category: category,
+          groupName: "Playoffs"
+        }));
+
+        newMatches.push(...qualificationMatches, ...divisionPlacementMatches, ...playoffMatches);
+      }
+
+      // Update tournament with new matches
+      const updatedTournament = {
+        ...currentTournament,
+        matches: [...currentTournament.matches, ...newMatches],
+        currentStage: "INITIAL_ROUND" as TournamentStage,
+        updatedAt: new Date()
+      };
+
+      await updateTournament(updatedTournament);
+      
+      console.log(`Generated ${newMatches.length} matches across all categories`);
+      return updatedTournament;
+    } catch (error) {
+      console.error('Error generating multi-stage tournament:', error);
+      throw error;
+    }
+  };
+
   // Stub implementations for required methods
   const stubImplementations = {
     generateBracket: async () => Promise.resolve(),
-    generateMultiStageTournament: async () => Promise.resolve(),
     advanceToNextStage: async () => Promise.resolve(),
     updateCourt: async () => Promise.resolve(),
     assignSeeding: async () => Promise.resolve(),
@@ -559,18 +618,11 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         scheduleMatches,
         loadCategoryDemoData,
         loadSampleData,
+        generateMultiStageTournament,
         ...stubImplementations,
       }}
     >
       {children}
     </TournamentContext.Provider>
   );
-};
-
-export const useTournamentContext = () => {
-  const context = useContext(TournamentContext);
-  if (context === undefined) {
-    throw new Error('useTournamentContext must be used within a TournamentProvider');
-  }
-  return context;
-};
+}

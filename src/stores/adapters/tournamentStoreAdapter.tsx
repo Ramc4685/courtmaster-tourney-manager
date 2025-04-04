@@ -1,4 +1,3 @@
-
 import React, { ReactNode } from 'react';
 import { useTournament as useTournamentFromContext } from "@/contexts/tournament/TournamentContext";
 import { useTournamentStore } from '../tournamentStore';
@@ -17,7 +16,8 @@ import { Team, Tournament, TournamentCategory, TournamentFormat } from '@/types/
 // This would eventually be set to true once migration is complete
 const USE_ZUSTAND = process.env.USE_ZUSTAND === 'true';
 
-export const useTournament = () => {
+// Rename the hook to avoid conflicts
+export const useTournamentWithStore = () => {
   // Get the original context - used when USE_ZUSTAND is false
   const tournamentContext = useTournamentFromContext();
   

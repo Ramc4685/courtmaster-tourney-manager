@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ScoringContainer from './ScoringContainer';
 import { Tournament, Match, Court } from '@/types/tournament';
@@ -10,7 +9,7 @@ import MatchView from './tournament/MatchView';
 import { ArrowLeft } from 'lucide-react';
 import { courtToCourtNumber, scoreChangeAdapter } from './adapters/scoringAdapters';
 
-type ScoringView = "match" | "courts";
+type ScoringView = "scoring" | "courts";
 
 interface TournamentScoringProps {
   currentTournament: Tournament | null;
@@ -35,7 +34,7 @@ interface TournamentScoringProps {
   isPending?: boolean;
   scorerName?: string;
   onScorerNameChange?: (name: string) => void;
-  setActiveView: (view: "courts") => void;
+  setActiveView: (view: "courts" | "scoring") => void;
   onCourtChange?: (courtNumber: number) => void;
 }
 
@@ -105,7 +104,7 @@ const TournamentScoring: React.FC<TournamentScoringProps> = ({
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">{currentTournament.name}</h1>
         
-        {activeView === "match" && (
+        {activeView === "scoring" && (
           <Button 
             variant="outline" 
             onClick={() => setActiveView("courts")}

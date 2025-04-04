@@ -1,4 +1,3 @@
-
 import React from "react";
 import { 
   Dialog,
@@ -72,7 +71,7 @@ const MatchAuditViewer: React.FC<MatchAuditViewerProps> = ({ match }) => {
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="font-semibold">Teams:</span>
-              <span>{match.team1.name} vs {match.team2.name}</span>
+              <span>{match.team1?.name || 'TBD'} vs {match.team2?.name || 'TBD'}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="font-semibold">Status:</span>

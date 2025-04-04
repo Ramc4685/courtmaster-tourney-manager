@@ -97,9 +97,125 @@ export const moveTeamToDivision = (teamId: string, fromDivision: Division, toDiv
 
 // Generates a multi-stage tournament
 export const generateMultiStageTournament = (tournament: Tournament): Tournament => {
-  // Implementation would go here
-  console.log("Generating multi-stage tournament");
-  return tournament;
+  if (!tournament.teams || tournament.teams.length === 0) {
+    throw new Error('No teams available for tournament generation');
+  }
+
+  const matches: Match[] = [];
+  const now = new Date();
+
+  // Group teams by category
+  const teamsByCategory: Record<string, Team[]> = {};
+  tournament.teams.forEach(team => {
+    const categoryId = team.category?.id || 'default';
+    if (!teamsByCategory[categoryId]) {
+      teamsByCategory[categoryId] = [];
+    }
+    teamsByCategory[categoryId].push(team);
+  });
+
+  // Generate matches for each category
+  Object.entries(teamsByCategory).forEach(([categoryId, teams]) => {
+    const category = tournament.categories.find(c => c.id === categoryId) || tournament.categories[0];
+    
+    // Initial qualification matches
+    for (let i = 0; i < teams.length; i += 2) {
+      if (i + 1 < teams.length) {
+        const match: Match = {
+          id: generateId(),
+          tournamentId: tournament.id,
+          team1: teams[i],
+          team2: teams[i + 1],
+          scores: [],
+          division: "INITIAL" as Division,
+          stage: "INITIAL_ROUND" as TournamentStage,
+          status: "SCHEDULED" as MatchStatus,
+          scheduledTime: new Date(now.getTime() + 3600000 * (i / 2)),
+          category: category,
+          groupName: "Qualification Round"
+        };
+        matches.push(match);
+      }
+    }
+
+    // Division placement matches (if we have enough teams)
+    if (teams.length >= 4) {
+      const div1Placement: Match = {
+        id: generateId(),
+        tournamentId: tournament.id,
+        team1: teams[0],
+        team2: teams[2],
+        scores: [],
+        division: "DIVISION_1" as Division,
+        stage: "DIVISION_PLACEMENT" as TournamentStage,
+        status: "SCHEDULED" as MatchStatus,
+        scheduledTime: new Date(now.getTime() + 86400000), // 1 day later
+        category: category,
+        groupName: "Division 1 Placement"
+      };
+      matches.push(div1Placement);
+
+      const div2Placement: Match = {
+        id: generateId(),
+        tournamentId: tournament.id,
+        team1: teams[1],
+        team2: teams[3],
+        scores: [],
+        division: "DIVISION_2" as Division,
+        stage: "DIVISION_PLACEMENT" as TournamentStage,
+        status: "SCHEDULED" as MatchStatus,
+        scheduledTime: new Date(now.getTime() + 86400000 + 3600000), // 1 day + 1 hour later
+        category: category,
+        groupName: "Division 2 Placement"
+      };
+      matches.push(div2Placement);
+    }
+
+    // Playoff matches
+    if (teams.length >= 4) {
+      // Division 1 semifinal
+      const div1Semifinal: Match = {
+        id: generateId(),
+        tournamentId: tournament.id,
+        team1: teams[0],
+        team2: teams[1],
+        scores: [],
+        division: "DIVISION_1" as Division,
+        stage: "PLAYOFF_KNOCKOUT" as TournamentStage,
+        bracketRound: 1,
+        bracketPosition: 1,
+        status: "SCHEDULED" as MatchStatus,
+        scheduledTime: new Date(now.getTime() + 172800000), // 2 days later
+        category: category,
+        groupName: "Division 1 Playoffs"
+      };
+      matches.push(div1Semifinal);
+
+      // Division 1 final
+      const div1Final: Match = {
+        id: generateId(),
+        tournamentId: tournament.id,
+        team1: teams[0],
+        team2: teams[2],
+        scores: [],
+        division: "DIVISION_1" as Division,
+        stage: "PLAYOFF_KNOCKOUT" as TournamentStage,
+        bracketRound: 2,
+        bracketPosition: 1,
+        status: "SCHEDULED" as MatchStatus,
+        scheduledTime: new Date(now.getTime() + 259200000), // 3 days later
+        category: category,
+        groupName: "Division 1 Final"
+      };
+      matches.push(div1Final);
+    }
+  });
+
+  return {
+    ...tournament,
+    matches: [...tournament.matches, ...matches],
+    updatedAt: new Date()
+  };
 };
 
 // Updated function to handle matchNumber and audit fields

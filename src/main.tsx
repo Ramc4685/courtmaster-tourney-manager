@@ -1,8 +1,7 @@
-
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { isSupabaseConfigured } from './lib/supabase.ts'
+import { isSupabaseConfigured } from './services/storage/StorageService'
 import { toast } from 'sonner'
 
 // Check if Supabase is configured and show a warning if not

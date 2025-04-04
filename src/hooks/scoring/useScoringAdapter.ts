@@ -1,13 +1,12 @@
-
 import { useScoringStore } from "@/stores/scoring";
 import { useTournamentStore } from "@/stores/tournamentStore";
-import { useTournament } from "@/contexts/TournamentContext";
+import { useTournament } from "@/contexts/tournament/TournamentContext";
 import { useStandaloneMatchStore } from "@/stores/standaloneMatchStore";
 import { Match, ScorerType, StandaloneMatch } from "@/types/tournament";
 import { useEffect, useState } from "react";
 
 // Flag to control which implementation we use
-const USE_ZUSTAND = process.env.USE_ZUSTAND === 'true';
+const USE_ZUSTAND = import.meta.env.VITE_USE_ZUSTAND === 'true';
 
 interface ScoringAdapterProps {
   scorerType?: ScorerType; // Default to "TOURNAMENT" if not specified

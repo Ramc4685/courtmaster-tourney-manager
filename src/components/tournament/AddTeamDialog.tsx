@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormDescription } from "@/components/ui/form";
-import { useTournament } from "@/contexts/TournamentContext";
+import { useTournament } from "@/contexts/tournament/TournamentContext";
 import { Team, Player } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
 import { generateTeamName, generateCreativeTeamName } from "@/utils/teamNameUtils";

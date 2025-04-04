@@ -17,6 +17,7 @@ interface AuthContextProps {
   login: (credentials: UserCredentials) => Promise<boolean>;
   register: (userData: UserCredentials & { name: string }) => Promise<boolean>;
   logout: () => void;
+  signInWithGoogle: () => Promise<void>;
   isAdmin: (tournamentId: string) => boolean;
   isOwner: (tournamentId: string) => boolean;
   isParticipant: (tournamentId: string) => boolean;
@@ -319,6 +320,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [toast, demoMode, enableDemoMode]);
 
+  const signInWithGoogle = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/tournaments`
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        console.log('[DEBUG] AuthContext: Google sign-in successful');
+      }
+    } catch (error) {
+      console.error('[ERROR] AuthContext: Google sign-in error', error);
+      toast({
+        title: "Sign-in error",
+        description: "An error occurred while signing in with Google. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
   // Role checking functions
   const isAdmin = useCallback((tournamentId: string): boolean => {
     if (!user) return false;
@@ -350,24 +377,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     register,
     logout,
-    isAdmin: useCallback((tournamentId: string): boolean => {
-      if (!user) return false;
-      return supabaseAuthService.isTournamentAdmin(user.id, tournamentId);
-    }, [user]),
-    isOwner: useCallback((tournamentId: string): boolean => {
-      if (!user) return false;
-      return supabaseAuthService.hasRole(user.id, tournamentId, 'owner');
-    }, [user]),
-    isParticipant: useCallback((tournamentId: string): boolean => {
-      if (!user) return false;
-      return supabaseAuthService.hasRole(user.id, tournamentId, 'participant');
-    }, [user]),
-    addTournamentRole: useCallback((userId: string, tournamentId: string, role: 'owner' | 'admin' | 'participant'): boolean => {
-      return supabaseAuthService.addTournamentRole(userId, tournamentId, role);
-    }, []),
-    removeTournamentRole: useCallback((userId: string, tournamentId: string, role: 'owner' | 'admin' | 'participant'): boolean => {
-      return supabaseAuthService.removeTournamentRole(userId, tournamentId, role);
-    }, []),
+    signInWithGoogle,
+    isAdmin,
+    isOwner,
+    isParticipant,
+    addTournamentRole,
+    removeTournamentRole,
     demoMode,
     enableDemoMode,
   };

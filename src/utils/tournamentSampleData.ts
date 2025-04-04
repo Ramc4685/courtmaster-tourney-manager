@@ -225,7 +225,6 @@ export const getCategoryDemoData = (format: TournamentFormat, category: Tourname
   }
   
   // Generate matches between teams using the format handler
-  const TournamentFormatService = require('@/services/tournament/formats/TournamentFormatService');
   const formatHandler = TournamentFormatService.getFormatHandler(format);
   const matches = formatHandler ? formatHandler.generateMatches(teams, category) : [];
   

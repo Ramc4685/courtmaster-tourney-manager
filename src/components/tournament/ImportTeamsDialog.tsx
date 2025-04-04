@@ -1,20 +1,19 @@
-
 import React, { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useTournament } from "@/contexts/TournamentContext";
+import { useTournament } from "@/contexts/tournament/TournamentContext";
 import { Team, Player } from "@/types/tournament";
 import { FileUp, AlertCircle, Upload, FileText } from "lucide-react";
 
 interface ImportTeamsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImportTeams: (teams: Omit<Team, "id">[]) => void;
+  onImportTeams: (teams: Team[]) => void;
   tournamentId: string;
 }
 
@@ -22,63 +21,50 @@ const ImportTeamsDialog: React.FC<ImportTeamsDialogProps> = ({
   open,
   onOpenChange,
   onImportTeams,
-  tournamentId,
+  tournamentId
 }) => {
-  const { toast } = useToast();
   const [teamsText, setTeamsText] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [importTab, setImportTab] = useState<string>("text");
-  const [delimiter, setDelimiter] = useState<string>(",");
+  const [importTab, setImportTab] = useState<'text' | 'json' | 'file'>('text');
+  const [delimiter, setDelimiter] = useState<string>(',');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
-  const parseTeams = (text: string): Team[] => {
+  const parseTeams = (text: string, delimiter: string = ','): Team[] => {
     if (!text.trim()) {
       setError("Please enter team data");
       return [];
     }
 
     try {
-      const lines = text.split("\n").filter(line => line.trim());
-      
-      // Parse CSV/delimited format
+      const lines = text.split('\n').filter(line => line.trim());
       return lines.map((line, index) => {
-        const parts = line.split(delimiter).map(item => item.trim());
-        
+        const parts = line.split(delimiter).map(part => part.trim());
         if (parts.length < 2) {
-          throw new Error(`Line ${index + 1}: Expected at least team name and one player`);
+          throw new Error(`Line ${index + 1}: Invalid format. Expected at least team name and one player.`);
         }
-        
-        const teamName = parts[0];
-        if (!teamName) {
-          throw new Error(`Line ${index + 1}: Team name is required`);
-        }
-        
-        const playerData = parts.slice(1).filter(Boolean);
-        if (playerData.length === 0) {
-          throw new Error(`Line ${index + 1}: At least one player is required`);
-        }
-        
-        const players: Player[] = playerData.map((playerInfo, playerIndex) => {
-          // Check if player data includes email (using format "Name <email>")
-          const emailMatch = playerInfo.match(/(.*)<(.*)>/);
+
+        const [name, ...playerParts] = parts;
+        const players = playerParts.map((playerStr, playerIndex) => {
+          const emailMatch = playerStr.match(/<(.+?)>/);
           if (emailMatch) {
             return {
               id: `imported-player-${index}-${playerIndex}-${Date.now()}`,
-              name: emailMatch[1].trim(),
-              email: emailMatch[2].trim()
+              name: playerStr.replace(/<.+?>/, '').trim(),
+              email: emailMatch[1]
+            };
+          } else {
+            return {
+              id: `imported-player-${index}-${playerIndex}-${Date.now()}`,
+              name: playerStr
             };
           }
-          
-          return {
-            id: `imported-player-${index}-${playerIndex}-${Date.now()}`,
-            name: playerInfo
-          };
         });
-        
+
         return {
           id: `imported-team-${index}-${Date.now()}`,
-          name: teamName,
-          players,
+          name,
+          players
         };
       });
     } catch (e: any) {
@@ -87,44 +73,44 @@ const ImportTeamsDialog: React.FC<ImportTeamsDialogProps> = ({
     }
   };
 
-  const handleJsonImport = (jsonText: string): Team[] => {
+  const handleJsonImport = (text: string): Team[] => {
+    if (!text.trim()) {
+      setError("Please enter JSON data");
+      return [];
+    }
+
     try {
-      const teams = JSON.parse(jsonText);
+      const teams = JSON.parse(text);
       if (!Array.isArray(teams)) {
         throw new Error("JSON must be an array of teams");
       }
-      
-      return teams.map((team, index) => {
-        if (!team.name) {
-          throw new Error(`Team at index ${index}: name is required`);
+
+      return teams.map((team: any, index: number) => {
+        if (!team.name || !Array.isArray(team.players)) {
+          throw new Error(`Team at index ${index}: must have a name and players array`);
         }
-        
-        if (!team.players || !Array.isArray(team.players) || team.players.length === 0) {
-          throw new Error(`Team "${team.name}": at least one player is required`);
-        }
-        
+
         const players = team.players.map((player: any, playerIndex: number) => {
-          if (typeof player === "string") {
+          if (typeof player === 'string') {
             return {
               id: `imported-player-${index}-${playerIndex}-${Date.now()}`,
-              name: player,
+              name: player
             };
-          } else if (typeof player === "object" && player.name) {
+          } else if (typeof player === 'object' && player.name) {
             return {
               id: `imported-player-${index}-${playerIndex}-${Date.now()}`,
               name: player.name,
-              email: player.email,
-              phone: player.phone,
+              email: player.email
             };
           } else {
             throw new Error(`Team "${team.name}": invalid player at index ${playerIndex}`);
           }
         });
-        
+
         return {
           id: `imported-team-${index}-${Date.now()}`,
           name: team.name,
-          players,
+          players
         };
       });
     } catch (e: any) {
@@ -147,14 +133,12 @@ const ImportTeamsDialog: React.FC<ImportTeamsDialogProps> = ({
       const content = e.target?.result as string;
       setTeamsText(content);
       
-      // Try to determine delimiter if it's a CSV
       if (file.name.endsWith('.csv')) {
         setDelimiter(',');
       } else if (file.name.endsWith('.tsv')) {
         setDelimiter('\t');
       }
       
-      // Auto-detect JSON
       if (content.trim().startsWith('[') && content.trim().endsWith(']')) {
         setImportTab('json');
       } else {
@@ -171,11 +155,11 @@ const ImportTeamsDialog: React.FC<ImportTeamsDialogProps> = ({
     if (importTab === 'json') {
       teams = handleJsonImport(teamsText);
     } else {
-      teams = parseTeams(teamsText);
+      teams = parseTeams(teamsText, delimiter);
     }
     
     if (teams.length === 0) {
-      return; // Error already set by parse functions
+      return;
     }
     
     try {
@@ -203,7 +187,11 @@ const ImportTeamsDialog: React.FC<ImportTeamsDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="text" value={importTab} onValueChange={setImportTab}>
+        <Tabs 
+          defaultValue="text" 
+          value={importTab} 
+          onValueChange={(value: 'text' | 'json' | 'file') => setImportTab(value)}
+        >
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="text">CSV/Text</TabsTrigger>
             <TabsTrigger value="json">JSON</TabsTrigger>

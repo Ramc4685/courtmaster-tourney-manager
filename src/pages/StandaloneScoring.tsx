@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -8,10 +7,12 @@ import { useToast } from '@/hooks/use-toast';
 import ScoringContainer from '@/components/scoring/ScoringContainer';
 import PageHeader from '@/components/shared/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Match } from '@/types/tournament';
+import { Match, Division, TournamentStage, TournamentCategory, CategoryType } from '@/types/tournament';
+import { useNavigate } from 'react-router-dom';
 
 const StandaloneScoring = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [teamOneName, setTeamOneName] = useState('Team 1');
   const [teamTwoName, setTeamTwoName] = useState('Team 2');
   
@@ -37,9 +38,14 @@ const StandaloneScoring = () => {
       },
       scores: [],
       status: 'SCHEDULED',
-      division: 'EXHIBITION',
+      division: 'INITIAL' as Division,
       tournamentId: 'standalone',
-      stage: 'EXHIBITION'
+      stage: 'INITIAL_ROUND' as TournamentStage,
+      category: {
+        id: 'default',
+        name: 'Default Category',
+        type: 'MENS_SINGLES' as CategoryType
+      } as TournamentCategory
     };
 
     toast({
@@ -47,8 +53,8 @@ const StandaloneScoring = () => {
       description: "You can now start scoring this match."
     });
     
-    // In a real implementation, we would store this match and redirect to scoring
-    console.log("Created quick match:", newMatch);
+    // Navigate to the scoring screen with the match ID
+    navigate(`/scoring/standalone/${newMatch.id}`);
   };
 
   return (

@@ -91,13 +91,13 @@ const ManualResultEntry: React.FC<ManualResultEntryProps> = ({ match, onComplete
           <div className="space-y-4">
             <div>
               <h3 className="font-medium mb-2">
-                {match.team1.name} vs {match.team2.name}
+                {match.team1?.name || 'TBD'} vs {match.team2?.name || 'TBD'}
               </h3>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="team1Score">{match.team1.name}</Label>
+                <Label htmlFor="team1Score">{match.team1?.name || 'TBD'}</Label>
                 <Input 
                   id="team1Score"
                   type="number" 
@@ -108,7 +108,7 @@ const ManualResultEntry: React.FC<ManualResultEntryProps> = ({ match, onComplete
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="team2Score">{match.team2.name}</Label>
+                <Label htmlFor="team2Score">{match.team2?.name || 'TBD'}</Label>
                 <Input 
                   id="team2Score"
                   type="number" 

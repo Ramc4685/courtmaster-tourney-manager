@@ -104,16 +104,11 @@ const MatchTable: React.FC<MatchTableProps> = ({
               </TableRow>
             ) : (
               matches.map((match) => (
-                <TableRow key={match.id}>
-                  <TableCell>
-                    {/* Display match number */}
+                <TableRow key={match.id}><TableCell>
                     <span className="font-mono text-xs">
                       {match.matchNumber || match.id.substring(0, 8)}
                     </span>
-                  </TableCell>
-                  <TableCell>{match.team1.name} vs {match.team2.name}</TableCell>
-                  <TableCell>{getStatusBadge(match.status)}</TableCell>
-                  <TableCell>
+                  </TableCell><TableCell>{match.team1?.name || 'TBD'} vs {match.team2?.name || 'TBD'}</TableCell><TableCell>{getStatusBadge(match.status)}</TableCell><TableCell>
                     {assigningCourtId === match.id ? (
                       <div className="flex items-center space-x-2">
                         <Select
@@ -142,8 +137,7 @@ const MatchTable: React.FC<MatchTableProps> = ({
                     ) : (
                       match.courtNumber ? `Court ${match.courtNumber}` : "Not assigned"
                     )}
-                  </TableCell>
-                  <TableCell>
+                  </TableCell><TableCell>
                     <div className="space-y-1">
                       {match.scheduledTime ? (
                         <div className="text-xs">
@@ -158,18 +152,14 @@ const MatchTable: React.FC<MatchTableProps> = ({
                         </div>
                       )}
                     </div>
-                  </TableCell>
-                  <TableCell>
+                  </TableCell><TableCell>
                     {match.status === "COMPLETED" ? 
                       `${match.winner?.name || "Unknown"} won (${getScoreSummary(match)})` : 
                       getScoreSummary(match) || "Not started"
                     }
-                  </TableCell>
-                  <TableCell>{match.division}</TableCell>
-                  <TableCell className="text-right">
+                  </TableCell><TableCell>{match.division}</TableCell><TableCell className="text-right">
                     {match.status === "SCHEDULED" && (
                       <div className="flex justify-end gap-2 flex-wrap">
-                        {/* Assign Court Button */}
                         {!match.courtNumber && (
                           <Button 
                             variant="outline" 
@@ -180,8 +170,6 @@ const MatchTable: React.FC<MatchTableProps> = ({
                             Assign Court
                           </Button>
                         )}
-                        
-                        {/* Start Game Button - Always show for scheduled matches */}
                         {onStartMatch && (
                           <Button 
                             variant="outline" 
@@ -193,8 +181,6 @@ const MatchTable: React.FC<MatchTableProps> = ({
                             Start Game
                           </Button>
                         )}
-                        
-                        {/* Record Result Button */}
                         <ManualResultEntry
                           match={match}
                           onComplete={onMatchUpdate}
@@ -213,12 +199,10 @@ const MatchTable: React.FC<MatchTableProps> = ({
                       </div>
                     )}
                     
-                    {/* Show audit viewer for all matches */}
                     <div className="mt-2">
                       <MatchAuditViewer match={match} />
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </TableCell></TableRow>
               ))
             )}
           </TableBody>

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTournament } from '@/contexts/tournament/useTournament';
@@ -15,7 +14,7 @@ import LiveVideoLink from '@/components/shared/LiveVideoLink';
 import { useScoringLogic } from '@/hooks/scoring/useScoringLogic';
 
 // Define a type adapter for the activeView type
-type TournamentScoringViewAdapter = "match" | "courts";
+type TournamentScoringViewAdapter = "scoring" | "courts";
 
 const Scoring = () => {
   const { tournamentId } = useParams();
@@ -103,7 +102,7 @@ const Scoring = () => {
   // Create an adapter function for setActiveView to match the expected signature
   const setActiveViewAdapter = (view: TournamentScoringViewAdapter) => {
     // Convert from TournamentScoring's view type to scoring logic's view type
-    scoringLogic.setActiveView(view === "courts" ? "courts" : "courts");
+    scoringLogic.setActiveView(view);
   };
 
   // If we're still loading or have an error, show the container with appropriate state
@@ -169,7 +168,7 @@ const Scoring = () => {
             <TournamentScoring 
               currentTournament={currentTournament}
               tournamentId={currentTournament.id}
-              activeView={scoringLogic.activeView === "scoring" ? "match" : "courts"}
+              activeView={scoringLogic.activeView}
               selectedMatch={scoringLogic.selectedMatch}
               currentSet={scoringLogic.currentSet}
               setCurrentSet={scoringLogic.setCurrentSet}

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Match } from "@/types/tournament";
@@ -32,7 +31,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, detailed = false }) => {
     <div className="border-b border-gray-100 pb-3 mb-3 last:mb-0 last:border-b-0">
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1">
-          <h3 className="font-medium">{match.team1.name} vs {match.team2.name}</h3>
+          <h3 className="font-medium">{match.team1?.name || 'TBD'} vs {match.team2?.name || 'TBD'}</h3>
           
           {detailed && match.division && (
             <p className="text-sm text-gray-500 mt-1">
@@ -74,7 +73,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, detailed = false }) => {
       
       {match.status === "COMPLETED" && match.winner && (
         <div className="text-sm text-green-600 font-medium mt-1">
-          Winner: {match.winner.name}
+          Winner: {match.winner?.name || 'Unknown'}
         </div>
       )}
     </div>

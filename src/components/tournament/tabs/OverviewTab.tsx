@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Terminal, CalendarIcon, Clock, Award, ActivitySquare, BarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -70,10 +69,10 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   
   // Handle loading demo data for all categories
   const handleLoadDemoDataForAllCategories = async () => {
-    if (categories.length === 0) {
+    if (!tournament.categories || tournament.categories.length === 0) {
       toast({
         title: "No categories found",
-        description: "Please add categories to the tournament first.",
+        description: "Please add categories to the tournament first",
         variant: "destructive"
       });
       return;
@@ -82,24 +81,22 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     setLoading(true);
     
     try {
-      for (const category of categories) {
-        // Use the category's format if available, otherwise the tournament format
-        const format = category.format || tournament.format;
-        await loadCategoryDemoData(tournament.id, category.id, format);
+      // Load demo data for each category
+      for (const category of tournament.categories) {
+        await loadCategoryDemoData(tournament.id, category.id, tournament.format);
       }
       
       toast({
         title: "Demo data loaded",
-        description: `Demo data loaded for all ${categories.length} categories.`,
-        variant: "default"
+        description: `Loaded demo data for ${tournament.categories.length} categories`,
       });
     } catch (error) {
+      console.error("Error loading demo data:", error);
       toast({
-        title: "Error",
-        description: "Failed to load demo data for all categories.",
+        title: "Error loading demo data",
+        description: "There was an error loading the demo data. Please try again.",
         variant: "destructive"
       });
-      console.error("Error loading demo data:", error);
     } finally {
       setLoading(false);
     }

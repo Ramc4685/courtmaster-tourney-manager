@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Plus, Clock, ArrowRight, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,6 +42,10 @@ const MatchesTab: React.FC<MatchesTabProps> = ({
   const noAvailableCourts = availableCourts.length === 0;
 
   const handleQuickAssign = (match: Match) => {
+    if (!match.team1 || !match.team2) {
+      console.warn('Cannot assign court to match with missing teams');
+      return;
+    }
     setSelectedMatch(match);
     setQuickAssignOpen(true);
   };
