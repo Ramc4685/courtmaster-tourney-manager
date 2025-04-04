@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,7 +9,7 @@ import MatchesTab from "./MatchesTab";
 import TeamsTab from "./TeamsTab";
 import { useMediaQuery } from "@/hooks/use-mobile";
 import ScoreEntrySection from "@/components/tournament/score-entry/ScoreEntrySection";
-import { useTournament } from "@/contexts/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament";
 
 interface CategoryTabsProps {
   tournament: Tournament;
@@ -28,7 +27,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
 
   // Initialize the selected category when tournament loads or changes
   useEffect(() => {
-    if (tournament.categories.length > 0 && !selectedCategory) {
+    if (tournament.categories.length >0 && !selectedCategory) {
       setSelectedCategory(tournament.categories[0].id);
       console.log("Initially selected category:", tournament.categories[0].name);
     }

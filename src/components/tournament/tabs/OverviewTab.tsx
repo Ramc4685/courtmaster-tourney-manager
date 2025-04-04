@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Terminal, CalendarIcon, Clock, Award, ActivitySquare, BarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,10 +42,16 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     }
   };
   
+  // Ensure arrays exist before accessing their properties
+  const matches = tournament.matches || [];
+  const teams = tournament.teams || [];
+  const courts = tournament.courts || [];
+  const categories = tournament.categories || [];
+  
   // Calculate tournament statistics
-  const totalMatches = tournament.matches.length;
-  const completedMatches = tournament.matches.filter(m => m.status === "COMPLETED").length;
-  const inProgressMatches = tournament.matches.filter(m => m.status === "IN_PROGRESS").length;
+  const totalMatches = matches.length;
+  const completedMatches = matches.filter(m => m.status === "COMPLETED").length;
+  const inProgressMatches = matches.filter(m => m.status === "IN_PROGRESS").length;
   const progressPercentage = totalMatches > 0 ? (completedMatches / totalMatches) * 100 : 0;
   
   // Get status badge color
@@ -64,7 +70,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   
   // Handle loading demo data for all categories
   const handleLoadDemoDataForAllCategories = async () => {
-    if (tournament.categories.length === 0) {
+    if (categories.length === 0) {
       toast({
         title: "No categories found",
         description: "Please add categories to the tournament first.",
@@ -76,7 +82,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     setLoading(true);
     
     try {
-      for (const category of tournament.categories) {
+      for (const category of categories) {
         // Use the category's format if available, otherwise the tournament format
         const format = category.format || tournament.format;
         await loadCategoryDemoData(tournament.id, category.id, format);
@@ -84,7 +90,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       
       toast({
         title: "Demo data loaded",
-        description: `Demo data loaded for all ${tournament.categories.length} categories.`,
+        description: `Demo data loaded for all ${categories.length} categories.`,
         variant: "default"
       });
     } catch (error) {
@@ -141,15 +147,15 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Teams</p>
-                    <p className="text-base font-semibold">{tournament.teams.length}</p>
+                    <p className="text-base font-semibold">{teams.length}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Categories</p>
-                    <p className="text-base font-semibold">{tournament.categories.length}</p>
+                    <p className="text-base font-semibold">{categories.length}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Courts</p>
-                    <p className="text-base font-semibold">{tournament.courts.length}</p>
+                    <p className="text-base font-semibold">{courts.length}</p>
                   </div>
                 </div>
                 
@@ -215,13 +221,13 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Scheduled</span>
                     <span className="font-semibold">
-                      {tournament.matches.filter(m => m.status === "SCHEDULED").length}
+                      {matches.filter(m => m.status === "SCHEDULED").length}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Courts in Use</span>
                     <span className="font-semibold">
-                      {tournament.courts.filter(c => c.status === "IN_USE").length}
+                      {courts.filter(c => c.status === "IN_USE").length}
                     </span>
                   </div>
                 </div>
