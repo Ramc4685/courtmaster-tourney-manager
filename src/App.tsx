@@ -12,6 +12,10 @@ import StandaloneScoring from '@/pages/StandaloneScoring';
 import Settings from '@/pages/Settings';
 import { TournamentProvider } from '@/contexts/tournament/TournamentContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from '@/contexts/auth/AuthContext';
+import Login from '@/pages/Login';
+import Profile from '@/pages/Profile';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -19,23 +23,34 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TournamentProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<Layout />}>
-              <Route index element={<Home />} />
-              <Route path="/tournaments" element={<Tournaments />} />
-              <Route path="/tournament/create" element={<TournamentCreate />} />
-              <Route path="/tournament/:tournamentId" element={<TournamentDetails />} />
-              <Route path="/scoring" element={<Scoring />} />
-              <Route path="/scoring/:tournamentId" element={<Scoring />} />
-              <Route path="/scoring/standalone" element={<StandaloneScoring />} />
-              <Route path="/settings" element={<Settings />} />
-            </Route>
-          </Routes>
-          <Toaster />
-        </Router>
-      </TournamentProvider>
+      <AuthProvider>
+        <TournamentProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route 
+                  path="/profile" 
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route path="/tournaments" element={<Tournaments />} />
+                <Route path="/tournament/create" element={<TournamentCreate />} />
+                <Route path="/tournament/:tournamentId" element={<TournamentDetails />} />
+                <Route path="/scoring" element={<Scoring />} />
+                <Route path="/scoring/:tournamentId" element={<Scoring />} />
+                <Route path="/scoring/standalone" element={<StandaloneScoring />} />
+                <Route path="/settings" element={<Settings />} />
+              </Route>
+            </Routes>
+            <Toaster />
+          </Router>
+        </TournamentProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
