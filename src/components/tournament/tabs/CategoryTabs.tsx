@@ -11,6 +11,7 @@ import TeamsTab from "./TeamsTab";
 import { useMediaQuery } from "@/hooks/use-mobile";
 import ScoreEntrySection from "@/components/tournament/score-entry/ScoreEntrySection";
 import { useTournament } from "@/contexts/tournament/useTournament";
+import { toast } from '@/components/ui/use-toast';
 
 interface CategoryTabsProps {
   tournament: Tournament;
@@ -22,6 +23,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
   console.log("Active tab:", activeTab);
   
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const { updateMatch, assignCourt, loadCategoryDemoData, updateTournament } = useTournament();
   
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -68,11 +70,29 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
   };
 
   // Handle loading sample data for this category
-  const handleLoadSampleData = () => {
+  const handleLoadSampleData = async () => {
     if (!currentCategory) return;
-    // Use the category's format if available, otherwise the tournament format
-    const format = currentCategory.format || tournament.format;
-    loadCategoryDemoData(tournament.id, currentCategory.id, format);
+    
+    setIsLoading(true);
+    try {
+      // Use the category's format if available, otherwise the tournament format
+      const format = currentCategory.format || tournament.format;
+      await loadCategoryDemoData(tournament.id, currentCategory.id, format);
+      
+      toast({
+        title: "Demo data loaded",
+        description: `Demo data loaded successfully for ${currentCategory.name}`,
+      });
+    } catch (error) {
+      console.error("Error loading demo data:", error);
+      toast({
+        title: "Error loading demo data",
+        description: "Something went wrong while loading the demo data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle team updates
@@ -112,8 +132,9 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
             onClick={handleLoadSampleData} 
             variant="outline" 
             className="w-full mt-2"
+            disabled={isLoading}
           >
-            Load Demo Data for {currentCategory?.name}
+            {isLoading ? "Loading..." : `Load Demo Data for ${currentCategory?.name}`}
           </Button>
         )}
 
@@ -167,8 +188,9 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
               onClick={handleLoadSampleData} 
               variant="outline" 
               size="sm"
+              disabled={isLoading}
             >
-              Load Demo Data
+              {isLoading ? "Loading..." : "Load Demo Data"}
             </Button>
           )}
         </div>

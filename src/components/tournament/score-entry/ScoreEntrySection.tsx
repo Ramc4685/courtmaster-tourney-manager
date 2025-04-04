@@ -4,7 +4,7 @@ import { Match, MatchStatus, Court, CourtStatus } from "@/types/tournament";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ClipboardEdit } from "lucide-react";
-import { useTournament } from "@/contexts/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament";
 
 // Import refactored components
 import InProgressMatches from "./components/InProgressMatches";
