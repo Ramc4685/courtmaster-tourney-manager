@@ -1,8 +1,16 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { StandaloneMatch, MatchStatus, Team } from '@/types/tournament';
+import { StandaloneMatch, MatchStatus, Team, MatchScore } from '@/types/tournament';
 import { v4 as uuidv4 } from 'uuid';
+
+// Define a simplified AuditLog format for standalone matches
+interface StandaloneAuditLog {
+  timestamp: Date;
+  action: string;
+  details: string;
+  userName?: string;
+}
 
 export interface StandaloneMatchStore {
   matches: StandaloneMatch[];
@@ -20,6 +28,7 @@ export interface StandaloneMatchStore {
   updateMatchStatus: (matchId: string, status: MatchStatus) => void;
   completeMatch: (matchId: string, scorerName?: string) => boolean;
   updateCourtNumber: (matchId: string, courtNumber: number) => void;
+  saveMatch?: () => Promise<boolean>;
 }
 
 export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
@@ -53,18 +62,20 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
           team1,
           team2,
           scores: matchData.scores || [],
-          status: matchData.status || 'SCHEDULED' as MatchStatus,
+          status: matchData.status || 'SCHEDULED',
           scheduledTime: matchData.scheduledTime || new Date(),
           courtNumber: matchData.courtNumber,
           courtName: matchData.courtName,
-          // Convert string dates to Date objects if needed
           createdAt: matchData.createdAt instanceof Date ? matchData.createdAt : new Date(),
           updatedAt: matchData.updatedAt instanceof Date ? matchData.updatedAt : new Date(),
-          auditLogs: matchData.auditLogs || [{
-            timestamp: new Date(),
-            action: 'Match created',
-            details: `Match ${id} created`
-          }]
+          auditLogs: matchData.auditLogs || [
+            {
+              timestamp: new Date(),
+              action: 'Match created',
+              details: `Match ${id} created`,
+              meta: {}
+            }
+          ]
         };
         
         // Add the new match to the store
@@ -145,7 +156,6 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
           scores[setIndex] = {
             team1Score,
             team2Score,
-            scoredBy: scorerName,
             timestamp: new Date().toISOString()
           };
           
@@ -161,7 +171,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
                 timestamp: new Date(),
                 action: `Score updated for set ${setIndex + 1}`,
                 details: `New score: ${team1Score}-${team2Score}`,
-                userName: scorerName
+                meta: { scorer: scorerName }
               }
             ]
           };
@@ -192,7 +202,8 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
               {
                 timestamp: new Date(),
                 action: `Status changed to ${status}`,
-                details: `Match status updated to ${status}`
+                details: `Match status updated to ${status}`,
+                meta: {}
               }
             ]
           };
@@ -233,7 +244,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
           
           const updatedMatch: StandaloneMatch = {
             ...match,
-            status: 'COMPLETED' as MatchStatus,
+            status: 'COMPLETED',
             updatedAt: new Date(),
             winner,
             scorerName: scorerName || match.scorerName,
@@ -244,7 +255,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
                 timestamp: new Date(),
                 action: 'Match completed',
                 details: winner ? `Winner: ${winner.name}` : 'Match completed without a winner',
-                userName: scorerName
+                meta: { scorer: scorerName }
               }
             ]
           };
@@ -278,7 +289,8 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
               {
                 timestamp: new Date(),
                 action: 'Court assigned',
-                details: `Assigned to Court ${courtNumber}`
+                details: `Assigned to Court ${courtNumber}`,
+                meta: {}
               }
             ]
           };
@@ -293,6 +305,12 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
             currentMatch: state.currentMatch?.id === matchId ? updatedMatch : state.currentMatch
           };
         });
+      },
+      
+      // Add save match function
+      saveMatch: async () => {
+        // Just return true since we're already using Zustand with persist middleware
+        return Promise.resolve(true);
       }
     }),
     {

@@ -8,7 +8,7 @@ interface TournamentStatusBadgeProps {
 }
 
 const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ status }) => {
-  let variant: "default" | "destructive" | "outline" | "secondary" = "default";
+  let variant: "default" | "destructive" | "outline" | "secondary" | "success" = "default";
   
   switch(status) {
     case 'DRAFT':

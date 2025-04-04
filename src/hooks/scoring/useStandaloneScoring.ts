@@ -24,9 +24,13 @@ export const useStandaloneScoring = (matchId: string | null) => {
     return {
       ...standaloneMatch,
       tournamentId: 'standalone',
-      division: 'INITIAL',
+      division: 'STANDALONE',
       stage: 'INITIAL_ROUND' as TournamentStage,
-      category: standaloneMatch.category || { id: 'default', name: 'Default', type: 'MENS_SINGLES' },
+      category: standaloneMatch.category || { 
+        id: 'default', 
+        name: 'Default', 
+        type: standaloneMatch.team1.players.length > 1 ? 'MENS_DOUBLES' : 'MENS_SINGLES' 
+      },
       scores: scores
     } as Match;
   }, []);
@@ -242,13 +246,17 @@ export const useStandaloneScoring = (matchId: string | null) => {
     if (!standaloneMatchStore.currentMatch) return false;
     
     try {
-      // Ensure the standaloneMatchStore has a saveMatch method
-      await standaloneMatchStore.saveMatch();
-      
-      toast({
-        title: "Match saved",
-        description: "Your match has been saved successfully."
-      });
+      // Use the saveMatch method if it exists, otherwise just resolve
+      if (standaloneMatchStore.saveMatch) {
+        const result = await standaloneMatchStore.saveMatch();
+        
+        toast({
+          title: "Match saved",
+          description: "Your match has been saved successfully."
+        });
+        
+        return result;
+      }
       
       return true;
     } catch (err) {

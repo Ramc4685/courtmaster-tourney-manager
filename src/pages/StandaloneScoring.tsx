@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
 import { StandaloneMatch } from '@/types/tournament';
+import { v4 as uuidv4 } from 'uuid';
 
 const StandaloneScoring = () => {
   const { toast } = useToast();
@@ -22,14 +23,14 @@ const StandaloneScoring = () => {
   const createQuickMatch = () => {
     const newMatch = standaloneMatchStore.createMatch({
       team1: { 
-        id: `team1-${Date.now()}`,
+        id: `team1-${uuidv4()}`,
         name: teamOneName,
-        players: [{ id: `player1-${Date.now()}`, name: 'Player 1' }]
+        players: [{ id: `player1-${uuidv4()}`, name: 'Player 1' }]
       },
       team2: {
-        id: `team2-${Date.now()}`,
+        id: `team2-${uuidv4()}`,
         name: teamTwoName,
-        players: [{ id: `player2-${Date.now()}`, name: 'Player 2' }]
+        players: [{ id: `player2-${uuidv4()}`, name: 'Player 2' }]
       },
       matchNumber: `SM-${Math.floor(1000 + Math.random() * 9000)}` // Generate a match number
     });

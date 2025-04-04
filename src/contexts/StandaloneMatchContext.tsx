@@ -16,6 +16,7 @@ interface StandaloneMatchContextType {
   updateMatch: (match: StandaloneMatch) => Promise<StandaloneMatch>;
   deleteMatch: (id: string) => Promise<void>;
   setCurrentMatch: (match: StandaloneMatch | null) => void;
+  saveMatch?: () => Promise<boolean>;
 }
 
 const StandaloneMatchContext = createContext<StandaloneMatchContextType | undefined>(undefined);
@@ -43,9 +44,6 @@ export const StandaloneMatchProvider: React.FC<{ children: ReactNode }> = ({ chi
     
     createMatch: (match: Partial<StandaloneMatch>) => {
       const newMatch = standaloneStore.createMatch(match);
-      if (!newMatch) {
-        throw new Error("Failed to create match");
-      }
       return newMatch;
     },
     
@@ -56,13 +54,19 @@ export const StandaloneMatchProvider: React.FC<{ children: ReactNode }> = ({ chi
     },
     
     deleteMatch: async (id: string) => {
-      // Use the store's deleteMatch function if it exists, otherwise just resolve
+      // Use the store's deleteMatch function
       standaloneStore.deleteMatch(id);
       return Promise.resolve();
     },
     
     setCurrentMatch: (match: StandaloneMatch | null) => {
       standaloneStore.setCurrentMatch(match);
+    },
+
+    // Optional save match function, returning a promise
+    saveMatch: async () => {
+      // Implement if needed, for now just return success
+      return Promise.resolve(true);
     }
   };
   

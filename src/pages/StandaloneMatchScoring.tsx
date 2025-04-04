@@ -7,9 +7,10 @@ import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
 import { useToast } from '@/hooks/use-toast';
 import ScoringMatchDetail from '@/components/scoring/ScoringMatchDetail';
 import MatchAuditInfo from '@/components/match/MatchAuditInfo';
-import { MatchScore, StandaloneMatch } from '@/types/tournament';
+import { MatchScore, StandaloneMatch, Match, TournamentStage } from '@/types/tournament';
 import { Card, CardContent } from '@/components/ui/card';
 import PageHeader from '@/components/shared/PageHeader';
+import { v4 as uuidv4 } from 'uuid';
 
 const StandaloneMatchScoring = () => {
   const { matchId } = useParams<{ matchId: string }>();
@@ -137,12 +138,17 @@ const StandaloneMatchScoring = () => {
     }
   };
 
-  // Cast the standalone match to a Match type for the MatchAuditInfo component
-  const matchForAudit = {
+  // Convert standalone match to Match type for compatibility with components
+  const matchForAudit: Match = {
     ...match,
-    tournamentId: match.tournamentId || '',
-    division: match.division || '',
-    stage: match.stage || '',
+    tournamentId: 'standalone',
+    division: 'STANDALONE',
+    stage: 'STANDALONE' as TournamentStage,
+    category: {
+      id: 'standalone',
+      name: 'Standalone Match',
+      type: match.team1.players.length > 1 ? 'MENS_DOUBLES' : 'MENS_SINGLES'
+    }
   };
 
   return (
