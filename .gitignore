@@ -72,4 +72,3 @@ node_modules/.vite
 *.swp
 *.swo
 *.swn
-**/package-lock.json
