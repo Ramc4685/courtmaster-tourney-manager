@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { 
   Dialog,
@@ -12,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Match } from "@/types/tournament";
-import { useTournament } from "@/contexts/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament";
 import { ClipboardEdit } from "lucide-react";
 
 interface ManualResultEntryProps {
