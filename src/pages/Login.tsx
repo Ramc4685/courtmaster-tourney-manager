@@ -10,28 +10,13 @@ import RegisterForm from '@/components/auth/RegisterForm';
 import { useToast } from '@/hooks/use-toast';
 
 const Login: React.FC = () => {
-  const { signInWithGoogle, login, enableDemoMode } = useAuth();
+  const { login, enableDemoMode } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignIn = async () => {
-    try {
-      setIsLoading(true);
-      await signInWithGoogle();
-      navigate('/tournaments');
-    } catch (error) {
-      console.error('Error signing in:', error);
-      toast({
-        title: "Google Sign In Error",
-        description: "Could not sign in with Google. Using demo mode as fallback.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Removed Google sign-in due to provider not being enabled
+  
   const handleDemoLogin = async () => {
     try {
       setIsLoading(true);
@@ -118,16 +103,7 @@ const Login: React.FC = () => {
             
             <TabsContent value="login" className="pt-4">
               <LoginForm />
-              <div className="mt-4">
-                <Button 
-                  onClick={handleSignIn} 
-                  className="w-full"
-                  variant="outline"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Loading..." : "Sign in with Google"}
-                </Button>
-              </div>
+              {/* Removed Google sign-in button since the provider is not enabled */}
             </TabsContent>
             
             <TabsContent value="register" className="pt-4">

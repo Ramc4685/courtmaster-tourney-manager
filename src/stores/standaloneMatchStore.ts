@@ -1,225 +1,185 @@
-import { create } from 'zustand';
-import { StandaloneMatch } from '@/types/tournament';
-import { LocalStorage } from '@/utils/localStorage';
-import { generateId } from '@/utils/tournamentUtils';
-import { addScoringAuditInfo, addCourtAssignmentAuditInfo } from '@/utils/matchAuditUtils';
-import { getCurrentUserId } from '@/utils/auditUtils';
 
-export interface StandaloneMatchStore {
+import { createStore } from 'zustand/vanilla';
+import { useStore } from 'zustand';
+import { Match, StandaloneMatch } from '@/types/tournament';
+
+type StandaloneMatchStore = {
   matches: StandaloneMatch[];
   currentMatch: StandaloneMatch | null;
-  isLoading: boolean;
-  error: string | null;
-  createMatch: (match: Partial<StandaloneMatch>) => StandaloneMatch;
-  updateMatch: (matchId: string, match: Partial<StandaloneMatch>) => StandaloneMatch | null;
-  deleteMatch: (matchId: string) => void;
-  loadMatches: () => Promise<void>;
-  loadMatchById: (id: string) => Promise<StandaloneMatch | null>;
-  setCurrentMatch: (match: StandaloneMatch) => void;
-  updateMatchScore: (matchId: string, setIndex: number, team1Score: number, team2Score: number, scorerName?: string) => void;
-  completeMatch: (matchId: string, scorerName?: string) => void;
-  saveMatch: () => Promise<StandaloneMatch | null>;
-  updateCourtNumber: (matchId: string, courtNumber: number) => void; // New method
-}
+  
+  // Methods
+  createMatch: (matchData: Partial<StandaloneMatch>) => StandaloneMatch | null;
+  loadMatchById: (matchId: string) => StandaloneMatch | null;
+  updateMatch: (match: StandaloneMatch) => void;
+  updateMatchScore: (matchId: string, setIndex: number, team1Score: number, team2Score: number) => void;
+  completeMatch: (matchId: string) => boolean;
+  saveMatch: () => void;
+};
 
-const initialStandaloneMatches: StandaloneMatch[] = [];
+// Persist matches to localStorage
+const loadMatches = (): StandaloneMatch[] => {
+  try {
+    const storedMatches = localStorage.getItem('standaloneMatches');
+    return storedMatches ? JSON.parse(storedMatches) : [];
+  } catch (error) {
+    console.error('Error loading standalone matches:', error);
+    return [];
+  }
+};
 
-export const useStandaloneMatchStore = create<StandaloneMatchStore>((set, get) => ({
-  matches: initialStandaloneMatches,
+const saveMatches = (matches: StandaloneMatch[]) => {
+  try {
+    localStorage.setItem('standaloneMatches', JSON.stringify(matches));
+  } catch (error) {
+    console.error('Error saving standalone matches:', error);
+  }
+};
+
+// Create the store
+const standaloneMatchStore = createStore<StandaloneMatchStore>((set, get) => ({
+  matches: loadMatches(),
   currentMatch: null,
-  isLoading: false,
-  error: null,
-
+  
   createMatch: (matchData) => {
     const newMatch: StandaloneMatch = {
-      id: generateId(),
-      team1: matchData.team1 || { id: generateId(), name: 'Team 1', players: [] },
-      team2: matchData.team2 || { id: generateId(), name: 'Team 2', players: [] },
+      id: `standalone-${Date.now()}`,
+      team1: {
+        id: `team1-${Date.now()}`,
+        name: matchData.team1?.name || 'Team 1',
+        players: matchData.team1?.players || [
+          { id: `player1-${Date.now()}`, name: 'Player 1' }
+        ]
+      },
+      team2: {
+        id: `team2-${Date.now()}`,
+        name: matchData.team2?.name || 'Team 2',
+        players: matchData.team2?.players || [
+          { id: `player2-${Date.now()}`, name: 'Player 2' }
+        ]
+      },
       scores: [],
       status: 'SCHEDULED',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      created_by: getCurrentUserId(),
-      updated_by: getCurrentUserId(),
-      ...matchData,
-    } as StandaloneMatch;
-
-    set(state => ({
-      matches: [...state.matches, newMatch],
-      currentMatch: newMatch,
-    }));
-
-    const storage = new LocalStorage();
-    storage.saveMatches([...get().matches, newMatch]);
-
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      category: {
+        id: 'default',
+        name: 'Default Category',
+        type: 'MENS_SINGLES'
+      }
+    };
+    
+    set((state) => {
+      const updatedMatches = [...state.matches, newMatch];
+      saveMatches(updatedMatches);
+      return {
+        matches: updatedMatches,
+        currentMatch: newMatch
+      };
+    });
+    
     return newMatch;
   },
-
-  updateMatch: (matchId, matchUpdates) => {
-    set(state => {
-      const updatedMatches = state.matches.map(match =>
-        match.id === matchId ? { ...match, ...matchUpdates, updatedAt: new Date() } : match
-      );
-      return {
-        ...state,
-        matches: updatedMatches,
-        currentMatch: state.currentMatch?.id === matchId ? { ...state.currentMatch, ...matchUpdates, updatedAt: new Date() } as StandaloneMatch : state.currentMatch,
-      };
-    });
-
-    const storage = new LocalStorage();
-    storage.saveMatches(get().matches);
-
-    return get().matches.find(match => match.id === matchId) || null;
-  },
-
-  deleteMatch: (matchId) => {
-    set(state => ({
-      matches: state.matches.filter(match => match.id !== matchId),
-      currentMatch: state.currentMatch?.id === matchId ? null : state.currentMatch,
-    }));
-
-    const storage = new LocalStorage();
-    storage.saveMatches(get().matches);
-  },
-
-  loadMatches: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const storage = new LocalStorage();
-      const matches = storage.getMatches() || [];
-      set({ matches, isLoading: false });
-    } catch (error) {
-      set({ error: 'Failed to load matches.', isLoading: false });
+  
+  loadMatchById: (matchId) => {
+    const { matches } = get();
+    const foundMatch = matches.find(m => m.id === matchId);
+    
+    if (foundMatch) {
+      set({ currentMatch: foundMatch });
     }
-  },
-
-  loadMatchById: async (id) => {
-    set({ isLoading: true, error: null });
-    try {
-      const storage = new LocalStorage();
-      const matches = storage.getMatches() || [];
-      const match = matches.find(m => m.id === id) || null;
-      set({ currentMatch: match, isLoading: false });
-      return match;
-    } catch (error) {
-      set({ error: 'Failed to load match.', isLoading: false });
-      return null;
-    }
-  },
-
-  setCurrentMatch: (match) => {
-    set({ currentMatch: match });
-  },
-
-  updateMatchScore: (matchId, setIndex, team1Score, team2Score, scorerName) => {
-    set(state => {
-      const updatedMatches = state.matches.map(match => {
-        if (match.id === matchId) {
-          const newScores = [...match.scores];
-          newScores[setIndex] = { team1Score, team2Score };
-
-          // Add scoring audit info
-          const updatedMatch = addScoringAuditInfo({
-            ...match,
-            scores: newScores,
-            updatedAt: new Date(),
-            updated_by: getCurrentUserId(),
-            scorerName: scorerName || match.scorerName
-          }, scorerName || match.scorerName) as StandaloneMatch;
-
-          return updatedMatch;
-        }
-        return match;
-      });
-
-      const updatedCurrentMatch = updatedMatches.find(match => match.id === matchId) as StandaloneMatch;
-
-      return {
-        ...state,
-        matches: updatedMatches,
-        currentMatch: updatedCurrentMatch || state.currentMatch,
-      };
-    });
-
-    const storage = new LocalStorage();
-    storage.saveMatches(get().matches);
-  },
-
-  completeMatch: (matchId, scorerName) => {
-    set(state => {
-      const updatedMatches = state.matches.map(match => {
-        if (match.id === matchId) {
-          // Add scoring audit info for match completion
-          const updatedMatch = addScoringAuditInfo({
-            ...match,
-            status: 'COMPLETED',
-            endTime: new Date(),
-            updatedAt: new Date(),
-            updated_by: getCurrentUserId(),
-            scorerName: scorerName || match.scorerName
-          }, scorerName || match.scorerName) as StandaloneMatch;
-
-          return updatedMatch;
-        }
-        return match;
-      });
-
-      const updatedCurrentMatch = updatedMatches.find(match => match.id === matchId) as StandaloneMatch;
-
-      return {
-        ...state,
-        matches: updatedMatches,
-        currentMatch: updatedCurrentMatch || state.currentMatch,
-      };
-    });
-
-    const storage = new LocalStorage();
-    storage.saveMatches(get().matches);
+    
+    return foundMatch || null;
   },
   
-  updateCourtNumber: (matchId, courtNumber) => {
-    const { matches } = get();
-    const match = matches.find(m => m.id === matchId);
-    
-    if (!match) {
-      console.error(`Match with ID ${matchId} not found.`);
-      return;
-    }
-    
-    const userId = getCurrentUserId();
-    const now = new Date();
-    
-    // Add court assignment to audit log
-    const updatedMatch = addCourtAssignmentAuditInfo({
-      ...match,
-      courtNumber,
-      updatedAt: now,
-      updated_by: userId
-    }, courtNumber) as StandaloneMatch;
-    
-    // Update match in store
-    set(state => ({
-      ...state,
-      matches: state.matches.map(m => m.id === matchId ? updatedMatch : m),
-      currentMatch: state.currentMatch?.id === matchId ? updatedMatch : state.currentMatch
-    }));
-    
-    console.log(`Court number updated to ${courtNumber} for match ${matchId}`);
-    
-    // Save to storage in the background
-    const storage = new LocalStorage();
-    storage.saveMatches([...get().matches.filter(m => m.id !== matchId), updatedMatch]);
+  updateMatch: (match) => {
+    set((state) => {
+      const updatedMatches = state.matches.map(m => 
+        m.id === match.id ? { ...match, updatedAt: new Date().toISOString() } : m
+      );
+      saveMatches(updatedMatches);
+      return {
+        matches: updatedMatches,
+        currentMatch: match
+      };
+    });
   },
-
-  saveMatch: async () => {
-    if (!get().currentMatch) {
-      console.warn('No current match to save.');
-      return null;
-    }
-
-    const storage = new LocalStorage();
-    storage.saveMatches(get().matches);
-    return get().currentMatch;
+  
+  updateMatchScore: (matchId, setIndex, team1Score, team2Score) => {
+    set((state) => {
+      const match = state.matches.find(m => m.id === matchId);
+      
+      if (!match) return state;
+      
+      const scores = [...(match.scores || [])];
+      
+      // Ensure we have enough entries in the scores array
+      while (scores.length <= setIndex) {
+        scores.push({ team1Score: 0, team2Score: 0 });
+      }
+      
+      // Update the score for the specific set
+      scores[setIndex] = { team1Score, team2Score };
+      
+      const updatedMatch = {
+        ...match,
+        scores,
+        updatedAt: new Date().toISOString()
+      };
+      
+      const updatedMatches = state.matches.map(m => 
+        m.id === matchId ? updatedMatch : m
+      );
+      
+      saveMatches(updatedMatches);
+      
+      return {
+        matches: updatedMatches,
+        currentMatch: updatedMatch
+      };
+    });
   },
+  
+  completeMatch: (matchId) => {
+    let success = false;
+    
+    set((state) => {
+      const match = state.matches.find(m => m.id === matchId);
+      
+      if (!match) return state;
+      
+      const updatedMatch = {
+        ...match,
+        status: 'COMPLETED',
+        completedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      const updatedMatches = state.matches.map(m => 
+        m.id === matchId ? updatedMatch : m
+      );
+      
+      saveMatches(updatedMatches);
+      success = true;
+      
+      return {
+        matches: updatedMatches,
+        currentMatch: updatedMatch
+      };
+    });
+    
+    return success;
+  },
+  
+  saveMatch: () => {
+    const { currentMatch, matches } = get();
+    
+    if (currentMatch) {
+      saveMatches(matches);
+    }
+  }
 }));
+
+// React hook for using the store
+export const useStandaloneMatchStore = () => useStore(standaloneMatchStore);
+
+export default standaloneMatchStore;
