@@ -1,244 +1,174 @@
-import { create } from "zustand";
-import { StandaloneMatch, Team, MatchStatus } from "@/types/tournament";
-import { standaloneMatchService } from "@/services/match/StandaloneMatchService";
-import { getDefaultScoringSettings } from "@/utils/matchUtils";
-import { generateId } from "@/utils/tournamentUtils";
-import { getCurrentUserId } from "@/utils/auditUtils";
 
-interface StandaloneMatchState {
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { Match, StandaloneMatch, MatchStatus } from '@/types/tournament';
+import { generateId } from '@/utils/tournamentUtils';
+import { addScoringAuditInfo } from '@/utils/matchAuditUtils'; 
+import { getCurrentUserId } from '@/utils/auditUtils';
+
+// Define the store state type
+interface StandaloneMatchStore {
   matches: StandaloneMatch[];
   currentMatch: StandaloneMatch | null;
-  isLoading: boolean;
-  error: string | null;
   
-  // CRUD operations
-  loadMatches: () => Promise<void>;
-  loadMatchById: (id: string) => Promise<StandaloneMatch | null>;
-  loadMatchByShareCode: (shareCode: string) => Promise<StandaloneMatch | null>;
-  createMatch: (team1: Team, team2: Team, scheduledTime?: Date) => Promise<StandaloneMatch>;
-  updateMatch: (match: StandaloneMatch) => Promise<StandaloneMatch>;
-  deleteMatch: (id: string) => Promise<void>;
+  // Actions
+  createMatch: (match: Partial<StandaloneMatch>) => StandaloneMatch;
+  updateMatch: (matchId: string, updates: Partial<StandaloneMatch>) => StandaloneMatch | null;
+  deleteMatch: (matchId: string) => void;
+  loadMatchById: (matchId: string) => StandaloneMatch | null;
   setCurrentMatch: (match: StandaloneMatch | null) => void;
-  saveMatch: () => Promise<boolean>; // Add saveMatch method
-  
-  // Match operations
-  updateMatchScore: (matchId: string, setIndex: number, team1Score: number, team2Score: number) => Promise<void>;
-  updateMatchStatus: (matchId: string, status: MatchStatus) => Promise<void>;
-  completeMatch: (matchId: string) => Promise<void>;
-  toggleMatchPublicity: (matchId: string) => Promise<void>;
-  
-  // Team operations
-  createTeam: (name: string, players?: string[]) => Team;
+  updateMatchScore: (
+    matchId: string, 
+    setIndex: number, 
+    team1Score: number, 
+    team2Score: number,
+    scorerName?: string
+  ) => void;
+  completeMatch: (matchId: string, scorerName?: string) => void;
+  saveMatch: () => Promise<StandaloneMatch | null>;
 }
 
-export const useStandaloneMatchStore = create<StandaloneMatchState>((set, get) => ({
-  matches: [],
-  currentMatch: null,
-  isLoading: false,
-  error: null,
-  
-  // CRUD operations
-  
-  loadMatches: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const matches = await standaloneMatchService.getMatches();
-      set({ matches, isLoading: false });
-    } catch (e) {
-      set({ isLoading: false, error: e instanceof Error ? e.message : String(e) });
-    }
-  },
-  
-  loadMatchById: async (id) => {
-    set({ isLoading: true, error: null });
-    try {
-      const matches = await standaloneMatchService.getMatches();
-      const match = matches.find(m => m.id === id) || null;
+// Create the store with persistence
+export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
+  persist(
+    (set, get) => ({
+      matches: [],
+      currentMatch: null,
       
-      if (match) {
-        set({ currentMatch: match, isLoading: false });
-      } else {
-        set({ isLoading: false, error: "Match not found" });
-      }
-      return match;
-    } catch (e) {
-      set({ isLoading: false, error: e instanceof Error ? e.message : String(e) });
-      return null;
-    }
-  },
-  
-  loadMatchByShareCode: async (shareCode) => {
-    set({ isLoading: true, error: null });
-    try {
-      const match = await standaloneMatchService.getMatchByShareCode(shareCode);
+      createMatch: (matchData) => {
+        const now = new Date();
+        const userId = getCurrentUserId();
+        const newMatch: StandaloneMatch = {
+          id: generateId(),
+          team1: matchData.team1 || { id: generateId(), name: 'Team 1', players: [] },
+          team2: matchData.team2 || { id: generateId(), name: 'Team 2', players: [] },
+          scores: [],
+          status: 'SCHEDULED' as MatchStatus,
+          createdAt: now,
+          updatedAt: now,
+          created_by: userId,
+          updated_by: userId,
+          matchNumber: `SM-${now.toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`, // Add match number
+          ...matchData
+        };
+        
+        set(state => ({
+          matches: [...state.matches, newMatch],
+          currentMatch: newMatch
+        }));
+        
+        return newMatch;
+      },
       
-      if (match) {
-        set({ currentMatch: match, isLoading: false });
-      } else {
-        set({ isLoading: false, error: "Match not found" });
-      }
-      return match;
-    } catch (e) {
-      set({ isLoading: false, error: e instanceof Error ? e.message : String(e) });
-      return null;
-    }
-  },
-  
-  createMatch: async (team1, team2, scheduledTime) => {
-    set({ isLoading: true, error: null });
-    try {
-      const newMatch = await standaloneMatchService.createMatch(team1, team2, scheduledTime);
-      set(state => ({
-        matches: [...state.matches, newMatch],
-        currentMatch: newMatch,
-        isLoading: false
-      }));
-      return newMatch;
-    } catch (e) {
-      set({ isLoading: false, error: e instanceof Error ? e.message : String(e) });
-      throw e;
-    }
-  },
-  
-  updateMatch: async (match) => {
-    set({ isLoading: true, error: null });
-    try {
-      const updatedMatch = await standaloneMatchService.updateMatch(match);
-      set(state => ({
-        matches: state.matches.map(m => m.id === match.id ? updatedMatch : m),
-        currentMatch: state.currentMatch?.id === match.id ? updatedMatch : state.currentMatch,
-        isLoading: false
-      }));
-      return updatedMatch;
-    } catch (e) {
-      set({ isLoading: false, error: e instanceof Error ? e.message : String(e) });
-      throw e;
-    }
-  },
-  
-  // Add saveMatch method that uses updateMatch for the current match
-  saveMatch: async () => {
-    const { currentMatch, updateMatch } = get();
-    if (!currentMatch) return false;
-    
-    try {
-      await updateMatch(currentMatch);
-      return true;
-    } catch (e) {
-      console.error("Error saving match:", e);
-      return false;
-    }
-  },
-  
-  
-  
-  deleteMatch: async (id) => {
-    set({ isLoading: true, error: null });
-    try {
-      await standaloneMatchService.deleteMatch(id);
-      set(state => ({
-        matches: state.matches.filter(m => m.id !== id),
-        currentMatch: state.currentMatch?.id === id ? null : state.currentMatch,
-        isLoading: false
-      }));
-    } catch (e) {
-      set({ isLoading: false, error: e instanceof Error ? e.message : String(e) });
-      throw e;
-    }
-  },
-  
-  setCurrentMatch: (match) => {
-    set({ currentMatch: match });
-  },
-  
-  // Match operations
-  updateMatchScore: async (matchId, setIndex, team1Score, team2Score) => {
-    try {
-      const updatedMatch = await standaloneMatchService.updateMatchScore(
-        matchId, setIndex, team1Score, team2Score
-      );
-      
-      if (updatedMatch) {
+      updateMatch: (matchId, updates) => {
+        const match = get().matches.find(m => m.id === matchId);
+        if (!match) return null;
+        
+        const updatedMatch = {
+          ...match,
+          ...updates,
+          updatedAt: new Date(),
+          updated_by: getCurrentUserId()
+        };
+        
         set(state => ({
           matches: state.matches.map(m => m.id === matchId ? updatedMatch : m),
           currentMatch: state.currentMatch?.id === matchId ? updatedMatch : state.currentMatch
         }));
-      }
-    } catch (e) {
-      set({ error: e instanceof Error ? e.message : String(e) });
-    }
-  },
-  
-  updateMatchStatus: async (matchId, status) => {
-    try {
-      const updatedMatch = await standaloneMatchService.updateMatchStatus(
-        matchId, status
-      );
+        
+        return updatedMatch;
+      },
       
-      if (updatedMatch) {
+      deleteMatch: (matchId) => {
+        set(state => ({
+          matches: state.matches.filter(m => m.id !== matchId),
+          currentMatch: state.currentMatch?.id === matchId ? null : state.currentMatch
+        }));
+      },
+      
+      loadMatchById: (matchId) => {
+        const match = get().matches.find(m => m.id === matchId);
+        if (match) {
+          set({ currentMatch: match });
+        }
+        return match || null;
+      },
+      
+      setCurrentMatch: (match) => {
+        set({ currentMatch: match });
+      },
+      
+      updateMatchScore: (matchId, setIndex, team1Score, team2Score, scorerName) => {
+        const match = get().matches.find(m => m.id === matchId);
+        if (!match) return;
+        
+        const scores = [...(match.scores || [])];
+        
+        // Ensure we have enough sets
+        while (scores.length <= setIndex) {
+          scores.push({ team1Score: 0, team2Score: 0 });
+        }
+        
+        // Update the score at the specified index
+        scores[setIndex] = { team1Score, team2Score };
+        
+        // Add audit information
+        const updatedMatch = addScoringAuditInfo({
+          ...match,
+          scores,
+          updatedAt: new Date(),
+          updated_by: getCurrentUserId()
+        }, scorerName || getCurrentUserId(), match.courtNumber);
+        
         set(state => ({
           matches: state.matches.map(m => m.id === matchId ? updatedMatch : m),
           currentMatch: state.currentMatch?.id === matchId ? updatedMatch : state.currentMatch
         }));
-      }
-    } catch (e) {
-      set({ error: e instanceof Error ? e.message : String(e) });
-    }
-  },
-  
-  completeMatch: async (matchId) => {
-    try {
-      // Use the default scoring settings
-      const scoringSettings = getDefaultScoringSettings();
+      },
       
-      const updatedMatch = await standaloneMatchService.completeMatch(
-        matchId, scoringSettings
-      );
-      
-      if (updatedMatch) {
+      completeMatch: (matchId, scorerName) => {
+        const match = get().matches.find(m => m.id === matchId);
+        if (!match) return;
+        
+        const now = new Date();
+        
+        // Add audit information with completion details
+        const updatedMatch = addScoringAuditInfo({
+          ...match,
+          status: 'COMPLETED' as MatchStatus,
+          endTime: now,
+          updatedAt: now,
+          updated_by: getCurrentUserId()
+        }, scorerName || getCurrentUserId(), match.courtNumber);
+        
         set(state => ({
           matches: state.matches.map(m => m.id === matchId ? updatedMatch : m),
           currentMatch: state.currentMatch?.id === matchId ? updatedMatch : state.currentMatch
         }));
-      }
-    } catch (e) {
-      set({ error: e instanceof Error ? e.message : String(e) });
-    }
-  },
-  
-  toggleMatchPublicity: async (matchId) => {
-    try {
-      const updatedMatch = await standaloneMatchService.toggleMatchPublicity(matchId);
+      },
       
-      if (updatedMatch) {
+      saveMatch: async () => {
+        const { currentMatch } = get();
+        if (!currentMatch) return null;
+        
+        // In a real application, this would send the match data to a server
+        // For now, just update the local state with the current timestamp
+        const updatedMatch = {
+          ...currentMatch,
+          updatedAt: new Date(),
+          updated_by: getCurrentUserId()
+        };
+        
         set(state => ({
-          matches: state.matches.map(m => m.id === matchId ? updatedMatch : m),
-          currentMatch: state.currentMatch?.id === matchId ? updatedMatch : state.currentMatch
+          matches: state.matches.map(m => m.id === updatedMatch.id ? updatedMatch : m),
+          currentMatch: updatedMatch
         }));
+        
+        return updatedMatch;
       }
-    } catch (e) {
-      set({ error: e instanceof Error ? e.message : String(e) });
+    }),
+    {
+      name: 'standalone-matches-storage'
     }
-  },
-  
-  // Team operations
-  createTeam: (name, players = []) => {
-    const userId = getCurrentUserId();
-    const now = new Date();
-    
-    return {
-      id: generateId(),
-      name,
-      players: players.map(playerName => ({
-        id: generateId(),
-        name: playerName,
-        createdAt: now,
-        created_by: userId
-      })),
-      createdAt: now,
-      updatedAt: now,
-      created_by: userId,
-      updated_by: userId
-    };
-  }
-}));
+  )
+);

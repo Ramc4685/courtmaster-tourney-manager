@@ -1,20 +1,21 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Match, ScorerType, StandaloneMatch, MatchStatus } from '@/types/tournament';
 import { useTournament } from '@/contexts/TournamentContext';
 import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
 import { useToast } from '@/hooks/use-toast';
 import { getDefaultScoringSettings, isSetComplete, isMatchComplete } from '@/utils/matchUtils';
+import { getCurrentUserId } from '@/utils/auditUtils';
 
 interface UnifiedScoringOptions {
   scorerType: ScorerType;
   matchId?: string;
+  scorerName?: string; // New optional parameter for scorer's name
 }
 
 /**
  * A unified hook that provides scoring functionality for both tournament and standalone matches
  */
-export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions) => {
+export const useUnifiedScoring = ({ scorerType, matchId, scorerName }: UnifiedScoringOptions) => {
   const { toast } = useToast();
   const tournament = useTournament();
   const standaloneStore = useStandaloneMatchStore();
@@ -27,6 +28,7 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
   const [newSetDialogOpen, setNewSetDialogOpen] = useState(false);
   const [completeMatchDialogOpen, setCompleteMatchDialogOpen] = useState(false);
   const [scoringSettings, setScoringSettings] = useState(getDefaultScoringSettings());
+  const [actualScorerName, setActualScorerName] = useState(scorerName || getCurrentUserId()); // Initialize with provided name or user ID
   
   // Use refs to track state between renders without causing re-renders
   const matchIdRef = useRef<string | undefined>(matchId);
@@ -35,11 +37,20 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
   const matchRef = useRef<Match | null>(null);
   const scoringSettingsRef = useRef(scoringSettings);
   const scorerTypeRef = useRef(scorerType); // Use ref for scorer type to prevent dependency changes
+  const scorerNameRef = useRef(scorerName || getCurrentUserId()); // Store scorer name in ref
 
   // Update scoringSettingsRef when scoringSettings changes
   useEffect(() => {
     scoringSettingsRef.current = scoringSettings;
   }, [scoringSettings]);
+
+  useEffect(() => {
+    // Update scorer name ref when props change
+    if (scorerName) {
+      scorerNameRef.current = scorerName;
+      setActualScorerName(scorerName);
+    }
+  }, [scorerName]);
 
   // Load match data based on scorer type - with stabilized dependencies
   useEffect(() => {
@@ -184,8 +195,14 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
           : Math.max(0, team2Score - 1);
       }
       
-      // Update match in standalone store - but don't await the response
-      standaloneStore.updateMatchScore(currentMatch.id, currentSet, team1Score, team2Score);
+      // Update match in standalone store - include scorer name
+      standaloneStore.updateMatchScore(
+        currentMatch.id, 
+        currentSet, 
+        team1Score, 
+        team2Score, 
+        scorerNameRef.current // Pass scorer name to store
+      );
         
       // Update local state (immutably)
       const updatedScores = [...scores];
@@ -193,7 +210,8 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
       
       const updatedMatch = { 
         ...currentMatch, 
-        scores: updatedScores
+        scores: updatedScores,
+        scorerName: scorerNameRef.current // Include scorer name in match
       } as Match;
       
       // Update both the ref and the state (in this order)
@@ -268,8 +286,14 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
           : Math.max(0, team2Score - 1);
       }
       
-      // Update in tournament context - but don't wait for the update to complete
-      tournament.updateMatchScore(currentMatch.id, currentSet, team1Score, team2Score);
+      // Update in tournament context - include scorer name
+      tournament.updateMatchScore(
+        currentMatch.id, 
+        currentSet, 
+        team1Score, 
+        team2Score,
+        scorerNameRef.current // Pass scorer name to tournament context
+      );
       
       // Update our local state immediately
       const updatedScores = [...scores];
@@ -277,7 +301,8 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
       
       const updatedMatch = { 
         ...currentMatch, 
-        scores: updatedScores
+        scores: updatedScores,
+        scorerName: scorerNameRef.current // Include scorer name in match
       } as Match;
       
       // Update both the ref and the state (in this order)
@@ -401,12 +426,15 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
       const currentScorerType = scorerTypeRef.current; // Use ref for stability
       
       if (currentScorerType === 'STANDALONE') {
-        standaloneStore.completeMatch(currentMatch.id);
+        // Pass scorer name to complete match
+        standaloneStore.completeMatch(currentMatch.id, scorerNameRef.current);
         
-        // Update local match status with proper typing
+        // Update local match status with proper typing and end time
         const updatedMatch = { 
           ...currentMatch, 
-          status: 'COMPLETED' as MatchStatus // Explicitly cast to MatchStatus
+          status: 'COMPLETED' as MatchStatus,
+          endTime: new Date(), // Add end time
+          scorerName: scorerNameRef.current // Include scorer name
         } as Match;
         
         // Update ref first, then state
@@ -414,12 +442,15 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
         setMatch(updatedMatch);
       } else {
         if (tournament.currentTournament) {
-          tournament.completeMatch(currentMatch.id);
+          // Pass scorer name to complete match
+          tournament.completeMatch(currentMatch.id, scorerNameRef.current);
           
           // Also update our local state
           const updatedMatch = { 
             ...currentMatch, 
-            status: 'COMPLETED' as MatchStatus
+            status: 'COMPLETED' as MatchStatus,
+            endTime: new Date(), // Add end time
+            scorerName: scorerNameRef.current // Include scorer name
           } as Match;
           
           // Update ref first, then state
@@ -491,6 +522,12 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
     }
   }, [tournament]);
 
+  // Function to update scorer name
+  const updateScorerName = useCallback((name: string) => {
+    scorerNameRef.current = name;
+    setActualScorerName(name);
+  }, []);
+
   return {
     isLoading,
     error,
@@ -510,6 +547,8 @@ export const useUnifiedScoring = ({ scorerType, matchId }: UnifiedScoringOptions
     handleCompleteMatch,
     saveMatch,
     isStandalone: scorerTypeRef.current === 'STANDALONE', // Use ref for stability
-    isPending: tournament.isPending
+    isPending: tournament.isPending,
+    scorerName: actualScorerName,
+    updateScorerName // New function to update scorer name
   };
 };

@@ -8,6 +8,7 @@ import StandaloneMatchScoring from "@/components/scoring/StandaloneMatchScoring"
 import ScoringContainer from "@/components/scoring/ScoringContainer";
 import { useUnifiedScoring } from "@/hooks/scoring/useUnifiedScoring";
 import { useScoringLogic } from "@/hooks/scoring/useScoringLogic"; 
+import { getCurrentUserId } from "@/utils/auditUtils";
 
 const Scoring = () => {
   console.log("Rendering Scoring page");
@@ -18,6 +19,9 @@ const Scoring = () => {
   const tournamentId = params.tournamentId;
   const matchId = searchParams.get("matchId");
   const matchType = searchParams.get("type");
+  
+  // State for scorer name
+  const [scorerName, setScorerName] = useState(getCurrentUserId());
   
   // Prevent logging on every render to reduce noise
   const firstRenderRef = React.useRef(true);
@@ -40,8 +44,16 @@ const Scoring = () => {
   // Use our unified scoring hook with the appropriate scorer type
   const scoring = useUnifiedScoring({
     scorerType: scorerTypeState as any,
-    matchId: isStandaloneMatch ? matchId : undefined
+    matchId: isStandaloneMatch ? matchId : undefined,
+    scorerName: scorerName // Pass scorer name
   });
+  
+  // Update scorer name when it changes in the scoring hook
+  useEffect(() => {
+    if (scoring.scorerName && scoring.scorerName !== scorerName) {
+      setScorerName(scoring.scorerName);
+    }
+  }, [scoring.scorerName]);
   
   // Set the current tournament based on the URL parameter - only once after mount
   useEffect(() => {
@@ -88,6 +100,8 @@ const Scoring = () => {
         handleCompleteMatch={scoring.handleCompleteMatch}
         saveMatch={scoring.saveMatch}
         isPending={scoring.isPending}
+        scorerName={scorerName}
+        onScorerNameChange={scoring.updateScorerName}
       />
     );
   }
@@ -162,6 +176,8 @@ const Scoring = () => {
       handleUpdateScoringSettings={handleUpdateScoringSettings}
       handleBackToCourts={handleBackToCourts}
       isPending={isPending}
+      scorerName={scorerName}
+      onScorerNameChange={scoring.updateScorerName}
     />
   );
 };

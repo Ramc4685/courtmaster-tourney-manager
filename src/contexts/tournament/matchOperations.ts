@@ -1,7 +1,8 @@
-
 import { Tournament, Match, MatchStatus, CourtStatus } from "@/types/tournament";
 import { findMatchById, findCourtByNumber, updateMatchInTournament } from "@/utils/tournamentUtils";
 import { determineMatchWinnerAndLoser, updateBracketProgression, getDefaultScoringSettings } from "@/utils/matchUtils";
+import { addScoringAuditInfo, addMatchAuditLog } from "@/utils/matchAuditUtils";
+import { getCurrentUserId } from "@/utils/auditUtils";
 
 // Update match score
 export const updateMatchScoreInTournament = (
@@ -9,7 +10,8 @@ export const updateMatchScoreInTournament = (
   setIndex: number, 
   team1Score: number, 
   team2Score: number,
-  currentTournament: Tournament
+  currentTournament: Tournament,
+  scorerName?: string // New parameter for scorer name
 ): Tournament => {
   console.log(`[DEBUG] Updating match ${matchId} score at set ${setIndex}: ${team1Score}-${team2Score}`);
   
@@ -32,10 +34,15 @@ export const updateMatchScoreInTournament = (
   console.log(`[DEBUG] Updated match scores for ${match.team1.name} vs ${match.team2.name}:`, 
               updatedScores.map(s => `${s.team1Score}-${s.team2Score}`).join(', '));
   
-  return updateMatchInTournament(currentTournament, {
+  // Add audit information to the match
+  const userId = getCurrentUserId();
+  const updatedMatch = addScoringAuditInfo({
     ...match,
-    scores: updatedScores
-  });
+    scores: updatedScores,
+    scorerName: scorerName || userId // Use provided scorer name or default to user ID
+  }, scorerName || userId, match.courtNumber);
+  
+  return updateMatchInTournament(currentTournament, updatedMatch);
 };
 
 // Update match status
@@ -108,7 +115,8 @@ export const updateMatchStatusInTournament = (
 // Complete a match and auto-assign court to next match
 export const completeMatchInTournament = (
   matchId: string, 
-  currentTournament: Tournament
+  currentTournament: Tournament,
+  scorerName?: string // New parameter for scorer name
 ): Tournament => {
   console.log(`[DEBUG] Completing match ${matchId}`);
   
@@ -131,16 +139,21 @@ export const completeMatchInTournament = (
   }
   
   const { winner, loser } = result;
+  const userId = getCurrentUserId();
+  const now = new Date();
   
   console.log(`[DEBUG] Match ${matchId} completed. Winner: ${winner.name}, Loser: ${loser.name}`);
   console.log(`[DEBUG] Final scores:`, match.scores.map(s => `${s.team1Score}-${s.team2Score}`).join(', '));
   
-  const updatedMatch = {
+  // Create updated match with completion details and audit information
+  const updatedMatch = addScoringAuditInfo({
     ...match,
     status: "COMPLETED" as MatchStatus,
     winner,
-    loser
-  };
+    loser,
+    endTime: now,
+    scorerName: scorerName || userId, // Use provided scorer name or default to user ID
+  }, scorerName || userId, match.courtNumber);
   
   // Free up the court
   let updatedTournament = { ...currentTournament };
@@ -170,7 +183,7 @@ export const completeMatchInTournament = (
   updatedTournament = {
     ...updatedTournament,
     matches: updatedMatches,
-    updatedAt: new Date()
+    updatedAt: now
   };
   
   // Now update bracket progression with the winner

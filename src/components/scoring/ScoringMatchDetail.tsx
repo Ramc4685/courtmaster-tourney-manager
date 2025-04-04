@@ -1,11 +1,14 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { PlusCircle, Minus, Plus, CheckCircle, Award } from "lucide-react";
+import { PlusCircle, Minus, Plus, CheckCircle, Award, UserCircle, Hash } from "lucide-react";
 import { Match } from "@/types/tournament";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { getCurrentUserId } from "@/utils/auditUtils";
 
 interface ScoringMatchDetailProps {
   match: Match;
@@ -14,7 +17,9 @@ interface ScoringMatchDetailProps {
   onCompleteMatch: () => void;
   currentSet: number;
   onSetChange: (set: number) => void;
-  isPending?: boolean; // Add isPending prop
+  isPending?: boolean;
+  scorerName?: string;
+  onScorerNameChange?: (name: string) => void;
 }
 
 const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
@@ -24,12 +29,26 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
   onCompleteMatch,
   currentSet,
   onSetChange,
-  isPending = false // Default to false
+  isPending = false,
+  scorerName = getCurrentUserId(),
+  onScorerNameChange
 }) => {
+  // Store local state for scorer name input
+  const [localScorerName, setLocalScorerName] = useState(scorerName);
+
   // Only show sets with scores
   const totalSets = match.scores ? match.scores.length : 0;
   const team1Name = match.team1?.name || "Team 1";
   const team2Name = match.team2?.name || "Team 2";
+
+  // Handle scorer name change
+  const handleScorerNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    setLocalScorerName(newName);
+    if (onScorerNameChange) {
+      onScorerNameChange(newName);
+    }
+  };
 
   return (
     <div className={`space-y-6 ${isPending ? 'opacity-70 pointer-events-none' : ''}`}>
@@ -44,9 +63,22 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
               </span>
             )}
           </h2>
-          <p className="text-sm text-gray-500 mb-4">
-            Court {match.courtNumber || "N/A"} • {match.division} • {match.status}
-          </p>
+          <div className="text-sm text-gray-500 mb-2 flex items-center gap-2">
+            <span>Court {match.courtNumber || "N/A"}</span>
+            <span>•</span>
+            <span>{match.division}</span>
+            <span>•</span>
+            <span>{match.status}</span>
+            {match.matchNumber && (
+              <>
+                <span>•</span>
+                <span className="flex items-center">
+                  <Hash className="h-3 w-3 mr-1" />
+                  {match.matchNumber}
+                </span>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="space-x-2 mb-4 md:mb-0">
@@ -77,6 +109,26 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
               Complete Match
             </Button>
           )}
+        </div>
+      </div>
+
+      {/* Scorer Name Input */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <div className="flex items-center gap-3">
+          <UserCircle className="h-5 w-5 text-gray-500" />
+          <div className="flex-grow">
+            <Label htmlFor="scorerName" className="text-sm font-medium">
+              Scorer Name
+            </Label>
+            <Input
+              id="scorerName"
+              value={localScorerName}
+              onChange={handleScorerNameChange}
+              className="mt-1"
+              placeholder="Enter your name"
+              disabled={match.status === "COMPLETED" || isPending}
+            />
+          </div>
         </div>
       </div>
 
@@ -203,28 +255,26 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
             </div>
           </div>
         </CardContent>
-
-        <CardFooter className="bg-gray-50 p-4 rounded-b-lg">
-          <div className="grid grid-cols-3 gap-4 w-full">
-            <div>
-              <p className="text-xs text-gray-500">Total Sets:</p>
-              <p className="font-semibold">
-                {match.scores.filter(s => s.team1Score > s.team2Score).length || 0}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-gray-500">Match Status:</p>
-              <p className="font-semibold">{match.status}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-500">Total Sets:</p>
-              <p className="font-semibold">
-                {match.scores.filter(s => s.team2Score > s.team1Score).length || 0}
-              </p>
-            </div>
-          </div>
-        </CardFooter>
       </Card>
+
+      {/* Audit Information */}
+      {match.auditLogs && match.auditLogs.length > 0 && (
+        <Card className="mt-6">
+          <CardContent className="py-4">
+            <h3 className="font-semibold mb-2">Match Audit Log</h3>
+            <ul className="space-y-2 text-sm">
+              {match.auditLogs.slice(0, 5).map((log, idx) => (
+                <li key={idx} className="flex justify-between p-2 bg-gray-50 rounded">
+                  <span>{log.action}</span>
+                  <span className="text-gray-500">
+                    {new Date(log.timestamp).toLocaleDateString()} {new Date(log.timestamp).toLocaleTimeString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Table,
@@ -16,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Play, AlertTriangle, ClipboardEdit } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ManualResultEntry from "./ManualResultEntry";
+import MatchAuditViewer from "./MatchAuditViewer"; // Add import for audit viewer
 
 interface MatchTableProps {
   matches: Match[];
@@ -85,6 +85,7 @@ const MatchTable: React.FC<MatchTableProps> = ({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Match ID</TableHead> {/* Updated column name */}
               <TableHead>Teams</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Court</TableHead>
@@ -104,6 +105,12 @@ const MatchTable: React.FC<MatchTableProps> = ({
             ) : (
               matches.map((match) => (
                 <TableRow key={match.id}>
+                  <TableCell>
+                    {/* Display match number */}
+                    <span className="font-mono text-xs">
+                      {match.matchNumber || match.id.substring(0, 8)}
+                    </span>
+                  </TableCell>
                   <TableCell>{match.team1.name} vs {match.team2.name}</TableCell>
                   <TableCell>{getStatusBadge(match.status)}</TableCell>
                   <TableCell>
@@ -137,7 +144,20 @@ const MatchTable: React.FC<MatchTableProps> = ({
                     )}
                   </TableCell>
                   <TableCell>
-                    {match.scheduledTime ? format(new Date(match.scheduledTime), "PPp") : "Not scheduled"}
+                    <div className="space-y-1">
+                      {match.scheduledTime ? (
+                        <div className="text-xs">
+                          Start: {format(new Date(match.scheduledTime), "PPp")}
+                        </div>
+                      ) : (
+                        "Not scheduled"
+                      )}
+                      {match.endTime && (
+                        <div className="text-xs text-gray-500">
+                          End: {format(new Date(match.endTime), "PPp")}
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {match.status === "COMPLETED" ? 
@@ -192,6 +212,11 @@ const MatchTable: React.FC<MatchTableProps> = ({
                         />
                       </div>
                     )}
+                    
+                    {/* Show audit viewer for all matches */}
+                    <div className="mt-2">
+                      <MatchAuditViewer match={match} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

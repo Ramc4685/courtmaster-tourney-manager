@@ -36,8 +36,16 @@ export type MatchScore = {
   team2Score: number;
 };
 
+export type AuditLog = {
+  timestamp: Date;
+  user_id: string;
+  action: string;
+  details?: Record<string, any>;
+};
+
 export type Match = {
   id: string;
+  matchNumber?: string;  // New field: Unique match number for easy reference
   tournamentId: string;
   team1: Team;
   team2: Team;
@@ -46,19 +54,21 @@ export type Match = {
   stage: TournamentStage;
   courtNumber?: number;
   scheduledTime?: Date;
+  endTime?: Date;  // New field: When the match ended
+  scorerName?: string;  // New field: Who entered the scores
   status: MatchStatus;
   winner?: Team;
   loser?: Team;
-  bracketRound?: number; // The round in the bracket (1, 2, 3, etc.)
-  bracketPosition?: number; // Position within the round
-  nextMatchId?: string; // ID of the next match (for advancement)
-  groupName?: string; // For group matches (e.g., "Group A")
-  updatedAt?: Date; // Added updatedAt field for tracking when the match was last updated
-  category: TournamentCategory; // The category this match belongs to
-  // New fields
+  bracketRound?: number;
+  bracketPosition?: number;
+  nextMatchId?: string;
+  groupName?: string;
+  updatedAt?: Date;
+  category: TournamentCategory;
   createdAt?: Date;
-  created_by?: string; // User ID
-  updated_by?: string; // User ID
+  created_by?: string;
+  updated_by?: string;
+  auditLogs?: AuditLog[];  // New field: Log of all changes to the match
 };
 
 export type CourtStatus = "AVAILABLE" | "IN_USE" | "MAINTENANCE";

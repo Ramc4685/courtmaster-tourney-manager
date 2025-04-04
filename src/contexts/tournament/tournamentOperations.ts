@@ -1,6 +1,7 @@
 import { Tournament, Team, Match, Division, TournamentStage, CourtStatus, CategoryType, MatchStatus } from "@/types/tournament";
 import { generateId } from "@/utils/tournamentUtils";
 import { prepareNewEntity, prepareUpdatedEntity, getCurrentUserId } from "@/utils/auditUtils";
+import { generateMatchNumber, addMatchAuditLog } from "@/utils/matchAuditUtils";
 
 // Creates a new tournament
 export const createNewTournament = (
@@ -101,7 +102,7 @@ export const generateMultiStageTournament = (tournament: Tournament): Tournament
   return tournament;
 };
 
-// Updated function to handle categoryId and audit fields
+// Updated function to handle matchNumber and audit fields
 export const scheduleMatchInTournament = (
   team1Id: string, 
   team2Id: string, 
@@ -131,9 +132,13 @@ export const scheduleMatchInTournament = (
   const userId = getCurrentUserId();
   const now = new Date();
   
-  // Create a new match with audit fields
+  // Generate a unique match number
+  const matchNumber = generateMatchNumber(tournament);
+  
+  // Create a new match with audit fields and match number
   const newMatch: Match = {
     id: generateId(),
+    matchNumber, // Add the generated match number
     tournamentId: tournament.id,
     team1,
     team2,
@@ -151,7 +156,18 @@ export const scheduleMatchInTournament = (
     createdAt: now,
     updatedAt: now,
     created_by: userId,
-    updated_by: userId
+    updated_by: userId,
+    auditLogs: [{ // Initialize audit logs with a creation entry
+      timestamp: now,
+      user_id: userId,
+      action: 'MATCH_CREATED',
+      details: {
+        scheduledTime,
+        courtId: court?.id,
+        team1Id: team1.id,
+        team2Id: team2.id
+      }
+    }]
   };
   
   // Assign the court if provided
