@@ -47,8 +47,8 @@ const scheduleMatchInTournament = (
   team2Id: string, 
   scheduledTime: Date, 
   tournament: any,
-  courtId: string,
-  categoryId: string
+  courtId?: string,
+  categoryId?: string
 ) => {
   const team1 = tournament.teams.find((t: any) => t.id === team1Id);
   const team2 = tournament.teams.find((t: any) => t.id === team2Id);
@@ -157,8 +157,8 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     localStorage.setItem('tournaments', JSON.stringify(tournaments));
   }, [tournaments]);
 
-  // Add a new tournament
-  const addTournament = (tournamentData: any) => {
+  // Add a new tournament - renamed to createTournament to match interface
+  const createTournament = (tournamentData: any) => {
     const { tournament, tournaments: updatedTournaments } = createNewTournament(tournamentData, tournaments);
     setTournaments(updatedTournaments);
     setCurrentTournament(tournament);
@@ -182,8 +182,6 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (currentTournament && currentTournament.id === tournamentId) {
       setCurrentTournament(null);
     }
-    
-    return { success: true };
   };
 
   // Import teams to the current tournament
@@ -304,7 +302,7 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Auto-assign available courts to scheduled matches
   const autoAssignCourts = useCallback(async () => {
-    if (!currentTournament) return;
+    if (!currentTournament) return 0;
     let updatedTournament = { ...currentTournament };
     
     // Get available courts
@@ -340,7 +338,7 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     
     setTournaments(tournaments.map((t: any) => t.id === updatedTournament.id ? updatedTournament : t));
     setCurrentTournament(updatedTournament);
-    return Promise.resolve(scheduledMatches.length);
+    return scheduledMatches.length;
   }, [tournaments, currentTournament]);
 
   // Add the missing implementations
@@ -479,14 +477,13 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       await updateTournament(updatedTournament);
       
       console.log(`Demo data loaded for category ${category.name}: ${teams.length} teams, ${matches.length} matches`);
-      return updatedTournament;
     } catch (error) {
       console.error(`Error loading demo data for category ID ${categoryId}:`, error);
       throw error;
     }
   };
 
-  // Load sample data
+  // Load sample data - fixed to return void
   const loadSampleData = async (format?: string) => {
     try {
       console.log('[DEBUG] Loading sample tournament data for format:', format || 'MULTI_STAGE');
@@ -518,16 +515,11 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       // Update state and localStorage
       setTournaments([...tournaments, sampleTournament]);
       setCurrentTournament(sampleTournament);
-      return sampleTournament;
+      // Not returning the value as the interface expects void
     } catch (error) {
       console.error('Error loading sample data:', error);
       throw error;
     }
-  };
-
-  // Function for creating a new tournament (alias for addTournament)
-  const createTournament = (data: any) => {
-    return addTournament(data);
   };
 
   // Stub implementations for required methods
@@ -553,9 +545,9 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           setCurrentTournament(tournament);
           return Promise.resolve();
         },
-        addTournament,
+        createTournament,
         updateTournament,
-        removeTournament: deleteTournament,
+        deleteTournament,
         importTeams,
         scheduleMatch,
         updateMatchScore,
@@ -568,8 +560,6 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         scheduleMatches,
         loadCategoryDemoData,
         loadSampleData,
-        deleteTournament,
-        createTournament, // Add the missing createTournament function
         ...stubImplementations,
       }}
     >

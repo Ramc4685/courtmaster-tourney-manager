@@ -9,6 +9,6 @@ export const useTournament = (): TournamentContextType => {
 
 // This is a re-export to maintain API compatibility
 export const createTournament = (data: any) => {
-  const { addTournament } = useTournament();
-  return addTournament(data);
+  const { createTournament } = useTournament();
+  return createTournament(data);
 };
