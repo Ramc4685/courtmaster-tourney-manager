@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Clock, Court, List } from 'lucide-react';
+import { ArrowLeft, Clock, Gauge, List } from 'lucide-react'; // Changed Court to Gauge
 import ScoringContainer from '@/components/scoring/ScoringContainer';
 import CourtSelectionPanel from '@/components/scoring/CourtSelectionPanel';
 import ScheduledMatchesList from '@/components/scoring/ScheduledMatchesList';
@@ -69,14 +69,20 @@ const Scoring = () => {
         <PageHeader
           title="Tournament Scoring"
           description={currentTournament.name}
-          backLink="/tournaments"
-          backLinkText="Back to Tournaments"
+          action={
+            <Link to="/tournaments">
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Tournaments
+              </Button>
+            </Link>
+          }
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid grid-cols-3 w-full max-w-md">
             <TabsTrigger value="courts" className="flex items-center">
-              <Court className="mr-2 h-4 w-4" />
+              <Gauge className="mr-2 h-4 w-4" /> {/* Changed Court to Gauge */}
               <span>Courts</span>
             </TabsTrigger>
             <TabsTrigger value="scheduled" className="flex items-center">
@@ -93,24 +99,18 @@ const Scoring = () => {
             <CourtSelectionPanel 
               courts={currentTournament.courts || []}
               matches={currentTournament.matches || []}
-              onMatchUpdate={updateMatch}
-              onMatchComplete={completeMatch}
             />
           </TabsContent>
           
           <TabsContent value="scheduled" className="space-y-4">
             <ScheduledMatchesList 
               matches={currentTournament.matches?.filter(m => m.status === 'SCHEDULED') || []}
-              courts={currentTournament.courts || []}
-              onMatchUpdate={updateMatch}
             />
           </TabsContent>
           
           <TabsContent value="all" className="space-y-4">
             <TournamentScoring 
-              tournament={currentTournament} 
-              onMatchUpdate={updateMatch}
-              onMatchComplete={completeMatch}
+              tournamentId={currentTournament.id}
             />
           </TabsContent>
         </Tabs>

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTournament } from '@/contexts/tournament/useTournament';
@@ -26,10 +25,10 @@ const Tournaments = () => {
   }, [tournaments]);
   
   // Handle loading sample data
-  const handleLoadSample = async (format?: string) => {
+  const handleLoadSample = async () => {
     try {
       setIsLoading(true);
-      await loadSampleData(format);
+      await loadSampleData(); // No format parameter needed
       toast({
         title: "Sample data loaded",
         description: "Sample tournament has been created successfully",
@@ -75,7 +74,7 @@ const Tournaments = () => {
       <PageHeader
         title="Tournaments"
         description="Manage your badminton tournaments"
-        actions={
+        action={
           <Link to="/tournament/create">
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
