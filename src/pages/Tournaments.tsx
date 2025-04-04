@@ -1,10 +1,11 @@
+
 import React from 'react';
 import { useTournament } from '@/contexts/tournament/TournamentContext';
 
 const Tournaments = () => {
   const tournament = useTournament();
   
-  // Create wrapper functions for the missing methods
+  // Create wrapper functions for the methods
   const handleLoadSample = async () => {
     try {
       await tournament.loadSampleData();
@@ -24,6 +25,13 @@ const Tournaments = () => {
   return (
     <div>
       {/* Use wrapper functions instead of directly calling methods */}
+      <button onClick={handleLoadSample}>Load Sample Data</button>
+      {tournament.tournaments.map(t => (
+        <div key={t.id}>
+          {t.name}
+          <button onClick={() => handleDeleteTournament(t.id)}>Delete</button>
+        </div>
+      ))}
     </div>
   );
 };
