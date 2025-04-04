@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
@@ -194,24 +195,21 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
             });
           }
 
-          // Create a new score object without the timestamp property
-          // since it's not part of the MatchScore type
+          // Create a score object that matches the MatchScore type
+          // Only include properties that are part of the MatchScore interface
           scores[setIndex] = {
             team1Score,
-            team2Score,
-            // Remove the timestamp property as it's causing the type error
-            // If needed, add the property only if it's defined in the interface
-            scoredBy: scorerName || 'Anonymous'
+            team2Score
           };
 
-          // Create a default audit log
+          // Create a default audit log with the scorer information
           const scoreAuditLog: AuditLog = {
             timestamp: new Date(),
             action: `Score updated for set ${setIndex + 1}`,
             details: { 
               score: `${team1Score}-${team2Score}`,
-              scorer: scorerName || 'Anonymous',
-              timestamp: new Date().toISOString() // Move timestamp to audit log details
+              scorer: scorerName || 'admin',
+              timestamp: new Date().toISOString()
             },
             user_id: 'system'
           };
@@ -221,7 +219,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
             ...match,
             scores,
             updatedAt: new Date(),
-            scorerName: scorerName || match.scorerName,
+            scorerName: scorerName || 'admin',
             auditLogs: [...match.auditLogs, scoreAuditLog]
           };
 
@@ -297,7 +295,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
             action: 'Match completed',
             details: { 
               winner: winner ? winner.name : 'No winner determined',
-              scorer: scorerName || 'Anonymous'
+              scorer: scorerName || 'admin'
             },
             user_id: 'system'
           };
@@ -307,7 +305,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
             status: 'COMPLETED' as MatchStatus,
             updatedAt: new Date(),
             winner,
-            scorerName: scorerName || match.scorerName,
+            scorerName: scorerName || 'admin',
             endTime: new Date(),
             auditLogs: [...match.auditLogs, completionAuditLog]
           };
