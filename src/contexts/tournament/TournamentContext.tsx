@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { prepareUpdatedEntity } from '@/utils/auditUtils';
 import { TournamentContextType } from './types';
@@ -468,8 +467,8 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       // Add the teams and matches to the current tournament
       const updatedTournament = {
         ...currentTournament,
-        teams: [...currentTournament.teams, ...teams],
-        matches: [...currentTournament.matches, ...matches],
+        teams: [...(currentTournament.teams || []), ...teams],
+        matches: [...(currentTournament.matches || []), ...matches],
         updatedAt: new Date()
       };
       

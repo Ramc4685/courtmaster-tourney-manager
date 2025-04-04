@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,6 +11,7 @@ import TeamsTab from "./TeamsTab";
 import { useMediaQuery } from "@/hooks/use-mobile";
 import ScoreEntrySection from "@/components/tournament/score-entry/ScoreEntrySection";
 import { useTournament } from "@/contexts/tournament/useTournament";
+import { toast } from '@/components/ui/use-toast';
 
 interface CategoryTabsProps {
   tournament: Tournament;
@@ -17,24 +19,25 @@ interface CategoryTabsProps {
 }
 
 const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) => {
-  console.log("Rendering CategoryTabs with", tournament.categories.length, "categories");
+  console.log("Rendering CategoryTabs with", tournament.categories?.length || 0, "categories");
   console.log("Active tab:", activeTab);
   
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const { updateMatch, assignCourt, loadCategoryDemoData, updateTournament } = useTournament();
   
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   // Initialize the selected category when tournament loads or changes
   useEffect(() => {
-    if (tournament.categories.length >0 && !selectedCategory) {
+    if (tournament.categories?.length > 0 && !selectedCategory) {
       setSelectedCategory(tournament.categories[0].id);
       console.log("Initially selected category:", tournament.categories[0].name);
     }
   }, [tournament.categories, selectedCategory]);
 
   // Skip if there are no categories
-  if (tournament.categories.length === 0) {
+  if (!tournament.categories || tournament.categories.length === 0) {
     console.log("No categories found, showing empty state");
     return <div className="text-center text-muted-foreground">No categories have been defined for this tournament.</div>;
   }
@@ -48,13 +51,13 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
   console.log("Current category:", currentCategory?.name);
   
   // Filter matches and teams by the selected category
-  const categoryMatches = tournament.matches.filter(match => 
+  const categoryMatches = tournament.matches?.filter(match => 
     match.category && match.category.id === selectedCategory
-  );
+  ) || [];
   
-  const categoryTeams = tournament.teams.filter(team => 
+  const categoryTeams = tournament.teams?.filter(team => 
     team.category && team.category.id === selectedCategory
-  );
+  ) || [];
   
   console.log("Filtered matches:", categoryMatches.length);
   console.log("Filtered teams:", categoryTeams.length);
@@ -67,16 +70,34 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
   };
 
   // Handle loading sample data for this category
-  const handleLoadSampleData = () => {
+  const handleLoadSampleData = async () => {
     if (!currentCategory) return;
-    // Use the category's format if available, otherwise the tournament format
-    const format = currentCategory.format || tournament.format;
-    loadCategoryDemoData(tournament.id, currentCategory.id, format);
+    
+    setIsLoading(true);
+    try {
+      // Use the category's format if available, otherwise the tournament format
+      const format = currentCategory.format || tournament.format;
+      await loadCategoryDemoData(tournament.id, currentCategory.id, format);
+      
+      toast({
+        title: "Demo data loaded",
+        description: `Demo data loaded successfully for ${currentCategory.name}`,
+      });
+    } catch (error) {
+      console.error("Error loading demo data:", error);
+      toast({
+        title: "Error loading demo data",
+        description: "Something went wrong while loading the demo data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle team updates
   const handleTeamUpdate = (team) => {
-    const updatedTeams = tournament.teams.map(t => 
+    const updatedTeams = (tournament.teams || []).map(t => 
       t.id === team.id ? team : t
     );
     
@@ -111,8 +132,9 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
             onClick={handleLoadSampleData} 
             variant="outline" 
             className="w-full mt-2"
+            disabled={isLoading}
           >
-            Load Demo Data for {currentCategory?.name}
+            {isLoading ? "Loading..." : `Load Demo Data for ${currentCategory?.name}`}
           </Button>
         )}
 
@@ -140,7 +162,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
               <MatchesTab 
                 matches={categoryMatches}
                 teams={categoryTeams}
-                courts={tournament.courts}
+                courts={tournament.courts || []}
                 onMatchUpdate={updateMatch}
                 onCourtAssign={assignCourt}
                 onAddMatchClick={() => {}}
@@ -166,8 +188,9 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
               onClick={handleLoadSampleData} 
               variant="outline" 
               size="sm"
+              disabled={isLoading}
             >
-              Load Demo Data
+              {isLoading ? "Loading..." : "Load Demo Data"}
             </Button>
           )}
         </div>
@@ -209,7 +232,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
             <MatchesTab 
               matches={categoryMatches}
               teams={categoryTeams}
-              courts={tournament.courts}
+              courts={tournament.courts || []}
               onMatchUpdate={updateMatch}
               onCourtAssign={assignCourt}
               onAddMatchClick={() => {}}

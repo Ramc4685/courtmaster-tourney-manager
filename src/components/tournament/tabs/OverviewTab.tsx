@@ -131,7 +131,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Current Stage</p>
-                    <p className="text-base font-semibold">{tournament.currentStage.replace(/_/g, " ")}</p>
+                    <p className="text-base font-semibold">
+                      {tournament.currentStage ? tournament.currentStage.replace(/_/g, " ") : "Not Set"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Start Date</p>
@@ -239,7 +241,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                 </div>
                 
                 {/* Stage Progression */}
-                {tournament.status !== "COMPLETED" && tournament.status !== "DRAFT" && (
+                {tournament.status !== "COMPLETED" && tournament.status !== "DRAFT" && tournament.currentStage && (
                   <Button 
                     onClick={onAdvanceToNextStage}
                     className="w-full mt-2 bg-green-600 hover:bg-green-700 flex items-center justify-center"
