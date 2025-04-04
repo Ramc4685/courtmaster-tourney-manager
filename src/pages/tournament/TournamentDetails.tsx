@@ -13,13 +13,24 @@ import CategoryTabs from "@/components/tournament/tabs/CategoryTabs";
 import PageHeader from '@/components/shared/PageHeader';
 import { toast } from '@/components/ui/use-toast';
 import { renderMatchesTab } from '@/utils/tournamentComponentHelper';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const TournamentDetails = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const navigate = useNavigate();
-  const { tournaments, setCurrentTournament, currentTournament, updateTournament, generateMultiStageTournament, advanceToNextStage } = useTournament();
+  const { tournaments, setCurrentTournament, currentTournament, updateTournament, deleteTournament, generateMultiStageTournament, advanceToNextStage } = useTournament();
   const [activeTab, setActiveTab] = useState("overview");
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
   useEffect(() => {
     if (tournamentId) {
@@ -76,6 +87,22 @@ const TournamentDetails = () => {
     setScheduleDialogOpen(true);
   };
   
+  const handleDeleteTournament = () => {
+    setDeleteDialogOpen(true);
+  };
+  
+  const confirmDeleteTournament = () => {
+    if (currentTournament) {
+      deleteTournament(currentTournament.id);
+      toast({
+        title: "Tournament Deleted",
+        description: `Tournament "${currentTournament.name}" has been deleted.`
+      });
+      navigate('/tournaments');
+    }
+    setDeleteDialogOpen(false);
+  };
+  
   if (!currentTournament) {
     return (
       <div className="container mx-auto py-6">
@@ -94,7 +121,7 @@ const TournamentDetails = () => {
       <TournamentHeader
         tournament={currentTournament}
         updateTournament={updateTournament}
-        deleteTournament={() => {}} // This will be implemented later
+        deleteTournament={handleDeleteTournament}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -172,6 +199,24 @@ const TournamentDetails = () => {
           )}
         </TabsContent>
       </Tabs>
+      
+      {/* Delete Tournament Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Delete Tournament</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this tournament? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteTournament} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       {/* Schedule Dialog would be implemented here when needed */}
       {scheduleDialogOpen && (

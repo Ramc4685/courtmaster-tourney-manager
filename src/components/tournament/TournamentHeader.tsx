@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Pencil, Trash2, CalendarIcon } from "lucide-react";
@@ -73,8 +72,14 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
   };
 
   const handleTournamentDelete = () => {
+    console.log("Deleting tournament with ID:", tournament.id);
     deleteTournament(tournament.id);
     navigate("/tournaments");
+    
+    toast({
+      title: "Tournament Deleted",
+      description: "Tournament has been successfully deleted.",
+    });
   };
 
   return (
@@ -204,7 +209,11 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
               <Pencil className="h-4 w-4 mr-2" />
               Edit Tournament
             </Button>
-            <Button variant="destructive" onClick={handleTournamentDelete}>
+            <Button 
+              variant="destructive" 
+              onClick={handleTournamentDelete}
+              className="flex items-center"
+            >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete Tournament
             </Button>

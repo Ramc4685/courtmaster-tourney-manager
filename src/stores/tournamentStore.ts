@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 import { Tournament, Match, Court, Team, Division } from "@/types/tournament";
 import { generateId } from "@/utils/tournamentUtils";
@@ -116,13 +115,18 @@ export const useTournamentStore = create<TournamentState>((set, get) => ({
 
   // Delete tournament
   deleteTournament: (tournamentId) => {
+    console.log(`Deleting tournament with ID: ${tournamentId}`);
+    
     set((state) => {
       const updatedTournaments = state.tournaments.filter(t => t.id !== tournamentId);
+      console.log(`Removed tournament. Remaining tournaments: ${updatedTournaments.length}`);
+      
       localStorage.setItem('tournaments', JSON.stringify(updatedTournaments));
       
       // If we're deleting the current tournament, clear it
       let updatedCurrentTournament = state.currentTournament;
       if (state.currentTournament?.id === tournamentId) {
+        console.log('Current tournament deleted, clearing current tournament.');
         updatedCurrentTournament = null;
         localStorage.removeItem('currentTournament');
       }
