@@ -30,7 +30,7 @@ const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ status })
   
   return (
     <Badge variant={variant}>
-      {status.replace('_', ' ')}
+      {status.replace(/_/g, ' ')}
     </Badge>
   );
 };

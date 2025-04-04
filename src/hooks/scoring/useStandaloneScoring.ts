@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
-import { Match, StandaloneMatch, TournamentStage } from '@/types/tournament';
+import { Match, StandaloneMatch } from '@/types/tournament';
 import { useToast } from '@/hooks/use-toast';
 
 export const useStandaloneScoring = (matchId: string | null) => {
@@ -21,11 +21,12 @@ export const useStandaloneScoring = (matchId: string | null) => {
     // Ensure scores is always an array
     const scores = standaloneMatch.scores || [];
     
+    // Using type assertion to convert StandaloneMatch to Match
     return {
       ...standaloneMatch,
       tournamentId: 'standalone',
-      division: 'STANDALONE',
-      stage: 'INITIAL_ROUND' as TournamentStage,
+      division: 'SINGLES' as any,
+      stage: 'INITIAL_ROUND' as any,
       category: standaloneMatch.category || { 
         id: 'default', 
         name: 'Default', 
@@ -132,7 +133,7 @@ export const useStandaloneScoring = (matchId: string | null) => {
           ...scoringMatch,
           scores: updatedScores
         };
-        setScoringMatch(updatedMatch);
+        setScoringMatch(updatedMatch as Match);
       }
     } finally {
       // Reset flag after a short delay to allow state to settle
@@ -203,7 +204,7 @@ export const useStandaloneScoring = (matchId: string | null) => {
         scores: updatedScores
       };
       
-      setScoringMatch(updatedMatch);
+      setScoringMatch(updatedMatch as Match);
       return true;
     } catch (err) {
       console.error('Error creating new set:', err);

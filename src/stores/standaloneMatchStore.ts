@@ -1,15 +1,16 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { StandaloneMatch, MatchStatus, Team, MatchScore } from '@/types/tournament';
 import { v4 as uuidv4 } from 'uuid';
+import { StandaloneMatch, MatchStatus, Team, MatchScore, AuditLog } from '@/types/tournament';
 
-// Define a simplified AuditLog format for standalone matches
-interface StandaloneAuditLog {
+// Define a custom audit log format for standalone matches that works with our types
+interface StandaloneAuditLog extends Omit<AuditLog, 'meta'> {
   timestamp: Date;
   action: string;
   details: string;
   userName?: string;
+  user_id?: string;
 }
 
 export interface StandaloneMatchStore {
@@ -31,6 +32,17 @@ export interface StandaloneMatchStore {
   saveMatch?: () => Promise<boolean>;
 }
 
+// Helper to ensure audit logs match the expected format
+const createAuditLog = (action: string, details: string, userName?: string): AuditLog => {
+  return {
+    timestamp: new Date(),
+    action,
+    details,
+    user_id: '',
+    userName: userName || '',
+  };
+};
+
 export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
   persist(
     (set, get) => ({
@@ -44,13 +56,13 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
         
         // Ensure we have valid teams with IDs
         const team1: Team = {
-          ...matchData.team1!,
+          ...(matchData.team1 || {}),
           id: matchData.team1?.id || `team1-${uuidv4()}`,
           players: matchData.team1?.players || []
         };
         
         const team2: Team = {
-          ...matchData.team2!,
+          ...(matchData.team2 || {}),
           id: matchData.team2?.id || `team2-${uuidv4()}`,
           players: matchData.team2?.players || []
         };
@@ -69,12 +81,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
           createdAt: matchData.createdAt instanceof Date ? matchData.createdAt : new Date(),
           updatedAt: matchData.updatedAt instanceof Date ? matchData.updatedAt : new Date(),
           auditLogs: matchData.auditLogs || [
-            {
-              timestamp: new Date(),
-              action: 'Match created',
-              details: `Match ${id} created`,
-              meta: {}
-            }
+            createAuditLog('Match created', `Match ${id} created`)
           ]
         };
         
@@ -153,10 +160,10 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
             scores.push({ team1Score: 0, team2Score: 0 });
           }
           
+          // Create a proper MatchScore object without extraneous properties
           scores[setIndex] = {
             team1Score,
-            team2Score,
-            timestamp: new Date().toISOString()
+            team2Score
           };
           
           // Create the updated match
@@ -167,12 +174,11 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
             scorerName: scorerName || match.scorerName,
             auditLogs: [
               ...(match.auditLogs || []),
-              {
-                timestamp: new Date(),
-                action: `Score updated for set ${setIndex + 1}`,
-                details: `New score: ${team1Score}-${team2Score}`,
-                meta: { scorer: scorerName }
-              }
+              createAuditLog(
+                `Score updated for set ${setIndex + 1}`,
+                `New score: ${team1Score}-${team2Score}`,
+                scorerName
+              )
             ]
           };
           
@@ -199,12 +205,10 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
             updatedAt: new Date(),
             auditLogs: [
               ...(match.auditLogs || []),
-              {
-                timestamp: new Date(),
-                action: `Status changed to ${status}`,
-                details: `Match status updated to ${status}`,
-                meta: {}
-              }
+              createAuditLog(
+                `Status changed to ${status}`,
+                `Match status updated to ${status}`
+              )
             ]
           };
           
@@ -251,12 +255,11 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
             endTime: new Date(),
             auditLogs: [
               ...(match.auditLogs || []),
-              {
-                timestamp: new Date(),
-                action: 'Match completed',
-                details: winner ? `Winner: ${winner.name}` : 'Match completed without a winner',
-                meta: { scorer: scorerName }
-              }
+              createAuditLog(
+                'Match completed',
+                winner ? `Winner: ${winner.name}` : 'Match completed without a winner',
+                scorerName
+              )
             ]
           };
           
@@ -286,12 +289,10 @@ export const useStandaloneMatchStore = create<StandaloneMatchStore>()(
             updatedAt: new Date(),
             auditLogs: [
               ...(match.auditLogs || []),
-              {
-                timestamp: new Date(),
-                action: 'Court assigned',
-                details: `Assigned to Court ${courtNumber}`,
-                meta: {}
-              }
+              createAuditLog(
+                'Court assigned',
+                `Assigned to Court ${courtNumber}`
+              )
             ]
           };
           

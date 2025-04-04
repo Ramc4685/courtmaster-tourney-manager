@@ -7,10 +7,9 @@ import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
 import { useToast } from '@/hooks/use-toast';
 import ScoringMatchDetail from '@/components/scoring/ScoringMatchDetail';
 import MatchAuditInfo from '@/components/match/MatchAuditInfo';
-import { MatchScore, StandaloneMatch, Match, TournamentStage } from '@/types/tournament';
+import { MatchScore, StandaloneMatch, Match } from '@/types/tournament';
 import { Card, CardContent } from '@/components/ui/card';
 import PageHeader from '@/components/shared/PageHeader';
-import { v4 as uuidv4 } from 'uuid';
 
 const StandaloneMatchScoring = () => {
   const { matchId } = useParams<{ matchId: string }>();
@@ -44,7 +43,7 @@ const StandaloneMatchScoring = () => {
         setScorerName(match.scorerName);
       }
     }
-  }, [matchId, navigate, toast]); // Remove standaloneMatchStore to prevent infinite loops
+  }, [matchId, navigate, toast, standaloneMatchStore]);
 
   const match = standaloneMatchStore.currentMatch;
 
@@ -139,17 +138,18 @@ const StandaloneMatchScoring = () => {
   };
 
   // Convert standalone match to Match type for compatibility with components
-  const matchForAudit: Match = {
+  // Using type assertion as StandaloneMatch and Match have a lot of overlap
+  const matchForAudit = {
     ...match,
     tournamentId: 'standalone',
-    division: 'STANDALONE',
-    stage: 'STANDALONE' as TournamentStage,
+    division: 'SINGLES' as any, // Cast to any to avoid type error
+    stage: 'INITIAL_ROUND' as any,
     category: {
       id: 'standalone',
       name: 'Standalone Match',
       type: match.team1.players.length > 1 ? 'MENS_DOUBLES' : 'MENS_SINGLES'
     }
-  };
+  } as Match;
 
   return (
     <div className="container mx-auto px-4 py-8">
