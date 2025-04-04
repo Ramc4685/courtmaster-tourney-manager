@@ -14,6 +14,9 @@ import TournamentScoring from '@/components/scoring/TournamentScoring';
 import PageHeader from '@/components/shared/PageHeader';
 import { useScoringLogic } from '@/hooks/scoring/useScoringLogic';
 
+// Define a type adapter for the activeView type
+type TournamentScoringViewAdapter = "match" | "courts";
+
 const Scoring = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
@@ -77,6 +80,32 @@ const Scoring = () => {
     scoringLogic.handleStartMatch(match);
   };
 
+  // Create an adapter function for score changes to match the expected signature
+  const handleScoreChangeAdapter = (team1Score: number, team2Score: number) => {
+    // The adapter converts from the TournamentScoring expected format to the scoring logic format
+    // This is a simplified adapter that increments team1 score
+    // In a real implementation, you would compare with previous scores to determine which team to increment
+    const currentScores = scoringLogic.selectedMatch?.scores[scoringLogic.currentSet] || { team1Score: 0, team2Score: 0 };
+    
+    if (team1Score > currentScores.team1Score) {
+      scoringLogic.handleScoreChange("team1", true);
+    } else if (team1Score < currentScores.team1Score) {
+      scoringLogic.handleScoreChange("team1", false);
+    }
+    
+    if (team2Score > currentScores.team2Score) {
+      scoringLogic.handleScoreChange("team2", true);
+    } else if (team2Score < currentScores.team2Score) {
+      scoringLogic.handleScoreChange("team2", false);
+    }
+  };
+
+  // Create an adapter function for setActiveView to match the expected signature
+  const setActiveViewAdapter = (view: TournamentScoringViewAdapter) => {
+    // Convert from TournamentScoring's view type to scoring logic's view type
+    scoringLogic.setActiveView(view === "courts" ? "courts" : "courts");
+  };
+
   // If we're still loading or have an error, show the container with appropriate state
   if (isLoading || error || !currentTournament) {
     return <ScoringContainer isLoading={isLoading} errorMessage={error || 'No tournament selected'} />;
@@ -135,7 +164,7 @@ const Scoring = () => {
             <TournamentScoring 
               currentTournament={currentTournament}
               tournamentId={currentTournament.id}
-              activeView={scoringLogic.activeView}
+              activeView={scoringLogic.activeView === "scoring" ? "match" : "courts"}
               selectedMatch={scoringLogic.selectedMatch}
               currentSet={scoringLogic.currentSet}
               setCurrentSet={scoringLogic.setCurrentSet}
@@ -149,10 +178,10 @@ const Scoring = () => {
               onSelectMatch={scoringLogic.handleSelectMatch}
               onSelectCourt={scoringLogic.handleSelectCourt}
               courts={currentTournament.courts || []}
-              onScoreChange={scoringLogic.handleScoreChange}
+              onScoreChange={handleScoreChangeAdapter}
               onNewSet={scoringLogic.handleNewSet}
               onCompleteMatch={scoringLogic.handleCompleteMatch}
-              setActiveView={scoringLogic.setActiveView}
+              setActiveView={setActiveViewAdapter}
             />
           </TabsContent>
         </Tabs>
