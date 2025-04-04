@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Home from './pages/home';
+import Home from './pages/home'; // lowercase 'h' instead of uppercase 'H'
 import Tournaments from './pages/Tournaments';
-import TournamentDetails from './pages/tournament/TournamentDetails';
+import TournamentDetails from './pages/tournament/TournamentDetails'; // Corrected path
 import TournamentCreate from './pages/TournamentCreate';
 import Scoring from './pages/Scoring';
 import PublicView from './pages/PublicView';

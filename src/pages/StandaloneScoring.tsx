@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Trash } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ScoringContainer from '@/components/scoring/ScoringContainer';
 import PageHeader from '@/components/shared/PageHeader';
@@ -38,9 +39,9 @@ const StandaloneScoring = () => {
       },
       scores: [],
       status: 'SCHEDULED',
-      division: 'INITIAL' as Division,
+      division: 'INITIAL' as Division,  // Using 'INITIAL' instead of 'EXHIBITION'
       tournamentId: 'standalone',
-      stage: 'INITIAL_ROUND' as TournamentStage,
+      stage: 'INITIAL_ROUND' as TournamentStage,  // Using 'INITIAL_ROUND' instead of 'EXHIBITION'
       category: {
         id: 'default',
         name: 'Default Category',
