@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTournament } from '@/contexts/tournament/useTournament';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,12 +11,15 @@ import CourtsTab from "@/components/tournament/tabs/CourtsTab";
 import BracketTab from "@/components/tournament/tabs/BracketTab";
 import CategoryTabs from "@/components/tournament/tabs/CategoryTabs";
 import PageHeader from '@/components/shared/PageHeader';
+import { toast } from '@/components/ui/use-toast';
+import { renderMatchesTab } from '@/utils/tournamentComponentHelper';
 
 const TournamentDetails = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const navigate = useNavigate();
-  const { tournaments, setCurrentTournament, currentTournament, updateTournament } = useTournament();
-  const [activeTab, setActiveTab] = React.useState("overview");
+  const { tournaments, setCurrentTournament, currentTournament, updateTournament, generateMultiStageTournament, advanceToNextStage } = useTournament();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   
   useEffect(() => {
     if (tournamentId) {
@@ -33,6 +36,45 @@ const TournamentDetails = () => {
       }
     }
   }, [tournamentId, tournaments, setCurrentTournament, navigate]);
+  
+  // Handler functions
+  const handleGenerateMultiStageTournament = async () => {
+    try {
+      await generateMultiStageTournament();
+      toast({
+        title: "Tournament brackets generated",
+        description: "Tournament brackets have been successfully generated.",
+      });
+    } catch (error) {
+      console.error("Error generating tournament brackets:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate tournament brackets.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleAdvanceToNextStage = async () => {
+    try {
+      await advanceToNextStage();
+      toast({
+        title: "Tournament advanced",
+        description: "Tournament has been advanced to the next stage.",
+      });
+    } catch (error) {
+      console.error("Error advancing tournament stage:", error);
+      toast({
+        title: "Error",
+        description: "Failed to advance tournament to the next stage.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleScheduleDialogOpen = () => {
+    setScheduleDialogOpen(true);
+  };
   
   if (!currentTournament) {
     return (
@@ -68,6 +110,9 @@ const TournamentDetails = () => {
           <OverviewTab
             tournament={currentTournament}
             onUpdateTournament={updateTournament}
+            onGenerateMultiStageTournament={handleGenerateMultiStageTournament}
+            onAdvanceToNextStage={handleAdvanceToNextStage}
+            onScheduleDialogOpen={handleScheduleDialogOpen}
           />
         </TabsContent>
 
@@ -93,16 +138,16 @@ const TournamentDetails = () => {
               activeTab={activeTab}
             />
           ) : (
-            <MatchesTab 
-              matches={currentTournament.matches || []} 
-              teams={currentTournament.teams || []}
-              courts={currentTournament.courts || []}
-              onMatchUpdate={() => {}}
-              onCourtAssign={() => {}}
-              onMatchStart={() => {}}
-              onCreateMatchClick={() => {}}
-              onAutoScheduleClick={() => {}}
-            />
+            renderMatchesTab(
+              currentTournament.matches || [],
+              currentTournament.teams || [],
+              currentTournament.courts || [],
+              () => {}, // onMatchUpdate
+              () => {}, // onCourtAssign
+              () => {}, // onStartMatch 
+              () => {}, // onAddMatchClick
+              () => {}  // onAutoScheduleClick
+            )
           )}
         </TabsContent>
 
@@ -127,6 +172,13 @@ const TournamentDetails = () => {
           )}
         </TabsContent>
       </Tabs>
+      
+      {/* Schedule Dialog would be implemented here when needed */}
+      {scheduleDialogOpen && (
+        <div>
+          {/* Placeholder for schedule dialog */}
+        </div>
+      )}
     </div>
   );
 };
