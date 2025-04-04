@@ -5,16 +5,6 @@ import path from "path";
 import { visualizer } from "rollup-plugin-visualizer";
 import { compression } from "vite-plugin-compression2";
 
-// Try to import the component tagger in a way that won't break builds
-let componentTagger;
-try {
-  // Using a static import pattern that Vite can handle
-  componentTagger = require("lovable-tagger")?.componentTagger;
-} catch (e) {
-  // If the import fails, set to undefined
-  componentTagger = undefined;
-}
-
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
@@ -23,8 +13,6 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    // Only use component tagger in development mode
-    mode === 'development' && componentTagger && componentTagger(),
     // Split vendor chunks for better caching
     splitVendorChunkPlugin(),
     // Generate bundle visualizer in analyze mode
@@ -83,6 +71,12 @@ export default defineConfig(({ mode }) => ({
     // Minification options
     minify: 'esbuild',
     assetsInlineLimit: 4096, // 4kb
+  },
+  // Disable the native module imports that are causing issues on Vercel
+  optimizeDeps: {
+    esbuildOptions: {
+      target: 'es2020'
+    }
   },
   // Enable tree shaking to eliminate dead code
   esbuild: {

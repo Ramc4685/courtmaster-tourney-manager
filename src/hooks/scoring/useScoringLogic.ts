@@ -1,10 +1,15 @@
-
 import { useEffect, useRef, useState } from "react";
 import { useScoringState } from "./useScoringState";
 import { useScoringActions } from "./useScoringActions";
+import { useParams } from "react-router-dom";
+import { useTournament } from "@/contexts/tournament/useTournament";
 
 export const useScoringLogic = () => {
   console.log("[DEBUG] Initializing useScoringLogic hook");
+  
+  // Get route params to support direct navigation to a match
+  const { matchId } = useParams<{ matchId: string }>();
+  const { currentTournament } = useTournament();
   
   // Prevent initialization logs from running every render
   const isInitialRender = useRef(true);
@@ -15,6 +20,23 @@ export const useScoringLogic = () => {
   
   // Get actions
   const actions = useScoringActions(state);
+
+  // If we have a matchId param, select that match when the component loads
+  useEffect(() => {
+    if (matchId && currentTournament?.matches) {
+      console.log("[DEBUG] Found matchId in URL params:", matchId);
+      const match = currentTournament.matches.find(m => m.id === matchId);
+      
+      if (match) {
+        console.log("[DEBUG] Found match, selecting it:", match.id);
+        setTimeout(() => {
+          actions.handleSelectMatch(match);
+        }, 100);
+      } else {
+        console.log("[DEBUG] Match not found with ID:", matchId);
+      }
+    }
+  }, [matchId, currentTournament, actions]);
   
   // Initial logging (only once)
   useEffect(() => {

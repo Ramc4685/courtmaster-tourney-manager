@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { RefreshCw, Award, Clock, Calendar } from "lucide-react";
@@ -12,39 +11,77 @@ import LiveVideoLink from "@/components/shared/LiveVideoLink";
 import { Match, Division } from "@/types/tournament";
 import { format } from "date-fns";
 import { tournamentService } from "@/services/tournament/TournamentService";
+import { useTournament } from "@/contexts/tournament/useTournament";
 
 const PublicView = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const [tournament, setTournament] = useState(null);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [refreshing, setRefreshing] = useState(false);
+  const { getTournaments } = useTournament(); // Use the context to get tournaments
 
   // Fetch tournament data
   useEffect(() => {
     const loadTournament = async () => {
       if (!tournamentId) return;
       
-      const tournaments = await tournamentService.getTournaments();
-      const foundTournament = tournaments.find(t => t.id === tournamentId);
-      
-      if (foundTournament) {
-        setTournament(foundTournament);
-        setLastRefreshed(new Date());
+      try {
+        // Try to get tournaments from the context first
+        const contextTournaments = getTournaments ? getTournaments() : [];
+        
+        if (contextTournaments && contextTournaments.length > 0) {
+          const foundTournament = contextTournaments.find(t => t.id === tournamentId);
+          if (foundTournament) {
+            console.log("Found tournament in context:", foundTournament.name);
+            setTournament(foundTournament);
+            setLastRefreshed(new Date());
+            return;
+          }
+        }
+        
+        // Fallback to service if not found in context
+        const serviceTournaments = await tournamentService.getTournaments();
+        const foundTournament = serviceTournaments.find(t => t.id === tournamentId);
+        
+        if (foundTournament) {
+          console.log("Found tournament in service:", foundTournament.name);
+          setTournament(foundTournament);
+          setLastRefreshed(new Date());
+        } else {
+          console.error("Tournament not found with ID:", tournamentId);
+        }
+      } catch (error) {
+        console.error("Error loading tournament:", error);
       }
     };
     
     loadTournament();
-  }, [tournamentId]);
+  }, [tournamentId, getTournaments]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     
     if (tournamentId) {
-      const tournaments = await tournamentService.getTournaments();
-      const refreshedTournament = tournaments.find(t => t.id === tournamentId);
-      
-      if (refreshedTournament) {
-        setTournament(refreshedTournament);
+      try {
+        // Try to get tournaments from the context first
+        const contextTournaments = getTournaments ? getTournaments() : [];
+        
+        if (contextTournaments && contextTournaments.length > 0) {
+          const refreshedTournament = contextTournaments.find(t => t.id === tournamentId);
+          if (refreshedTournament) {
+            setTournament(refreshedTournament);
+          }
+        } else {
+          // Fallback to service
+          const serviceTournaments = await tournamentService.getTournaments();
+          const refreshedTournament = serviceTournaments.find(t => t.id === tournamentId);
+          
+          if (refreshedTournament) {
+            setTournament(refreshedTournament);
+          }
+        }
+      } catch (error) {
+        console.error("Error refreshing tournament:", error);
       }
     }
     
@@ -55,24 +92,30 @@ const PublicView = () => {
   if (!tournament) {
     return (
       <Layout>
-        <div className="max-w-6xl mx-auto">
-          <p>Loading tournament data...</p>
+        <div className="max-w-6xl mx-auto p-4">
+          <div className="text-center py-10">
+            <p className="text-gray-500">Loading tournament data...</p>
+            <Button variant="outline" className="mt-4" onClick={handleRefresh}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry Loading
+            </Button>
+          </div>
         </div>
       </Layout>
     );
   }
 
-  const inProgressMatches = tournament.matches.filter(
+  const inProgressMatches = tournament.matches?.filter(
     (match) => match.status === "IN_PROGRESS"
-  );
+  ) || [];
   
-  const completedMatches = tournament.matches.filter(
+  const completedMatches = tournament.matches?.filter(
     (match) => match.status === "COMPLETED"
-  );
+  ) || [];
 
-  const upcomingMatches = tournament.matches.filter(
+  const upcomingMatches = tournament.matches?.filter(
     (match) => match.status === "SCHEDULED"
-  ).sort((a, b) => {
+  )?.sort((a, b) => {
     // Sort by scheduled time if available
     if (a.scheduledTime && b.scheduledTime) {
       return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
@@ -82,17 +125,17 @@ const PublicView = () => {
       return 1;
     }
     return 0;
-  });
+  }) || [];
 
   const groupByDivision = (matches: Match[]) => {
     return matches.reduce((groups, match) => {
-      const division = match.division;
+      const division = match.division || 'NO_DIVISION';
       if (!groups[division]) {
         groups[division] = [];
       }
       groups[division].push(match);
       return groups;
-    }, {} as Record<Division, Match[]>);
+    }, {} as Record<string, Match[]>);
   };
 
   const getDivisionLabel = (division: string) => {
@@ -111,18 +154,28 @@ const PublicView = () => {
         return "Division 2 - Qualifiers";
       case "INITIAL":
         return "Initial Round";
+      case "NO_DIVISION":
+        return "Uncategorized Matches";
       default:
         return division;
     }
   };
 
   const renderMatchesByDivision = (matches: Match[]) => {
+    if (!matches || matches.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <p className="text-gray-500">No matches to display</p>
+        </div>
+      );
+    }
+    
     const grouped = groupByDivision(matches);
     
     return Object.entries(grouped).map(([division, divMatches]) => (
       <div key={division} className="mb-6">
         <h3 className="font-semibold text-lg mb-3 flex items-center">
-          <Award className="h-5 w-5 text-court-blue mr-2" />
+          <Award className="h-5 w-5 text-blue-500 mr-2" />
           {getDivisionLabel(division)}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -138,12 +191,12 @@ const PublicView = () => {
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto p-4">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">{tournament.name}</h1>
             <p className="text-gray-500">
-              {format(new Date(tournament.startDate), "MMMM d, yyyy")}
+              {tournament.startDate && format(new Date(tournament.startDate), "MMMM d, yyyy")}
               {tournament.endDate && (
                 <> - {format(new Date(tournament.endDate), "MMMM d, yyyy")}</>
               )}
@@ -166,9 +219,11 @@ const PublicView = () => {
         </div>
 
         {/* Add Live Video Link */}
-        <div className="mb-6">
-          <LiveVideoLink tournamentId={tournamentId} />
-        </div>
+        {tournamentId && (
+          <div className="mb-6">
+            <LiveVideoLink tournamentId={tournamentId} />
+          </div>
+        )}
 
         <Tabs defaultValue="inprogress" className="mt-6">
           <TabsList className="mb-4">
@@ -189,11 +244,17 @@ const PublicView = () => {
           </TabsContent>
 
           <TabsContent value="courts">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tournament.courts.map((court) => (
-                <CourtCard key={court.id} court={court} detailed />
-              ))}
-            </div>
+            {!tournament.courts || tournament.courts.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No courts available</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {tournament.courts.map((court) => (
+                  <CourtCard key={court.id} court={court} detailed />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="upcoming">
