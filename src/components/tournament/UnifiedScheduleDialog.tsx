@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Team, Division, Tournament } from "@/types/tournament";
-import { useTournament } from "@/contexts/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament"; // Updated import path
 import { toast } from "@/components/ui/use-toast";
 import SuggestedMatchPairs from "./SuggestedMatchPairs";
 import { SchedulingOptions } from "@/services/tournament/SchedulingService";
