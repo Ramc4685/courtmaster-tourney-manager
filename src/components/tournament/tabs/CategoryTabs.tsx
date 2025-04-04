@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,7 +18,7 @@ interface CategoryTabsProps {
 }
 
 const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) => {
-  console.log("Rendering CategoryTabs with", tournament.categories.length, "categories");
+  console.log("Rendering CategoryTabs with", tournament.categories?.length || 0, "categories");
   console.log("Active tab:", activeTab);
   
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -27,14 +28,14 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
 
   // Initialize the selected category when tournament loads or changes
   useEffect(() => {
-    if (tournament.categories.length >0 && !selectedCategory) {
+    if (tournament.categories?.length > 0 && !selectedCategory) {
       setSelectedCategory(tournament.categories[0].id);
       console.log("Initially selected category:", tournament.categories[0].name);
     }
   }, [tournament.categories, selectedCategory]);
 
   // Skip if there are no categories
-  if (tournament.categories.length === 0) {
+  if (!tournament.categories || tournament.categories.length === 0) {
     console.log("No categories found, showing empty state");
     return <div className="text-center text-muted-foreground">No categories have been defined for this tournament.</div>;
   }
@@ -48,13 +49,13 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
   console.log("Current category:", currentCategory?.name);
   
   // Filter matches and teams by the selected category
-  const categoryMatches = tournament.matches.filter(match => 
+  const categoryMatches = tournament.matches?.filter(match => 
     match.category && match.category.id === selectedCategory
-  );
+  ) || [];
   
-  const categoryTeams = tournament.teams.filter(team => 
+  const categoryTeams = tournament.teams?.filter(team => 
     team.category && team.category.id === selectedCategory
-  );
+  ) || [];
   
   console.log("Filtered matches:", categoryMatches.length);
   console.log("Filtered teams:", categoryTeams.length);
@@ -76,7 +77,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
 
   // Handle team updates
   const handleTeamUpdate = (team) => {
-    const updatedTeams = tournament.teams.map(t => 
+    const updatedTeams = (tournament.teams || []).map(t => 
       t.id === team.id ? team : t
     );
     
@@ -140,7 +141,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
               <MatchesTab 
                 matches={categoryMatches}
                 teams={categoryTeams}
-                courts={tournament.courts}
+                courts={tournament.courts || []}
                 onMatchUpdate={updateMatch}
                 onCourtAssign={assignCourt}
                 onAddMatchClick={() => {}}
@@ -209,7 +210,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
             <MatchesTab 
               matches={categoryMatches}
               teams={categoryTeams}
-              courts={tournament.courts}
+              courts={tournament.courts || []}
               onMatchUpdate={updateMatch}
               onCourtAssign={assignCourt}
               onAddMatchClick={() => {}}
