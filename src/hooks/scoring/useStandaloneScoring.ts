@@ -280,8 +280,96 @@ export const useStandaloneScoring = (matchId: string | null) => {
     error,
     saveMatch,
     updateMatch: standaloneMatchStore.updateMatch,
-    handleScoreChange,
-    handleNewSet,
-    handleCompleteMatch
+    handleScoreChange: (team: "team1" | "team2", increment: boolean, currentSet: number) => {
+      if (!scoringMatch) return;
+      
+      // Get current score
+      const scores = [...(scoringMatch.scores || [])];
+      if (scores.length === 0) {
+        scores.push({ team1Score: 0, team2Score: 0 });
+      }
+      
+      // Make sure we have a score entry for this set
+      while (scores.length <= currentSet) {
+        scores.push({ team1Score: 0, team2Score: 0 });
+      }
+      
+      const currentScore = scores[currentSet];
+      let team1Score = currentScore.team1Score;
+      let team2Score = currentScore.team2Score;
+      
+      // Update the appropriate team's score
+      if (team === "team1") {
+        team1Score = increment 
+          ? Math.min(999, team1Score + 1) // Using a high number as max
+          : Math.max(0, team1Score - 1);
+      } else {
+        team2Score = increment 
+          ? Math.min(999, team2Score + 1)
+          : Math.max(0, team2Score - 1);
+      }
+      
+      // Update match score
+      updateMatchScore(currentSet, team1Score, team2Score);
+    },
+    handleNewSet: () => {
+      if (!standaloneMatchStore.currentMatch) return false;
+      if (!scoringMatch) return false;
+      
+      const newSetIndex = scoringMatch.scores.length;
+      
+      try {
+        updatingStoreRef.current = true;
+        // Initialize the new set with 0-0 score
+        standaloneMatchStore.updateMatchScore(
+          standaloneMatchStore.currentMatch.id, 
+          newSetIndex, 
+          0, 
+          0
+        );
+        
+        // Update local state
+        const updatedScores = [...scoringMatch.scores, { team1Score: 0, team2Score: 0 }];
+        const updatedMatch = {
+          ...scoringMatch,
+          scores: updatedScores
+        };
+        
+        setScoringMatch(updatedMatch as Match);
+        return true;
+      } catch (err) {
+        console.error('Error creating new set:', err);
+        return false;
+      } finally {
+        // Reset flag after a short delay
+        setTimeout(() => {
+          updatingStoreRef.current = false;
+        }, 50);
+      }
+    },
+    handleCompleteMatch: async () => {
+      if (!standaloneMatchStore.currentMatch) return false;
+      
+      try {
+        await standaloneMatchStore.completeMatch(standaloneMatchStore.currentMatch.id);
+        
+        toast({
+          title: "Match completed",
+          description: "The match has been marked as complete."
+        });
+        
+        return true;
+      } catch (err) {
+        console.error('Error completing match:', err);
+        
+        toast({
+          title: "Error completing match",
+          description: "There was a problem completing your match.",
+          variant: "destructive"
+        });
+        
+        return false;
+      }
+    }
   };
 };

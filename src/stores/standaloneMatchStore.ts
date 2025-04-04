@@ -1,10 +1,11 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
 import { AuditLog, Match, MatchScore, MatchStatus, Player, StandaloneMatch, Team, TournamentCategory } from '@/types/tournament';
 
-// Define a specific audit log for standalone matches
-interface StandaloneAuditLog extends Partial<AuditLog> {
+// Define a specific audit log for standalone matches without extending AuditLog
+interface StandaloneAuditLog {
   timestamp: Date;
   action: string;
   details: string | Record<string, any>;
@@ -12,7 +13,29 @@ interface StandaloneAuditLog extends Partial<AuditLog> {
   userName?: string;
 }
 
-export const useStandaloneMatchStore = create()(
+// Define the store state type
+interface StandaloneMatchStoreState {
+  matches: StandaloneMatch[];
+  currentMatch: StandaloneMatch | null;
+  createMatch: (matchData: Partial<StandaloneMatch>) => StandaloneMatch;
+  updateMatch: (match: StandaloneMatch) => StandaloneMatch;
+  deleteMatch: (id: string) => void;
+  loadMatchById: (id: string) => StandaloneMatch | null;
+  setCurrentMatch: (match: StandaloneMatch | null) => void;
+  saveMatch: () => Promise<boolean>;
+  updateMatchScore: (
+    matchId: string,
+    setIndex: number,
+    team1Score: number,
+    team2Score: number,
+    scorerName?: string
+  ) => void;
+  updateMatchStatus: (matchId: string, status: MatchStatus) => boolean;
+  completeMatch: (matchId: string, scorerName?: string) => boolean;
+  updateCourtNumber: (matchId: string, courtNumber: number) => void;
+}
+
+export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
   persist(
     (set, get) => ({
       matches: [] as StandaloneMatch[],
@@ -59,20 +82,16 @@ export const useStandaloneMatchStore = create()(
               details: `Match ${id} created`,
               user_id: 'system'
             } as StandaloneAuditLog
-          ]
+          ] as StandaloneAuditLog[] // Type assertion to fix compatibility issue
         };
 
         // Add the new match to the store
         set((state) => {
           const updatedMatches = [...state.matches, newMatch];
           return {
-            matches: updatedMatches
+            matches: updatedMatches,
+            currentMatch: newMatch
           };
-        });
-
-        // Set as current match
-        set({
-          currentMatch: newMatch
         });
 
         return newMatch;
@@ -194,7 +213,7 @@ export const useStandaloneMatchStore = create()(
                 userName: scorerName,
                 user_id: 'system'
               } as StandaloneAuditLog
-            ]
+            ] as StandaloneAuditLog[] // Type assertion to fix compatibility issue
           };
 
           // Update the match in the matches array
@@ -226,7 +245,7 @@ export const useStandaloneMatchStore = create()(
                 details: `Match status updated to ${status}`,
                 user_id: 'system'
               } as StandaloneAuditLog
-            ]
+            ] as StandaloneAuditLog[] // Type assertion to fix compatibility issue
           };
 
           // Update the match in the matches array
@@ -279,7 +298,7 @@ export const useStandaloneMatchStore = create()(
                 userName: scorerName,
                 user_id: 'system'
               } as StandaloneAuditLog
-            ]
+            ] as StandaloneAuditLog[] // Type assertion to fix compatibility issue
           };
 
           // Update the match in the matches array
@@ -314,7 +333,7 @@ export const useStandaloneMatchStore = create()(
                 details: `Assigned to Court ${courtNumber}`,
                 user_id: 'system'
               } as StandaloneAuditLog
-            ]
+            ] as StandaloneAuditLog[] // Type assertion to fix compatibility issue
           };
 
           // Update the match in the matches array

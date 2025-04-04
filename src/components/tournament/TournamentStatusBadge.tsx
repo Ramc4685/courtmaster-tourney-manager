@@ -28,13 +28,13 @@ const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ status })
       variant = 'default';
       label = 'Completed';
       break;
-    case 'CANCELLED':
+    case 'CANCELLED': // This is safe now as we updated the TournamentStatus type
       variant = 'destructive';
       label = 'Cancelled';
       break;
     default:
       variant = 'outline';
-      label = status;
+      label = status as string;
   }
 
   return <Badge variant={variant}>{label}</Badge>;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -57,6 +56,20 @@ const StandaloneMatchScoring = () => {
       </div>
     );
   }
+
+  // Convert standalone match to Match type for compatibility with components
+  // Using type assertion as StandaloneMatch and Match have a lot of overlap
+  const matchForAudit = {
+    ...match,
+    tournamentId: 'standalone',
+    division: 'SINGLES' as any, // Cast to any to avoid type error
+    stage: 'INITIAL_ROUND' as any,
+    category: {
+      id: 'standalone',
+      name: 'Standalone Match',
+      type: match.team1.players.length > 1 ? 'MENS_DOUBLES' : 'MENS_SINGLES'
+    }
+  } as Match;
 
   // Handle score change
   const handleScoreChange = (team: 'team1' | 'team2', increment: boolean) => {
@@ -136,20 +149,6 @@ const StandaloneMatchScoring = () => {
       });
     }
   };
-
-  // Convert standalone match to Match type for compatibility with components
-  // Using type assertion as StandaloneMatch and Match have a lot of overlap
-  const matchForAudit = {
-    ...match,
-    tournamentId: 'standalone',
-    division: 'SINGLES' as any, // Cast to any to avoid type error
-    stage: 'INITIAL_ROUND' as any,
-    category: {
-      id: 'standalone',
-      name: 'Standalone Match',
-      type: match.team1.players.length > 1 ? 'MENS_DOUBLES' : 'MENS_SINGLES'
-    }
-  } as Match;
 
   return (
     <div className="container mx-auto px-4 py-8">
