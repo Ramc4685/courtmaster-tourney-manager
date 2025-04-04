@@ -1,13 +1,13 @@
 
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import ScoringMatchDetail from "@/components/scoring/ScoringMatchDetail";
-import ScoringSettings from "@/components/scoring/ScoringSettings";
-import ScoringConfirmationDialogs from "@/components/scoring/ScoringConfirmationDialogs";
-import ScoringContainer from "@/components/scoring/ScoringContainer";
-import { Match } from "@/types/tournament";
+import React from 'react';
+import { Match } from '@/types/tournament';
+import ScoringContainer from './ScoringContainer';
+import ScoringMatchDetail from './ScoringMatchDetail';
+import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Card } from '@/components/ui/card';
+import { Save } from 'lucide-react';
 
 interface StandaloneMatchScoringProps {
   isLoading: boolean;
@@ -17,16 +17,18 @@ interface StandaloneMatchScoringProps {
   settingsOpen: boolean;
   setSettingsOpen: (open: boolean) => void;
   scoringSettings: any;
-  handleUpdateScoringSettings: (settings: any) => void;
-  newSetDialogOpen: boolean;
   setNewSetDialogOpen: (open: boolean) => void;
+  newSetDialogOpen: boolean;
   completeMatchDialogOpen: boolean;
   setCompleteMatchDialogOpen: (open: boolean) => void;
-  handleScoreChange: (team: "team1" | "team2", increment: boolean) => void;
-  handleNewSet: () => void;
-  handleCompleteMatch: () => void;
-  saveMatch?: () => void;
+  onScoreChange: (team: "team1" | "team2", increment: boolean) => void;
+  onNewSet: () => void;
+  onCompleteMatch: () => void;
+  onSave: () => void;
   isPending?: boolean;
+  scorerName?: string;
+  onScorerNameChange?: (name: string) => void;
+  onCourtChange?: (courtNumber: number) => void;
 }
 
 const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
@@ -37,119 +39,100 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
   settingsOpen,
   setSettingsOpen,
   scoringSettings,
-  handleUpdateScoringSettings,
-  newSetDialogOpen,
   setNewSetDialogOpen,
+  newSetDialogOpen,
   completeMatchDialogOpen,
   setCompleteMatchDialogOpen,
-  handleScoreChange,
-  handleNewSet,
-  handleCompleteMatch,
-  saveMatch,
-  isPending = false
+  onScoreChange,
+  onNewSet,
+  onCompleteMatch,
+  onSave,
+  isPending = false,
+  scorerName,
+  onScorerNameChange,
+  onCourtChange
 }) => {
-  const navigate = useNavigate();
-
-  // If still loading, show loading indicator
   if (isLoading) {
-    return (
-      <ScoringContainer isLoading={true}>
-        <p>Loading match data...</p>
-      </ScoringContainer>
-    );
+    return <ScoringContainer isLoading />;
   }
-  
-  // If match not found, show error
+
   if (!match) {
-    return (
-      <ScoringContainer errorMessage="Match Not Found">
-        <p>The requested match could not be found.</p>
-        <div className="mt-4">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate("/quick-match")}
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" /> Return to Quick Match
-          </Button>
-        </div>
-      </ScoringContainer>
-    );
+    return <ScoringContainer errorMessage="Match not found" />;
   }
 
   return (
     <ScoringContainer>
-      <div className="flex justify-between items-center border-b pb-4 mb-6">
-        <h1 className="text-2xl font-bold">
-          Standalone Match Scoring
-          {isPending && (
-            <span className="ml-2 inline-flex items-center text-amber-600 text-sm font-normal">
-              <span className="animate-pulse rounded-full w-2 h-2 bg-amber-500 mr-1"></span>
-              Processing...
-            </span>
-          )}
-        </h1>
-        <div className="space-x-2">
-          {match.status !== 'COMPLETED' && (
-            <Button 
-              variant="default" 
-              className="bg-green-600 hover:bg-green-700" 
-              onClick={() => setCompleteMatchDialogOpen(true)}
-              disabled={isPending}
-            >
-              Complete Match
-            </Button>
-          )}
-          {saveMatch && (
-            <Button 
-              variant="outline" 
-              onClick={saveMatch}
-              disabled={isPending}
-            >
-              Save Match
-            </Button>
-          )}
-        </div>
+      {/* Top action bar */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Match Scoring</h1>
+        <Button onClick={onSave} disabled={isPending} className="flex items-center gap-2">
+          <Save className="h-4 w-4" />
+          Save Match
+        </Button>
       </div>
       
-      <Button 
-        variant="outline" 
-        className="mb-4" 
-        onClick={() => navigate("/quick-match")}
-      >
-        <ChevronLeft className="mr-1 h-4 w-4" /> Back to Quick Match
-      </Button>
+      <Card className="p-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <span className="text-sm text-gray-500">Match ID</span>
+            <div className="font-medium">{match.id}</div>
+          </div>
+          <div>
+            <span className="text-sm text-gray-500">Status</span>
+            <div className="font-medium">{match.status}</div>
+          </div>
+        </div>
+      </Card>
       
+      <Separator className="my-4" />
+      
+      {/* Scoring interface */}
       <ScoringMatchDetail
         match={match}
-        onScoreChange={handleScoreChange}
-        onNewSet={() => setNewSetDialogOpen(true)}
-        onCompleteMatch={() => setCompleteMatchDialogOpen(true)}
+        onScoreChange={onScoreChange}
+        onNewSet={onNewSet}
+        onCompleteMatch={onCompleteMatch}
         currentSet={currentSet}
         onSetChange={setCurrentSet}
         isPending={isPending}
+        scorerName={scorerName}
+        onScorerNameChange={onScorerNameChange}
+        onCourtChange={onCourtChange}
       />
-
-      {/* Scoring Settings Dialog */}
-      <ScoringSettings 
-        open={settingsOpen} 
-        onOpenChange={setSettingsOpen}
-        settings={scoringSettings}
-        onSettingsChange={handleUpdateScoringSettings}
-        title="Badminton Scoring Settings"
-        description="Configure badminton match scoring rules"
-      />
-
-      {/* Confirmation Dialogs for New Set and Complete Match */}
-      <ScoringConfirmationDialogs
-        selectedMatch={match}
-        currentSet={currentSet}
-        newSetDialogOpen={newSetDialogOpen}
-        setNewSetDialogOpen={setNewSetDialogOpen}
-        completeMatchDialogOpen={completeMatchDialogOpen}
-        setCompleteMatchDialogOpen={setCompleteMatchDialogOpen}
-        onNewSet={handleNewSet}
-        onCompleteMatch={handleCompleteMatch}
-      />
+      
+      {/* New Set Dialog */}
+      <Dialog open={newSetDialogOpen} onOpenChange={setNewSetDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Start New Set</DialogTitle>
+          </DialogHeader>
+          <p>The current set has been completed. Would you like to start a new set?</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewSetDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => {
+              onNewSet();
+              setNewSetDialogOpen(false);
+            }}>Start New Set</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Complete Match Dialog */}
+      <Dialog open={completeMatchDialogOpen} onOpenChange={setCompleteMatchDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Complete Match</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to complete this match? This will finalize the scores and determine the winner.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCompleteMatchDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => {
+              onCompleteMatch();
+              setCompleteMatchDialogOpen(false);
+            }}>Complete Match</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ScoringContainer>
   );
 };

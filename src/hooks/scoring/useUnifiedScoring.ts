@@ -503,6 +503,60 @@ export const useUnifiedScoring = ({ scorerType, matchId, scorerName }: UnifiedSc
     }
   }, [standaloneStore, toast]);
 
+  // Update court number
+  const updateCourtNumber = useCallback((courtNumber: number) => {
+    const currentMatch = matchRef.current;
+    if (!currentMatch) return;
+    
+    const currentScorerType = scorerTypeRef.current;
+    console.log(`Updating court number to ${courtNumber} for ${currentScorerType} match`);
+    
+    if (currentScorerType === 'STANDALONE') {
+      standaloneStore.updateCourtNumber(currentMatch.id, courtNumber);
+      
+      // Update local state
+      const updatedMatch = { 
+        ...currentMatch, 
+        courtNumber 
+      };
+      
+      // Update ref and state
+      matchRef.current = updatedMatch;
+      setMatch(updatedMatch);
+      
+      toast({
+        title: "Court updated",
+        description: `Match assigned to court #${courtNumber}`
+      });
+    } else {
+      if (tournament.currentTournament) {
+        // Find match in tournament
+        const tournamentMatch = tournament.currentTournament.matches.find(m => m.id === currentMatch.id);
+        if (tournamentMatch) {
+          // Update the match in the tournament
+          const updatedMatch = {
+            ...tournamentMatch,
+            courtNumber
+          };
+          
+          // Update in tournament context if updateMatch exists
+          if (tournament.updateMatch) {
+            tournament.updateMatch(updatedMatch);
+          } 
+          
+          // Update our local state
+          matchRef.current = updatedMatch;
+          setMatch(updatedMatch);
+          
+          toast({
+            title: "Court updated",
+            description: `Match assigned to court #${courtNumber}`
+          });
+        }
+      }
+    }
+  }, [standaloneStore, tournament, toast]);
+
   // Update scoring settings
   const handleUpdateScoringSettings = useCallback((newSettings: any) => {
     // Update both the state and the ref
@@ -549,6 +603,7 @@ export const useUnifiedScoring = ({ scorerType, matchId, scorerName }: UnifiedSc
     isStandalone: scorerTypeRef.current === 'STANDALONE', // Use ref for stability
     isPending: tournament.isPending,
     scorerName: actualScorerName,
-    updateScorerName // New function to update scorer name
+    updateScorerName,
+    updateCourtNumber // New function to update court number
   };
 };

@@ -9,6 +9,7 @@ import ScoringContainer from "@/components/scoring/ScoringContainer";
 import { useUnifiedScoring } from "@/hooks/scoring/useUnifiedScoring";
 import { useScoringLogic } from "@/hooks/scoring/useScoringLogic"; 
 import { getCurrentUserId } from "@/utils/auditUtils";
+import { getDefaultScorerName } from "@/utils/matchAuditUtils";
 
 const Scoring = () => {
   console.log("Rendering Scoring page");
@@ -21,7 +22,7 @@ const Scoring = () => {
   const matchType = searchParams.get("type");
   
   // State for scorer name
-  const [scorerName, setScorerName] = useState(getCurrentUserId());
+  const [scorerName, setScorerName] = useState(getDefaultScorerName());
   
   // Prevent logging on every render to reduce noise
   const firstRenderRef = React.useRef(true);
@@ -79,6 +80,14 @@ const Scoring = () => {
     }
   }, [tournamentId, tournaments, setCurrentTournament, navigate, isStandaloneMatch]);
 
+  // Handle updating court number
+  const handleCourtChange = (courtNumber: number) => {
+    if (scoring.match) {
+      console.log(`Updating court number to: ${courtNumber}`);
+      scoring.updateCourtNumber(courtNumber);
+    }
+  };
+
   // Handle standalone match case
   if (isStandaloneMatch) {
     return (
@@ -101,6 +110,7 @@ const Scoring = () => {
         scorerName={scorerName}
         onScorerNameChange={scoring.updateScorerName}
         newSetDialogOpen={scoring.newSetDialogOpen}
+        onCourtChange={handleCourtChange}
       />
     );
   }
@@ -150,6 +160,21 @@ const Scoring = () => {
       console.error(`Match with ID ${matchId} not found`);
     }
   };
+  
+  // Handle court number change
+  const handleTournamentCourtChange = (courtNumber: number) => {
+    if (selectedMatch) {
+      console.log(`Updating court number for tournament match to: ${courtNumber}`);
+      // We need to update the match in the tournament
+      const updatedMatch = { ...selectedMatch, courtNumber };
+      // This would need to be implemented in your tournament context
+      if (typeof scoringLogicRest === 'object' && 
+          scoringLogicRest !== null && 
+          'updateMatch' in scoringLogicRest) {
+        (scoringLogicRest.updateMatch as (match: Match) => void)(updatedMatch);
+      }
+    }
+  };
 
   return (
     <TournamentScoring
@@ -166,7 +191,6 @@ const Scoring = () => {
       setNewSetDialogOpen={scoring.setNewSetDialogOpen}
       completeMatchDialogOpen={scoring.completeMatchDialogOpen}
       setCompleteMatchDialogOpen={scoring.setCompleteMatchDialogOpen}
-      setActiveView={handleBackToCourts}
       onSelectMatch={handleSelectMatch}
       onSelectCourt={handleSelectCourt}
       courts={currentTournament?.courts || []}
@@ -176,6 +200,8 @@ const Scoring = () => {
       isPending={isPending}
       scorerName={scorerName}
       onScorerNameChange={scoring.updateScorerName}
+      setActiveView={handleBackToCourts}
+      onCourtChange={handleTournamentCourtChange}
     />
   );
 };

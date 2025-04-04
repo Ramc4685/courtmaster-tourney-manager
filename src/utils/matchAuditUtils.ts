@@ -65,26 +65,79 @@ export function addScoringAuditInfo(
   // Only set the endTime if the match is being completed
   const endTime = match.status === 'COMPLETED' ? now : match.endTime;
   
+  // Create audit details object with extended information
+  const auditDetails = {
+    scorerName,
+    courtNumber: courtNumber || match.courtNumber,
+    timestamp: now,
+    scores: match.scores,
+    status: match.status,
+    // Add more detailed audit information
+    setScores: match.scores.map((score, index) => ({
+      set: index + 1,
+      team1Score: score.team1Score,
+      team2Score: score.team2Score
+    }))
+  };
+  
   // Create basic update with shared properties
   const basicUpdate = {
-    scorerName,
+    scorerName: scorerName || userId,
     courtNumber: courtNumber || match.courtNumber,
     endTime,
     updatedAt: now,
     updated_by: userId
   };
   
-  // Combine with the match object, preserving the correct type
-  const updatedMatch = {
-    ...match,
-    ...basicUpdate
+  // Handle special case for tournament vs standalone match
+  if (isStandaloneMatch(match)) {
+    // Return StandaloneMatch type
+    const updatedMatch = {
+      ...match,
+      ...basicUpdate
+    } as StandaloneMatch;
+    
+    return addMatchAuditLog(updatedMatch, 'SCORE_UPDATE', auditDetails);
+  } else {
+    // Return Match type
+    const updatedMatch = {
+      ...match,
+      ...basicUpdate
+    } as Match;
+    
+    return addMatchAuditLog(updatedMatch, 'SCORE_UPDATE', auditDetails);
+  }
+}
+
+/**
+ * Adds court assignment information to audit log
+ */
+export function addCourtAssignmentAuditInfo(
+  match: Match | StandaloneMatch,
+  courtNumber: number,
+  courtName?: string
+): Match | StandaloneMatch {
+  const auditDetails = {
+    courtNumber,
+    courtName,
+    timestamp: new Date(),
+    action: "COURT_ASSIGNMENT"
   };
   
-  // Add an audit log entry for this update
-  return addMatchAuditLog(updatedMatch, 'SCORE_UPDATE', {
-    scorerName,
-    courtNumber: courtNumber || match.courtNumber,
-    endTime: match.status === 'COMPLETED' ? endTime : undefined,
-    scores: match.scores
-  });
+  // Update the match with court information
+  const updatedMatch = {
+    ...match,
+    courtNumber,
+    courtName: courtName || match.courtName
+  };
+  
+  return addMatchAuditLog(updatedMatch, 'COURT_ASSIGNMENT', auditDetails);
+}
+
+/**
+ * Generate default scorer name if none provided
+ */
+export function getDefaultScorerName(): string {
+  const userId = getCurrentUserId();
+  return `Scorer-${userId.substring(0, 8)}`;
 }

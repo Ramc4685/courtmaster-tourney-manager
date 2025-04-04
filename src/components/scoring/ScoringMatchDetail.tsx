@@ -1,14 +1,15 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { PlusCircle, Minus, Plus, CheckCircle, Award, UserCircle, Hash } from "lucide-react";
+import { PlusCircle, Minus, Plus, CheckCircle, Award, UserCircle, Hash, MapPin } from "lucide-react";
 import { Match } from "@/types/tournament";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getCurrentUserId } from "@/utils/auditUtils";
+import { getDefaultScorerName } from "@/utils/matchAuditUtils";
 
 interface ScoringMatchDetailProps {
   match: Match;
@@ -20,6 +21,7 @@ interface ScoringMatchDetailProps {
   isPending?: boolean;
   scorerName?: string;
   onScorerNameChange?: (name: string) => void;
+  onCourtChange?: (courtNumber: number) => void;
 }
 
 const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
@@ -30,11 +32,22 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
   currentSet,
   onSetChange,
   isPending = false,
-  scorerName = getCurrentUserId(),
-  onScorerNameChange
+  scorerName = getDefaultScorerName(),
+  onScorerNameChange,
+  onCourtChange
 }) => {
-  // Store local state for scorer name input
+  // Store local state for scorer name and court number input
   const [localScorerName, setLocalScorerName] = useState(scorerName);
+  const [localCourtNumber, setLocalCourtNumber] = useState<number | undefined>(match.courtNumber);
+  
+  // Update local state when props change
+  useEffect(() => {
+    setLocalScorerName(scorerName);
+  }, [scorerName]);
+  
+  useEffect(() => {
+    setLocalCourtNumber(match.courtNumber);
+  }, [match.courtNumber]);
 
   // Only show sets with scores
   const totalSets = match.scores ? match.scores.length : 0;
@@ -47,6 +60,25 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
     setLocalScorerName(newName);
     if (onScorerNameChange) {
       onScorerNameChange(newName);
+    }
+  };
+  
+  // Handle court number change
+  const handleCourtNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const courtNum = parseInt(e.target.value) || undefined;
+    setLocalCourtNumber(courtNum);
+  };
+  
+  // Save court number when input loses focus or when enter is pressed
+  const saveCourtNumber = () => {
+    if (onCourtChange && localCourtNumber !== match.courtNumber) {
+      onCourtChange(localCourtNumber || 0);
+    }
+  };
+  
+  const handleCourtKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      saveCourtNumber();
     }
   };
 
@@ -112,8 +144,9 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
         </div>
       </div>
 
-      {/* Scorer Name Input */}
-      <div className="bg-gray-50 p-4 rounded-lg">
+      {/* Audit Information Fields */}
+      <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+        {/* Scorer Name Input */}
         <div className="flex items-center gap-3">
           <UserCircle className="h-5 w-5 text-gray-500" />
           <div className="flex-grow">
@@ -128,6 +161,41 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
               placeholder="Enter your name"
               disabled={match.status === "COMPLETED" || isPending}
             />
+          </div>
+        </div>
+        
+        {/* Court Number Input */}
+        <div className="flex items-center gap-3">
+          <MapPin className="h-5 w-5 text-gray-500" />
+          <div className="flex-grow">
+            <Label htmlFor="courtNumber" className="text-sm font-medium">
+              Court Number
+            </Label>
+            <Input
+              id="courtNumber"
+              type="number"
+              value={localCourtNumber || ""}
+              onChange={handleCourtNumberChange}
+              onBlur={saveCourtNumber}
+              onKeyDown={handleCourtKeyDown}
+              className="mt-1"
+              placeholder="Court number"
+              disabled={match.status === "COMPLETED" || isPending}
+            />
+          </div>
+        </div>
+        
+        {/* Match Status Details */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          {match.endTime && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Match End:</span>
+              <span className="text-sm">{new Date(match.endTime).toLocaleString()}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Last Updated:</span>
+            <span className="text-sm">{new Date(match.updatedAt || new Date()).toLocaleString()}</span>
           </div>
         </div>
       </div>

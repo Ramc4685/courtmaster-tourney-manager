@@ -1,23 +1,23 @@
 
-import React from "react";
-import { Link } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import ScoringContainer from "@/components/scoring/ScoringContainer";
-import CourtSelectionPanel from "@/components/scoring/CourtSelectionPanel";
-import ScoringMatchDetail from "@/components/scoring/ScoringMatchDetail";
-import ScoringHeader from "@/components/scoring/ScoringHeader";
-import ScoringSettings from "@/components/scoring/ScoringSettings";
-import ScoringConfirmationDialogs from "@/components/scoring/ScoringConfirmationDialogs";
-import { Match, Tournament, Court } from "@/types/tournament";
+import React from 'react';
+import ScoringContainer from './ScoringContainer';
+import { Tournament, Match, Court } from '@/types/tournament';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import CourtView from './tournament/CourtView';
+import MatchView from './tournament/MatchView';
+import { ArrowLeft } from 'lucide-react';
 
-// Fixed interface with correct types
+type ScoringView = "match" | "courts";
+
 interface TournamentScoringProps {
   currentTournament: Tournament | null;
-  tournamentId: string | undefined;
-  activeView: "courts" | "match"; // Keep as "courts" | "match" to match existing code
+  tournamentId: string;
+  activeView: ScoringView;
   selectedMatch: Match | null;
   currentSet: number;
+  setCurrentSet: (set: number) => void;
   settingsOpen: boolean;
   setSettingsOpen: (open: boolean) => void;
   scoringSettings: any;
@@ -25,16 +25,17 @@ interface TournamentScoringProps {
   setNewSetDialogOpen: (open: boolean) => void;
   completeMatchDialogOpen: boolean;
   setCompleteMatchDialogOpen: (open: boolean) => void;
-  setCurrentSet: (set: number) => void;
-  handleSelectCourt: (court: Court) => void; // Changed from courtNumber: number
-  handleSelectMatch: (match: Match) => void;
-  handleStartMatch: (matchId: string) => void; // Keep as string to match existing code
-  handleScoreChange: (team: "team1" | "team2", increment: boolean) => void;
-  handleNewSet: () => void;
-  handleCompleteMatch: () => void;
-  handleUpdateScoringSettings: (settings: any) => void;
-  handleBackToCourts: () => void;
+  onSelectMatch: (match: Match) => void;
+  onSelectCourt: (courtNumber: number) => void;
+  courts: Court[];
+  onScoreChange: (team: "team1" | "team2", increment: boolean) => void;
+  onNewSet: () => void;
+  onCompleteMatch: () => void;
   isPending?: boolean;
+  scorerName?: string;
+  onScorerNameChange?: (name: string) => void;
+  setActiveView: (view: "courts") => void;
+  onCourtChange?: (courtNumber: number) => void;
 }
 
 const TournamentScoring: React.FC<TournamentScoringProps> = ({
@@ -43,6 +44,7 @@ const TournamentScoring: React.FC<TournamentScoringProps> = ({
   activeView,
   selectedMatch,
   currentSet,
+  setCurrentSet,
   settingsOpen,
   setSettingsOpen,
   scoringSettings,
@@ -50,100 +52,94 @@ const TournamentScoring: React.FC<TournamentScoringProps> = ({
   setNewSetDialogOpen,
   completeMatchDialogOpen,
   setCompleteMatchDialogOpen,
-  setCurrentSet,
-  handleSelectCourt,
-  handleSelectMatch,
-  handleStartMatch,
-  handleScoreChange,
-  handleNewSet,
-  handleCompleteMatch,
-  handleUpdateScoringSettings,
-  handleBackToCourts,
-  isPending
+  onSelectMatch,
+  onSelectCourt,
+  courts,
+  onScoreChange,
+  onNewSet,
+  onCompleteMatch,
+  isPending = false,
+  scorerName,
+  onScorerNameChange,
+  setActiveView,
+  onCourtChange
 }) => {
   if (!currentTournament) {
-    return (
-      <ScoringContainer isLoading={true}>
-        <p>Loading tournament data...</p>
-      </ScoringContainer>
-    );
+    return <ScoringContainer errorMessage="Tournament not found" />;
   }
 
   return (
     <ScoringContainer>
-      <div className="mb-6">
-        <ScoringHeader 
-          tournament={currentTournament} 
-          onOpenSettings={() => setSettingsOpen(true)}
-          isPending={isPending}
-        />
-
-        <div className="mb-4 flex items-center justify-start">
-          <Link to={`/tournaments/${tournamentId}`}>
-            <Button variant="outline">
-              <ChevronLeft className="mr-1 h-4 w-4" /> Back to Tournament
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        {activeView === "courts" ? (
-          /* Court selection view */
-          <CourtSelectionPanel
-            courts={currentTournament.courts}
-            matches={currentTournament.matches}
-            onCourtSelect={handleSelectCourt}
-            onMatchSelect={handleSelectMatch}
-            onStartMatch={(match) => handleStartMatch(match.id)}
-          />
-        ) : (
-          /* Match scoring view */
-          <>
-            <Button 
-              variant="outline" 
-              className="mb-4" 
-              onClick={handleBackToCourts}
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" /> Back to Courts
-            </Button>
-            
-            {selectedMatch && (
-              <ScoringMatchDetail
-                match={selectedMatch}
-                onScoreChange={handleScoreChange}
-                onNewSet={() => setNewSetDialogOpen(true)}
-                onCompleteMatch={() => setCompleteMatchDialogOpen(true)}
-                currentSet={currentSet}
-                onSetChange={setCurrentSet}
-                isPending={isPending}
-              />
-            )}
-          </>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">{currentTournament.name}</h1>
+        
+        {activeView === "match" && (
+          <Button 
+            variant="outline" 
+            onClick={() => setActiveView("courts")}
+            className="flex items-center gap-1"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Courts
+          </Button>
         )}
       </div>
 
-      {/* Scoring Settings Dialog */}
-      <ScoringSettings 
-        open={settingsOpen} 
-        onOpenChange={setSettingsOpen}
-        settings={scoringSettings}
-        onSettingsChange={handleUpdateScoringSettings}
-        title="Tournament Scoring Settings"
-        description="Configure scoring rules for this tournament"
-      />
-
-      {/* Confirmation Dialogs for New Set and Complete Match */}
-      <ScoringConfirmationDialogs
-        selectedMatch={selectedMatch}
-        currentSet={currentSet}
-        newSetDialogOpen={newSetDialogOpen}
-        setNewSetDialogOpen={setNewSetDialogOpen}
-        completeMatchDialogOpen={completeMatchDialogOpen}
-        setCompleteMatchDialogOpen={setCompleteMatchDialogOpen}
-        onNewSet={handleNewSet}
-        onCompleteMatch={handleCompleteMatch}
-      />
+      {activeView === "courts" ? (
+        <CourtView
+          tournament={currentTournament}
+          courts={courts}
+          onSelectCourt={onSelectCourt}
+          onSelectMatch={onSelectMatch}
+        />
+      ) : (
+        <MatchView 
+          match={selectedMatch}
+          currentSet={currentSet}
+          setCurrentSet={setCurrentSet}
+          onNewSet={onNewSet}
+          onCompleteMatch={onCompleteMatch}
+          onScoreChange={onScoreChange}
+          isPending={isPending}
+          scorerName={scorerName}
+          onScorerNameChange={onScorerNameChange}
+          onCourtChange={onCourtChange}
+        />
+      )}
+      
+      {/* New Set Dialog */}
+      <Dialog open={newSetDialogOpen} onOpenChange={setNewSetDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Start New Set</DialogTitle>
+          </DialogHeader>
+          <p>The current set has been completed. Would you like to start a new set?</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewSetDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => {
+              onNewSet();
+              setNewSetDialogOpen(false);
+            }}>Start New Set</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Complete Match Dialog */}
+      <Dialog open={completeMatchDialogOpen} onOpenChange={setCompleteMatchDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Complete Match</DialogTitle>
+          </DialogHeader>
+          <p>Are you sure you want to complete this match? This will finalize the scores and determine the winner.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCompleteMatchDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => {
+              onCompleteMatch();
+              setCompleteMatchDialogOpen(false);
+            }}>Complete Match</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ScoringContainer>
   );
 };
