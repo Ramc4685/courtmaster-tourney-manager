@@ -2,7 +2,7 @@
 import { useState, useRef } from "react";
 import { Match, Court } from "@/types/tournament";
 import { getDefaultScoringSettings } from "@/utils/matchUtils";
-import { useTournament } from "@/contexts/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament";
 
 export const useScoringState = () => {
   const { currentTournament } = useTournament();
