@@ -6,7 +6,7 @@ import Layout from '@/components/layout/Layout';
 import Home from '@/pages/home';
 import Tournaments from '@/pages/Tournaments';
 import TournamentCreate from '@/pages/tournament/TournamentCreate';
-import TournamentDetails from '@/pages/tournament/TournamentDetails';
+import TournamentDetail from '@/pages/TournamentDetail';
 import Scoring from '@/pages/Scoring';
 import StandaloneScoring from '@/pages/StandaloneScoring';
 import Settings from '@/pages/Settings';
@@ -40,7 +40,7 @@ function App() {
                 />
                 <Route path="/tournaments" element={<Tournaments />} />
                 <Route path="/tournament/create" element={<TournamentCreate />} />
-                <Route path="/tournament/:tournamentId" element={<TournamentDetails />} />
+                <Route path="/tournament/:tournamentId" element={<TournamentDetail />} />
                 <Route path="/scoring" element={<Scoring />} />
                 <Route path="/scoring/:tournamentId" element={<Scoring />} />
                 <Route path="/scoring/standalone" element={<StandaloneScoring />} />
