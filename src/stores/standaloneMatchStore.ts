@@ -4,13 +4,19 @@ import { persist } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
 import { AuditLog, Match, MatchScore, MatchStatus, Player, StandaloneMatch, Team, TournamentCategory } from '@/types/tournament';
 
-// Define a specific audit log for standalone matches without extending AuditLog
+// Define a simplified audit log type for standalone matches
 interface StandaloneAuditLog {
   timestamp: Date;
   action: string;
   details: string | Record<string, any>;
-  user_id?: string;
+  user_id: string; // Making it required to match AuditLog
   userName?: string;
+}
+
+// Modify the StandaloneMatch interface to use our simplified audit log
+// This is for internal use only
+interface StandaloneMatchWithCustomAudit extends Omit<StandaloneMatch, 'auditLogs'> {
+  auditLogs: StandaloneAuditLog[];
 }
 
 // Define the store state type
@@ -61,6 +67,14 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
           status: matchData.team2?.status || 'ACTIVE'
         };
 
+        // Create a default audit log
+        const defaultAuditLog: AuditLog = {
+          timestamp: new Date(),
+          action: 'Match created',
+          details: { message: `Match ${id} created` },
+          user_id: 'system'
+        };
+
         // Create the new match
         const newMatch: StandaloneMatch = {
           id,
@@ -75,24 +89,14 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
           // Convert string dates to Date objects if needed
           createdAt: matchData.createdAt instanceof Date ? matchData.createdAt : new Date(),
           updatedAt: matchData.updatedAt instanceof Date ? matchData.updatedAt : new Date(),
-          auditLogs: matchData.auditLogs || [
-            {
-              timestamp: new Date(),
-              action: 'Match created',
-              details: `Match ${id} created`,
-              user_id: 'system'
-            } as StandaloneAuditLog
-          ] as StandaloneAuditLog[] // Type assertion to fix compatibility issue
+          auditLogs: matchData.auditLogs || [defaultAuditLog]
         };
 
         // Add the new match to the store
-        set((state) => {
-          const updatedMatches = [...state.matches, newMatch];
-          return {
-            matches: updatedMatches,
-            currentMatch: newMatch
-          };
-        });
+        set((state) => ({
+          matches: [...state.matches, newMatch],
+          currentMatch: newMatch
+        }));
 
         return newMatch;
       },
@@ -194,8 +198,19 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
           scores[setIndex] = {
             team1Score,
             team2Score,
-            scoredBy: scorerName,
+            // Don't add scorer to the score object as it's not in MatchScore type
             timestamp: new Date().toISOString()
+          };
+
+          // Create a default audit log
+          const scoreAuditLog: AuditLog = {
+            timestamp: new Date(),
+            action: `Score updated for set ${setIndex + 1}`,
+            details: { 
+              score: `${team1Score}-${team2Score}`,
+              scorer: scorerName || 'Anonymous' 
+            },
+            user_id: 'system'
           };
 
           // Create the updated match
@@ -204,16 +219,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
             scores,
             updatedAt: new Date(),
             scorerName: scorerName || match.scorerName,
-            auditLogs: [
-              ...(match.auditLogs || []),
-              {
-                timestamp: new Date(),
-                action: `Score updated for set ${setIndex + 1}`,
-                details: `New score: ${team1Score}-${team2Score}`,
-                userName: scorerName,
-                user_id: 'system'
-              } as StandaloneAuditLog
-            ] as StandaloneAuditLog[] // Type assertion to fix compatibility issue
+            auditLogs: [...match.auditLogs, scoreAuditLog]
           };
 
           // Update the match in the matches array
@@ -233,19 +239,19 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
           const match = state.matches.find((m) => m.id === matchId);
           if (!match) return state;
 
+          // Create a default audit log
+          const statusAuditLog: AuditLog = {
+            timestamp: new Date(),
+            action: `Status changed to ${status}`,
+            details: { newStatus: status },
+            user_id: 'system'
+          };
+
           const updatedMatch = {
             ...match,
             status,
             updatedAt: new Date(),
-            auditLogs: [
-              ...(match.auditLogs || []),
-              {
-                timestamp: new Date(),
-                action: `Status changed to ${status}`,
-                details: `Match status updated to ${status}`,
-                user_id: 'system'
-              } as StandaloneAuditLog
-            ] as StandaloneAuditLog[] // Type assertion to fix compatibility issue
+            auditLogs: [...match.auditLogs, statusAuditLog]
           };
 
           // Update the match in the matches array
@@ -282,6 +288,17 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
             else if (team2Sets > team1Sets) winner = match.team2;
           }
 
+          // Create completion audit log
+          const completionAuditLog: AuditLog = {
+            timestamp: new Date(),
+            action: 'Match completed',
+            details: { 
+              winner: winner ? winner.name : 'No winner determined',
+              scorer: scorerName || 'Anonymous'
+            },
+            user_id: 'system'
+          };
+
           const updatedMatch = {
             ...match,
             status: 'COMPLETED' as MatchStatus,
@@ -289,16 +306,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
             winner,
             scorerName: scorerName || match.scorerName,
             endTime: new Date(),
-            auditLogs: [
-              ...(match.auditLogs || []),
-              {
-                timestamp: new Date(),
-                action: 'Match completed',
-                details: winner ? `Winner: ${winner.name}` : 'Match completed without a winner',
-                userName: scorerName,
-                user_id: 'system'
-              } as StandaloneAuditLog
-            ] as StandaloneAuditLog[] // Type assertion to fix compatibility issue
+            auditLogs: [...match.auditLogs, completionAuditLog]
           };
 
           // Update the match in the matches array
@@ -320,20 +328,20 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
           const match = state.matches.find((m) => m.id === matchId);
           if (!match) return state;
 
+          // Create court assignment audit log
+          const courtAuditLog: AuditLog = {
+            timestamp: new Date(),
+            action: 'Court assigned',
+            details: { courtNumber },
+            user_id: 'system'
+          };
+
           const updatedMatch = {
             ...match,
             courtNumber,
             courtName: `Court ${courtNumber}`,
             updatedAt: new Date(),
-            auditLogs: [
-              ...(match.auditLogs || []),
-              {
-                timestamp: new Date(),
-                action: 'Court assigned',
-                details: `Assigned to Court ${courtNumber}`,
-                user_id: 'system'
-              } as StandaloneAuditLog
-            ] as StandaloneAuditLog[] // Type assertion to fix compatibility issue
+            auditLogs: [...match.auditLogs, courtAuditLog]
           };
 
           // Update the match in the matches array

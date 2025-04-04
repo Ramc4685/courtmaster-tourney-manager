@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { TournamentStatus } from '@/types/tournament';
 
 interface TournamentStatusBadgeProps {
-  status: TournamentStatus;
+  status: TournamentStatus | string;
 }
 
 const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ status }) => {
@@ -28,7 +28,7 @@ const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ status })
       variant = 'default';
       label = 'Completed';
       break;
-    case 'CANCELLED': // This is safe now as we updated the TournamentStatus type
+    case 'CANCELLED':
       variant = 'destructive';
       label = 'Cancelled';
       break;

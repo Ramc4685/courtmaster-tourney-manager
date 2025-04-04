@@ -43,8 +43,7 @@ export const StandaloneMatchProvider: React.FC<{ children: ReactNode }> = ({ chi
     },
     
     createMatch: (match: Partial<StandaloneMatch>) => {
-      const newMatch = standaloneStore.createMatch(match);
-      return newMatch;
+      return standaloneStore.createMatch(match);
     },
     
     updateMatch: async (match: StandaloneMatch) => {
