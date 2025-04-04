@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTournament } from "@/contexts/TournamentContext";
@@ -89,8 +90,6 @@ const Scoring = () => {
         settingsOpen={scoring.settingsOpen}
         setSettingsOpen={scoring.setSettingsOpen}
         scoringSettings={scoring.scoringSettings}
-        updateScoringSettings={scoring.handleUpdateScoringSettings}
-        newSetDialogOpen={scoring.newSetDialogOpen}
         setNewSetDialogOpen={scoring.setNewSetDialogOpen}
         completeMatchDialogOpen={scoring.completeMatchDialogOpen}
         setCompleteMatchDialogOpen={scoring.setCompleteMatchDialogOpen}
@@ -101,6 +100,7 @@ const Scoring = () => {
         isPending={scoring.isPending}
         scorerName={scorerName}
         onScorerNameChange={scoring.updateScorerName}
+        newSetDialogOpen={scoring.newSetDialogOpen}
       />
     );
   }
@@ -162,7 +162,6 @@ const Scoring = () => {
       settingsOpen={scoring.settingsOpen}
       setSettingsOpen={scoring.setSettingsOpen}
       scoringSettings={scoringSettings}
-      updateScoringSettings={handleUpdateScoringSettings}
       newSetDialogOpen={scoring.newSetDialogOpen}
       setNewSetDialogOpen={scoring.setNewSetDialogOpen}
       completeMatchDialogOpen={scoring.completeMatchDialogOpen}

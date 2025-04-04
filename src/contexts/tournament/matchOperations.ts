@@ -34,13 +34,16 @@ export const updateMatchScoreInTournament = (
   console.log(`[DEBUG] Updated match scores for ${match.team1.name} vs ${match.team2.name}:`, 
               updatedScores.map(s => `${s.team1Score}-${s.team2Score}`).join(', '));
   
-  // Add audit information to the match
+  // Add audit information to the match, but first convert to Match type
   const userId = getCurrentUserId();
-  const updatedMatch = addScoringAuditInfo({
+  const updatedMatchData = {
     ...match,
     scores: updatedScores,
     scorerName: scorerName || userId // Use provided scorer name or default to user ID
-  }, scorerName || userId, match.courtNumber);
+  };
+  
+  // Explicitly cast to Match to avoid type errors
+  const updatedMatch = addScoringAuditInfo(updatedMatchData as Match, scorerName || userId, match.courtNumber) as Match;
   
   return updateMatchInTournament(currentTournament, updatedMatch);
 };
