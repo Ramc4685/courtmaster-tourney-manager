@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LogIn, MenuIcon, Trophy, User } from "lucide-react";
 import {
   Sheet,
@@ -11,15 +11,13 @@ import { Button } from "@/components/ui/button";
 import { useTournament } from "@/contexts/tournament/useTournament";
 import { useAuth } from "@/contexts/auth/AuthContext";
 import UserMenu from "@/components/auth/UserMenu";
-import AuthDialog from "@/components/auth/AuthDialog";
 
 const Navbar: React.FC = () => {
   const { currentTournament } = useTournament();
   const { user } = useAuth();
-  const navigate = useNavigate();
-
+  
   // Create conditionally rendered links based on whether there's a current tournament
-  const scoringLink = currentTournament ? `/scoring/${currentTournament.id}` : "/tournaments";
+  const scoringLink = currentTournament ? `/scoring/${currentTournament.id}` : "/scoring/standalone";
   
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -49,7 +47,7 @@ const Navbar: React.FC = () => {
               Scoring
             </Link>
             {currentTournament && (
-              <Link to={`/share/${currentTournament.id}`} className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
+              <Link to={`/share/tournament-${currentTournament.id}`} className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
                 Public View
               </Link>
             )}
@@ -104,7 +102,7 @@ const Navbar: React.FC = () => {
                     Scoring
                   </Link>
                   {currentTournament && (
-                    <Link to={`/share/${currentTournament.id}`} className="text-lg font-medium">
+                    <Link to={`/share/tournament-${currentTournament.id}`} className="text-lg font-medium">
                       Public View
                     </Link>
                   )}

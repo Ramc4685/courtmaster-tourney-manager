@@ -70,7 +70,7 @@ const MatchAuditInfo: React.FC<MatchAuditInfoProps> = ({ match }) => {
         <CardContent className="space-y-3 pt-0">
           <div>
             <div className="text-sm font-medium mb-1">Created:</div>
-            <div className="text-gray-700">{formatDate(match.createdAt)}</div>
+            <div className="text-gray-700">{formatDate(match.createdAt || new Date())}</div>
           </div>
           
           {match.scheduledTime && (

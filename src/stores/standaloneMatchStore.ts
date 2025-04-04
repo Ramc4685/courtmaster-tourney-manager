@@ -1,11 +1,11 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { v4 as uuidv4 } from 'uuid';
+import { nanoid } from 'nanoid';
 import { AuditLog, Match, MatchScore, MatchStatus, Player, StandaloneMatch, Team, TournamentCategory } from '@/types/tournament';
 
 // Define a specific audit log for standalone matches
-interface StandaloneAuditLog {
+interface StandaloneAuditLog extends Partial<AuditLog> {
   timestamp: Date;
   action: string;
   details: string | Record<string, any>;
@@ -21,19 +21,19 @@ export const useStandaloneMatchStore = create()(
 
       createMatch: (matchData: Partial<StandaloneMatch>): StandaloneMatch => {
         // Generate a new ID for the match
-        const id = matchData.id || `match-${uuidv4()}`;
+        const id = matchData.id || `match-${nanoid(8)}`;
         const matchNumber = matchData.matchNumber || `SM-${String(Math.floor(Math.random() * 9000) + 1000)}`;
 
         // Ensure we have valid teams with IDs
         const team1: Team = {
-          id: matchData.team1?.id || `team1-${uuidv4()}`,
+          id: matchData.team1?.id || `team1-${nanoid(6)}`,
           name: matchData.team1?.name || 'Team 1',
           players: matchData.team1?.players || [],
           status: matchData.team1?.status || 'ACTIVE'
         };
 
         const team2: Team = {
-          id: matchData.team2?.id || `team2-${uuidv4()}`,
+          id: matchData.team2?.id || `team2-${nanoid(6)}`,
           name: matchData.team2?.name || 'Team 2',
           players: matchData.team2?.players || [],
           status: matchData.team2?.status || 'ACTIVE'
@@ -57,8 +57,9 @@ export const useStandaloneMatchStore = create()(
             {
               timestamp: new Date(),
               action: 'Match created',
-              details: `Match ${id} created`
-            }
+              details: `Match ${id} created`,
+              user_id: 'system'
+            } as StandaloneAuditLog
           ]
         };
 
@@ -191,7 +192,8 @@ export const useStandaloneMatchStore = create()(
                 timestamp: new Date(),
                 action: `Score updated for set ${setIndex + 1}`,
                 details: `New score: ${team1Score}-${team2Score}`,
-                userName: scorerName
+                userName: scorerName,
+                user_id: 'system'
               } as StandaloneAuditLog
             ]
           };
@@ -222,7 +224,8 @@ export const useStandaloneMatchStore = create()(
               {
                 timestamp: new Date(),
                 action: `Status changed to ${status}`,
-                details: `Match status updated to ${status}`
+                details: `Match status updated to ${status}`,
+                user_id: 'system'
               } as StandaloneAuditLog
             ]
           };
@@ -274,7 +277,8 @@ export const useStandaloneMatchStore = create()(
                 timestamp: new Date(),
                 action: 'Match completed',
                 details: winner ? `Winner: ${winner.name}` : 'Match completed without a winner',
-                userName: scorerName
+                userName: scorerName,
+                user_id: 'system'
               } as StandaloneAuditLog
             ]
           };
@@ -308,7 +312,8 @@ export const useStandaloneMatchStore = create()(
               {
                 timestamp: new Date(),
                 action: 'Court assigned',
-                details: `Assigned to Court ${courtNumber}`
+                details: `Assigned to Court ${courtNumber}`,
+                user_id: 'system'
               } as StandaloneAuditLog
             ]
           };

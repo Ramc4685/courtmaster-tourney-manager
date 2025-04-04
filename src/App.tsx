@@ -21,21 +21,63 @@ function App() {
     <Router>
       <AuthProvider>
         <TournamentProvider>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/tournaments" element={<Tournaments />} />
-              <Route path="/tournament/create" element={<TournamentCreate />} />
-              <Route path="/tournament/:tournamentId" element={<TournamentDetail />} />
-              <Route path="/scoring/:tournamentId" element={<Scoring />} />
-              <Route path="/public/:tournamentId" element={<PublicView />} />
-              <Route path="/scoring/standalone" element={<StandaloneScoring />} />
-              <Route path="/scoring/standalone/:matchId" element={<StandaloneMatchScoring />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/share/tournament-:tournamentId" element={<Share />} />
-            </Routes>
-          </Layout>
+          <Routes>
+            <Route path="/" element={
+              <Layout>
+                <Home />
+              </Layout>
+            } />
+            <Route path="/login" element={
+              <Layout>
+                <Login />
+              </Layout>
+            } />
+            <Route path="/tournaments" element={
+              <Layout>
+                <Tournaments />
+              </Layout>
+            } />
+            <Route path="/tournament/create" element={
+              <Layout>
+                <TournamentCreate />
+              </Layout>
+            } />
+            <Route path="/tournament/:tournamentId" element={
+              <Layout>
+                <TournamentDetail />
+              </Layout>
+            } />
+            <Route path="/scoring/:tournamentId" element={
+              <Layout>
+                <Scoring />
+              </Layout>
+            } />
+            <Route path="/public/:tournamentId" element={
+              <Layout>
+                <PublicView />
+              </Layout>
+            } />
+            <Route path="/scoring/standalone" element={
+              <Layout>
+                <StandaloneScoring />
+              </Layout>
+            } />
+            <Route path="/scoring/standalone/:matchId" element={
+              <Layout>
+                <StandaloneMatchScoring />
+              </Layout>
+            } />
+            <Route path="/pricing" element={
+              <Layout>
+                <Pricing />
+              </Layout>
+            } />
+            <Route path="/share/tournament-:tournamentId" element={
+              <Layout>
+                <Share />
+              </Layout>
+            } />
+          </Routes>
         </TournamentProvider>
       </AuthProvider>
     </Router>
