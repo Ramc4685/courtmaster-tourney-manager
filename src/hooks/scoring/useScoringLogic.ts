@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useScoringState } from "./useScoringState";
 import { useScoringActions } from "./useScoringActions";
 
@@ -8,6 +8,7 @@ export const useScoringLogic = () => {
   
   // Prevent initialization logs from running every render
   const isInitialRender = useRef(true);
+  const isProcessing = useRef(false);
   
   // Get state management
   const state = useScoringState();
@@ -23,6 +24,52 @@ export const useScoringLogic = () => {
     }
   }, [state.currentTournament]);
 
+  // Wrap state updates in refs to prevent infinite loops
+  const safeSetCurrentSet = (set: number) => {
+    if (isProcessing.current) return;
+    isProcessing.current = true;
+    setTimeout(() => {
+      state.setCurrentSet(set);
+      isProcessing.current = false;
+    }, 0);
+  };
+
+  const safeSetSettingsOpen = (open: boolean) => {
+    if (isProcessing.current) return;
+    isProcessing.current = true;
+    setTimeout(() => {
+      state.setSettingsOpen(open);
+      isProcessing.current = false;
+    }, 0);
+  };
+
+  const safeSetNewSetDialogOpen = (open: boolean) => {
+    if (isProcessing.current) return;
+    isProcessing.current = true;
+    setTimeout(() => {
+      state.setNewSetDialogOpen(open);
+      isProcessing.current = false;
+    }, 0);
+  };
+
+  const safeSetCompleteMatchDialogOpen = (open: boolean) => {
+    if (isProcessing.current) return;
+    isProcessing.current = true;
+    setTimeout(() => {
+      state.setCompleteMatchDialogOpen(open);
+      isProcessing.current = false;
+    }, 0);
+  };
+
+  const safeSetActiveView = (view: "courts" | "scoring") => {
+    if (isProcessing.current) return;
+    isProcessing.current = true;
+    setTimeout(() => {
+      state.setActiveView(view);
+      isProcessing.current = false;
+    }, 0);
+  };
+
   return {
     // State
     currentTournament: state.currentTournament,
@@ -35,12 +82,12 @@ export const useScoringLogic = () => {
     newSetDialogOpen: state.newSetDialogOpen,
     completeMatchDialogOpen: state.completeMatchDialogOpen,
     
-    // State setters
-    setCurrentSet: state.setCurrentSet,
-    setSettingsOpen: state.setSettingsOpen,
-    setNewSetDialogOpen: state.setNewSetDialogOpen,
-    setCompleteMatchDialogOpen: state.setCompleteMatchDialogOpen,
-    setActiveView: state.setActiveView,
+    // Safe state setters
+    setCurrentSet: safeSetCurrentSet,
+    setSettingsOpen: safeSetSettingsOpen,
+    setNewSetDialogOpen: safeSetNewSetDialogOpen,
+    setCompleteMatchDialogOpen: safeSetCompleteMatchDialogOpen,
+    setActiveView: safeSetActiveView,
     setSelectedMatch: state.safeSetSelectedMatch,
     setSelectedCourt: state.setSelectedCourt,
     

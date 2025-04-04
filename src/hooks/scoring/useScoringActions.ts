@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { Match, Court } from "@/types/tournament";
 import { useTournament } from "@/contexts/tournament/useTournament";
@@ -27,6 +26,21 @@ export const useScoringActions = (state: any) => {
     updateTournament 
   } = useTournament();
   
+  // To prevent infinite loops
+  let isUpdatingState = false;
+  
+  // Safe setState wrapper to prevent infinite loops
+  const safeSetState = (callback: () => void) => {
+    if (isUpdatingState) return;
+    isUpdatingState = true;
+    
+    // Break the rendering chain with setTimeout
+    setTimeout(() => {
+      callback();
+      isUpdatingState = false;
+    }, 0);
+  };
+  
   // Handle selecting a match
   const handleSelectMatch = useCallback((match: Match) => {
     if (!match) {
@@ -40,7 +54,7 @@ export const useScoringActions = (state: any) => {
       return;
     }
     
-    console.log(`[DEBUG] Selecting match: ${match.id} (${match.team1.name} vs ${match.team2.name})`);
+    console.log(`[DEBUG] Selecting match: ${match.id}`);
     const latestMatch = currentTournament.matches.find(m => m.id === match.id) || match;
     
     // Set the current set to the last set with scores, or 0 if no sets
@@ -48,23 +62,26 @@ export const useScoringActions = (state: any) => {
     const setIndex = scores.length > 0 ? scores.length - 1 : 0;
     console.log(`[DEBUG] Setting current set to ${setIndex}`);
     
-    safeSetSelectedMatch(latestMatch);
-    setCurrentSet(setIndex);
-    setActiveView("scoring");
+    safeSetState(() => {
+      safeSetSelectedMatch(latestMatch);
+      setCurrentSet(setIndex);
+      setActiveView("scoring");
+    });
   }, [currentTournament, safeSetSelectedMatch, setCurrentSet, setActiveView]);
   
   // Handle selecting a court
   const handleSelectCourt = useCallback((court: Court) => {
     if (!court) return;
     
-    console.log(`[DEBUG] Selecting court: #${court.number} (${court.name || 'Unnamed'})`);
-    state.setSelectedCourt(court);
-    if (court.currentMatch) {
-      console.log(`[DEBUG] Court has active match, selecting match: ${court.currentMatch.id}`);
-      handleSelectMatch(court.currentMatch);
-    } else {
-      console.log(`[DEBUG] Court has no active match.`);
-    }
+    console.log(`[DEBUG] Selecting court: #${court.number}`);
+    
+    safeSetState(() => {
+      state.setSelectedCourt(court);
+      if (court.currentMatch) {
+        console.log(`[DEBUG] Court has active match`);
+        handleSelectMatch(court.currentMatch);
+      }
+    });
   }, [handleSelectMatch, state]);
   
   // Handle score changes
@@ -81,7 +98,7 @@ export const useScoringActions = (state: any) => {
       return;
     }
 
-    console.log(`[DEBUG] Updating score for ${team} (${increment ? 'increment' : 'decrement'}) for set ${currentSet}`);
+    console.log(`[DEBUG] Updating score for ${team}`);
     
     // Ensure scores array is initialized - make a defensive copy
     const scores = Array.isArray(latestMatch.scores) ? [...latestMatch.scores] : [];
@@ -111,7 +128,7 @@ export const useScoringActions = (state: any) => {
     }
     
     // Update match score in tournament context
-    console.log(`[DEBUG] Calling updateMatchScore: match=${selectedMatch.id}, set=${currentSet}, scores=${team1Score}-${team2Score}`);
+    console.log(`[DEBUG] Calling updateMatchScore: scores=${team1Score}-${team2Score}`);
     updateMatchScore(selectedMatch.id, currentSet, team1Score, team2Score);
 
     // Update our local selected match with new scores
@@ -142,12 +159,12 @@ export const useScoringActions = (state: any) => {
         // Break the rendering chain with setTimeout
         setTimeout(() => {
           setCompleteMatchDialogOpen(true);
-        }, 0);
+        }, 100);
       } else {
         // Ask for confirmation to start a new set
         setTimeout(() => {
           setNewSetDialogOpen(true);
-        }, 0);
+        }, 100);
       }
     }
   }, [
@@ -161,7 +178,7 @@ export const useScoringActions = (state: any) => {
     setNewSetDialogOpen
   ]);
   
-  // Start a match
+  // Rest of the actions (simplified)
   const handleStartMatch = useCallback((match: Match) => {
     if (!match || !match.courtNumber) {
       toast({
@@ -172,40 +189,32 @@ export const useScoringActions = (state: any) => {
       return;
     }
     
-    console.log(`[DEBUG] Starting match: ${match.id} (${match.team1.name} vs ${match.team2.name})`);
     updateMatchStatus(match.id, "IN_PROGRESS");
     
     // Break the potential update chain
     setTimeout(() => {
       handleSelectMatch(match);
-    }, 0);
-    
-    toast({
-      title: "Match started",
-      description: "The match has been started and is now in progress."
-    });
+    }, 100);
   }, [toast, updateMatchStatus, handleSelectMatch]);
   
-  // Complete a match
   const handleCompleteMatch = useCallback(() => {
     if (!selectedMatchRef.current) {
       console.error('[ERROR] Cannot complete match: No match selected.');
       return;
     }
     
-    console.log(`[DEBUG] Completing match: ${selectedMatchRef.current.id}`);
     completeMatch(selectedMatchRef.current.id);
     toast({
       title: "Match completed",
       description: "The match has been marked as complete."
     });
     
-    // Clear selected match and return to courts view with setTimeout to break update chain
+    // Clear selected match and return to courts view with timeout
     setTimeout(() => {
       safeSetSelectedMatch(null);
       setActiveView("courts");
       setCompleteMatchDialogOpen(false);
-    }, 0);
+    }, 100);
   }, [
     selectedMatchRef,
     completeMatch,
@@ -215,7 +224,6 @@ export const useScoringActions = (state: any) => {
     setCompleteMatchDialogOpen
   ]);
   
-  // Create a new set
   const handleNewSet = useCallback(() => {
     if (!selectedMatchRef.current) {
       console.error('[ERROR] Cannot create new set: No match selected.');
@@ -235,15 +243,13 @@ export const useScoringActions = (state: any) => {
     }
     
     // Initialize a new set with 0-0 score
-    console.log(`[DEBUG] Initializing new set ${newSetIndex} with score 0-0`);
     updateMatchScore(selectedMatchRef.current.id, newSetIndex, 0, 0);
     
-    // First close the dialog, then update the match and set with timeouts
+    // First close the dialog
     setNewSetDialogOpen(false);
     
-    // Use setTimeout to break the potential state update chain
+    // Update our local selected match to reflect the new set
     setTimeout(() => {
-      // Update our local selected match to reflect the new set
       const updatedScores = Array.isArray(selectedMatchRef.current?.scores) 
         ? [...selectedMatchRef.current.scores, { team1Score: 0, team2Score: 0 }]
         : [{ team1Score: 0, team2Score: 0 }];
@@ -255,7 +261,6 @@ export const useScoringActions = (state: any) => {
       
       safeSetSelectedMatch(updatedMatch);
       
-      // Use another setTimeout to ensure this happens after match update
       setTimeout(() => {
         setCurrentSet(newSetIndex);
         
@@ -263,8 +268,8 @@ export const useScoringActions = (state: any) => {
           title: "New set started",
           description: `Set ${newSetIndex + 1} has been started.`
         });
-      }, 0);
-    }, 0);
+      }, 50);
+    }, 50);
   }, [
     selectedMatchRef,
     scoringSettings,
@@ -275,25 +280,18 @@ export const useScoringActions = (state: any) => {
     setCurrentSet
   ]);
   
-  // Update scoring settings
   const handleUpdateScoringSettings = useCallback((newSettings) => {
-    console.log(`[DEBUG] Updating scoring settings:`, newSettings);
+    if (!currentTournament) return;
     
-    // Update tournament settings
-    if (currentTournament) {
-      console.log(`[DEBUG] Saving scoring settings to tournament ${currentTournament.id}`);
-      const updatedTournament = {
-        ...currentTournament,
-        scoringSettings: newSettings,
-        updatedAt: new Date()
-      };
-      updateTournament(updatedTournament);
-    }
+    const updatedTournament = {
+      ...currentTournament,
+      scoringSettings: newSettings,
+      updatedAt: new Date()
+    };
+    updateTournament(updatedTournament);
   }, [currentTournament, updateTournament]);
   
-  // Go back to courts view
   const handleBackToCourts = useCallback(() => {
-    console.log(`[DEBUG] Navigating back to courts view`);
     setActiveView("courts");
   }, [setActiveView]);
 

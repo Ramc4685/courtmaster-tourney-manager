@@ -87,10 +87,10 @@ const MatchAuditInfo: React.FC<MatchAuditInfoProps> = ({ match }) => {
             </div>
           )}
           
-          {match.completedAt && (
+          {match.endTime && (
             <div>
               <div className="text-sm font-medium mb-1">Completed:</div>
-              <div className="text-gray-700">{formatDate(match.completedAt)}</div>
+              <div className="text-gray-700">{formatDate(match.endTime)}</div>
             </div>
           )}
         </CardContent>

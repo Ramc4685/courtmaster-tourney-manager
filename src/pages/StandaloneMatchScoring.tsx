@@ -7,7 +7,7 @@ import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
 import { useToast } from '@/hooks/use-toast';
 import ScoringMatchDetail from '@/components/scoring/ScoringMatchDetail';
 import MatchAuditInfo from '@/components/match/MatchAuditInfo';
-import { MatchScore } from '@/types/tournament';
+import { MatchScore, StandaloneMatch } from '@/types/tournament';
 import { Card, CardContent } from '@/components/ui/card';
 import PageHeader from '@/components/shared/PageHeader';
 
@@ -43,7 +43,7 @@ const StandaloneMatchScoring = () => {
         setScorerName(match.scorerName);
       }
     }
-  }, [matchId, navigate, toast, standaloneMatchStore]);
+  }, [matchId, navigate, toast]); // Remove standaloneMatchStore to prevent infinite loops
 
   const match = standaloneMatchStore.currentMatch;
 
@@ -137,6 +137,14 @@ const StandaloneMatchScoring = () => {
     }
   };
 
+  // Cast the standalone match to a Match type for the MatchAuditInfo component
+  const matchForAudit = {
+    ...match,
+    tournamentId: match.tournamentId || '',
+    division: match.division || '',
+    stage: match.stage || '',
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <PageHeader
@@ -153,7 +161,7 @@ const StandaloneMatchScoring = () => {
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <ScoringMatchDetail 
-            match={match}
+            match={matchForAudit}
             onScoreChange={handleScoreChange}
             onNewSet={handleNewSet}
             onCompleteMatch={handleCompleteMatch}
@@ -166,7 +174,7 @@ const StandaloneMatchScoring = () => {
         </div>
         
         <div>
-          <MatchAuditInfo match={match} />
+          <MatchAuditInfo match={matchForAudit} />
         </div>
       </div>
     </div>

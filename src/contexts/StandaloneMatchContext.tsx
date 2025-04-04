@@ -57,9 +57,7 @@ export const StandaloneMatchProvider: React.FC<{ children: ReactNode }> = ({ chi
     
     deleteMatch: async (id: string) => {
       // Use the store's deleteMatch function if it exists, otherwise just resolve
-      if (standaloneStore.deleteMatch) {
-        standaloneStore.deleteMatch(id);
-      }
+      standaloneStore.deleteMatch(id);
       return Promise.resolve();
     },
     
