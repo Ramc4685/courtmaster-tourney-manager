@@ -1,10 +1,11 @@
-
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from "react";
 import { Tournament, Match, Team, Court, MatchStatus, Division, TournamentFormat, TournamentCategory } from "@/types/tournament";
-import { createNewTournament, deleteTournament, importTeamsToTournament, scheduleMatchInTournament } from "./tournament/tournamentOperations";
-import { updateMatchScoreInTournament, completeMatchInTournament, updateMatchStatusInTournament } from "./tournament/matchOperations";
 import { prepareUpdatedEntity } from "@/utils/auditUtils";
 import { SchedulingOptions, SchedulingResult } from "@/services/tournament/SchedulingService";
+
+// Import from the tournament folder
+import { createNewTournament, deleteTournament as deleteTournamentOp, importTeamsToTournament, scheduleMatchInTournament } from "@/contexts/tournament/tournamentOperations";
+import { updateMatchScoreInTournament, completeMatchInTournament, updateMatchStatusInTournament } from "@/contexts/tournament/matchOperations";
 
 interface TournamentContextType {
   tournaments: Tournament[];
@@ -28,6 +29,16 @@ interface TournamentContextType {
   loadCategoryDemoData: (tournamentId: string, categoryId: string, format: TournamentFormat) => Promise<void>;
   loadSampleData: (format?: TournamentFormat) => Promise<void>;
   deleteTournament: (tournamentId: string) => Promise<void>;
+  // Additional methods required by components
+  generateBracket: () => Promise<void>;
+  generateMultiStageTournament: () => Promise<void>;
+  advanceToNextStage: () => Promise<void>;
+  updateCourt: (court: Court) => Promise<void>;
+  assignSeeding: (tournamentId: string) => Promise<void>;
+  moveTeamToDivision: (teamId: string, fromDivision: Division, toDivision: Division) => Promise<void>;
+  addCategory: (category: Omit<TournamentCategory, "id">) => Promise<void>;
+  removeCategory: (categoryId: string) => Promise<void>;
+  updateCategory: (category: TournamentCategory) => Promise<void>;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -40,10 +51,6 @@ export const useTournament = () => {
   return context;
 };
 
-interface TournamentProviderProps {
-  children: ReactNode;
-}
-
 const getInitialTournaments = (): Tournament[] => {
   try {
     const storedTournaments = localStorage.getItem("tournaments");
@@ -55,6 +62,7 @@ const getInitialTournaments = (): Tournament[] => {
 };
 
 export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // ... keep existing code (state initialization and useEffect)
   const [tournaments, setTournaments] = useState<Tournament[]>(getInitialTournaments());
   const [currentTournament, setCurrentTournament] = useState<Tournament | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -82,7 +90,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
   // Remove a tournament
   const removeTournament = async (tournamentId: string) => {
-    const { tournaments: updatedTournaments, currentTournament: updatedCurrentTournament } = deleteTournament(
+    const { tournaments: updatedTournaments, currentTournament: updatedCurrentTournament } = deleteTournamentOp(
       tournamentId,
       tournaments,
       currentTournament
@@ -90,6 +98,8 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     setTournaments(updatedTournaments);
     setCurrentTournament(updatedCurrentTournament);
   };
+
+  // ... keep existing code (all other functions and hooks)
 
   // Import teams to the current tournament
   const importTeams = async (teams: Team[]) => {
@@ -208,6 +218,8 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     [currentTournament, tournaments]
   );
 
+  // ... keep existing code (assignCourt and autoAssignCourts functions)
+
   // Assign a court to a match
   const assignCourt = useCallback(
     async (matchId: string, courtId: string) => {
@@ -251,7 +263,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
   // Auto-assign available courts to scheduled matches
   const autoAssignCourts = useCallback(async () => {
-    if (!currentTournament) return;
+    if (!currentTournament) return Promise.resolve();
 
     let updatedTournament: Tournament = { ...currentTournament };
 
@@ -294,7 +306,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       )
     );
     setCurrentTournament(updatedTournament);
-    return Promise.resolve(scheduledMatches.length);
+    return Promise.resolve();
   }, [tournaments, currentTournament]);
 
   // Add the missing implementations
@@ -333,6 +345,8 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       console.error("Error adding team:", error);
     }
   };
+
+  // ... keep existing code (all other implementation functions)
 
   // Schedule multiple matches
   const scheduleMatches = async (teamPairs: { team1: Team; team2: Team }[], options: SchedulingOptions): Promise<SchedulingResult> => {
@@ -479,6 +493,17 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     await removeTournament(tournamentId);
   };
 
+  // Additional stub methods required by components
+  const generateBracket = async () => Promise.resolve();
+  const generateMultiStageTournament = async () => Promise.resolve();
+  const advanceToNextStage = async () => Promise.resolve();
+  const updateCourt = async (court: Court) => Promise.resolve();
+  const assignSeeding = async (tournamentId: string) => Promise.resolve();
+  const moveTeamToDivision = async (teamId: string, fromDivision: Division, toDivision: Division) => Promise.resolve();
+  const addCategory = async (category: Omit<TournamentCategory, "id">) => Promise.resolve();
+  const removeCategory = async (categoryId: string) => Promise.resolve();
+  const updateCategory = async (category: TournamentCategory) => Promise.resolve();
+
   return (
     <TournamentContext.Provider
       value={{
@@ -505,16 +530,15 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         loadCategoryDemoData,
         loadSampleData,
         deleteTournament,
-        // Stub implementations for any required methods not yet fully implemented
-        generateBracket: async () => Promise.resolve(),
-        generateMultiStageTournament: async () => Promise.resolve(),
-        advanceToNextStage: async () => Promise.resolve(),
-        updateCourt: async () => Promise.resolve(),
-        assignSeeding: async () => Promise.resolve(),
-        moveTeamToDivision: async () => Promise.resolve(),
-        addCategory: async () => Promise.resolve(),
-        removeCategory: async () => Promise.resolve(),
-        updateCategory: async () => Promise.resolve()
+        generateBracket,
+        generateMultiStageTournament,
+        advanceToNextStage,
+        updateCourt,
+        assignSeeding,
+        moveTeamToDivision,
+        addCategory,
+        removeCategory,
+        updateCategory
       }}
     >
       {children}

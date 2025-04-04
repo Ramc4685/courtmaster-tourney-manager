@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useTournament } from '@/contexts/tournament/TournamentContext';
+import { useTournament } from '@/contexts/tournament/useTournament';
 
 const Tournaments = () => {
   const tournament = useTournament();
