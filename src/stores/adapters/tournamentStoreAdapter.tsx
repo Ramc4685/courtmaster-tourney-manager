@@ -1,6 +1,6 @@
 
-import React, { ReactNode, useContext } from 'react';
-import { TournamentContext } from "@/contexts/tournament/TournamentContext";
+import React, { ReactNode } from 'react';
+import { useTournament as useTournamentFromContext } from "@/contexts/tournament/TournamentContext";
 import { useTournamentStore } from '../tournamentStore';
 import { SchedulingOptions, SchedulingResult } from '@/services/tournament/SchedulingService';
 import { Team, Tournament, TournamentCategory, TournamentFormat } from '@/types/tournament';
@@ -19,11 +19,7 @@ const USE_ZUSTAND = process.env.USE_ZUSTAND === 'true';
 
 export const useTournament = () => {
   // Get the original context - used when USE_ZUSTAND is false
-  const tournamentContext = useContext(TournamentContext);
-  
-  if (!tournamentContext) {
-    throw new Error('useTournament must be used within a TournamentProvider');
-  }
+  const tournamentContext = useTournamentFromContext();
   
   // Get the Zustand store - used when USE_ZUSTAND is true
   const tournamentStore = useTournamentStore();
@@ -56,7 +52,7 @@ export const useTournament = () => {
 // An optional compatibility provider that can be used during migration
 // This syncs data between Context and Zustand store during the transition period
 export const TournamentStoreCompatibilityProvider = ({ children }: { children: ReactNode }) => {
-  const tournamentContext = useContext(TournamentContext);
+  const tournamentContext = useTournamentFromContext();
   const {
     setCurrentTournament,
     updateTournament
