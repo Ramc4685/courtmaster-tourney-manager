@@ -1,25 +1,33 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from "react";
-import { Tournament, Match, Team, Court } from "@/types/tournament";
+import { Tournament, Match, Team, Court, MatchStatus, Division, TournamentFormat, TournamentCategory } from "@/types/tournament";
 import { createNewTournament, deleteTournament, importTeamsToTournament, scheduleMatchInTournament } from "./tournament/tournamentOperations";
 import { updateMatchScoreInTournament, completeMatchInTournament, updateMatchStatusInTournament } from "./tournament/matchOperations";
 import { prepareUpdatedEntity } from "@/utils/auditUtils";
+import { SchedulingOptions, SchedulingResult } from "@/services/tournament/SchedulingService";
 
 interface TournamentContextType {
   tournaments: Tournament[];
   currentTournament: Tournament | null;
-  setCurrentTournament: (tournament: Tournament | null) => void;
+  setCurrentTournament: (tournament: Tournament | null) => Promise<void>;
   addTournament: (tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">) => void;
-  updateTournament: (tournament: Tournament) => void;
-  removeTournament: (tournamentId: string) => void;
-  importTeams: (teams: Team[]) => void;
-  scheduleMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => void;
-  updateMatchScore: (matchId: string, setIndex: number, team1Score: number, team2Score: number, scorerName?: string) => void;
-  updateMatchStatus: (matchId: string, status: string) => void;
-  completeMatch: (matchId: string, scorerName?: string) => void;
-  assignCourt: (matchId: string, courtId: string) => void;
-  autoAssignCourts: () => void;
+  updateTournament: (tournament: Tournament) => Promise<void>;
+  removeTournament: (tournamentId: string) => Promise<void>;
+  importTeams: (teams: Team[]) => Promise<void>;
+  scheduleMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => Promise<void>;
+  updateMatchScore: (matchId: string, setIndex: number, team1Score: number, team2Score: number, scorerName?: string) => Promise<void>;
+  updateMatchStatus: (matchId: string, status: string) => Promise<void>;
+  completeMatch: (matchId: string, scorerName?: string) => Promise<void>;
+  assignCourt: (matchId: string, courtId: string) => Promise<void>;
+  autoAssignCourts: () => Promise<void>;
   isPending: boolean;
+  // Add the missing methods that components require
+  updateMatch: (match: Match) => Promise<void>;
+  addTeam: (team: Team) => Promise<void>;
+  scheduleMatches: (teamPairs: { team1: Team; team2: Team }[], options: SchedulingOptions) => Promise<SchedulingResult>;
+  loadCategoryDemoData: (tournamentId: string, categoryId: string, format: TournamentFormat) => Promise<void>;
+  loadSampleData: (format?: TournamentFormat) => Promise<void>;
+  deleteTournament: (tournamentId: string) => Promise<void>;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -64,7 +72,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   // Update an existing tournament
-  const updateTournament = (tournament: Tournament) => {
+  const updateTournament = async (tournament: Tournament) => {
     const updatedTournament = prepareUpdatedEntity(tournament);
     setTournaments(
       tournaments.map((t) => (t.id === tournament.id ? updatedTournament : t))
@@ -73,7 +81,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   // Remove a tournament
-  const removeTournament = (tournamentId: string) => {
+  const removeTournament = async (tournamentId: string) => {
     const { tournaments: updatedTournaments, currentTournament: updatedCurrentTournament } = deleteTournament(
       tournamentId,
       tournaments,
@@ -84,7 +92,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   // Import teams to the current tournament
-  const importTeams = (teams: Team[]) => {
+  const importTeams = async (teams: Team[]) => {
     if (!currentTournament) return;
 
     const updatedTournament = importTeamsToTournament(teams, currentTournament);
@@ -96,7 +104,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
   // Schedule a match
   const scheduleMatch = useCallback(
-    (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => {
+    async (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => {
       if (!currentTournament) return;
 
       setIsPending(true);
@@ -124,7 +132,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
   // Update match score
   const updateMatchScore = useCallback(
-    (matchId: string, setIndex: number, team1Score: number, team2Score: number, scorerName?: string) => {
+    async (matchId: string, setIndex: number, team1Score: number, team2Score: number, scorerName?: string) => {
       if (!currentTournament) return;
       
       setIsPending(true);
@@ -156,7 +164,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
   // Update match status
   const updateMatchStatus = useCallback(
-    (matchId: string, status: string) => {
+    async (matchId: string, status: string) => {
       if (!currentTournament) return;
 
       setIsPending(true);
@@ -177,7 +185,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
   // Complete a match
   const completeMatch = useCallback(
-    (matchId: string, scorerName?: string) => {
+    async (matchId: string, scorerName?: string) => {
       if (!currentTournament) return;
       
       setIsPending(true);
@@ -202,7 +210,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
 
   // Assign a court to a match
   const assignCourt = useCallback(
-    (matchId: string, courtId: string) => {
+    async (matchId: string, courtId: string) => {
       if (!currentTournament) return;
 
       // Find the match and court
@@ -242,7 +250,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
   );
 
   // Auto-assign available courts to scheduled matches
-  const autoAssignCourts = useCallback(() => {
+  const autoAssignCourts = useCallback(async () => {
     if (!currentTournament) return;
 
     let updatedTournament: Tournament = { ...currentTournament };
@@ -286,14 +294,201 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
       )
     );
     setCurrentTournament(updatedTournament);
+    return Promise.resolve(scheduledMatches.length);
   }, [tournaments, currentTournament]);
+
+  // Add the missing implementations
+
+  // Update match
+  const updateMatch = async (match: Match) => {
+    if (!currentTournament) return;
+    
+    try {
+      const updatedMatches = currentTournament.matches.map(m => m.id === match.id ? match : m);
+      const updatedTournament = {
+        ...currentTournament,
+        matches: updatedMatches,
+        updatedAt: new Date()
+      };
+      
+      await updateTournament(updatedTournament);
+    } catch (error) {
+      console.error("Error updating match:", error);
+    }
+  };
+
+  // Add a team to the current tournament
+  const addTeam = async (team: Team) => {
+    if (!currentTournament) return;
+    
+    try {
+      const updatedTournament = {
+        ...currentTournament,
+        teams: [...currentTournament.teams, team],
+        updatedAt: new Date()
+      };
+      
+      await updateTournament(updatedTournament);
+    } catch (error) {
+      console.error("Error adding team:", error);
+    }
+  };
+
+  // Schedule multiple matches
+  const scheduleMatches = async (teamPairs: { team1: Team; team2: Team }[], options: SchedulingOptions): Promise<SchedulingResult> => {
+    if (!currentTournament) {
+      throw new Error("No active tournament");
+    }
+    
+    try {
+      // Mock implementation for now - in real app would use schedulingService
+      const now = new Date();
+      const scheduledMatches = teamPairs.map((pair, index) => {
+        const scheduledTime = new Date(now.getTime() + index * options.matchDuration * 60000);
+        return {
+          id: `match-${Date.now()}-${index}`,
+          tournamentId: currentTournament.id,
+          team1: pair.team1,
+          team2: pair.team2,
+          scores: [],
+          division: options.division,
+          stage: currentTournament.currentStage,
+          scheduledTime,
+          status: "SCHEDULED" as MatchStatus,
+          category: currentTournament.categories[0] // Default to first category
+        };
+      });
+      
+      const updatedTournament = {
+        ...currentTournament,
+        matches: [...currentTournament.matches, ...scheduledMatches],
+        updatedAt: new Date()
+      };
+      
+      await updateTournament(updatedTournament);
+      
+      return {
+        scheduledMatches: scheduledMatches.length,
+        assignedCourts: 0,
+        startedMatches: 0,
+        tournament: updatedTournament
+      };
+    } catch (error) {
+      console.error("Error scheduling matches:", error);
+      throw error;
+    }
+  };
+
+  // Load category demo data
+  const loadCategoryDemoData = async (tournamentId: string, categoryId: string, format: TournamentFormat) => {
+    if (!currentTournament) {
+      console.error("No current tournament selected");
+      return;
+    }
+    
+    try {
+      console.log(`Loading demo data for category ID ${categoryId} with format ${format}`);
+      
+      // Find the category
+      const category = currentTournament.categories.find(c => c.id === categoryId);
+      if (!category) {
+        console.error(`Category with ID ${categoryId} not found`);
+        return;
+      }
+      
+      // Mock implementation - create some teams and matches for this category
+      const teams: Team[] = Array(8).fill(null).map((_, i) => ({
+        id: `demo-team-${categoryId}-${i}`,
+        name: `Demo Team ${i+1}`,
+        players: [{ id: `player-${i*2}`, name: `Player ${i*2+1}` }, { id: `player-${i*2+1}`, name: `Player ${i*2+2}` }],
+        category
+      }));
+      
+      // Create some matches between these teams
+      const matches: Match[] = [];
+      for (let i = 0; i < teams.length; i += 2) {
+        matches.push({
+          id: `demo-match-${categoryId}-${i/2}`,
+          tournamentId: currentTournament.id,
+          team1: teams[i],
+          team2: teams[i+1],
+          scores: [],
+          division: "INITIAL",
+          stage: currentTournament.currentStage,
+          scheduledTime: new Date(Date.now() + i * 30 * 60000), // Schedule 30 min apart
+          status: "SCHEDULED",
+          category
+        });
+      }
+      
+      // Add the teams and matches to the current tournament
+      const updatedTournament = {
+        ...currentTournament,
+        teams: [...currentTournament.teams, ...teams],
+        matches: [...currentTournament.matches, ...matches],
+        updatedAt: new Date()
+      };
+      
+      // Update the tournament
+      await updateTournament(updatedTournament);
+      console.log(`Demo data loaded for category ${category.name}: ${teams.length} teams, ${matches.length} matches`);
+    } catch (error) {
+      console.error(`Error loading demo data for category ID ${categoryId}:`, error);
+    }
+  };
+
+  // Load sample data
+  const loadSampleData = async (format?: TournamentFormat) => {
+    try {
+      console.log('[DEBUG] Loading sample tournament data for format:', format || 'MULTI_STAGE');
+      
+      // Create a sample tournament
+      const sampleTournament: Tournament = {
+        id: `sample-${Date.now()}`,
+        name: "Sample Tournament",
+        description: "A sample tournament with demo data",
+        format: format || "MULTI_STAGE",
+        status: "DRAFT",
+        currentStage: "INITIAL_ROUND",
+        teams: [],
+        matches: [],
+        courts: [
+          { id: "court-1", name: "Court 1", number: 1, status: "AVAILABLE" },
+          { id: "court-2", name: "Court 2", number: 2, status: "AVAILABLE" }
+        ],
+        startDate: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        categories: [
+          { id: "category-1", name: "Men's Singles", type: "MENS_SINGLES" },
+          { id: "category-2", name: "Women's Singles", type: "WOMENS_SINGLES" },
+          { id: "category-3", name: "Mixed Doubles", type: "MIXED_DOUBLES" }
+        ]
+      };
+      
+      // Update state and localStorage
+      setTournaments([...tournaments, sampleTournament]);
+      setCurrentTournament(sampleTournament);
+    } catch (error) {
+      console.error("Error loading sample data:", error);
+    }
+  };
+
+  // Delete tournament (renamed from removeTournament to match interface)
+  const deleteTournament = async (tournamentId: string) => {
+    await removeTournament(tournamentId);
+  };
 
   return (
     <TournamentContext.Provider
       value={{
         tournaments,
         currentTournament,
-        setCurrentTournament,
+        isPending,
+        setCurrentTournament: async (tournament) => {
+          setCurrentTournament(tournament);
+          return Promise.resolve();
+        },
         addTournament,
         updateTournament,
         removeTournament,
@@ -304,7 +499,22 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         completeMatch,
         assignCourt,
         autoAssignCourts,
-        isPending,
+        updateMatch,
+        addTeam,
+        scheduleMatches,
+        loadCategoryDemoData,
+        loadSampleData,
+        deleteTournament,
+        // Stub implementations for any required methods not yet fully implemented
+        generateBracket: async () => Promise.resolve(),
+        generateMultiStageTournament: async () => Promise.resolve(),
+        advanceToNextStage: async () => Promise.resolve(),
+        updateCourt: async () => Promise.resolve(),
+        assignSeeding: async () => Promise.resolve(),
+        moveTeamToDivision: async () => Promise.resolve(),
+        addCategory: async () => Promise.resolve(),
+        removeCategory: async () => Promise.resolve(),
+        updateCategory: async () => Promise.resolve()
       }}
     >
       {children}
