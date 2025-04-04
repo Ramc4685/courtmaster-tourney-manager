@@ -1,17 +1,17 @@
 
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTournament } from '@/contexts/tournament/useTournament';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Clock, Gauge, List } from 'lucide-react'; // Changed Court to Gauge
+import { ArrowLeft, Clock, Gauge, List } from 'lucide-react';
 import ScoringContainer from '@/components/scoring/ScoringContainer';
 import CourtSelectionPanel from '@/components/scoring/CourtSelectionPanel';
 import ScheduledMatchesList from '@/components/scoring/ScheduledMatchesList';
 import TournamentScoring from '@/components/scoring/TournamentScoring';
 import PageHeader from '@/components/shared/PageHeader';
+import LiveVideoLink from '@/components/shared/LiveVideoLink';
 import { useScoringLogic } from '@/hooks/scoring/useScoringLogic';
 
 // Define a type adapter for the activeView type
@@ -20,7 +20,7 @@ type TournamentScoringViewAdapter = "match" | "courts";
 const Scoring = () => {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
-  const { tournaments, setCurrentTournament, currentTournament, updateMatch, completeMatch } = useTournament();
+  const { tournaments, setCurrentTournament, currentTournament } = useTournament();
   const [activeTab, setActiveTab] = useState('courts');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,6 +126,11 @@ const Scoring = () => {
             </Link>
           }
         />
+
+        {/* Add Live Video Link */}
+        <div className="mb-4">
+          <LiveVideoLink tournamentId={tournamentId} />
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid grid-cols-3 w-full max-w-md">

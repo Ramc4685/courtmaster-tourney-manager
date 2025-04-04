@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import Layout from "@/components/layout/Layout";
 import MatchCard from "@/components/shared/MatchCard";
 import CourtCard from "@/components/shared/CourtCard";
+import LiveVideoLink from "@/components/shared/LiveVideoLink";
 import { Match, Division } from "@/types/tournament";
 import { format } from "date-fns";
 import { tournamentService } from "@/services/tournament/TournamentService";
@@ -162,6 +163,11 @@ const PublicView = () => {
               Refresh
             </Button>
           </div>
+        </div>
+
+        {/* Add Live Video Link */}
+        <div className="mb-6">
+          <LiveVideoLink tournamentId={tournamentId} />
         </div>
 
         <Tabs defaultValue="inprogress" className="mt-6">

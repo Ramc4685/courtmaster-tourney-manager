@@ -1,4 +1,3 @@
-
 import { Tournament, Team, Match, TournamentFormat, TournamentCategory } from "@/types/tournament";
 import { generateId } from "./tournamentUtils";
 import { generateTeamName } from "./teamNameUtils";
@@ -132,6 +131,7 @@ export const getSampleDataByFormat = (format: TournamentFormat): Tournament => {
 // This function needs to be exported if it isn't already
 import { Team as TeamType, Match as MatchType, TournamentCategory as TournamentCategoryType } from "@/types/tournament";
 
+// Update the getCategoryDemoData function to fix player naming
 export const getCategoryDemoData = (format: TournamentFormat, category: TournamentCategoryType) => {
   console.log(`Generating demo data for ${category.name} with format ${format}`);
   
@@ -165,71 +165,69 @@ export const getCategoryDemoData = (format: TournamentFormat, category: Tourname
       ["Yuta Watanabe", "Arisa Higashino"],
       ["Tang Chun Man", "Tse Ying Suet"],
       ["Marcus Ellis", "Lauren Smith"],
-      ["Goh Soon Huat", "Lai Shevon Jemie"],
-      ["Thom Gicquel", "Delphine Delrue"],
-      ["Chan Peng Soon", "Goh Liu Ying"],
-      ["Seo Seung Jae", "Chae Yujung"],
-      ["Mathias Christiansen", "Alexandra Bøje"]
+      ["Goh Soon Huat", "Lai Shevon Jemie"]
     ];
   } else {
-    // Default player pool for other categories - use real players instead of generic names
+    // Default player pool for other categories
     playerPool = [
       "Viktor Axelsen", "Tai Tzu-ying", "Jonatan Christie", "Carolina Marin",
       "Kento Momota", "An Se-young", "Anders Antonsen", "Chen Yufei"
     ];
   }
   
-  // Generate unique team names for this category
-  const teams: TeamType[] = [];
+  // Generate teams with proper player names
+  const teams = [];
   for (let i = 0; i < teamCount; i++) {
-    // Get player(s) for this team
     const isDoubles = category.type.includes("DOUBLES");
-    const playerIndex = i % playerPool.length;
-    
     let players;
     let playerNames;
     
     if (isDoubles) {
-      if (category.type === "MIXED_DOUBLES" && Array.isArray(playerPool[playerIndex])) {
+      if (category.type === "MIXED_DOUBLES" && Array.isArray(playerPool[i % playerPool.length])) {
         // For mixed doubles, use the predefined pairs
-        playerNames = playerPool[playerIndex] as string[];
-        players = playerNames.map(name => ({
-          id: generateId(),
+        playerNames = playerPool[i % playerPool.length] as string[];
+        players = playerNames.map((name, idx) => ({
+          id: `player-${i}-${idx}`,
           name
         }));
       } else {
         // For other doubles, create pairs from the pool
         const player1Index = i % playerPool.length;
-        const player2Index = (i + 1) % playerPool.length;
+        const player2Index = (i + Math.floor(playerPool.length/2)) % playerPool.length;
         playerNames = [playerPool[player1Index], playerPool[player2Index]] as string[];
-        players = playerNames.map(name => ({
-          id: generateId(),
-          name: name as string
-        }));
+        players = [
+          { id: `player-${i}-1`, name: playerNames[0] as string },
+          { id: `player-${i}-2`, name: playerNames[1] as string }
+        ];
       }
+      
+      // Team name for doubles is a combination of player last names
+      const teamName = `${players[0].name.split(' ').pop()}/${players[1].name.split(' ').pop()}`;
+      
+      teams.push({
+        id: `team-${category.id}-${i}`,
+        name: teamName,
+        players,
+        category
+      });
     } else {
-      // For singles
-      playerNames = [playerPool[playerIndex]] as string[];
-      players = [{
-        id: generateId(),
-        name: playerNames[0] as string
-      }];
+      // For singles, team name is just the player name
+      const playerIndex = i % playerPool.length;
+      const playerName = playerPool[playerIndex] as string;
+      
+      teams.push({
+        id: `team-${category.id}-${i}`,
+        name: playerName,
+        players: [{ id: `player-${i}`, name: playerName }],
+        category
+      });
     }
-    
-    // Generate team name based on player names
-    const teamName = generateTeamName(playerNames.map(name => name as string));
-    
-    teams.push({
-      id: generateId(),
-      name: teamName,
-      players: players,
-      category: category
-    });
   }
   
-  // Get the format handler and generate matches
+  // Generate matches between teams using the format handler
+  const TournamentFormatService = require('@/services/tournament/formats/TournamentFormatService');
   const formatHandler = TournamentFormatService.getFormatHandler(format);
-  const matches = formatHandler.generateMatches(teams, category);
+  const matches = formatHandler ? formatHandler.generateMatches(teams, category) : [];
   
   return { teams, matches };
 };
