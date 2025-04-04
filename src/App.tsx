@@ -52,6 +52,11 @@ function App() {
                 <Scoring />
               </Layout>
             } />
+            <Route path="/scoring/:tournamentId/:matchId" element={
+              <Layout>
+                <Scoring />
+              </Layout>
+            } />
             <Route path="/public/:tournamentId" element={
               <Layout>
                 <PublicView />
@@ -72,7 +77,7 @@ function App() {
                 <Pricing />
               </Layout>
             } />
-            <Route path="/share/tournament-:tournamentId" element={
+            <Route path="/share/:tournamentId" element={
               <Layout>
                 <Share />
               </Layout>

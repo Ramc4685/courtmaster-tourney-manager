@@ -27,6 +27,7 @@ const MatchDetails: React.FC<MatchDetailsProps> = ({
 
   const handleContinueScoring = () => {
     // Navigate to the scoring page with the tournament ID and match ID
+    console.log(`Navigating to scoring page for match: ${match.id} in tournament: ${match.tournamentId}`);
     navigate(`/scoring/${match.tournamentId}/${match.id}`);
   };
 

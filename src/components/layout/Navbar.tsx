@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LogIn, MenuIcon, Trophy, User } from "lucide-react";
+import { LogIn, MenuIcon, Trophy, User, DollarSign } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -18,6 +18,7 @@ const Navbar: React.FC = () => {
   
   // Create conditionally rendered links based on whether there's a current tournament
   const scoringLink = currentTournament ? `/scoring/${currentTournament.id}` : "/scoring/standalone";
+  const publicViewLink = currentTournament ? `/public/${currentTournament.id}` : null;
   
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -46,11 +47,15 @@ const Navbar: React.FC = () => {
             <Link to={scoringLink} className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
               Scoring
             </Link>
-            {currentTournament && (
-              <Link to={`/share/tournament-${currentTournament.id}`} className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
+            {publicViewLink && (
+              <Link to={publicViewLink} className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
                 Public View
               </Link>
             )}
+            <Link to="/pricing" className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
+              <DollarSign className="h-4 w-4 inline mr-1" />
+              Pricing
+            </Link>
             {user && user.role === 'admin' && (
               <Link to="/admin" className="text-gray-700 hover:text-court-green px-3 py-2 text-sm font-medium">
                 Admin
@@ -101,11 +106,15 @@ const Navbar: React.FC = () => {
                   <Link to={scoringLink} className="text-lg font-medium">
                     Scoring
                   </Link>
-                  {currentTournament && (
-                    <Link to={`/share/tournament-${currentTournament.id}`} className="text-lg font-medium">
+                  {publicViewLink && (
+                    <Link to={publicViewLink} className="text-lg font-medium">
                       Public View
                     </Link>
                   )}
+                  <Link to="/pricing" className="text-lg font-medium">
+                    <DollarSign className="h-4 w-4 inline mr-1" />
+                    Pricing
+                  </Link>
                   
                   {user && user.role === 'admin' && (
                     <Link to="/admin" className="text-lg font-medium">

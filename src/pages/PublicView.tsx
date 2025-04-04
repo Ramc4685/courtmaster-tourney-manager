@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { RefreshCw, Award, Clock, Calendar } from "lucide-react";
@@ -18,7 +19,7 @@ const PublicView = () => {
   const [tournament, setTournament] = useState(null);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [refreshing, setRefreshing] = useState(false);
-  const { getTournaments } = useTournament(); // Use the context to get tournaments
+  const { currentTournament, tournaments } = useTournament(); // Use the context to get tournaments
 
   // Fetch tournament data
   useEffect(() => {
@@ -27,16 +28,22 @@ const PublicView = () => {
       
       try {
         // Try to get tournaments from the context first
-        const contextTournaments = getTournaments ? getTournaments() : [];
-        
-        if (contextTournaments && contextTournaments.length > 0) {
-          const foundTournament = contextTournaments.find(t => t.id === tournamentId);
+        if (tournaments && tournaments.length > 0) {
+          const foundTournament = tournaments.find(t => t.id === tournamentId);
           if (foundTournament) {
             console.log("Found tournament in context:", foundTournament.name);
             setTournament(foundTournament);
             setLastRefreshed(new Date());
             return;
           }
+        }
+        
+        // Check if current tournament matches the requested ID
+        if (currentTournament && currentTournament.id === tournamentId) {
+          console.log("Using current tournament:", currentTournament.name);
+          setTournament(currentTournament);
+          setLastRefreshed(new Date());
+          return;
         }
         
         // Fallback to service if not found in context
@@ -56,7 +63,7 @@ const PublicView = () => {
     };
     
     loadTournament();
-  }, [tournamentId, getTournaments]);
+  }, [tournamentId, tournaments, currentTournament]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -64,13 +71,13 @@ const PublicView = () => {
     if (tournamentId) {
       try {
         // Try to get tournaments from the context first
-        const contextTournaments = getTournaments ? getTournaments() : [];
-        
-        if (contextTournaments && contextTournaments.length > 0) {
-          const refreshedTournament = contextTournaments.find(t => t.id === tournamentId);
+        if (tournaments && tournaments.length > 0) {
+          const refreshedTournament = tournaments.find(t => t.id === tournamentId);
           if (refreshedTournament) {
             setTournament(refreshedTournament);
           }
+        } else if (currentTournament && currentTournament.id === tournamentId) {
+          setTournament(currentTournament);
         } else {
           // Fallback to service
           const serviceTournaments = await tournamentService.getTournaments();
