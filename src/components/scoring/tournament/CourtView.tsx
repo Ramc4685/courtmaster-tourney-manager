@@ -45,7 +45,7 @@ const CourtView: React.FC<CourtViewProps> = ({
             <Card 
               key={court.id} 
               className={`cursor-pointer transition-shadow hover:shadow-md ${
-                activeMatch ? 'border-court-green' : 'border-gray-200'
+                activeMatch ? 'border-green-500' : 'border-gray-200'
               }`}
               onClick={() => onSelectCourt(court)}
             >

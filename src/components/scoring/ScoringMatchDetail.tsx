@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getCurrentUserId } from "@/utils/auditUtils";
-import { getDefaultScorerName } from "@/utils/matchAuditUtils";
 
 interface ScoringMatchDetailProps {
   match: Match;
@@ -32,7 +30,7 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
   currentSet,
   onSetChange,
   isPending = false,
-  scorerName = getDefaultScorerName(),
+  scorerName = "Anonymous Scorer", // Default scorer name
   onScorerNameChange,
   onCourtChange
 }) => {
@@ -143,7 +141,7 @@ const ScoringMatchDetail: React.FC<ScoringMatchDetailProps> = ({
           )}
         </div>
       </div>
-
+      
       {/* Audit Information Fields */}
       <div className="bg-gray-50 p-4 rounded-lg space-y-4">
         {/* Scorer Name Input */}

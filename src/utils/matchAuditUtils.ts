@@ -3,6 +3,22 @@ import { Match, StandaloneMatch, AuditLog } from "@/types/tournament";
 import { getCurrentUserId } from "./auditUtils";
 
 /**
+ * Returns a default scorer name (uses anonymous if none provided)
+ */
+export function getDefaultScorerName(): string {
+  return "Anonymous Scorer";
+}
+
+/**
+ * Generates a unique match number for tournament matches
+ */
+export function generateMatchNumber(tournament: any): string {
+  // Format: T-{tournamentId}-M-{count}
+  const matchCount = tournament.matches ? tournament.matches.length + 1 : 1;
+  return `T-${tournament.id.substring(0, 6)}-M-${matchCount}`;
+}
+
+/**
  * Adds a general log entry to the match audit
  */
 export function addMatchAuditLog(match: Match | StandaloneMatch, message: string): Match | StandaloneMatch {
@@ -12,7 +28,7 @@ export function addMatchAuditLog(match: Match | StandaloneMatch, message: string
   // Create audit log entry
   const logEntry: AuditLog = {
     timestamp,
-    userId,
+    user_id: userId, // Fixed: userId -> user_id
     message,
     type: "GENERAL"
   };
@@ -40,7 +56,7 @@ export function addScoringAuditInfo(
   // Create audit log entry for scoring
   const logEntry: AuditLog = {
     timestamp,
-    userId,
+    user_id: userId, // Fixed: userId -> user_id
     message: `Score updated by ${scorerName || "Unknown"}`,
     type: "SCORING",
     metadata: {
@@ -73,7 +89,7 @@ export function addCourtAssignmentAuditInfo(
   // Create audit log entry for court assignment
   const logEntry: AuditLog = {
     timestamp,
-    userId,
+    user_id: userId, // Fixed: userId -> user_id
     message: `Court ${courtNumber} assigned to match`,
     type: "COURT_ASSIGNMENT",
     metadata: {

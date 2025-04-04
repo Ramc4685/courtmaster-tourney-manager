@@ -26,9 +26,9 @@ interface TournamentScoringProps {
   completeMatchDialogOpen: boolean;
   setCompleteMatchDialogOpen: (open: boolean) => void;
   onSelectMatch: (match: Match) => void;
-  onSelectCourt: (courtNumber: number) => void;
+  onSelectCourt: (court: Court) => void;  // Updated to accept Court type
   courts: Court[];
-  onScoreChange: (team: "team1" | "team2", increment: boolean) => void;
+  onScoreChange: (team1Score: number, team2Score: number) => void;  // Updated parameter types
   onNewSet: () => void;
   onCompleteMatch: () => void;
   isPending?: boolean;

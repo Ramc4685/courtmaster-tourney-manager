@@ -49,6 +49,7 @@ const Scoring = () => {
     setCurrentSet(match.scores.length - 1 >= 0 ? match.scores.length - 1 : 0);
   };
 
+  // This function adapts the Court parameter to match what the component expects
   const handleSelectCourt = (court: Court) => {
     const match = court.currentMatch || 
       currentTournament.matches.find(m => m.courtNumber === court.number && m.status === "IN_PROGRESS");
@@ -64,6 +65,7 @@ const Scoring = () => {
     }
   };
 
+  // Adapter function to handle team/increment API to team1Score/team2Score API
   const handleScoreChange = (team1Score: number, team2Score: number) => {
     if (!selectedMatch) return;
 
@@ -107,6 +109,7 @@ const Scoring = () => {
     });
   };
 
+  // Adapter for Court change
   const handleCourtChange = (courtNumber: number) => {
     if (!selectedMatch) return;
     
@@ -126,7 +129,7 @@ const Scoring = () => {
   return (
     <TournamentScoring
       currentTournament={currentTournament}
-      tournamentId={tournamentId}
+      tournamentId={tournamentId || ''}
       activeView={activeView}
       setActiveView={setActiveView}
       selectedMatch={selectedMatch}

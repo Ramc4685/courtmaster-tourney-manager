@@ -1,156 +1,49 @@
 
-import { Tournament, Match, Team, Court, MatchStatus, Division, TournamentStage, TournamentFormat, TournamentCategory, StandaloneMatch } from "@/types/tournament";
-import { generateId, findMatchById, updateMatchInTournament } from "@/utils/tournamentUtils";
-import { addMatchAuditLog, addScoringAuditInfo, addCourtAssignmentAuditInfo } from "@/utils/matchAuditUtils";
+import { Match, Tournament, MatchStatus, StandaloneMatch } from "@/types/tournament";
+import { addMatchAuditLog, addScoringAuditInfo } from "@/utils/matchAuditUtils";
+import { getCurrentUserId } from "@/utils/auditUtils";
 
-/**
- * Creates a new tournament
- */
-export const createNewTournament = (
-  tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">,
-  tournaments: Tournament[]
-): { tournament: Tournament; tournaments: Tournament[] } => {
-  const tournament: Tournament = {
-    id: generateId(),
-    ...tournamentData,
-    matches: [],
-    currentStage: "INITIAL_ROUND",
-    createdAt: new Date(),
-    updatedAt: new Date()
-  };
+// Guard type to check if it's a tournament match
+function isTournamentMatch(match: Match | StandaloneMatch): match is Match {
+  return 'tournamentId' in match && 'division' in match && 'stage' in match;
+}
 
-  const updatedTournaments = [...tournaments, tournament];
-  return { tournament, tournaments: updatedTournaments };
-};
-
-/**
- * Deletes a tournament
- */
-export const deleteTournament = (
-  tournamentId: string,
-  tournaments: Tournament[],
-  currentTournament: Tournament | null
-): { tournaments: Tournament[]; currentTournament: Tournament | null } => {
-  const updatedTournaments = tournaments.filter(t => t.id !== tournamentId);
-  let updatedCurrentTournament = currentTournament;
-
-  if (currentTournament?.id === tournamentId) {
-    updatedCurrentTournament = null;
-  }
-
-  return { tournaments: updatedTournaments, currentTournament: updatedCurrentTournament };
-};
-
-/**
- * Adds a team to a tournament
- */
-export const addTeamToTournament = (team: Team, tournament: Tournament): Tournament => {
-  const updatedTournament = {
-    ...tournament,
-    teams: [...tournament.teams, team],
-    updatedAt: new Date()
-  };
-  return updatedTournament;
-};
-
-/**
- * Imports teams to a tournament
- */
-export const importTeamsToTournament = (teams: Team[], tournament: Tournament): Tournament => {
-  const updatedTournament = {
-    ...tournament,
-    teams: [...tournament.teams, ...teams],
-    updatedAt: new Date()
-  };
-  return updatedTournament;
-};
-
-/**
- * Moves a team to a different division
- */
-export const moveTeamToDivision = (teamId: string, fromDivision: Division, toDivision: Division, tournament: Tournament): Tournament => {
-  // Find the team
-  const team = tournament.teams.find(t => t.id === teamId);
-  if (!team) return tournament;
-
-  // Update the team's division
-  const updatedTeam = { ...team, division: toDivision };
-
-  // Update the tournament's teams
-  const updatedTeams = tournament.teams.map(t => t.id === teamId ? updatedTeam : t);
-
-  // Update the tournament
-  const updatedTournament = {
-    ...tournament,
-    teams: updatedTeams,
-    updatedAt: new Date()
-  };
-
-  return updatedTournament;
-};
-
-/**
- * Schedules a match in a tournament
- */
-export const scheduleMatchInTournament = (
-  team1Id: string,
-  team2Id: string,
-  scheduledTime: Date,
-  tournament: Tournament,
-  courtId?: string,
-  categoryId?: string
+// Updates the match status in a tournament
+export const updateMatchStatusInTournament = (
+  matchId: string,
+  status: MatchStatus,
+  tournament: Tournament
 ): Tournament => {
-  // Find teams
-  const team1 = tournament.teams.find(t => t.id === team1Id);
-  const team2 = tournament.teams.find(t => t.id === team2Id);
+  const updatedMatches = tournament.matches.map((match) => {
+    if (match.id === matchId) {
+      const userId = getCurrentUserId();
+      const now = new Date();
 
-  if (!team1 || !team2) {
-    console.error("Team not found");
-    return tournament;
-  }
+      // Create audit log entry
+      const updatedMatch = addMatchAuditLog(
+        {
+          ...match,
+          status,
+          updatedAt: now,
+          updated_by: userId,
+        },
+        `Match status updated to ${status}`
+      );
 
-  // Find category if provided
-  let category = tournament.categories[0]; // Default to first category
-  if (categoryId) {
-    const foundCategory = tournament.categories.find(c => c.id === categoryId);
-    if (foundCategory) category = foundCategory;
-  }
-
-  // Create the match
-  const newMatch: Match = {
-    id: generateId(),
-    tournamentId: tournament.id,
-    team1,
-    team2,
-    scores: [],
-    division: "INITIAL",
-    stage: tournament.currentStage,
-    scheduledTime,
-    status: "SCHEDULED",
-    category
-  };
-
-  // Assign court if provided
-  if (courtId) {
-    const court = tournament.courts.find(c => c.id === courtId);
-    if (court) {
-      newMatch.courtNumber = court.number;
+      return updatedMatch as Match; // We know this is a tournament match
     }
-  }
+    return match;
+  });
 
-  // Update tournament with new match
-  const updatedTournament = {
+  return {
     ...tournament,
-    matches: [...tournament.matches, newMatch],
-    updatedAt: new Date()
+    matches: updatedMatches,
+    updatedAt: new Date(),
+    updated_by: getCurrentUserId(),
   };
-
-  return updatedTournament;
 };
 
-/**
- * Updates match score in a tournament
- */
+// Updates the match score in a tournament
 export const updateMatchScoreInTournament = (
   matchId: string,
   setIndex: number,
@@ -159,94 +52,104 @@ export const updateMatchScoreInTournament = (
   tournament: Tournament,
   scorerName?: string
 ): Tournament => {
-  const match = findMatchById(tournament, matchId);
-  if (!match) return tournament;
+  const updatedMatches = tournament.matches.map((match) => {
+    if (match.id === matchId) {
+      // Get existing scores or initialize empty array
+      const scores = [...(match.scores || [])];
 
-  // Create a copy of the scores array
-  const updatedScores = [...match.scores];
+      // Ensure we have enough entries in the scores array
+      while (scores.length <= setIndex) {
+        scores.push({ team1Score: 0, team2Score: 0 });
+      }
 
-  // Add empty sets if needed
-  while (updatedScores.length <= setIndex) {
-    updatedScores.push({ team1Score: 0, team2Score: 0 });
-  }
+      // Update the score for the specific set
+      scores[setIndex] = { team1Score, team2Score };
 
-  // Update the score for the specified set
-  updatedScores[setIndex] = { team1Score, team2Score };
+      // Create audit information for scoring
+      const updatedMatch = {
+        ...match,
+        scores,
+        updatedAt: new Date(),
+      };
 
-  const updatedMatch = {
-    ...match,
-    scores: updatedScores,
-    updatedAt: new Date()
+      // Use type guard to ensure we only pass tournament matches to addScoringAuditInfo
+      if (isTournamentMatch(updatedMatch)) {
+        return addScoringAuditInfo(updatedMatch, scorerName) as Match;
+      } 
+      
+      // This should never happen, but TypeScript needs this branch
+      return updatedMatch; 
+    }
+    return match;
+  });
+
+  return {
+    ...tournament,
+    matches: updatedMatches,
+    updatedAt: new Date(),
+    updated_by: getCurrentUserId(),
   };
-
-  // Type guard to ensure we're dealing with a Match and not a StandaloneMatch
-  if (isMatch(updatedMatch)) {
-    const auditedMatch = addScoringAuditInfo(updatedMatch, scorerName || "Unknown Scorer");
-    const updatedTournament = updateMatchInTournament(tournament, auditedMatch);
-    return updatedTournament;
-  }
-  
-  return tournament;
 };
 
-/**
- * Updates match status in a tournament
- */
-export const updateMatchStatusInTournament = (
-  matchId: string,
-  status: MatchStatus,
-  tournament: Tournament
-): Tournament => {
-  const match = findMatchById(tournament, matchId);
-  if (!match) return tournament;
-
-  const updatedMatch = { ...match, status, updatedAt: new Date() };
-  
-  // Type guard to ensure we're dealing with a Match and not a StandaloneMatch
-  if (isMatch(updatedMatch)) {
-    const auditedMatch = addMatchAuditLog(updatedMatch, `Match status updated to ${status}`);
-    const updatedTournament = updateMatchInTournament(tournament, auditedMatch);
-    return updatedTournament;
-  }
-  
-  return tournament;
-};
-
-/**
- * Completes a match in a tournament
- */
+// Completes a match in a tournament
 export const completeMatchInTournament = (
   matchId: string,
   tournament: Tournament,
   scorerName?: string
 ): Tournament => {
-  const match = findMatchById(tournament, matchId);
-  if (!match) return tournament;
+  const updatedMatches = tournament.matches.map((match) => {
+    if (match.id === matchId) {
+      // Update match status and set end time
+      const updatedMatch = {
+        ...match,
+        status: "COMPLETED" as MatchStatus,
+        endTime: new Date(),
+        updatedAt: new Date(),
+        updated_by: getCurrentUserId(),
+      };
 
-  const updatedMatch = { ...match, status: "COMPLETED" as MatchStatus, updatedAt: new Date() };
-  
-  // Type guard to ensure we're dealing with a Match and not a StandaloneMatch
-  if (isMatch(updatedMatch)) {
-    const auditedMatch = addScoringAuditInfo(updatedMatch, scorerName || "Unknown Scorer");
-    const updatedTournament = updateMatchInTournament(tournament, auditedMatch);
-    return updatedTournament;
+      // Use type guard to ensure we only pass tournament matches to addScoringAuditInfo
+      if (isTournamentMatch(updatedMatch)) {
+        return addScoringAuditInfo(updatedMatch, scorerName) as Match;
+      } 
+      
+      // This should never happen, but TypeScript needs this branch
+      return updatedMatch;
+    }
+    return match;
+  });
+
+  return {
+    ...tournament,
+    matches: updatedMatches,
+    updatedAt: new Date(),
+    updated_by: getCurrentUserId(),
+  };
+};
+
+// Determines match winner based on scores
+export const determineMatchWinner = (match: Match): "team1" | "team2" | "draw" | undefined => {
+  if (!match.scores || match.scores.length === 0) {
+    return undefined;
   }
-  
-  return tournament;
-};
 
-/**
- * Generates a multi-stage tournament
- */
-export const generateMultiStageTournament = (tournament: Tournament): Tournament => {
-  // Implementation would go here
-  console.log("Generating multi-stage tournament");
-  return tournament;
-};
+  // Count sets won by each team
+  let team1SetsWon = 0;
+  let team2SetsWon = 0;
 
-/**
- * Type guard to check if a match is a standard tournament match
- */
-export const isMatch = (match: Match | StandaloneMatch): match is Match => {
-  return 'tournamentId' in match && 'division' in match && 'stage' in match;
+  for (const score of match.scores) {
+    if (score.team1Score > score.team2Score) {
+      team1SetsWon++;
+    } else if (score.team2Score > score.team1Score) {
+      team2SetsWon++;
+    }
+  }
+
+  if (team1SetsWon > team2SetsWon) {
+    return "team1";
+  } else if (team2SetsWon > team1SetsWon) {
+    return "team2";
+  } else {
+    return "draw";
+  }
 };

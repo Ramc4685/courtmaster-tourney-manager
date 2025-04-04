@@ -230,7 +230,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     if (!currentTournament) return;
     
     try {
-      const updatedTournament = await matchService.completeMatch(currentTournament.id, matchId, scorerName);
+      const updatedTournament = await matchService.completeMatch(
+        currentTournament.id, 
+        matchId,
+        scorerName
+      );
       if (updatedTournament) {
         setCurrentTournament(updatedTournament);
         setTournaments(prev => prev.map(t => t.id === updatedTournament.id ? updatedTournament : t));
@@ -531,7 +535,9 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
         updateCategory,
         loadCategoryDemoData,
         // Add the missing scheduleMatches function
-        scheduleMatches
+        scheduleMatches,
+        assignSeeding: assignSeeding,
+        moveTeamToDivision: moveTeamToDivision
       }}
     >
       {children}
