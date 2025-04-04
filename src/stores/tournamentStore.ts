@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { Tournament, Match, Court, Team, Division } from "@/types/tournament";
 import { generateId } from "@/utils/tournamentUtils";
-import { createSampleData, getSampleDataByFormat } from "@/utils/tournamentSampleData";
 import { assignCourtToMatch, autoAssignCourts } from "@/utils/courtUtils";
 import { findMatchById, updateMatchInTournament } from "@/utils/tournamentUtils";
 import { realtimeTournamentService } from "@/services/realtime/RealtimeTournamentService";
@@ -18,7 +17,6 @@ interface TournamentState {
   createTournament: (tournamentData: Omit<Tournament, "id" | "createdAt" | "updatedAt" | "matches" | "currentStage">) => Tournament;
   updateTournament: (tournament: Tournament) => void;
   deleteTournament: (tournamentId: string) => void;
-  loadSampleData: (format?: TournamentFormat) => void;
 
   // Team operations
   addTeam: (team: Team) => void;
@@ -36,6 +34,10 @@ interface TournamentState {
   updateCourt: (court: Court) => void;
   assignCourt: (matchId: string, courtId: string) => void;
   autoAssignCourts: () => Promise<number>;
+  
+  // Tournament generation
+  generateMultiStageTournament: () => Promise<void>;
+  advanceToNextStage: () => Promise<void>;
 }
 
 // Load initial data from localStorage
@@ -134,24 +136,6 @@ export const useTournamentStore = create<TournamentState>((set, get) => ({
       return {
         tournaments: updatedTournaments,
         currentTournament: updatedCurrentTournament
-      };
-    });
-  },
-
-  // Load sample data
-  loadSampleData: (format) => {
-    const sampleData = format ? getSampleDataByFormat(format) : createSampleData();
-    
-    set((state) => {
-      const filteredTournaments = state.tournaments.filter(t => t.id !== sampleData.id);
-      const updatedTournaments = [...filteredTournaments, sampleData];
-      localStorage.setItem('tournaments', JSON.stringify(updatedTournaments));
-      localStorage.setItem('currentTournament', JSON.stringify(sampleData));
-      realtimeTournamentService.publishTournamentUpdate(sampleData);
-      
-      return { 
-        tournaments: updatedTournaments,
-        currentTournament: sampleData
       };
     });
   },
@@ -301,5 +285,16 @@ export const useTournamentStore = create<TournamentState>((set, get) => ({
     const result = await autoAssignCourts(currentTournament);
     updateTournament(result.tournament);
     return result.assignedCount;
+  },
+
+  // Added placeholder implementations for generating tournaments
+  generateMultiStageTournament: async () => {
+    console.log("Generating multi-stage tournament");
+    // Implementation would depend on your tournament generation logic
+  },
+
+  advanceToNextStage: async () => {
+    console.log("Advancing tournament to next stage");
+    // Implementation would depend on your tournament stage advancement logic
   },
 }));

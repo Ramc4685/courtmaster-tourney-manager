@@ -2,7 +2,8 @@
 import React from "react";
 import { Match, Court } from "@/types/tournament";
 import { Button } from "@/components/ui/button";
-import { PlayCircle } from "lucide-react";
+import { PlayCircle, ClipboardEdit } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import ManualResultEntry from "@/components/match/ManualResultEntry";
 import DeferMatch from "@/components/match/DeferMatch";
 import ManualCourtAssignment from "@/components/match/ManualCourtAssignment";
@@ -22,6 +23,13 @@ const MatchDetails: React.FC<MatchDetailsProps> = ({
   onMatchUpdate,
   onCourtAssign
 }) => {
+  const navigate = useNavigate();
+
+  const handleContinueScoring = () => {
+    // Navigate to the scoring page with the match ID
+    navigate(`/scoring/${match.tournamentId}/${match.id}`);
+  };
+
   return (
     <div className="border p-4 rounded-md bg-blue-50">
       <div className="mb-4">
@@ -54,6 +62,16 @@ const MatchDetails: React.FC<MatchDetailsProps> = ({
           >
             <PlayCircle className="h-4 w-4 mr-2" />
             Start Match
+          </Button>
+        )}
+        
+        {match.status === "IN_PROGRESS" && (
+          <Button 
+            onClick={handleContinueScoring}
+            className="bg-green-600 hover:bg-green-700 w-full"
+          >
+            <ClipboardEdit className="h-4 w-4 mr-2" />
+            Continue Scoring
           </Button>
         )}
         

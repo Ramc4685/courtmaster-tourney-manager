@@ -1,5 +1,5 @@
+
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Pencil, Trash2, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ import TournamentCategorySection from "@/components/tournament/TournamentCategor
 interface TournamentHeaderProps {
   tournament: Tournament;
   updateTournament: (tournament: Tournament) => void;
-  deleteTournament: (tournamentId: string) => void;
+  deleteTournament: () => void;
 }
 
 const TournamentHeader: React.FC<TournamentHeaderProps> = ({
@@ -47,7 +47,6 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
   const [categories, setCategories] = useState<TournamentCategory[]>(
     tournament.categories || []
   );
-  const navigate = useNavigate();
 
   const handleTournamentUpdate = () => {
     const updatedTournament = {
@@ -68,17 +67,6 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
     toast({
       title: "Tournament Updated",
       description: "Tournament details have been successfully updated.",
-    });
-  };
-
-  const handleTournamentDelete = () => {
-    console.log("Deleting tournament with ID:", tournament.id);
-    deleteTournament(tournament.id);
-    navigate("/tournaments");
-    
-    toast({
-      title: "Tournament Deleted",
-      description: "Tournament has been successfully deleted.",
     });
   };
 
@@ -211,7 +199,7 @@ const TournamentHeader: React.FC<TournamentHeaderProps> = ({
             </Button>
             <Button 
               variant="destructive" 
-              onClick={handleTournamentDelete}
+              onClick={deleteTournament}
               className="flex items-center"
             >
               <Trash2 className="h-4 w-4 mr-2" />
