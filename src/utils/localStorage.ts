@@ -1,96 +1,83 @@
 
 import { StandaloneMatch } from "@/types/tournament";
 
-/**
- * Utility class for managing local storage operations
- * Provides typed access to store and retrieve data
- */
 export class LocalStorage {
-  // Keys for storing different data types
-  private MATCHES_KEY = 'standalone_matches';
-  private SETTINGS_KEY = 'app_settings';
-
   /**
-   * Save standalone matches to local storage
+   * Save matches to localStorage
    */
   saveMatches(matches: StandaloneMatch[]): void {
     try {
-      localStorage.setItem(this.MATCHES_KEY, JSON.stringify(matches));
+      localStorage.setItem('standalone_matches', JSON.stringify(matches));
     } catch (error) {
       console.error('Error saving matches to localStorage:', error);
     }
   }
 
   /**
-   * Get standalone matches from local storage
+   * Get matches from localStorage
    */
-  getMatches(): StandaloneMatch[] | null {
+  getMatches(): StandaloneMatch[] {
     try {
-      const data = localStorage.getItem(this.MATCHES_KEY);
-      if (!data) return null;
-      
-      // Parse the JSON data
-      const parsedData = JSON.parse(data);
-      
-      // Ensure dates are properly converted back from strings
-      return this.convertDatesInMatchData(parsedData);
+      const matches = localStorage.getItem('standalone_matches');
+      return matches ? JSON.parse(matches) : [];
     } catch (error) {
       console.error('Error retrieving matches from localStorage:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Save a single match to localStorage
+   */
+  saveMatch(match: StandaloneMatch): void {
+    try {
+      const matches = this.getMatches();
+      const existingMatchIndex = matches.findIndex(m => m.id === match.id);
+      if (existingMatchIndex >= 0) {
+        matches[existingMatchIndex] = match;
+      } else {
+        matches.push(match);
+      }
+      this.saveMatches(matches);
+    } catch (error) {
+      console.error('Error saving match to localStorage:', error);
+    }
+  }
+
+  /**
+   * Get a match by ID from localStorage
+   */
+  getMatchById(id: string): StandaloneMatch | null {
+    try {
+      const matches = this.getMatches();
+      return matches.find(m => m.id === id) || null;
+    } catch (error) {
+      console.error('Error retrieving match from localStorage:', error);
       return null;
     }
   }
 
   /**
-   * Save application settings to local storage
+   * Delete a match by ID from localStorage
    */
-  saveSettings(settings: Record<string, any>): void {
+  deleteMatch(id: string): void {
     try {
-      localStorage.setItem(this.SETTINGS_KEY, JSON.stringify(settings));
+      const matches = this.getMatches();
+      const filteredMatches = matches.filter(m => m.id !== id);
+      this.saveMatches(filteredMatches);
     } catch (error) {
-      console.error('Error saving settings to localStorage:', error);
+      console.error('Error deleting match from localStorage:', error);
     }
   }
 
   /**
-   * Get application settings from local storage
+   * Clear all matches from localStorage
    */
-  getSettings(): Record<string, any> | null {
+  clearMatches(): void {
     try {
-      const data = localStorage.getItem(this.SETTINGS_KEY);
-      return data ? JSON.parse(data) : null;
+      localStorage.removeItem('standalone_matches');
     } catch (error) {
-      console.error('Error retrieving settings from localStorage:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Helper method to convert date strings back to Date objects
-   * in retrieved match data
-   */
-  private convertDatesInMatchData(matches: any[]): StandaloneMatch[] {
-    return matches.map(match => ({
-      ...match,
-      createdAt: match.createdAt ? new Date(match.createdAt) : undefined,
-      updatedAt: match.updatedAt ? new Date(match.updatedAt) : undefined,
-      scheduledTime: match.scheduledTime ? new Date(match.scheduledTime) : undefined,
-      endTime: match.endTime ? new Date(match.endTime) : undefined,
-      // Convert dates in audit logs if they exist
-      auditLogs: match.auditLogs?.map((log: any) => ({
-        ...log,
-        timestamp: log.timestamp ? new Date(log.timestamp) : undefined
-      }))
-    }));
-  }
-
-  /**
-   * Clear all data from local storage
-   */
-  clearAll(): void {
-    try {
-      localStorage.clear();
-    } catch (error) {
-      console.error('Error clearing localStorage:', error);
+      console.error('Error clearing matches from localStorage:', error);
     }
   }
 }

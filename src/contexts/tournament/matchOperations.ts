@@ -1,6 +1,7 @@
+
 import { Tournament, Match, Team, Court, MatchStatus, Division, TournamentStage, TournamentFormat, TournamentCategory, StandaloneMatch } from "@/types/tournament";
 import { generateId, findMatchById, updateMatchInTournament } from "@/utils/tournamentUtils";
-import { addMatchAuditLog, addScoringAuditInfo } from "@/utils/matchAuditUtils";
+import { addMatchAuditLog, addScoringAuditInfo, addCourtAssignmentAuditInfo } from "@/utils/matchAuditUtils";
 
 /**
  * Creates a new tournament
@@ -178,9 +179,14 @@ export const updateMatchScoreInTournament = (
     updatedAt: new Date()
   };
 
-  const auditedMatch = addScoringAuditInfo(updatedMatch, scorerName || "Unknown Scorer");
-  const updatedTournament = updateMatchInTournament(tournament, auditedMatch);
-  return updatedTournament;
+  // Type guard to ensure we're dealing with a Match and not a StandaloneMatch
+  if (isMatch(updatedMatch)) {
+    const auditedMatch = addScoringAuditInfo(updatedMatch, scorerName || "Unknown Scorer");
+    const updatedTournament = updateMatchInTournament(tournament, auditedMatch);
+    return updatedTournament;
+  }
+  
+  return tournament;
 };
 
 /**
@@ -195,9 +201,15 @@ export const updateMatchStatusInTournament = (
   if (!match) return tournament;
 
   const updatedMatch = { ...match, status, updatedAt: new Date() };
-  const auditedMatch = addMatchAuditLog(updatedMatch, `Match status updated to ${status}`);
-  const updatedTournament = updateMatchInTournament(tournament, auditedMatch);
-  return updatedTournament;
+  
+  // Type guard to ensure we're dealing with a Match and not a StandaloneMatch
+  if (isMatch(updatedMatch)) {
+    const auditedMatch = addMatchAuditLog(updatedMatch, `Match status updated to ${status}`);
+    const updatedTournament = updateMatchInTournament(tournament, auditedMatch);
+    return updatedTournament;
+  }
+  
+  return tournament;
 };
 
 /**
@@ -211,10 +223,16 @@ export const completeMatchInTournament = (
   const match = findMatchById(tournament, matchId);
   if (!match) return tournament;
 
-  const updatedMatch = { ...match, status: "COMPLETED", updatedAt: new Date() };
-  const auditedMatch = addScoringAuditInfo(updatedMatch, scorerName || "Unknown Scorer");
-  const updatedTournament = updateMatchInTournament(tournament, auditedMatch);
-  return updatedTournament;
+  const updatedMatch = { ...match, status: "COMPLETED" as MatchStatus, updatedAt: new Date() };
+  
+  // Type guard to ensure we're dealing with a Match and not a StandaloneMatch
+  if (isMatch(updatedMatch)) {
+    const auditedMatch = addScoringAuditInfo(updatedMatch, scorerName || "Unknown Scorer");
+    const updatedTournament = updateMatchInTournament(tournament, auditedMatch);
+    return updatedTournament;
+  }
+  
+  return tournament;
 };
 
 /**
@@ -226,6 +244,9 @@ export const generateMultiStageTournament = (tournament: Tournament): Tournament
   return tournament;
 };
 
-const isStandardMatch = (match: Match | StandaloneMatch): match is Match => {
+/**
+ * Type guard to check if a match is a standard tournament match
+ */
+export const isMatch = (match: Match | StandaloneMatch): match is Match => {
   return 'tournamentId' in match && 'division' in match && 'stage' in match;
 };

@@ -8,7 +8,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { useTournament } from "@/contexts/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament";
 import { useAuth } from "@/contexts/auth/AuthContext";
 import UserMenu from "@/components/auth/UserMenu";
 import AuthDialog from "@/components/auth/AuthDialog";

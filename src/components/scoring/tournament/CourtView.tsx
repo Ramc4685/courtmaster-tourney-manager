@@ -1,151 +1,136 @@
 
 import React from 'react';
-import { Tournament, Match, Court } from '@/types/tournament';
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertTriangle } from 'lucide-react';
+import { Court, Match, Tournament } from '@/types/tournament';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ClipboardList, Clock, MapPin, Users } from 'lucide-react';
 
 interface CourtViewProps {
   tournament: Tournament;
   courts: Court[];
-  onSelectCourt: (courtNumber: number) => void;
+  onSelectCourt: (court: Court) => void;
   onSelectMatch: (match: Match) => void;
 }
 
-const CourtView: React.FC<CourtViewProps> = ({
-  tournament,
-  courts,
-  onSelectCourt,
-  onSelectMatch
+const CourtView: React.FC<CourtViewProps> = ({ 
+  tournament, 
+  courts, 
+  onSelectCourt, 
+  onSelectMatch 
 }) => {
-  // Find active matches that are in progress
-  const activeMatches = tournament.matches.filter(match => 
-    match.status === 'IN_PROGRESS'
-  );
-
-  // Find scheduled matches
-  const scheduledMatches = tournament.matches.filter(match => 
-    match.status === 'SCHEDULED'
-  );
-
-  if (courts.length === 0) {
-    return (
-      <div className="text-center p-8">
-        <AlertTriangle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold mb-2">No Courts Available</h2>
-        <p className="text-gray-600 mb-4">
-          Please add courts to the tournament before starting matches.
-        </p>
-      </div>
-    );
-  }
+  // Get upcoming matches that don't have a court assigned
+  const upcomingMatches = tournament.matches
+    .filter(m => 
+      (m.status === 'SCHEDULED' || m.status === 'IN_PROGRESS') && 
+      !m.courtNumber
+    )
+    .sort((a, b) => {
+      const aTime = a.scheduledTime ? new Date(a.scheduledTime).getTime() : 0;
+      const bTime = b.scheduledTime ? new Date(b.scheduledTime).getTime() : 0;
+      return aTime - bTime;
+    });
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">Tournament Courts</h2>
-      
-      {/* Courts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {courts.map((court) => (
-          <Card key={court.id} className="overflow-hidden">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-medium">Court {court.number}</h3>
-                <span className={`text-xs px-2 py-1 rounded ${
-                  court.currentMatch ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {court.currentMatch ? 'Active' : 'Available'}
-                </span>
-              </div>
-              
-              {court.name && <p className="text-sm text-gray-500 mb-2">{court.name}</p>}
-              
-              {court.currentMatch ? (
-                <div className="mt-4">
-                  <p className="text-sm font-medium mb-1">Current Match:</p>
-                  <div className="bg-gray-50 p-2 rounded-md text-sm mb-2">
-                    {court.currentMatch.team1.name} vs {court.currentMatch.team2.name}
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold">Courts</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {courts.map((court) => {
+          // Find if there's a match in progress on this court
+          const activeMatch = tournament.matches.find(m => 
+            m.courtNumber === court.number && 
+            (m.status === 'IN_PROGRESS' || m.status === 'SCHEDULED')
+          );
+
+          return (
+            <Card 
+              key={court.id} 
+              className={`cursor-pointer transition-shadow hover:shadow-md ${
+                activeMatch ? 'border-court-green' : 'border-gray-200'
+              }`}
+              onClick={() => onSelectCourt(court)}
+            >
+              <CardHeader className="pb-2">
+                <CardTitle className="flex justify-between items-center">
+                  <span>Court {court.number}</span>
+                  <span className={`text-sm px-2 py-1 rounded ${
+                    court.status === 'AVAILABLE' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {court.status}
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {activeMatch ? (
+                  <div className="space-y-2">
+                    <div className="font-medium">{activeMatch.team1.name} vs {activeMatch.team2.name}</div>
+                    <div className="text-sm text-gray-500 flex items-center">
+                      <Clock className="h-4 w-4 mr-1" />
+                      {activeMatch.status === 'IN_PROGRESS' ? 'In Progress' : 'Scheduled'}
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectMatch(activeMatch);
+                      }}
+                    >
+                      <ClipboardList className="h-4 w-4 mr-2" />
+                      Score Match
+                    </Button>
                   </div>
-                  <Button 
-                    size="sm" 
-                    className="w-full mt-2"
-                    onClick={() => onSelectMatch(court.currentMatch!)}
-                  >
-                    Score This Match
-                  </Button>
-                </div>
-              ) : (
-                <div className="mt-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full mt-2"
-                    onClick={() => onSelectCourt(court.number)}
-                  >
-                    Select Court
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+                ) : (
+                  <div className="text-gray-500 py-4 text-center">
+                    <MapPin className="h-5 w-5 mx-auto mb-1" />
+                    <p>No active match</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      {/* Active Matches */}
-      {activeMatches.length > 0 && (
-        <div className="mb-8">
-          <h3 className="font-semibold mb-3">Active Matches</h3>
-          <div className="space-y-2">
-            {activeMatches.map(match => (
-              <Card key={match.id} className="bg-green-50">
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="font-medium">{match.team1.name} vs {match.team2.name}</div>
-                      <div className="text-xs text-gray-600">
-                        Court {match.courtNumber || 'Not assigned'} • 
-                        {match.scores.length > 0 ? 
-                          ` Set ${match.scores.length}: ${match.scores[match.scores.length-1].team1Score}-${match.scores[match.scores.length-1].team2Score}` : 
-                          ' No Score'}
-                      </div>
+      {upcomingMatches.length > 0 && (
+        <>
+          <h2 className="text-xl font-semibold mt-8">Upcoming Matches</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {upcomingMatches.slice(0, 6).map((match) => (
+              <Card 
+                key={match.id} 
+                className="cursor-pointer transition-shadow hover:shadow-md"
+                onClick={() => onSelectMatch(match)}
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex justify-between items-center">
+                    <span>{match.team1.name} vs {match.team2.name}</span>
+                    <span className="text-sm px-2 py-1 rounded bg-blue-100 text-blue-800">
+                      {match.status}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-gray-500 space-y-1">
+                    <div className="flex items-center">
+                      <Clock className="h-4 w-4 mr-1" />
+                      {match.scheduledTime 
+                        ? new Date(match.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : 'No time set'
+                      }
                     </div>
-                    <Button size="sm" onClick={() => onSelectMatch(match)}>Score</Button>
+                    <div className="flex items-center">
+                      <Users className="h-4 w-4 mr-1" />
+                      {match.category?.name || 'General'}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Scheduled Matches */}
-      {scheduledMatches.length > 0 && (
-        <div>
-          <h3 className="font-semibold mb-3">Scheduled Matches</h3>
-          <div className="space-y-2">
-            {scheduledMatches.slice(0, 5).map(match => (
-              <Card key={match.id}>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="font-medium">{match.team1.name} vs {match.team2.name}</div>
-                      <div className="text-xs text-gray-600">
-                        {match.scheduledTime ? new Date(match.scheduledTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'No time'} • 
-                        Court {match.courtNumber || 'Not assigned'}
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => onSelectMatch(match)}>Select</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            {scheduledMatches.length > 5 && (
-              <div className="text-center text-sm text-gray-500 mt-2">
-                +{scheduledMatches.length - 5} more scheduled matches
-              </div>
-            )}
-          </div>
-        </div>
+        </>
       )}
     </div>
   );
