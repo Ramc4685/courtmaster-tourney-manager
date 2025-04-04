@@ -73,12 +73,7 @@ export const updateMatchScoreInTournament = (
       };
 
       // Use type guard to ensure we only pass tournament matches to addScoringAuditInfo
-      if (isTournamentMatch(updatedMatch)) {
-        return addScoringAuditInfo(updatedMatch, scorerName) as Match;
-      } 
-      
-      // This should never happen, but TypeScript needs this branch
-      return updatedMatch; 
+      return addScoringAuditInfo(updatedMatch, scorerName) as Match;
     }
     return match;
   });
@@ -108,13 +103,8 @@ export const completeMatchInTournament = (
         updated_by: getCurrentUserId(),
       };
 
-      // Use type guard to ensure we only pass tournament matches to addScoringAuditInfo
-      if (isTournamentMatch(updatedMatch)) {
-        return addScoringAuditInfo(updatedMatch, scorerName) as Match;
-      } 
-      
-      // This should never happen, but TypeScript needs this branch
-      return updatedMatch;
+      // Always safe to cast here because tournament matches are of type Match
+      return addScoringAuditInfo(updatedMatch, scorerName) as Match;
     }
     return match;
   });

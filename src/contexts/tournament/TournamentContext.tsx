@@ -157,7 +157,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   }, [startTransition]);
 
   // Delete a tournament
-  const deleteTournament = useCallback((tournamentId: string) => {
+  const deleteTournament = useCallback(async (tournamentId: string): Promise<void> => {
     console.log('[DEBUG] Deleting tournament:', tournamentId);
     
     // Use startTransition for state updates to keep UI responsive
@@ -174,10 +174,23 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     
     // Use a separate effect for checking if currentTournament should be cleared
     checkCurrentTournamentExists();
-  }, [checkCurrentTournamentExists, startTransition]);
+  }, []);  // Removed checkCurrentTournamentExists from dependencies to avoid issues
+
+  // Make sure to define checkCurrentTournamentExists before using it
+  const checkCurrentTournamentExists = useCallback(() => {
+    // If we have a current tournament, check if it still exists in the tournaments list
+    if (currentTournament) {
+      const stillExists = tournaments.some(t => t.id === currentTournament.id);
+      
+      if (!stillExists) {
+        console.log('[DEBUG] Current tournament no longer exists, clearing it');
+        setCurrentTournament(null);
+      }
+    }
+  }, [tournaments, currentTournament]);
 
   // Update a tournament with safe state update pattern
-  const updateTournament = useCallback((tournament: Tournament) => {
+  const updateTournament = useCallback(async (tournament: Tournament): Promise<void> => {
     console.log('[DEBUG] Updating tournament:', tournament.id);
     
     // Create a deep copy to prevent shared references
@@ -197,30 +210,28 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   }, [startTransition]);
 
   // Add a team to the current tournament
-  const addTeam = useCallback((team: Team) => {
+  const addTeam = useCallback(async (team: Team): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Adding team to tournament:', team.name);
     const updatedTournament = addTeamToTournament(team, currentTournamentRef.current);
     
-    updateTournament(updatedTournament);
+    await updateTournament(updatedTournament);
   }, [updateTournament]);
-  
+
   // Import multiple teams to the current tournament
-  const importTeams = useCallback((teams: Team[]) => {
+  const importTeams = useCallback(async (teams: Team[]): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Importing teams to tournament. Count:', teams.length);
     const updatedTournament = importTeamsToTournament(teams, currentTournamentRef.current);
     
     // Use startTransition for potentially heavy operation
-    startTransition(() => {
-      updateTournament(updatedTournament);
-    });
-  }, [updateTournament, startTransition]);
+    await updateTournament(updatedTournament);
+  }, [updateTournament]);
 
   // Update a match in the current tournament
-  const updateMatch = useCallback((match: Match) => {
+  const updateMatch = useCallback(async (match: Match): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Updating match:', match.id);
@@ -228,7 +239,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       m.id === match.id ? { ...match } : m
     );
     
-    updateTournament({
+    await updateTournament({
       ...currentTournamentRef.current,
       matches: updatedMatches,
       updatedAt: new Date()
@@ -236,7 +247,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   }, [updateTournament]);
 
   // Update a court in the current tournament
-  const updateCourt = useCallback((court: Court) => {
+  const updateCourt = useCallback(async (court: Court): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Updating court:', court.id);
@@ -244,7 +255,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       c.id === court.id ? { ...court } : c
     );
     
-    updateTournament({
+    await updateTournament({
       ...currentTournamentRef.current,
       courts: updatedCourts,
       updatedAt: new Date()
@@ -252,7 +263,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   }, [updateTournament]);
 
   // Assign a court to a match
-  const assignCourt = useCallback((matchId: string, courtId: string) => {
+  const assignCourt = useCallback(async (matchId: string, courtId: string): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Assigning court to match. Match:', matchId, 'Court:', courtId);
@@ -264,52 +275,52 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     const updatedTournament = assignCourtToMatch(currentTournamentRef.current, matchId, courtId);
     
     if (updatedTournament) {
-      updateTournament(updatedTournament);
+      await updateTournament(updatedTournament);
     }
   }, [updateTournament]);
 
   // Update match status with memoized implementation
-  const updateMatchStatus = useCallback((matchId: string, status: MatchStatus) => {
+  const updateMatchStatus = useCallback(async (matchId: string, status: MatchStatus): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Updating match status. Match:', matchId, 'Status:', status);
     const updatedTournament = updateMatchStatusInTournament(matchId, status, currentTournamentRef.current);
     
-    updateTournament(updatedTournament);
+    await updateTournament(updatedTournament);
   }, [updateTournament]);
 
   // Update match score with memoized implementation
-  const updateMatchScore = useCallback((matchId: string, setIndex: number, team1Score: number, team2Score: number) => {
+  const updateMatchScore = useCallback(async (matchId: string, setIndex: number, team1Score: number, team2Score: number, scorerName?: string): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Updating match score. Match:', matchId, 'Set:', setIndex, 'Score:', team1Score, '-', team2Score);
-    const updatedTournament = updateMatchScoreInTournament(matchId, setIndex, team1Score, team2Score, currentTournamentRef.current);
+    const updatedTournament = updateMatchScoreInTournament(matchId, setIndex, team1Score, team2Score, currentTournamentRef.current, scorerName);
     
-    updateTournament(updatedTournament);
+    await updateTournament(updatedTournament);
   }, [updateTournament]);
 
   // Complete a match with memoized implementation
-  const completeMatch = useCallback((matchId: string) => {
+  const completeMatch = useCallback(async (matchId: string, scorerName?: string): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Completing match:', matchId);
-    const updatedTournament = completeMatchInTournament(matchId, currentTournamentRef.current);
+    const updatedTournament = completeMatchInTournament(matchId, currentTournamentRef.current, scorerName);
     
-    updateTournament(updatedTournament);
+    await updateTournament(updatedTournament);
   }, [updateTournament]);
 
   // Move a team to a different division with memoized implementation
-  const moveTeamToDivision = useCallback((teamId: string, fromDivision: Division, toDivision: Division) => {
+  const moveTeamToDivision = useCallback(async (teamId: string, fromDivision: Division, toDivision: Division): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Moving team between divisions. Team:', teamId, 'From:', fromDivision, 'To:', toDivision);
     const updatedTournament = moveTeam(teamId, fromDivision, toDivision, currentTournamentRef.current);
     
-    updateTournament(updatedTournament);
+    await updateTournament(updatedTournament);
   }, [updateTournament]);
 
   // Load sample data
-  const loadSampleData = useCallback((format?: TournamentFormat) => {
+  const loadSampleData = useCallback(async (format?: TournamentFormat): Promise<void> => {
     console.log('[DEBUG] Loading sample data. Format:', format || 'default');
     const sampleData = format ? getSampleDataByFormat(format) : createSampleData();
     
@@ -325,17 +336,17 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   }, [startTransition]);
 
   // Schedule a match with memoized implementation
-  const scheduleMatch = useCallback((team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => {
+  const scheduleMatch = useCallback(async (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Scheduling match. Team1:', team1Id, 'Team2:', team2Id, 'Time:', scheduledTime);
     const updatedTournament = scheduleMatchInTournament(team1Id, team2Id, scheduledTime, currentTournamentRef.current, courtId, categoryId);
     
-    updateTournament(updatedTournament);
+    await updateTournament(updatedTournament);
   }, [updateTournament]);
 
   // Generate bracket (placeholder for now)
-  const generateBracket = useCallback(() => {
+  const generateBracket = useCallback(async (): Promise<void> => {
     if (!currentTournamentRef.current) return;
     console.log('[DEBUG] Generating bracket');
     // Implementation would go here
@@ -357,7 +368,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   }, [updateTournament, startTransition]);
 
   // Generate multi-stage tournament with memoized implementation
-  const generateMultiStageTournament = useCallback(() => {
+  const generateMultiStageTournament = useCallback(async (): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Generating multi-stage tournament');
@@ -370,7 +381,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   }, [updateTournament, startTransition]);
 
   // Advance to next stage with memoized implementation
-  const advanceToNextStage = useCallback(() => {
+  const advanceToNextStage = useCallback(async (): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Advancing to next stage. Current stage:', currentTournamentRef.current.currentStage);
@@ -393,7 +404,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   }, [updateTournament, startTransition]);
 
   // Assign seeding with memoized implementation
-  const assignSeeding = useCallback((tournamentId: string) => {
+  const assignSeeding = useCallback(async (tournamentId: string): Promise<void> => {
     console.log('[DEBUG] Assigning seeding for tournament:', tournamentId);
     const tournament = tournamentsRef.current.find(t => t.id === tournamentId);
     if (!tournament) return;
@@ -408,7 +419,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   }, [updateTournament, startTransition]);
 
   // Add category to tournament with memoized implementation
-  const addCategory = useCallback((category: Omit<TournamentCategory, "id">) => {
+  const addCategory = useCallback(async (category: Omit<TournamentCategory, "id">): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Adding category to tournament:', category.name);
@@ -423,11 +434,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       updatedAt: new Date()
     };
     
-    updateTournament(updatedTournament);
+    await updateTournament(updatedTournament);
   }, [updateTournament]);
 
   // Remove category from tournament with memoized implementation
-  const removeCategory = useCallback((categoryId: string) => {
+  const removeCategory = useCallback(async (categoryId: string): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Removing category from tournament. Category ID:', categoryId);
@@ -437,11 +448,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       updatedAt: new Date()
     };
     
-    updateTournament(updatedTournament);
+    await updateTournament(updatedTournament);
   }, [updateTournament]);
 
   // Update category in tournament with memoized implementation
-  const updateCategory = useCallback((category: TournamentCategory) => {
+  const updateCategory = useCallback(async (category: TournamentCategory): Promise<void> => {
     if (!currentTournamentRef.current) return;
     
     console.log('[DEBUG] Updating category in tournament. Category ID:', category.id);
@@ -451,11 +462,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
       updatedAt: new Date()
     };
     
-    updateTournament(updatedTournament);
+    await updateTournament(updatedTournament);
   }, [updateTournament]);
 
   // Load category demo data with memoized implementation
-  const loadCategoryDemoData = useCallback((tournamentId: string, categoryId: string, format: TournamentFormat) => {
+  const loadCategoryDemoData = useCallback(async (tournamentId: string, categoryId: string, format: TournamentFormat): Promise<void> => {
     // Find the tournament
     const tournament = tournamentsRef.current.find(t => t.id === tournamentId);
     if (!tournament) {
@@ -520,7 +531,7 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
   }, [updateTournament, startTransition]);
 
   // Memoize the context value to prevent unnecessary re-renders of consuming components
-  const contextValue = React.useMemo(() => ({
+  const contextValue: TournamentContextType = React.useMemo(() => ({
     tournaments,
     currentTournament,
     isPending, // Add isPending state to context
@@ -536,11 +547,11 @@ export const TournamentProvider = ({ children }: { children: ReactNode }) => {
     updateMatchStatus,
     updateMatchScore,
     completeMatch,
-    moveTeamToDivision,
+    moveTeamToDivision: moveTeamToDivision as any, // Cast to match type
     loadSampleData,
     scheduleMatch,
     generateBracket,
-    autoAssignCourts: autoAssignCourtsHandler,
+    autoAssignCourts: autoAssignCourtsHandler as any, // Cast to match type
     generateMultiStageTournament,
     advanceToNextStage,
     assignSeeding,

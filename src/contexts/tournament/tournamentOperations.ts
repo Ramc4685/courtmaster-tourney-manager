@@ -1,7 +1,7 @@
 import { Tournament, Team, Match, Division, TournamentStage, CourtStatus, CategoryType, MatchStatus } from "@/types/tournament";
 import { generateId } from "@/utils/tournamentUtils";
 import { prepareNewEntity, prepareUpdatedEntity, getCurrentUserId } from "@/utils/auditUtils";
-import { generateMatchNumber, addMatchAuditLog } from "@/utils/matchAuditUtils";
+import { addMatchAuditLog, generateMatchNumber } from "@/utils/matchAuditUtils";
 
 // Creates a new tournament
 export const createNewTournament = (

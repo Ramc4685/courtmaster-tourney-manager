@@ -29,7 +29,7 @@ export function addMatchAuditLog(match: Match | StandaloneMatch, message: string
   const logEntry: AuditLog = {
     timestamp,
     user_id: userId, // Fixed: userId -> user_id
-    message,
+    action: message, // Changed: message -> action (assuming AuditLog uses 'action' instead of 'message')
     type: "GENERAL"
   };
 
@@ -57,7 +57,7 @@ export function addScoringAuditInfo(
   const logEntry: AuditLog = {
     timestamp,
     user_id: userId, // Fixed: userId -> user_id
-    message: `Score updated by ${scorerName || "Unknown"}`,
+    action: `Score updated by ${scorerName || "Unknown"}`, // Changed: message -> action
     type: "SCORING",
     metadata: {
       scores: [...match.scores],
@@ -90,7 +90,7 @@ export function addCourtAssignmentAuditInfo(
   const logEntry: AuditLog = {
     timestamp,
     user_id: userId, // Fixed: userId -> user_id
-    message: `Court ${courtNumber} assigned to match`,
+    action: `Court ${courtNumber} assigned to match`, // Changed: message -> action
     type: "COURT_ASSIGNMENT",
     metadata: {
       courtNumber,

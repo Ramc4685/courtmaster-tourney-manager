@@ -40,4 +40,5 @@ export interface TournamentContextType {
   scheduleMatches: (teamPairs: { team1: Team; team2: Team }[], options: SchedulingOptions) => Promise<SchedulingResult>;
   moveTeamToDivision?: (teamId: string, fromDivision: Division, toDivision: Division) => Promise<void>;
   assignSeeding?: (tournamentId: string) => Promise<void>;
+  updateCourt?: (court: Court) => Promise<void>;
 }
