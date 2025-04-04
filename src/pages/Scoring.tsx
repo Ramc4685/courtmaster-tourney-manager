@@ -12,6 +12,7 @@ import CourtSelectionPanel from '@/components/scoring/CourtSelectionPanel';
 import ScheduledMatchesList from '@/components/scoring/ScheduledMatchesList';
 import TournamentScoring from '@/components/scoring/TournamentScoring';
 import PageHeader from '@/components/shared/PageHeader';
+import { useScoringLogic } from '@/hooks/scoring/useScoringLogic';
 
 const Scoring = () => {
   const { tournamentId } = useParams();
@@ -20,6 +21,9 @@ const Scoring = () => {
   const [activeTab, setActiveTab] = useState('courts');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Use the scoring logic hook to handle scoring operations
+  const scoringLogic = useScoringLogic();
 
   // Find the tournament and set it as current
   useEffect(() => {
@@ -57,6 +61,21 @@ const Scoring = () => {
 
     loadTournament();
   }, [tournamentId, tournaments, setCurrentTournament, navigate]);
+
+  // Handle selecting a court
+  const handleCourtSelect = (court) => {
+    scoringLogic.handleSelectCourt(court);
+  };
+
+  // Handle selecting a match
+  const handleMatchSelect = (match) => {
+    scoringLogic.handleSelectMatch(match);
+  };
+
+  // Handle starting a match
+  const handleStartMatch = (match) => {
+    scoringLogic.handleStartMatch(match);
+  };
 
   // If we're still loading or have an error, show the container with appropriate state
   if (isLoading || error || !currentTournament) {
@@ -99,18 +118,41 @@ const Scoring = () => {
             <CourtSelectionPanel 
               courts={currentTournament.courts || []}
               matches={currentTournament.matches || []}
+              onCourtSelect={handleCourtSelect}
+              onMatchSelect={handleMatchSelect}
+              onStartMatch={handleStartMatch}
             />
           </TabsContent>
           
           <TabsContent value="scheduled" className="space-y-4">
             <ScheduledMatchesList 
               matches={currentTournament.matches?.filter(m => m.status === 'SCHEDULED') || []}
+              onStartMatch={handleStartMatch}
             />
           </TabsContent>
           
           <TabsContent value="all" className="space-y-4">
             <TournamentScoring 
+              currentTournament={currentTournament}
               tournamentId={currentTournament.id}
+              activeView={scoringLogic.activeView}
+              selectedMatch={scoringLogic.selectedMatch}
+              currentSet={scoringLogic.currentSet}
+              setCurrentSet={scoringLogic.setCurrentSet}
+              settingsOpen={scoringLogic.settingsOpen}
+              setSettingsOpen={scoringLogic.setSettingsOpen}
+              scoringSettings={scoringLogic.scoringSettings}
+              newSetDialogOpen={scoringLogic.newSetDialogOpen}
+              setNewSetDialogOpen={scoringLogic.setNewSetDialogOpen}
+              completeMatchDialogOpen={scoringLogic.completeMatchDialogOpen}
+              setCompleteMatchDialogOpen={scoringLogic.setCompleteMatchDialogOpen}
+              onSelectMatch={scoringLogic.handleSelectMatch}
+              onSelectCourt={scoringLogic.handleSelectCourt}
+              courts={currentTournament.courts || []}
+              onScoreChange={scoringLogic.handleScoreChange}
+              onNewSet={scoringLogic.handleNewSet}
+              onCompleteMatch={scoringLogic.handleCompleteMatch}
+              setActiveView={scoringLogic.setActiveView}
             />
           </TabsContent>
         </Tabs>
