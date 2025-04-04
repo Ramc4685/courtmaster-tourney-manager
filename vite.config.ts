@@ -42,10 +42,13 @@ export default defineConfig(({ mode }) => ({
     // Explicitly tell Vite how to handle directories vs files
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json']
   },
-  // Optimization configuration
+  // Override rollup options to fix Vercel Node.js 22 build issues
   build: {
-    // Improve chunk size for better loading performance
+    // Use esbuild for all minification to avoid Rollup platform-specific dependencies
+    minify: 'esbuild',
     rollupOptions: {
+      // Disable native addons to prevent platform-specific dependencies
+      external: [/@rollup\/rollup-linux-.*/, /@rollup\/rollup-darwin-.*/],
       output: {
         manualChunks: {
           // Core framework and large dependencies
@@ -72,7 +75,6 @@ export default defineConfig(({ mode }) => ({
     // Adjust chunk size warning
     chunkSizeWarningLimit: 600,
     // Minification options
-    minify: 'esbuild',
     assetsInlineLimit: 4096, // 4kb
   },
   // Disable the native module imports that are causing issues on Vercel

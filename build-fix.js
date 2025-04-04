@@ -10,6 +10,17 @@ try {
   console.log(`Detected platform: ${os.platform()}`);
   console.log(`Node version: ${process.version}`);
   
+  // For Node.js 22+ on Vercel, handle the Rollup native dependencies issue
+  if (process.versions.node.startsWith('22.')) {
+    console.log('Detected Node.js 22+, applying Rollup compatibility fixes');
+    
+    // Set environment variable to avoid native dependencies
+    process.env.ROLLUP_SKIP_NODEJS_NATIVE_ADDONS = 'true';
+    
+    // Set node options to avoid experimental warnings
+    process.env.NODE_OPTIONS = '--no-warnings';
+  }
+  
   // Log environment to help debug any build issues
   console.log('Build environment preparation complete');
 } catch (error) {

@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTournament } from '@/contexts/tournament/TournamentContext';
@@ -11,13 +10,14 @@ import TournamentStatusBadge from '@/components/tournament/TournamentStatusBadge
 import { useToast } from '@/hooks/use-toast';
 
 const Tournaments = () => {
-  const { tournaments, createTournament } = useTournament();
+  const { tournaments } = useTournament();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Create a new tournament
   const handleCreateTournament = () => {
-    // Redirect to the tournament creation page
-    window.location.href = '/tournaments/new';
+    // Navigate to the tournament creation page
+    navigate('/tournaments/new');
   };
 
   return (
