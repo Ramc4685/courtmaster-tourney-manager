@@ -40,7 +40,9 @@ export type AuditLog = {
   timestamp: Date;
   user_id: string;
   action: string;
+  type?: string;  // Added type field
   details?: Record<string, any>;
+  metadata?: Record<string, any>; // Added metadata field
 };
 
 export type Match = {

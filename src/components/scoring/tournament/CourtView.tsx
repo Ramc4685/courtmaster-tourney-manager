@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { Tournament, Match, Court } from '@/types/tournament';
+import { Court, Match, Tournament } from '@/types/tournament';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface CourtViewProps {
   tournament: Tournament;
@@ -17,89 +17,74 @@ const CourtView: React.FC<CourtViewProps> = ({
   onSelectCourt,
   onSelectMatch
 }) => {
-  // Get active matches (matches in progress or scheduled)
-  const activeMatches = tournament.matches.filter(
-    m => m.status === "IN_PROGRESS" || m.status === "SCHEDULED"
-  );
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold mb-4">Courts</h2>
-        {courts.length === 0 ? (
-          <p className="text-gray-500">No courts available.</p>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {courts.map(court => {
-              // Find the match happening on this court
-              const matchOnCourt = tournament.matches.find(
-                m => 
-                  m.courtNumber === court.number && 
-                  (m.status === "IN_PROGRESS" || m.status === "SCHEDULED")
-              );
-
-              return (
-                <Card 
-                  key={court.id}
-                  className={`
-                    cursor-pointer hover:shadow-md transition-shadow
-                    ${matchOnCourt ? 'bg-green-50 border-green-200' : 'bg-gray-50'}
-                  `}
-                  onClick={() => onSelectCourt(court)}
-                >
-                  <CardContent className="p-4">
-                    <h3 className="font-bold mb-1">Court {court.number}</h3>
-                    {matchOnCourt ? (
-                      <div>
-                        <p className="text-sm">{matchOnCourt.team1.name} vs {matchOnCourt.team2.name}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Status: {matchOnCourt.status}
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">No active match</p>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+  if (!courts.length) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-gray-500">No courts available.</p>
       </div>
-
-      <div>
-        <h2 className="text-xl font-bold mb-4">Active Matches</h2>
-        {activeMatches.length === 0 ? (
-          <p className="text-gray-500">No active matches.</p>
-        ) : (
-          <div className="space-y-2">
-            {activeMatches.map(match => (
-              <Card 
-                key={match.id}
-                className="hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => onSelectMatch(match)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-bold">{match.team1.name} vs {match.team2.name}</h3>
-                      <p className="text-sm text-gray-500">
-                        Court: {match.courtNumber || 'Not assigned'} • 
-                        Status: {match.status}
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectMatch(match);
-                    }}>
-                      Score
-                    </Button>
+    );
+  }
+  
+  return (
+    <div>
+      <h2 className="text-xl font-bold mb-4">Courts</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {courts.map((court) => (
+          <Card 
+            key={court.id}
+            className={`cursor-pointer hover:border-primary ${
+              court.status === 'IN_USE' ? 'border-amber-400' : ''
+            }`}
+            onClick={() => onSelectCourt(court)}
+          >
+            <CardContent className="p-4">
+              <div className="flex justify-between items-start">
+                <h3 className="font-bold text-lg">Court {court.number}</h3>
+                <Badge variant={court.status === 'IN_USE' ? "default" : "outline"}>
+                  {court.status === 'IN_USE' ? 'In Use' : 'Available'}
+                </Badge>
+              </div>
+              
+              {court.currentMatch && (
+                <div 
+                  className="mt-4 p-3 bg-gray-50 rounded cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectMatch(court.currentMatch as Match);
+                  }}
+                >
+                  <p className="font-medium">Current Match:</p>
+                  <div className="flex justify-between mt-2">
+                    <span>{court.currentMatch.team1.name}</span>
+                    <span>vs</span>
+                    <span>{court.currentMatch.team2.name}</span>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                  {court.currentMatch.scores && court.currentMatch.scores.length > 0 && (
+                    <div className="text-center mt-2 text-sm">
+                      Score: {court.currentMatch.scores.map((set, idx) => (
+                        <span key={idx}>
+                          {idx > 0 && ', '}
+                          {set.team1Score}-{set.team2Score}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-500 mt-1 flex justify-between">
+                    <span>Status: {court.currentMatch.status}</span>
+                    {court.currentMatch.scheduledTime && (
+                      <span>
+                        {new Date(court.currentMatch.scheduledTime).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

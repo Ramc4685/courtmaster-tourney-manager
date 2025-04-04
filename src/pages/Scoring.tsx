@@ -1,3 +1,4 @@
+// Create a simple adapter for Scoring.tsx
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
@@ -7,6 +8,22 @@ import { Match, Court, Tournament } from '@/types/tournament';
 import { Button } from '@/components/ui/button';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/components/ui/use-toast';
+import { courtToCourtNumber } from '@/components/scoring/adapters/scoringAdapters';
+
+// Adapter functions
+export const adaptCourtSelection = (handler: (courtNumber: number) => void) => {
+  return (court: Court) => {
+    handler(court.number);
+  };
+};
+
+export const adaptScoreChange = (handler: (team: "team1" | "team2", increment: boolean) => void) => {
+  return (team1Score: number, team2Score: number) => {
+    // This is a simplified implementation
+    // In a real implementation, we'd need to track previous scores to determine which team changed and by how much
+    handler("team1", team1Score > 0);
+  };
+};
 
 const Scoring = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();

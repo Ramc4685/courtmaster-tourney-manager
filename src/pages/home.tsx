@@ -1,163 +1,242 @@
-
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Database, PlusCircle, Trophy } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Layout from "@/components/layout/Layout";
-import { useTournament } from "@/contexts/TournamentContext";
-import { useToast } from "@/hooks/use-toast";
+import React from 'react';
+import { useTournament } from '@/contexts/tournament/useTournament';
+import { TournamentFormat } from '@/types/tournament';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Trophy, Calendar, Users, Activity, PlusCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Home = () => {
-  const { tournaments, loadSampleData, currentTournament, setCurrentTournament } = useTournament();
-  const { toast } = useToast();
-  const navigate = useNavigate();
-
-  const handleLoadSampleData = () => {
-    loadSampleData();
-    toast({
-      title: "Sample data loaded",
-      description: "A sample tournament with teams and matches has been created.",
-    });
-  };
-
-  const handleSelectTournament = (tournamentId: string) => {
-    const tournament = tournaments.find(t => t.id === tournamentId);
-    if (tournament) {
-      setCurrentTournament(tournament);
-      navigate(`/tournaments/${tournamentId}`);
+  const tournament = useTournament();
+  
+  // Create a wrapper function for loadSampleData
+  const handleLoadSample = async (format?: TournamentFormat) => {
+    try {
+      await tournament.loadSampleData(format);
+    } catch (error) {
+      console.error("Failed to load sample data", error);
     }
-  };
-
+  }
+  
   return (
-    <Layout>
-      <div className="max-w-6xl mx-auto py-8 px-4">
-        <div className="flex flex-col items-center justify-center mb-12 text-center">
-          <Trophy className="h-16 w-16 text-court-green mb-4" />
-          <h1 className="text-4xl font-bold mb-2">CourtMaster Tournament Management</h1>
-          <p className="text-xl text-gray-600 max-w-2xl">
-            Create, manage, and score your badminton tournaments with ease
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-            <h2 className="text-2xl font-bold mb-4">Quick Actions</h2>
-            <div className="space-y-4">
-              <Link to="/tournaments/create">
-                <Button className="w-full bg-court-green hover:bg-court-green/90">
-                  <PlusCircle className="mr-2 h-5 w-5" />
-                  Create New Tournament
-                </Button>
-              </Link>
-              <Button 
-                variant="outline" 
-                className="w-full" 
-                onClick={handleLoadSampleData}
-              >
-                <Database className="mr-2 h-5 w-5" />
-                Load Sample Tournament
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6">Tournament Manager</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Trophy className="mr-2 h-5 w-5" />
+              Quick Start
+            </CardTitle>
+            <CardDescription>
+              Create a new tournament or load sample data to get started quickly.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p>New to the app? Load a sample tournament to explore the features:</p>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => handleLoadSample("SINGLE_ELIMINATION")} variant="outline" size="sm">
+                Single Elimination
               </Button>
-              <Link to="/tournaments">
-                <Button variant="outline" className="w-full">
-                  <Trophy className="mr-2 h-5 w-5" />
-                  View All Tournaments
-                </Button>
-              </Link>
+              <Button onClick={() => handleLoadSample("DOUBLE_ELIMINATION")} variant="outline" size="sm">
+                Double Elimination
+              </Button>
+              <Button onClick={() => handleLoadSample("ROUND_ROBIN")} variant="outline" size="sm">
+                Round Robin
+              </Button>
+              <Button onClick={() => handleLoadSample("GROUP_KNOCKOUT")} variant="outline" size="sm">
+                Group + Knockout
+              </Button>
             </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-            <h2 className="text-2xl font-bold mb-4">Your Tournaments</h2>
-            {tournaments.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No tournaments yet</p>
-                <p className="text-sm text-gray-400 mt-2">
-                  Create a new tournament or load a sample tournament to get started
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {tournaments.slice(0, 5).map((tournament) => (
-                  <div 
-                    key={tournament.id} 
-                    className="p-4 rounded-md border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => handleSelectTournament(tournament.id)}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-semibold text-lg">{tournament.name}</h3>
-                        <p className="text-sm text-gray-500">
-                          {tournament.teams.length} Teams • {tournament.matches.length} Matches
-                        </p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Link to={`/tournaments/${tournament.id}`} onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm">View</Button>
-                        </Link>
-                        <Link to={`/scoring/${tournament.id}`} onClick={(e) => e.stopPropagation()}>
-                          <Button variant="outline" size="sm">Scoring</Button>
-                        </Link>
-                      </div>
+          </CardContent>
+          <CardFooter>
+            <Link to="/tournaments/new">
+              <Button className="w-full">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create New Tournament
+              </Button>
+            </Link>
+          </CardFooter>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Activity className="mr-2 h-5 w-5" />
+              Recent Activity
+            </CardTitle>
+            <CardDescription>
+              Your recent tournaments and matches.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {tournament.tournaments.length > 0 ? (
+              <ul className="space-y-2">
+                {tournament.tournaments.slice(0, 3).map(t => (
+                  <li key={t.id} className="border-b pb-2">
+                    <Link to={`/tournaments/${t.id}`} className="hover:underline">
+                      <span className="font-medium">{t.name}</span>
+                    </Link>
+                    <div className="text-sm text-gray-500">
+                      {t.matches.length} matches • {t.teams.length} teams
                     </div>
-                  </div>
+                  </li>
                 ))}
-                
-                {tournaments.length > 5 && (
-                  <Link to="/tournaments" className="block text-center text-sm text-court-green hover:underline mt-4">
-                    View all tournaments
-                  </Link>
-                )}
-              </div>
+              </ul>
+            ) : (
+              <p className="text-gray-500">No recent tournaments. Create one to get started!</p>
             )}
-          </div>
-        </div>
-
-        {currentTournament && (
-          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200 mb-12">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">Current Tournament</h2>
-              <Link to={`/tournaments/${currentTournament.id}`}>
-                <Button variant="outline" size="sm">View Details</Button>
-              </Link>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-xl font-semibold">{currentTournament.name}</h3>
-                <p className="text-gray-600">{currentTournament.description || "No description"}</p>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <p className="text-sm text-gray-500">Teams</p>
-                  <p className="text-2xl font-bold">{currentTournament.teams.length}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <p className="text-sm text-gray-500">Matches</p>
-                  <p className="text-2xl font-bold">{currentTournament.matches.length}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <p className="text-sm text-gray-500">Courts</p>
-                  <p className="text-2xl font-bold">{currentTournament.courts.length}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <p className="text-sm text-gray-500">In Progress</p>
-                  <p className="text-2xl font-bold">
-                    {currentTournament.matches.filter(m => m.status === "IN_PROGRESS").length}
-                  </p>
-                </div>
-              </div>
-              <div className="flex space-x-2 pt-2">
-                <Link to={`/tournaments/${currentTournament.id}`}>
-                  <Button variant="outline">Manage Tournament</Button>
-                </Link>
-                <Link to={`/scoring/${currentTournament.id}`}>
-                  <Button className="bg-court-green hover:bg-court-green/90">Go to Scoring</Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
+          </CardContent>
+          <CardFooter>
+            <Link to="/tournaments" className="w-full">
+              <Button variant="outline" className="w-full">View All Tournaments</Button>
+            </Link>
+          </CardFooter>
+        </Card>
       </div>
-    </Layout>
+      
+      <Tabs defaultValue="tournaments" className="w-full">
+        <TabsList className="grid grid-cols-3 mb-4">
+          <TabsTrigger value="tournaments">
+            <Trophy className="mr-2 h-4 w-4" />
+            Tournaments
+          </TabsTrigger>
+          <TabsTrigger value="schedule">
+            <Calendar className="mr-2 h-4 w-4" />
+            Schedule
+          </TabsTrigger>
+          <TabsTrigger value="teams">
+            <Users className="mr-2 h-4 w-4" />
+            Teams
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="tournaments">
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Tournaments</CardTitle>
+              <CardDescription>
+                Manage your tournaments and create new ones.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {tournament.tournaments.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {tournament.tournaments.map(t => (
+                    <Card key={t.id}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">{t.name}</CardTitle>
+                        <CardDescription>{t.format}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="pb-2">
+                        <div className="text-sm">
+                          <div>Teams: {t.teams.length}</div>
+                          <div>Matches: {t.matches.length}</div>
+                          <div>Status: {t.status}</div>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="pt-2">
+                        <Link to={`/tournaments/${t.id}`} className="w-full">
+                          <Button variant="outline" size="sm" className="w-full">
+                            View Details
+                          </Button>
+                        </Link>
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-4">No tournaments found. Create your first tournament!</p>
+                  <Link to="/tournaments/new">
+                    <Button>
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Create Tournament
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="schedule">
+          <Card>
+            <CardHeader>
+              <CardTitle>Upcoming Matches</CardTitle>
+              <CardDescription>
+                View and manage your scheduled matches.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {tournament.currentTournament ? (
+                tournament.currentTournament.matches.filter(m => m.status === "SCHEDULED").length > 0 ? (
+                  <div className="space-y-4">
+                    {tournament.currentTournament.matches
+                      .filter(m => m.status === "SCHEDULED")
+                      .slice(0, 5)
+                      .map(match => (
+                        <div key={match.id} className="flex justify-between items-center p-3 border rounded">
+                          <div>
+                            <div className="font-medium">{match.team1.name} vs {match.team2.name}</div>
+                            <div className="text-sm text-gray-500">
+                              Court: {match.courtNumber || 'Not assigned'}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm">
+                              {match.scheduledTime ? new Date(match.scheduledTime).toLocaleString() : 'Not scheduled'}
+                            </div>
+                            <div className="text-xs text-gray-500">{match.division}</div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-4">No scheduled matches found.</p>
+                )
+              ) : (
+                <p className="text-gray-500 text-center py-4">Select a tournament to view scheduled matches.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="teams">
+          <Card>
+            <CardHeader>
+              <CardTitle>Teams</CardTitle>
+              <CardDescription>
+                View and manage teams across your tournaments.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {tournament.currentTournament ? (
+                tournament.currentTournament.teams.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    {tournament.currentTournament.teams.slice(0, 9).map(team => (
+                      <div key={team.id} className="p-3 border rounded">
+                        <div className="font-medium">{team.name}</div>
+                        <div className="text-sm text-gray-500">
+                          {team.players.length} players
+                          {team.seed && ` • Seed: ${team.seed}`}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-4">No teams found in the current tournament.</p>
+                )
+              ) : (
+                <p className="text-gray-500 text-center py-4">Select a tournament to view teams.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 

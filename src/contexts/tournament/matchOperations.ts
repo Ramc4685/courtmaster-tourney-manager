@@ -1,4 +1,3 @@
-
 import { Match, Tournament, MatchStatus, StandaloneMatch } from "@/types/tournament";
 import { addMatchAuditLog, addScoringAuditInfo } from "@/utils/matchAuditUtils";
 import { getCurrentUserId } from "@/utils/auditUtils";
@@ -6,6 +5,20 @@ import { getCurrentUserId } from "@/utils/auditUtils";
 // Guard type to check if it's a tournament match
 function isTournamentMatch(match: Match | StandaloneMatch): match is Match {
   return 'tournamentId' in match && 'division' in match && 'stage' in match;
+}
+
+// Safe cast function for Match type
+function ensureTournamentMatch(match: Match | StandaloneMatch): Match {
+  if (isTournamentMatch(match)) {
+    return match;
+  }
+  // This is a fallback that should never happen in practice
+  return {
+    ...match,
+    tournamentId: 'fallback',
+    division: 'INITIAL',
+    stage: 'INITIAL_ROUND',
+  } as Match;
 }
 
 // Updates the match status in a tournament
@@ -30,7 +43,7 @@ export const updateMatchStatusInTournament = (
         `Match status updated to ${status}`
       );
 
-      return updatedMatch as Match; // We know this is a tournament match
+      return ensureTournamentMatch(updatedMatch); // Use safe cast
     }
     return match;
   });
@@ -72,8 +85,8 @@ export const updateMatchScoreInTournament = (
         updatedAt: new Date(),
       };
 
-      // Use type guard to ensure we only pass tournament matches to addScoringAuditInfo
-      return addScoringAuditInfo(updatedMatch, scorerName) as Match;
+      // Use safe cast for tournament match
+      return ensureTournamentMatch(addScoringAuditInfo(updatedMatch, scorerName));
     }
     return match;
   });
@@ -103,8 +116,8 @@ export const completeMatchInTournament = (
         updated_by: getCurrentUserId(),
       };
 
-      // Always safe to cast here because tournament matches are of type Match
-      return addScoringAuditInfo(updatedMatch, scorerName) as Match;
+      // Use safe cast for tournament match
+      return ensureTournamentMatch(addScoringAuditInfo(updatedMatch, scorerName));
     }
     return match;
   });

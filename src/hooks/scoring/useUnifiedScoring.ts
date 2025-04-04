@@ -539,9 +539,13 @@ export const useUnifiedScoring = ({ scorerType, matchId, scorerName }: UnifiedSc
             courtNumber
           };
         
-          // Use full match update logic instead of calling updateMatch directly
-          // This might involve updating the match in the tournament context
-          // For now, just update our local state since we can't modify the context interface
+          // Use tournament.updateMatchScore as a workaround since updateMatch isn't available
+          // This will at least update the match in the context
+          tournament.updateMatchScore(updatedMatch.id, 0, 
+            updatedMatch.scores[0]?.team1Score || 0, 
+            updatedMatch.scores[0]?.team2Score || 0);
+        
+          // Update our local state
           matchRef.current = updatedMatch;
           setMatch(updatedMatch);
         

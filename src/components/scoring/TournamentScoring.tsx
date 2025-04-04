@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import CourtView from './tournament/CourtView';
 import MatchView from './tournament/MatchView';
 import { ArrowLeft } from 'lucide-react';
+import { courtToCourtNumber, scoreChangeAdapter } from './adapters/scoringAdapters';
 
 type ScoringView = "match" | "courts";
 
@@ -26,9 +27,9 @@ interface TournamentScoringProps {
   completeMatchDialogOpen: boolean;
   setCompleteMatchDialogOpen: (open: boolean) => void;
   onSelectMatch: (match: Match) => void;
-  onSelectCourt: (court: Court) => void;  // Updated to accept Court type
+  onSelectCourt: (court: Court) => void;
   courts: Court[];
-  onScoreChange: (team1Score: number, team2Score: number) => void;  // Updated parameter types
+  onScoreChange: (team1Score: number, team2Score: number) => void;
   onNewSet: () => void;
   onCompleteMatch: () => void;
   isPending?: boolean;
@@ -68,6 +69,37 @@ const TournamentScoring: React.FC<TournamentScoringProps> = ({
     return <ScoringContainer errorMessage="Tournament not found" />;
   }
 
+  // Adapter function to handle court selection
+  const handleCourtSelection = (court: Court) => {
+    onSelectCourt(court);
+  };
+
+  // Adapter function to handle score changes
+  const handleScoreChange = (team: "team1" | "team2", increment: boolean) => {
+    // Calculate the new scores based on team and increment
+    if (!selectedMatch) return;
+    
+    const currentScore = selectedMatch.scores[currentSet] || { team1Score: 0, team2Score: 0 };
+    let team1Score = currentScore.team1Score;
+    let team2Score = currentScore.team2Score;
+    
+    if (team === "team1") {
+      team1Score = increment ? team1Score + 1 : Math.max(0, team1Score - 1);
+    } else {
+      team2Score = increment ? team2Score + 1 : Math.max(0, team2Score - 1);
+    }
+    
+    // Pass the new scores to the original handler
+    onScoreChange(team1Score, team2Score);
+  };
+
+  // Adapter function to handle court number changes
+  const handleCourtChange = (courtNumber: number) => {
+    if (onCourtChange) {
+      onCourtChange(courtNumber);
+    }
+  };
+
   return (
     <ScoringContainer>
       <div className="flex items-center justify-between mb-4">
@@ -89,7 +121,7 @@ const TournamentScoring: React.FC<TournamentScoringProps> = ({
         <CourtView
           tournament={currentTournament}
           courts={courts}
-          onSelectCourt={onSelectCourt}
+          onSelectCourt={handleCourtSelection}
           onSelectMatch={onSelectMatch}
         />
       ) : (
@@ -99,11 +131,11 @@ const TournamentScoring: React.FC<TournamentScoringProps> = ({
           setCurrentSet={setCurrentSet}
           onNewSet={onNewSet}
           onCompleteMatch={onCompleteMatch}
-          onScoreChange={onScoreChange}
+          onScoreChange={handleScoreChange}
           isPending={isPending}
           scorerName={scorerName}
           onScorerNameChange={onScorerNameChange}
-          onCourtChange={onCourtChange}
+          onCourtChange={handleCourtChange}
         />
       )}
       
