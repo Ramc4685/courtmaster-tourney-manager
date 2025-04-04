@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
@@ -195,11 +194,14 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
             });
           }
 
+          // Create a new score object without the timestamp property
+          // since it's not part of the MatchScore type
           scores[setIndex] = {
             team1Score,
             team2Score,
-            // Don't add scorer to the score object as it's not in MatchScore type
-            timestamp: new Date().toISOString()
+            // Remove the timestamp property as it's causing the type error
+            // If needed, add the property only if it's defined in the interface
+            scoredBy: scorerName || 'Anonymous'
           };
 
           // Create a default audit log
@@ -208,7 +210,8 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
             action: `Score updated for set ${setIndex + 1}`,
             details: { 
               score: `${team1Score}-${team2Score}`,
-              scorer: scorerName || 'Anonymous' 
+              scorer: scorerName || 'Anonymous',
+              timestamp: new Date().toISOString() // Move timestamp to audit log details
             },
             user_id: 'system'
           };
