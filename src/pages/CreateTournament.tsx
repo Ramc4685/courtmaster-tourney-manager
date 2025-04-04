@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { useTournament } from "@/contexts/tournament/useTournament";
-import { TournamentFormat } from "@/types/tournament";
+import { TournamentFormat, TournamentStatus } from "@/types/tournament";
 
 const CreateTournament = () => {
   const navigate = useNavigate();
@@ -45,6 +45,7 @@ const CreateTournament = () => {
         courts: [],
         categories: [],
         startDate: new Date(),
+        status: "DRAFT" as TournamentStatus, // Add the required status property
       });
 
       // Show success message
