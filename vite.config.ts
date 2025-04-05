@@ -1,4 +1,3 @@
-
 import { defineConfig, splitVendorChunkPlugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -11,6 +10,15 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    allowedHosts: [
+      // Allow the specific host causing the issue
+      "3c369f66-82fd-492f-a24a-0dbb48d7615a.lovableproject.com",
+      // Include localhost and other common development domains
+      "localhost",
+      "127.0.0.1",
+      "*.lovable.app",
+      "*.lovableproject.com"
+    ],
   },
   plugins: [
     react(),
