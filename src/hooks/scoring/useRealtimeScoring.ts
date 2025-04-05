@@ -1,82 +1,69 @@
-
 import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+// Update import for useTournament
+import { useTournament } from '@/contexts/tournament/useTournament';
 import { Match } from '@/types/tournament';
-import { useTournament } from '@/contexts/TournamentContext';
-import { realtimeTournamentService } from '@/services/realtime/RealtimeTournamentService';
-import { useToast } from '@/hooks/use-toast';
 
 /**
- * Hook to provide real-time scoring capabilities for tournament matches
+ * Hook to listen for real-time scoring updates for a specific match
  */
-export const useRealtimeScoring = (initialMatch: Match | null) => {
-  const [match, setMatch] = useState<Match | null>(initialMatch);
-  const { updateTournament, currentTournament } = useTournament();
-  const { toast } = useToast();
-  const [isConflict, setIsConflict] = useState(false);
+export function useRealtimeScoring(matchId: string) {
+  const [match, setMatch] = useState<Match | null>(null);
+  const { currentTournament } = useTournament();
 
-  // Subscribe to real-time updates for this match
   useEffect(() => {
-    if (!match || !match.id) return;
+    if (!supabase || !currentTournament) {
+      console.log('[DEBUG] Supabase client not available, skipping real-time updates');
+      return;
+    }
 
-    // Subscribe to individual match updates
-    const unsubscribe = realtimeTournamentService.subscribeMatch(match.id, (updatedMatch) => {
-      // Check if our local match is older than the received one
-      const ourUpdateTime = match.updatedAt ? new Date(match.updatedAt) : new Date(0);
-      const theirUpdateTime = updatedMatch.updatedAt ? new Date(updatedMatch.updatedAt) : new Date(0);
-      
-      if (theirUpdateTime > ourUpdateTime) {
-        // If someone else updated the match more recently
-        setMatch(updatedMatch);
-        
-        // If we have unsaved changes, notify the user of a conflict
-        if (isConflict) {
-          toast({
-            title: "Match Updated",
-            description: "Another scorekeeper has updated this match. Your view has been refreshed.",
-            variant: "default",
-          });
+    console.log(`[DEBUG] Setting up real-time listener for match ID: ${matchId}`);
+
+    const channel = supabase
+      .channel(`match_updates_${matchId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tournaments',
+          filter: `id=eq.${currentTournament.id}`,
+        },
+        (payload) => {
+          console.log('[DEBUG] Received payload:', payload);
+          if (payload.new) {
+            try {
+              const updatedTournamentData = JSON.parse(payload.new.data);
+              const updatedMatch = updatedTournamentData.matches.find((m: Match) => m.id === matchId);
+
+              if (updatedMatch) {
+                console.log(`[DEBUG] Match ${matchId} updated in real-time`);
+                setMatch(updatedMatch);
+              } else {
+                console.log(`[DEBUG] Match ${matchId} not found in updated tournament data`);
+              }
+            } catch (error) {
+              console.error('Error parsing tournament data:', error);
+            }
+          }
         }
-        
-        setIsConflict(false);
-      }
-    });
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`[DEBUG] Successfully subscribed to channel: match_updates_${matchId}`);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error(`[ERROR] Channel error for match_updates_${matchId}`);
+        } else if (status === 'CLOSED') {
+          console.warn(`[WARN] Channel closed for match_updates_${matchId}`);
+        }
+      });
 
     return () => {
-      unsubscribe();
+      console.log(`[DEBUG] Removing real-time listener for match ID: ${matchId}`);
+      supabase.removeChannel(channel);
     };
-  }, [match, isConflict, toast]);
+  }, [matchId, currentTournament]);
 
-  // Update match with new data and publish to real-time service
-  const updateMatchData = (updatedMatch: Match) => {
-    // Ensure updatedAt is set when updating a match
-    const matchWithTimestamp = {
-      ...updatedMatch,
-      updatedAt: new Date()
-    };
-    
-    // Update the match in our state
-    setMatch(matchWithTimestamp);
+  return match;
+}
 
-    // Update the match in the tournament
-    if (currentTournament) {
-      const updatedMatches = currentTournament.matches.map(m => 
-        m.id === matchWithTimestamp.id ? matchWithTimestamp : m
-      );
-      
-      const updatedTournament = {
-        ...currentTournament,
-        matches: updatedMatches,
-        updatedAt: new Date()
-      };
-      
-      // Update context (which will publish to real-time service)
-      updateTournament(updatedTournament);
-    }
-  };
-
-  return {
-    match,
-    updateMatchData,
-    isConflict,
-  };
-};

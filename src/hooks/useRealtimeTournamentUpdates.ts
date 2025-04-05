@@ -1,143 +1,86 @@
-
-import { useState, useEffect } from 'react';
-import { Tournament, Match } from '@/types/tournament';
-import { useTournament } from '@/contexts/TournamentContext';
-import { realtimeTournamentService } from '@/services/realtime/RealtimeTournamentService';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/auth/AuthContext';
+import { useEffect } from 'react';
+import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+// Update import for useTournament
+import { useTournament } from '@/contexts/tournament/useTournament';
 
 /**
- * A hook that combines the TournamentContext with real-time updates.
- * This allows components to receive live updates when other users modify the tournament.
+ * Hook to listen for real-time tournament updates and sync with local state
  */
-export const useRealtimeTournamentUpdates = (tournamentId?: string) => {
-  const { currentTournament, updateTournament } = useTournament();
-  const [inProgressMatches, setInProgressMatches] = useState<Match[]>([]);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const { toast } = useToast();
-  const { user, isAdmin } = useAuth();
+export function useRealtimeTournamentUpdates(tournamentId: string | undefined) {
+  const { updateTournament } = useTournament();
 
   useEffect(() => {
-    console.log(`[DEBUG] useRealtimeTournamentUpdates: Initializing with tournamentId=${tournamentId || 'undefined'}`);
-    console.log(`[DEBUG] useRealtimeTournamentUpdates: Current tournament ID=${currentTournament?.id || 'null'}`);
-    console.log(`[DEBUG] useRealtimeTournamentUpdates: Current user=${user?.email || 'not logged in'}`);
-    
-    if (!tournamentId) {
-      console.log(`[DEBUG] useRealtimeTournamentUpdates: No tournamentId provided, skipping subscriptions`);
-      return;
-    }
-    
-    if (!currentTournament) {
-      console.log(`[DEBUG] useRealtimeTournamentUpdates: No current tournament available, skipping subscriptions`);
-      return;
-    }
-    
-    if (tournamentId !== currentTournament.id) {
-      console.log(`[DEBUG] useRealtimeTournamentUpdates: Tournament ID mismatch, skipping subscriptions`);
-      console.log(`[DEBUG] useRealtimeTournamentUpdates: Provided ID=${tournamentId}, Current ID=${currentTournament.id}`);
+    if (!tournamentId || !supabase) {
+      console.log('Skipping Supabase setup: missing tournament ID or Supabase client');
       return;
     }
 
-    let unsubscribeTournament: (() => void) | null = null;
-    let unsubscribeMatches: (() => void) | null = null;
+    console.log(`Setting up Supabase listener for tournament ID: ${tournamentId}`);
 
-    const setupSubscriptions = () => {
-      console.log(`[DEBUG] useRealtimeTournamentUpdates: Setting up realtime subscriptions for tournament ${tournamentId}`);
-      
-      // Subscribe to tournament updates
-      unsubscribeTournament = realtimeTournamentService.subscribeTournament(
-        tournamentId,
-        (updatedTournament) => {
-          console.log(`[DEBUG] useRealtimeTournamentUpdates: Received tournament update for ${updatedTournament.id}`);
-          console.log(`[DEBUG] useRealtimeTournamentUpdates: Update timestamp=${new Date(updatedTournament.updatedAt).toISOString()}`);
-          console.log(`[DEBUG] useRealtimeTournamentUpdates: Current timestamp=${currentTournament ? new Date(currentTournament.updatedAt).toISOString() : 'null'}`);
-          
-          // Only update if it's newer than current
-          if (currentTournament && new Date(updatedTournament.updatedAt) > new Date(currentTournament.updatedAt)) {
-            console.log(`[DEBUG] useRealtimeTournamentUpdates: Updating tournament with newer data`);
-            updateTournament(updatedTournament);
-            toast({
-              title: "Tournament Updated",
-              description: "The tournament data has been updated with the latest changes.",
-              variant: "default",
-            });
-          } else {
-            console.log(`[DEBUG] useRealtimeTournamentUpdates: Ignoring tournament update (not newer than current data)`);
+    const channel = supabase
+      .channel(`tournament_updates_${tournamentId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tournaments', filter: `id=eq.${tournamentId}` },
+        async (payload) => {
+          console.log('Received Supabase payload:', payload);
+
+          if (payload.new) {
+            try {
+              // Parse the data field which contains the tournament details
+              const updatedTournamentData = payload.new.data;
+
+              if (updatedTournamentData) {
+                // Convert dates back to Date objects
+                const parsedTournament = {
+                  ...updatedTournamentData,
+                  createdAt: new Date(updatedTournamentData.createdAt),
+                  updatedAt: new Date(updatedTournamentData.updatedAt),
+                  startDate: new Date(updatedTournamentData.startDate),
+                  // Ensure matches also have their dates parsed
+                  matches: updatedTournamentData.matches ? updatedTournamentData.matches.map((match: any) => ({
+                    ...match,
+                    scheduledTime: new Date(match.scheduledTime)
+                  })) : []
+                };
+
+                console.log('Parsed tournament data:', parsedTournament);
+
+                // Update the tournament using the context's updateTournament function
+                await updateTournament(parsedTournament);
+
+                toast({
+                  title: 'Tournament updated',
+                  description: 'Real-time update received from Supabase.',
+                });
+              } else {
+                console.warn('Received a Supabase update without tournament data.');
+              }
+            } catch (error) {
+              console.error('Error processing real-time update:', error);
+              toast({
+                title: 'Update failed',
+                description: 'Failed to process real-time update.',
+                variant: 'destructive',
+              });
+            }
           }
         }
-      );
-
-      // Subscribe to in-progress matches
-      unsubscribeMatches = realtimeTournamentService.subscribeInProgressMatches(
-        tournamentId,
-        (matches) => {
-          console.log(`[DEBUG] useRealtimeTournamentUpdates: Received in-progress matches update. Count: ${matches.length}`);
-          setInProgressMatches(matches);
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`Successfully subscribed to tournament updates for ID: ${tournamentId}`);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error(`Supabase channel error for tournament ID: ${tournamentId}`);
+        } else if (status === 'TIMED_OUT') {
+          console.warn(`Supabase timed out while subscribing to tournament ID: ${tournamentId}`);
         }
-      );
+      });
 
-      setIsSubscribed(true);
-      console.log(`[DEBUG] useRealtimeTournamentUpdates: Subscriptions established successfully`);
-    };
-
-    setupSubscriptions();
-
-    // Publish initial state to real-time service
-    if (currentTournament) {
-      console.log(`[DEBUG] useRealtimeTournamentUpdates: Publishing initial tournament state to realtime service`);
-      realtimeTournamentService.publishTournamentUpdate(currentTournament);
-    }
-
-    // Cleanup subscriptions
     return () => {
-      console.log(`[DEBUG] useRealtimeTournamentUpdates: Cleaning up subscriptions`);
-      if (unsubscribeTournament) {
-        console.log(`[DEBUG] useRealtimeTournamentUpdates: Unsubscribing from tournament updates`);
-        unsubscribeTournament();
-      }
-      if (unsubscribeMatches) {
-        console.log(`[DEBUG] useRealtimeTournamentUpdates: Unsubscribing from in-progress matches updates`);
-        unsubscribeMatches();
-      }
-      setIsSubscribed(false);
+      console.log(`Unsubscribing from tournament updates for ID: ${tournamentId}`);
+      supabase.removeChannel(channel);
     };
-  }, [tournamentId, currentTournament, updateTournament, toast, user]);
-
-  // Function to publish updates to other clients
-  // Added permission check to ensure only authorized users can update
-  const publishTournamentUpdate = (tournament: Tournament) => {
-    console.log(`[DEBUG] useRealtimeTournamentUpdates: Attempting to publish tournament update for ${tournament.id}`);
-    
-    // Only allow updates if user is logged in and is admin of the tournament
-    if (!user) {
-      console.log(`[DEBUG] useRealtimeTournamentUpdates: Publishing failed - user not logged in`);
-      toast({
-        title: "Permission Denied",
-        description: "You must be logged in to make changes.",
-        variant: "destructive",
-      });
-      return false;
-    }
-    
-    if (!isAdmin(tournament.id)) {
-      console.log(`[DEBUG] useRealtimeTournamentUpdates: Publishing failed - user lacks permission`);
-      toast({
-        title: "Permission Denied",
-        description: "You don't have permission to update this tournament.",
-        variant: "destructive",
-      });
-      return false;
-    }
-    
-    console.log(`[DEBUG] useRealtimeTournamentUpdates: Publishing tournament update for ${tournament.id}`);
-    realtimeTournamentService.publishTournamentUpdate(tournament);
-    return true;
-  };
-
-  return {
-    currentTournament,
-    inProgressMatches,
-    isSubscribed,
-    publishTournamentUpdate,
-  };
-};
+  }, [tournamentId, updateTournament]);
+}

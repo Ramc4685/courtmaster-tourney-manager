@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { 
   Dialog,
@@ -58,34 +59,44 @@ const UnifiedScheduleDialog: React.FC<UnifiedScheduleDialogProps> = ({
   
   // When dialog opens, generate suggested pairs
   useEffect(() => {
-    if (open) {
+    if (open && currentTournament) {
       generateSuggestedPairs(selectedDivision);
     }
-  }, [open, selectedDivision]);
+  }, [open, selectedDivision, currentTournament]);
   
   // Generate suggested pairs based on division
   const generateSuggestedPairs = (division: Division) => {
-    if (!currentTournament) return;
+    if (!currentTournament) {
+      console.log("No current tournament available");
+      setSuggestedPairs([]);
+      return;
+    }
     
     // Fix: Filter teams without using the division property from Team
     // Instead, we'll use match data to determine which teams belong to which division
     const teamsInDivision = new Set<string>();
     
     // First, find all teams that have played in this division
-    currentTournament.matches.forEach(match => {
-      if (match.division === division) {
-        teamsInDivision.add(match.team1.id);
-        teamsInDivision.add(match.team2.id);
-      }
-    });
+    if (currentTournament.matches && currentTournament.matches.length > 0) {
+      currentTournament.matches.forEach(match => {
+        if (match && match.division === division) {
+          if (match.team1 && match.team1.id) teamsInDivision.add(match.team1.id);
+          if (match.team2 && match.team2.id) teamsInDivision.add(match.team2.id);
+        }
+      });
+    }
     
     // If no matches in this division yet, use all teams
     let eligibleTeams = teamsInDivision.size > 0 
-      ? currentTournament.teams.filter(t => teamsInDivision.has(t.id))
+      ? currentTournament.teams.filter(t => t && teamsInDivision.has(t.id))
       : currentTournament.teams;
+    
+    // Ensure we have valid teams
+    eligibleTeams = eligibleTeams.filter(t => t && t.id);
     
     // Check if there are enough teams
     if (eligibleTeams.length < 2) {
+      console.log("Not enough eligible teams for suggested pairs");
       setSuggestedPairs([]);
       return;
     }
@@ -94,14 +105,19 @@ const UnifiedScheduleDialog: React.FC<UnifiedScheduleDialogProps> = ({
     const pairs: { team1: Team; team2: Team }[] = [];
     
     // Find teams without scheduled matches first
-    const scheduledTeamIds = new Set(
-      currentTournament.matches
-        .filter(m => m.status !== "COMPLETED" && m.status !== "CANCELLED")
-        .flatMap(m => [m.team1.id, m.team2.id])
-    );
+    const scheduledTeamIds = new Set<string>();
     
-    const unscheduledTeams = eligibleTeams.filter(t => !scheduledTeamIds.has(t.id));
-    const teamsWithMatches = eligibleTeams.filter(t => scheduledTeamIds.has(t.id));
+    if (currentTournament.matches && currentTournament.matches.length > 0) {
+      currentTournament.matches
+        .filter(m => m && m.status !== "COMPLETED" && m.status !== "CANCELLED")
+        .forEach(m => {
+          if (m.team1 && m.team1.id) scheduledTeamIds.add(m.team1.id);
+          if (m.team2 && m.team2.id) scheduledTeamIds.add(m.team2.id);
+        });
+    }
+    
+    const unscheduledTeams = eligibleTeams.filter(t => t && !scheduledTeamIds.has(t.id));
+    const teamsWithMatches = eligibleTeams.filter(t => t && scheduledTeamIds.has(t.id));
     
     // Prioritize unscheduled teams first
     for (let i = 0; i < unscheduledTeams.length; i += 2) {
@@ -132,6 +148,7 @@ const UnifiedScheduleDialog: React.FC<UnifiedScheduleDialogProps> = ({
       }
     }
     
+    console.log(`Generated ${pairs.length} suggested match pairs`);
     setSuggestedPairs(pairs);
   };
   
