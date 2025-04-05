@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -293,7 +292,7 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
                     <Checkbox 
                       id="enableCategories" 
                       checked={showCategories} 
-                      onCheckedChange={setShowCategories}
+                      onCheckedChange={(checked) => setShowCategories(checked === true)}
                     />
                     <label htmlFor="enableCategories" className="text-sm font-medium">
                       Enable Categories

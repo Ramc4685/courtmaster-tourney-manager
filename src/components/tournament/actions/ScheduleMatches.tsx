@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Calendar } from '@/components/ui/calendar';
 import { useTournament } from '@/contexts/tournament/useTournament';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar as CalendarIcon, Court, Play } from 'lucide-react';
+import { Calendar as CalendarIcon, BadgeCourtAlert, Play } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -118,7 +118,7 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
         variant="default"
         onClick={() => setOpen(true)}
       >
-        <Court className="h-5 w-5 mr-2" />
+        <BadgeCourtAlert className="h-5 w-5 mr-2" />
         Generate Brackets & Assign Courts
       </Button>
 
