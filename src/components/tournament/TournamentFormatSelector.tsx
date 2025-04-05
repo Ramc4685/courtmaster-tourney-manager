@@ -9,12 +9,14 @@ interface TournamentFormatSelectorProps {
   value: TournamentFormat;
   onValueChange: (value: TournamentFormat) => void;
   categorySpecific?: boolean;
+  disabled?: boolean;
 }
 
 const TournamentFormatSelector: React.FC<TournamentFormatSelectorProps> = ({
   value,
   onValueChange,
-  categorySpecific = false
+  categorySpecific = false,
+  disabled = false
 }) => {
   const formats: {id: TournamentFormat, name: string, description: string}[] = [
     { id: "SINGLE_ELIMINATION", name: getFormatDisplayName("SINGLE_ELIMINATION"), description: getFormatDescription("SINGLE_ELIMINATION") },
@@ -29,7 +31,11 @@ const TournamentFormatSelector: React.FC<TournamentFormatSelectorProps> = ({
   
   return (
     <div className="space-y-2">
-      <Select value={value} onValueChange={(val) => onValueChange(val as TournamentFormat)}>
+      <Select 
+        value={value} 
+        onValueChange={(val) => onValueChange(val as TournamentFormat)}
+        disabled={disabled}
+      >
         <SelectTrigger>
           <SelectValue placeholder="Select a tournament format" />
         </SelectTrigger>

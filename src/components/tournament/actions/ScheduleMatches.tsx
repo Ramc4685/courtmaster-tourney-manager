@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 interface ScheduleMatchesProps {
   tournamentId: string;
@@ -22,8 +24,11 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
   const [startTime, setStartTime] = useState("09:00");
   const [matchDuration, setMatchDuration] = useState("30");
   const [breakDuration, setBreakDuration] = useState("10");
+  const [assignCourts, setAssignCourts] = useState(true);
+  const [autoStartMatches, setAutoStartMatches] = useState(false);
+  const [respectFormat, setRespectFormat] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const { currentTournament, autoAssignCourts } = useTournament();
+  const { currentTournament, autoAssignCourts, generateBrackets } = useTournament();
   const { toast } = useToast();
 
   // Generate time options
@@ -58,13 +63,26 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
       const scheduledDate = new Date(startDate);
       scheduledDate.setHours(hours, minutes, 0);
 
-      // Assign courts to the matches
-      const result = await autoAssignCourts();
+      let result;
+      if (respectFormat) {
+        // Use the format-aware bracket generation
+        result = await generateBrackets();
+        
+        toast({
+          title: "Tournament Brackets Generated",
+          description: `Successfully generated tournament brackets based on category formats.`
+        });
+      }
       
-      toast({
-        title: "Courts Assigned",
-        description: `Successfully assigned ${result} courts to matches.`
-      });
+      // Assign courts after generating brackets if needed
+      if (assignCourts) {
+        result = await autoAssignCourts();
+        
+        toast({
+          title: "Courts Assigned",
+          description: `Successfully assigned ${result} courts to matches.`
+        });
+      }
       
       setOpen(false);
     } catch (error) {
@@ -169,6 +187,39 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
                 </SelectContent>
               </Select>
             </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="respectFormat" 
+                checked={respectFormat} 
+                onCheckedChange={(checked) => setRespectFormat(checked as boolean)} 
+              />
+              <Label htmlFor="respectFormat">
+                Generate matches according to tournament format
+              </Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="assignCourts" 
+                checked={assignCourts} 
+                onCheckedChange={(checked) => setAssignCourts(checked as boolean)} 
+              />
+              <Label htmlFor="assignCourts">
+                Automatically assign available courts
+              </Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="autoStartMatches" 
+                checked={autoStartMatches} 
+                onCheckedChange={(checked) => setAutoStartMatches(checked as boolean)} 
+              />
+              <Label htmlFor="autoStartMatches">
+                Automatically start matches when courts are assigned
+              </Label>
+            </div>
           </div>
           
           <DialogFooter>
@@ -177,7 +228,7 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
             </Button>
             <Button onClick={handleSchedule} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLoading ? "Scheduling..." : "Schedule & Assign Courts"}
+              {isLoading ? "Scheduling..." : "Schedule & Generate"}
             </Button>
           </DialogFooter>
         </DialogContent>

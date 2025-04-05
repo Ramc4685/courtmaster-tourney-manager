@@ -1,21 +1,24 @@
 
 import { Tournament, Court, Match, Team, Division, MatchStatus, CourtStatus } from "@/types/tournament";
 import { autoAssignCourts } from "@/utils/courtUtils";
+import { generateMatchesByFormat } from "@/utils/categoryUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface SchedulingOptions {
   date: Date;
   startTime: string;
   matchDuration: number;
   assignCourts: boolean;
-  autoStartMatches?: boolean; // New option to auto-start matches if courts are available
+  autoStartMatches?: boolean;
   categoryId?: string;
   division?: Division;
+  respectFormat?: boolean; // New option to respect tournament format
 }
 
 export interface SchedulingResult {
   scheduledMatches: number;
   assignedCourts: number;
-  startedMatches?: number; // New field for number of matches started
+  startedMatches?: number;
   tournament: Tournament;
 }
 
@@ -70,12 +73,28 @@ export const schedulingService = {
     for (let i = 0; i < maxInitialMatches; i++) {
       const { team1, team2 } = teamPairs[i];
       
+      // Skip if this match already exists
+      const matchExists = tournament.matches.some(m => 
+        (m.team1.id === team1.id && m.team2.id === team2.id) || 
+        (m.team1.id === team2.id && m.team2.id === team1.id)
+      );
+      
+      if (matchExists) {
+        console.log(`[DEBUG] Match between ${team1.name} and ${team2.name} already exists, skipping`);
+        continue;
+      }
+      
       // Calculate match time (staggered by 5 minutes to prevent exact same time)
       const matchTime = new Date(baseDateTime);
       matchTime.setMinutes(matchTime.getMinutes() + (i * 5));
       
       // Use the division from options, defaulting to "INITIAL" if not provided
       const division: Division = options.division || "INITIAL";
+      
+      // Get category for the match
+      const category = options.categoryId 
+        ? tournament.categories.find(c => c.id === options.categoryId)! 
+        : tournament.categories[0];
       
       // Create the match - with the option to auto-start it
       const newMatch: Match = {
@@ -88,9 +107,7 @@ export const schedulingService = {
         stage: tournament.currentStage,
         status: options.autoStartMatches && i < availableCourts.length ? "IN_PROGRESS" as MatchStatus : "SCHEDULED" as MatchStatus,
         scheduledTime: matchTime,
-        category: options.categoryId 
-          ? tournament.categories.find(c => c.id === options.categoryId)! 
-          : tournament.categories[0],
+        category: category,
       };
       
       // Assign court if available and requested
@@ -114,6 +131,17 @@ export const schedulingService = {
     for (let i = maxInitialMatches; i < teamPairs.length; i++) {
       const { team1, team2 } = teamPairs[i];
       
+      // Skip if this match already exists
+      const matchExists = tournament.matches.some(m => 
+        (m.team1.id === team1.id && m.team2.id === team2.id) || 
+        (m.team1.id === team2.id && m.team2.id === team1.id)
+      );
+      
+      if (matchExists) {
+        console.log(`[DEBUG] Match between ${team1.name} and ${team2.name} already exists, skipping`);
+        continue;
+      }
+      
       // Calculate match time - add match duration minutes for each group of matches
       const groupIndex = Math.floor(i / (availableCourts.length || 1));
       const matchTime = new Date(baseDateTime);
@@ -126,6 +154,11 @@ export const schedulingService = {
       // Use the division from options, defaulting to "INITIAL" if not provided
       const division: Division = options.division || "INITIAL";
       
+      // Get category for the match
+      const category = options.categoryId 
+        ? tournament.categories.find(c => c.id === options.categoryId)! 
+        : tournament.categories[0];
+      
       // Create the match without a court
       const newMatch: Match = {
         id: crypto.randomUUID(),
@@ -137,9 +170,7 @@ export const schedulingService = {
         stage: tournament.currentStage,
         status: "SCHEDULED" as MatchStatus,
         scheduledTime: matchTime,
-        category: options.categoryId 
-          ? tournament.categories.find(c => c.id === options.categoryId)! 
-          : tournament.categories[0],
+        category: category,
       };
       
       newMatches.push(newMatch);
@@ -176,6 +207,9 @@ export const schedulingService = {
       };
     }
     
+    // Sync with Supabase if available
+    this.syncWithSupabase(updatedTournament, newMatches);
+    
     return {
       scheduledMatches: scheduledCount,
       assignedCourts: assignedCourtCount,
@@ -194,6 +228,9 @@ export const schedulingService = {
     
     // Use the existing court assignment utility
     const result = await autoAssignCourts(tournament);
+    
+    // Sync with Supabase if available
+    this.syncWithSupabase(result.tournament);
     
     return {
       scheduledMatches: 0,
@@ -242,6 +279,9 @@ export const schedulingService = {
         updatedAt: new Date()
       };
       
+      // Sync with Supabase if available
+      this.syncWithSupabase(updatedTournament);
+      
       return { tournament: updatedTournament, started: true };
     }
     
@@ -277,6 +317,9 @@ export const schedulingService = {
         updatedAt: new Date()
       };
       
+      // Sync with Supabase if available
+      this.syncWithSupabase(updatedTournament);
+      
       return { tournament: updatedTournament, started: true };
     }
     
@@ -292,11 +335,65 @@ export const schedulingService = {
         updatedAt: new Date()
       };
       
+      // Sync with Supabase if available
+      this.syncWithSupabase(updatedTournament);
+      
       return { tournament: updatedTournament, started: true };
     }
     
     // No court available and not forcing start
     return { tournament, started: false };
+  },
+  
+  /**
+   * Generate tournament brackets based on the format specified for each category
+   * @param tournament The tournament
+   * @returns Updated tournament with generated matches
+   */
+  generateBrackets(tournament: Tournament): Tournament {
+    console.log('[DEBUG] Generating tournament brackets');
+    
+    if (!tournament || !tournament.categories || tournament.categories.length === 0) {
+      return tournament;
+    }
+    
+    let newMatches: Match[] = [];
+    
+    // Generate matches for each category based on its format
+    tournament.categories.forEach(category => {
+      // Filter teams for this category
+      const teamsInCategory = tournament.teams.filter(team => 
+        team.category?.id === category.id || 
+        (!team.category && category.id === tournament.categories[0].id)
+      );
+      
+      if (teamsInCategory.length < 2) {
+        console.log(`[DEBUG] Not enough teams in category ${category.name} to generate brackets`);
+        return;
+      }
+      
+      // Generate matches based on tournament format
+      const categoryMatches = generateMatchesByFormat(
+        category.format || "SINGLE_ELIMINATION",
+        teamsInCategory,
+        category.id,
+        tournament.id
+      );
+      
+      newMatches = [...newMatches, ...categoryMatches];
+    });
+    
+    // Update tournament with new matches
+    const updatedTournament = {
+      ...tournament,
+      matches: [...tournament.matches, ...newMatches],
+      updatedAt: new Date()
+    };
+    
+    // Sync with Supabase if available
+    this.syncWithSupabase(updatedTournament, newMatches);
+    
+    return updatedTournament;
   },
   
   /**
@@ -317,5 +414,39 @@ export const schedulingService = {
     
     // Try to start the match
     return this.startMatch(tournament, scheduledMatch.id);
+  },
+  
+  /**
+   * Synchronize tournament data with Supabase
+   * @param tournament The tournament to sync
+   * @param newMatches Optional array of new matches for more efficient updates
+   */
+  async syncWithSupabase(tournament: Tournament, newMatches?: Match[]): Promise<void> {
+    try {
+      if (!supabase) {
+        console.log('[DEBUG] Supabase client not available, skipping sync');
+        return;
+      }
+      
+      console.log('[DEBUG] Syncing tournament data with Supabase');
+      
+      // Update the tournament in the tournaments table
+      const { data, error } = await supabase
+        .from('tournaments')
+        .update({ 
+          data: tournament, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', tournament.id);
+      
+      if (error) {
+        console.error('[ERROR] Failed to sync tournament data with Supabase:', error);
+      } else {
+        console.log('[DEBUG] Successfully synced tournament data with Supabase');
+      }
+      
+    } catch (error) {
+      console.error('[ERROR] Exception during Supabase sync:', error);
+    }
   }
 };
