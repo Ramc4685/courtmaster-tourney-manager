@@ -22,6 +22,7 @@ import TournamentCategorySection from "@/components/tournament/TournamentCategor
 import TournamentFormatSelector from "@/components/tournament/TournamentFormatSelector";
 import { createDefaultCategories } from "@/utils/categoryUtils";
 import { Grid3X3Icon } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 // Define the component props interface
 interface TournamentCreateProps {
@@ -49,6 +50,7 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<TournamentCategory[]>(createDefaultCategories());
+  const [showCategories, setShowCategories] = useState(true);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -91,10 +93,10 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
       }));
 
       // Ensure all categories have a format
-      const finalCategories = categories.map(category => ({
+      const finalCategories = showCategories ? categories.map(category => ({
         ...category,
         format: category.format || values.format as TournamentFormat
-      }));
+      })) : [];
 
       const tournament = createTournament({
         name: values.name, // Ensure name is explicitly passed
@@ -176,7 +178,7 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
                 name="format"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Default Tournament Format</FormLabel>
+                    <FormLabel>Tournament Format</FormLabel>
                     <FormControl>
                       <TournamentFormatSelector
                         value={field.value as TournamentFormat}
@@ -188,42 +190,45 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
                 )}
               />
               
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Date</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
-                        {...field}
-                        value={field.value ? new Date(field.value).toISOString().split('T')[0] : ""}
-                        onChange={(e) => field.onChange(new Date(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="endDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>End Date (Optional)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
-                        {...field}
-                        value={field.value ? new Date(field.value).toISOString().split('T')[0] : ""}
-                        onChange={(e) => field.onChange(new Date(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Date</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                          value={field.value ? new Date(field.value).toISOString().split('T')[0] : ""}
+                          onChange={(e) => field.onChange(new Date(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Date (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                          value={field.value ? new Date(field.value).toISOString().split('T')[0] : ""}
+                          onChange={(e) => field.onChange(new Date(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
               <FormField
                 control={form.control}
                 name="numCourts"
@@ -243,12 +248,13 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
                   </FormItem>
                 )}
               />
-              <div className="flex items-center space-x-2">
+              
+              <div className="flex items-center space-x-4 pt-2">
                 <FormField
                   control={form.control}
                   name="divisionProgression"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-1 space-y-0">
+                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                       <FormControl>
                         <Checkbox
                           checked={field.value}
@@ -265,7 +271,7 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
                   control={form.control}
                   name="autoAssignCourts"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-1 space-y-0">
+                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                       <FormControl>
                         <Checkbox
                           checked={field.value}
@@ -280,17 +286,31 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
                 />
               </div>
               
-              {/* Tournament Category Section */}
               <div className="pt-4 border-t mt-6">
-                <h3 className="text-lg font-medium mb-4">Tournament Categories</h3>
-                <TournamentCategorySection
-                  categories={categories}
-                  onCategoriesChange={setCategories}
-                />
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium">Tournament Categories</h3>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="enableCategories" 
+                      checked={showCategories} 
+                      onCheckedChange={setShowCategories}
+                    />
+                    <label htmlFor="enableCategories" className="text-sm font-medium">
+                      Enable Categories
+                    </label>
+                  </div>
+                </div>
+                
+                {showCategories && (
+                  <TournamentCategorySection
+                    categories={categories}
+                    onCategoriesChange={setCategories}
+                  />
+                )}
               </div>
               
               <CardFooter className="px-0 pt-6">
-                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" disabled={isSubmitting} className="w-full">
                   {isSubmitting ? "Creating..." : "Create Tournament"}
                 </Button>
               </CardFooter>

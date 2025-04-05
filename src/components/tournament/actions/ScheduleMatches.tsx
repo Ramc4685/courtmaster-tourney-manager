@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Calendar } from '@/components/ui/calendar';
 import { useTournament } from '@/contexts/tournament/useTournament';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, Court, Play } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ScheduleMatchesProps {
   tournamentId: string;
@@ -30,6 +31,9 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { currentTournament, autoAssignCourts, generateBrackets } = useTournament();
   const { toast } = useToast();
+
+  const hasBrackets = currentTournament?.matches && currentTournament.matches.length > 0;
+  const hasAvailableCourts = currentTournament?.courts && currentTournament.courts.some(c => c.status === "AVAILABLE");
 
   // Generate time options
   const generateTimeOptions = () => {
@@ -64,7 +68,9 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
       scheduledDate.setHours(hours, minutes, 0);
 
       let result;
-      if (respectFormat) {
+      
+      // Generate brackets first if needed
+      if (respectFormat && (!hasBrackets || currentTournament.matches.length === 0)) {
         // Use the format-aware bracket generation
         result = await generateBrackets();
         
@@ -74,14 +80,22 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
         });
       }
       
-      // Assign courts after generating brackets if needed
+      // Assign courts after generating brackets
       if (assignCourts) {
         result = await autoAssignCourts();
         
-        toast({
-          title: "Courts Assigned",
-          description: `Successfully assigned ${result} courts to matches.`
-        });
+        if (result > 0) {
+          toast({
+            title: "Courts Assigned",
+            description: `Successfully assigned ${result} courts to matches.`
+          });
+        } else {
+          toast({
+            title: "No Courts Assigned",
+            description: "No courts were available to assign, or no matches needed courts.",
+            variant: "destructive"
+          });
+        }
       }
       
       setOpen(false);
@@ -104,20 +118,28 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
         variant="default"
         onClick={() => setOpen(true)}
       >
-        <CalendarIcon className="h-5 w-5 mr-2" />
-        Schedule & Assign Courts
+        <Court className="h-5 w-5 mr-2" />
+        Generate Brackets & Assign Courts
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Schedule Matches</DialogTitle>
+            <DialogTitle>Tournament Brackets & Court Assignment</DialogTitle>
             <DialogDescription>
-              Automatically schedule matches and assign courts.
+              Generate tournament brackets and assign courts to matches.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
+            {!hasBrackets && (
+              <Alert>
+                <AlertDescription>
+                  You need to generate brackets before you can assign courts to matches.
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <div className="space-y-2">
               <label className="block text-sm font-medium">Start Date</label>
               <Popover>
@@ -215,8 +237,12 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
                 id="autoStartMatches" 
                 checked={autoStartMatches} 
                 onCheckedChange={(checked) => setAutoStartMatches(checked as boolean)} 
+                disabled={!assignCourts || !hasAvailableCourts}
               />
-              <Label htmlFor="autoStartMatches">
+              <Label 
+                htmlFor="autoStartMatches" 
+                className={(!assignCourts || !hasAvailableCourts) ? "text-gray-400" : ""}
+              >
                 Automatically start matches when courts are assigned
               </Label>
             </div>
@@ -228,7 +254,7 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
             </Button>
             <Button onClick={handleSchedule} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLoading ? "Scheduling..." : "Schedule & Generate"}
+              {isLoading ? "Processing..." : (!hasBrackets ? "Generate Brackets & Assign Courts" : "Assign Courts")}
             </Button>
           </DialogFooter>
         </DialogContent>
