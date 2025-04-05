@@ -1,14 +1,14 @@
 
-import React from "react";
-import { Court, Match } from "@/types/tournament";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { CheckCircle2 } from "lucide-react";
+import React from 'react';
+import { Court, Match } from '@/types/tournament';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Play, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface CourtSelectionPanelProps {
   courts: Court[];
-  matches: Match[]; // Added matches to the interface
+  matches: Match[];
   onCourtSelect: (court: Court) => void;
   onMatchSelect: (match: Match) => void;
   onStartMatch: (match: Match) => void;
@@ -16,113 +16,105 @@ interface CourtSelectionPanelProps {
 
 const CourtSelectionPanel: React.FC<CourtSelectionPanelProps> = ({
   courts,
-  matches, // Accept matches prop
+  matches,
   onCourtSelect,
   onMatchSelect,
   onStartMatch
 }) => {
-  const [selectedCourt, setSelectedCourt] = React.useState<Court | null>(null);
-  const [courtDetailsOpen, setCourtDetailsOpen] = React.useState(false);
+  const navigate = useNavigate();
 
-  const handleCourtSelect = (court: Court) => {
-    setSelectedCourt(court);
+  const handleCourtClick = (court: Court) => {
+    // First call the onCourtSelect handler
     onCourtSelect(court);
     
-    // If court has a match in progress, directly open court details
-    if (court.status === "IN_USE" && court.currentMatch) {
-      setCourtDetailsOpen(true);
+    // If the court has an active match, navigate to the scoring page
+    if (court.currentMatch) {
+      const matchId = court.currentMatch.id;
+      console.log(`Navigating to scoring for match: ${matchId}`);
+      navigate(`/scoring/${court.currentMatch.tournamentId}/${matchId}`);
     }
-  };
-
-  const handleStartMatch = (match: Match) => {
-    onStartMatch(match);
-    setCourtDetailsOpen(false);
   };
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-        {courts.map((court) => (
-          <Card 
-            key={court.id}
-            className={`cursor-pointer border-2 hover:bg-gray-50 transition-colors ${
-              selectedCourt?.id === court.id 
-                ? 'border-court-green' 
-                : court.status === "IN_USE" 
-                  ? 'border-amber-400' 
-                  : court.status === "MAINTENANCE" 
-                    ? 'border-red-400' 
-                    : 'border-gray-200'
-            }`}
-            onClick={() => handleCourtSelect(court)}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="font-bold text-xl">{court.name}</div>
-              <div className="text-sm mt-1">
-                {court.status === "AVAILABLE" && "Available"}
-                {court.status === "IN_USE" && "Match in progress"}
-                {court.status === "MAINTENANCE" && "Under maintenance"}
-              </div>
-              {court.currentMatch && (
-                <div className="mt-2 text-xs">
-                  {court.currentMatch.team1.name} vs {court.currentMatch.team2.name}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {selectedCourt && selectedCourt.status === "IN_USE" && selectedCourt.currentMatch && (
-        <Sheet open={courtDetailsOpen} onOpenChange={setCourtDetailsOpen}>
-          <Button 
-            onClick={() => setCourtDetailsOpen(true)}
-            className="w-full mt-4 bg-court-green hover:bg-court-green/90"
-          >
-            Continue scoring on Court {selectedCourt.number}
-          </Button>
-          
-          <SheetContent>
-            <SheetHeader>
-              <SheetTitle>Court {selectedCourt.number}</SheetTitle>
-            </SheetHeader>
-            <div className="py-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    Current Match
-                    <span className="text-sm bg-amber-100 text-amber-800 px-2 py-1 rounded-full">In Progress</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+      <h2 className="text-lg font-semibold">Courts</h2>
+      
+      {courts.length === 0 ? (
+        <div className="p-4 border rounded bg-gray-50 text-center">
+          No courts available. Add courts in the tournament settings.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {courts.map(court => (
+            <Card 
+              key={court.id} 
+              className={`cursor-pointer hover:bg-gray-50 transition-colors
+                ${court.status === 'IN_USE' ? 'border-blue-300 bg-blue-50' : 
+                 court.status === 'MAINTENANCE' ? 'border-amber-300 bg-amber-50' :
+                 'border-green-300 bg-green-50'}`}
+              onClick={() => handleCourtClick(court)}
+            >
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex justify-between items-center">
+                  <span>{court.name || `Court ${court.number}`}</span>
+                  <span className="text-xs px-2 py-1 rounded bg-white border">
+                    {court.status}
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              
+              <CardContent>
+                {court.currentMatch ? (
+                  <div className="space-y-3">
                     <div>
-                      <h3 className="font-medium">Teams:</h3>
-                      <p>{selectedCourt.currentMatch.team1.name} vs {selectedCourt.currentMatch.team2.name}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Current Score:</h3>
-                      <div className="grid grid-cols-2 gap-2 mt-1">
-                        {selectedCourt.currentMatch.scores.map((score, idx) => (
-                          <div key={idx} className="bg-gray-100 px-3 py-2 rounded-md text-sm">
-                            Set {idx + 1}: {score.team1Score} - {score.team2Score}
-                          </div>
-                        ))}
+                      <div className="font-medium">{court.currentMatch.team1?.name || 'TBD'}</div>
+                      <div className="font-medium">vs</div>
+                      <div className="font-medium">{court.currentMatch.team2?.name || 'TBD'}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Match status: {court.currentMatch.status}
                       </div>
                     </div>
-                    <Button 
-                      onClick={() => handleStartMatch(selectedCourt.currentMatch!)}
-                      className="w-full bg-court-green hover:bg-court-green/90"
-                    >
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Continue Scoring
-                    </Button>
+                    
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        className="w-full"
+                        variant="default"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMatchSelect(court.currentMatch!);
+                          // Navigate to scoring for this match
+                          navigate(`/scoring/${court.currentMatch!.tournamentId}/${court.currentMatch!.id}`);
+                        }}
+                      >
+                        View Scoring
+                      </Button>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          </SheetContent>
-        </Sheet>
+                ) : (
+                  <div className="text-center py-2 text-gray-500">
+                    <p>No active match</p>
+                    
+                    {/* Optional: Show a button to assign a match */}
+                    {court.status === 'AVAILABLE' && matches.filter(m => m.status === 'SCHEDULED' && !m.courtNumber).length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Logic to show a match assignment dialog
+                        }}
+                      >
+                        Assign Match
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );

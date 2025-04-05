@@ -29,7 +29,7 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
   const [autoStartMatches, setAutoStartMatches] = useState(false);
   const [respectFormat, setRespectFormat] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const { currentTournament, autoAssignCourts, generateBrackets } = useTournament();
+  const { currentTournament, autoAssignCourts, generateBrackets, startMatchesWithCourts } = useTournament();
   const { toast } = useToast();
 
   const hasBrackets = currentTournament?.matches && currentTournament.matches.length > 0;
@@ -90,6 +90,18 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
             title: "Courts Assigned",
             description: `Successfully assigned ${result} courts to matches.`
           });
+          
+          // If auto start is enabled, start the matches that have courts assigned
+          if (autoStartMatches) {
+            const startedCount = await startMatchesWithCourts();
+            
+            if (startedCount > 0) {
+              toast({
+                title: "Matches Started",
+                description: `Successfully started ${startedCount} matches.`
+              });
+            }
+          }
         } else {
           toast({
             title: "No Courts Assigned",

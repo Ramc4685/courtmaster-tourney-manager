@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Plus, Calendar, ArrowRight, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription
+  DialogDescription,
+  DialogFooter
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MatchTable from "@/components/match/MatchTable";

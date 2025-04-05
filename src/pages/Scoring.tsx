@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTournament } from '@/contexts/tournament/useTournament';
@@ -12,14 +13,16 @@ import TournamentScoring from '@/components/scoring/TournamentScoring';
 import PageHeader from '@/components/shared/PageHeader';
 import LiveVideoLink from '@/components/shared/LiveVideoLink';
 import { useScoringLogic } from '@/hooks/scoring/useScoringLogic';
+import { useToast } from '@/hooks/use-toast';
 
 // Define a type adapter for the activeView type
 type TournamentScoringViewAdapter = "scoring" | "courts";
 
 const Scoring = () => {
-  const { tournamentId } = useParams();
+  const { tournamentId, matchId } = useParams();
   const navigate = useNavigate();
-  const { tournaments, setCurrentTournament, currentTournament } = useTournament();
+  const { toast } = useToast();
+  const { tournaments, setCurrentTournament, currentTournament, initializeScoring } = useTournament();
   const [activeTab, setActiveTab] = useState('courts');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +54,26 @@ const Scoring = () => {
           } else {
             await setCurrentTournament(tournament);
             console.log(`Loaded tournament: ${tournament.name}`);
+            
+            // If a matchId is provided, initialize scoring for that match
+            if (matchId) {
+              console.log(`Match ID provided: ${matchId}, initializing scoring`);
+              setActiveTab('all'); // Switch to the "All Matches" tab where TournamentScoring is located
+              
+              const match = await initializeScoring(matchId);
+              if (match) {
+                console.log(`Match initialized, ID: ${match.id}`);
+                // The scoring logic will initialize the match
+                scoringLogic.handleSelectMatch(match);
+                scoringLogic.setActiveView("scoring");
+              } else {
+                toast({
+                  title: "Match Not Found",
+                  description: `Could not find or initialize match with ID ${matchId}`,
+                  variant: "destructive"
+                });
+              }
+            }
           }
         }
       } catch (err) {
@@ -62,7 +85,7 @@ const Scoring = () => {
     };
 
     loadTournament();
-  }, [tournamentId, tournaments, setCurrentTournament, navigate]);
+  }, [tournamentId, matchId, tournaments, setCurrentTournament, navigate, initializeScoring, scoringLogic, toast]);
 
   // Handle selecting a court
   const handleCourtSelect = (court) => {
@@ -134,7 +157,7 @@ const Scoring = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid grid-cols-3 w-full max-w-md">
             <TabsTrigger value="courts" className="flex items-center">
-              <Gauge className="mr-2 h-4 w-4" /> {/* Changed Court to Gauge */}
+              <Gauge className="mr-2 h-4 w-4" />
               <span>Courts</span>
             </TabsTrigger>
             <TabsTrigger value="scheduled" className="flex items-center">
