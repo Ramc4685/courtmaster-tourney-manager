@@ -1,4 +1,3 @@
-
 import { Tournament, Court, Match, Team, Division, MatchStatus, CourtStatus } from "@/types/tournament";
 import { autoAssignCourts } from "@/utils/courtUtils";
 import { generateMatchesByFormat } from "@/utils/categoryUtils";
@@ -430,11 +429,14 @@ export const schedulingService = {
       
       console.log('[DEBUG] Syncing tournament data with Supabase');
       
+      // Serialize dates to ISO strings to make it compatible with JSON
+      const serializedTournament = this.serializeTournamentForSupabase(tournament);
+      
       // Update the tournament in the tournaments table
       const { data, error } = await supabase
         .from('tournaments')
         .update({ 
-          data: tournament, 
+          data: serializedTournament, 
           updated_at: new Date().toISOString() 
         })
         .eq('id', tournament.id);
@@ -448,5 +450,19 @@ export const schedulingService = {
     } catch (error) {
       console.error('[ERROR] Exception during Supabase sync:', error);
     }
+  },
+  
+  /**
+   * Helper method to serialize a tournament object for Supabase storage
+   * Converts Date objects to ISO strings to make it compatible with JSON
+   */
+  serializeTournamentForSupabase(tournament: Tournament): any {
+    return JSON.parse(JSON.stringify(tournament, (key, value) => {
+      // Convert Date objects to ISO strings
+      if (value instanceof Date) {
+        return value.toISOString();
+      }
+      return value;
+    }));
   }
 };

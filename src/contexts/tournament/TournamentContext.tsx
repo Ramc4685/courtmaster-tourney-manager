@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { prepareUpdatedEntity } from '@/utils/auditUtils';
 import { TournamentContextType } from './types';
@@ -7,7 +8,8 @@ import { SchedulingOptions, SchedulingResult } from "@/services/tournament/Sched
 import { generateId } from "@/utils/tournamentUtils";
 import { schedulingService } from "@/services/tournament/SchedulingService";
 
-const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
+// Export the context so it can be imported elsewhere
+export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
 // Export the hook as a named export
 export function useTournament(): TournamentContextType {

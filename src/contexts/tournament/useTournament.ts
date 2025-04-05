@@ -1,11 +1,14 @@
 
 import { useContext } from 'react';
-import { TournamentContext } from './TournamentContext';
+import { TournamentContextType } from './types';
 import { Tournament, Match, Court, Team, Division, TournamentFormat } from '@/types/tournament';
 import { schedulingService } from '@/services/tournament/SchedulingService';
 
+// Import the context from the TournamentContext file
+import { TournamentContext } from '../TournamentContext';
+
 export const useTournament = () => {
-  const context = useContext(TournamentContext);
+  const context = useContext(TournamentContext) as TournamentContextType;
   
   if (!context) {
     throw new Error('useTournament must be used within a TournamentProvider');
@@ -21,7 +24,7 @@ export const useTournament = () => {
     const updatedTournament = schedulingService.generateBrackets(context.currentTournament);
     
     // Update the tournament in our context
-    context.updateTournament(updatedTournament);
+    await context.updateTournament(updatedTournament);
     
     // Return the number of new matches created (calculate the difference)
     return updatedTournament.matches.length - context.currentTournament.matches.length;
@@ -37,7 +40,7 @@ export const useTournament = () => {
     const result = await schedulingService.assignCourtsToScheduledMatches(context.currentTournament);
     
     // Update the tournament in our context
-    context.updateTournament(result.tournament);
+    await context.updateTournament(result.tournament);
     
     // Return the number of courts assigned
     return result.assignedCourts;
