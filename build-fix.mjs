@@ -5,8 +5,8 @@ console.log("Running build fix script for Lovable app...");
 // This script helps ensure compatibility between different build environments
 // It detects platform-specific issues and applies fixes before the build process
 try {
-  const os = require('os');
-  const fs = require('fs');
+  // Use dynamic import for ESM compatibility
+  const os = await import('os');
   
   console.log(`Detected platform: ${os.platform()}`);
   console.log(`Node version: ${process.version}`);
@@ -18,6 +18,7 @@ try {
     // Set environment variables to avoid native dependencies
     process.env.ROLLUP_SKIP_NODEJS_NATIVE_ADDONS = 'true';
     process.env.ROLLUP_NATIVE_BINDINGS = 'false';
+    process.env.ROLLUP_FORCE_JAVASCRIPT = 'true';
     
     // Set node options to avoid experimental warnings
     process.env.NODE_OPTIONS = '--no-warnings';
@@ -25,9 +26,6 @@ try {
     // Check if we're on Vercel
     if (process.env.VERCEL) {
       console.log('Running on Vercel, applying platform-specific fixes');
-      
-      // In Vercel environment, make sure we're using JS implementation
-      process.env.ROLLUP_FORCE_JAVASCRIPT = 'true';
     }
   }
   

@@ -1,6 +1,6 @@
 
 {
-  "buildCommand": "node build-fix.js && npm run build",
+  "buildCommand": "node build-fix.mjs && npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
