@@ -5,7 +5,6 @@ import Home from './pages/home'; // lowercase 'h' instead of uppercase 'H'
 import Tournaments from './pages/Tournaments';
 import TournamentDetail from './pages/TournamentDetail'; // Updated to correct path
 import TournamentCreate from './pages/TournamentCreate';
-import CreateTournament from './pages/CreateTournament';
 import Scoring from './pages/Scoring';
 import PublicView from './pages/PublicView';
 import StandaloneScoring from './pages/StandaloneScoring';
@@ -40,7 +39,7 @@ function App() {
             } />
             <Route path="/tournaments/new" element={
               <Layout>
-                <CreateTournament />
+                <TournamentCreate />
               </Layout>
             } />
             <Route path="/tournament/create" element={
