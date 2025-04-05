@@ -55,6 +55,8 @@ export default defineConfig(({ mode }) => ({
         /@rollup\/rollup-darwin-.*/,
         /@rollup\/rollup-win32-.*/
       ],
+      // Force Rollup to skip node-gyp bindings to avoid platform-specific issues
+      shimMissingExports: true,
       output: {
         manualChunks: {
           // Core framework and large dependencies
@@ -86,7 +88,13 @@ export default defineConfig(({ mode }) => ({
   // Disable the native module imports that are causing issues on Vercel
   optimizeDeps: {
     esbuildOptions: {
-      target: 'es2020'
+      target: 'es2020',
+      // Force esbuild to ignore native Node.js modules
+      define: {
+        "process.env.ROLLUP_SKIP_NODEJS_NATIVE_ADDONS": JSON.stringify("true"),
+        "process.env.ROLLUP_NATIVE_BINDINGS": JSON.stringify("false"),
+        "process.env.ROLLUP_FORCE_JAVASCRIPT": JSON.stringify("true")
+      }
     }
   },
   // Enable tree shaking to eliminate dead code

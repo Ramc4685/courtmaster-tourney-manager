@@ -7,6 +7,8 @@ console.log("Running build fix script for Lovable app...");
 try {
   // Use dynamic import for ESM compatibility
   const os = await import('os');
+  const fs = await import('fs');
+  const path = await import('path');
   
   console.log(`Detected platform: ${os.platform()}`);
   console.log(`Node version: ${process.version}`);
@@ -26,6 +28,29 @@ try {
     // Check if we're on Vercel
     if (process.env.VERCEL) {
       console.log('Running on Vercel, applying platform-specific fixes');
+      
+      // Create a patch for the Rollup native.js file to force JS implementation
+      const rollupNativePath = path.join(process.cwd(), 'node_modules', 'rollup', 'dist', 'native.js');
+      
+      if (fs.existsSync(rollupNativePath)) {
+        console.log('Found Rollup native.js file, patching to force JavaScript implementation');
+        
+        // Read the original file
+        const originalContent = fs.readFileSync(rollupNativePath, 'utf8');
+        
+        // Replace the content with a version that forces the JS implementation
+        const patchedContent = `
+// Patched by build-fix.mjs to force JavaScript implementation
+exports.getDefaultRollup = function() { return null; }; // Force JS implementation
+exports.isNativeRollupAvailable = function() { return false; }; // Force JS implementation
+`;
+        
+        // Write the patched file
+        fs.writeFileSync(rollupNativePath, patchedContent, 'utf8');
+        console.log('Successfully patched Rollup native.js to force JavaScript implementation');
+      } else {
+        console.log('Rollup native.js file not found, skipping patch');
+      }
     }
   }
   
