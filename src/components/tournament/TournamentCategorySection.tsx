@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CategoryType, TournamentCategory, Tournament } from "@/types/tournament";
+import { CategoryType, TournamentCategory, Tournament, TournamentFormat } from "@/types/tournament";
 import CategoryScoringRules from "@/components/scoring/CategoryScoringRules";
+import TournamentFormatSelector from "@/components/tournament/TournamentFormatSelector";
 
 interface TournamentCategorySectionProps {
   categories: TournamentCategory[];
@@ -35,6 +36,7 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
   const [customCategoryName, setCustomCategoryName] = useState("");
   const [customCategoryDescription, setCustomCategoryDescription] = useState("");
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [newCategoryFormat, setNewCategoryFormat] = useState<TournamentFormat>("SINGLE_ELIMINATION");
 
   const handleAddCategory = () => {
     if (!newCategoryType) return;
@@ -52,7 +54,8 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
         : categoryOptions.find(cat => cat.value === newCategoryType)?.label || "Unknown Category",
       type: newCategoryType,
       isCustom,
-      description: isCustom ? customCategoryDescription : undefined
+      description: isCustom ? customCategoryDescription : undefined,
+      format: newCategoryFormat // Add format to new category
     };
 
     onCategoriesChange([...categories, newCategory]);
@@ -70,10 +73,17 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
     setEditingCategoryId(null);
   };
 
+  const handleFormatChange = (categoryId: string, format: TournamentFormat) => {
+    onCategoriesChange(categories.map(cat => 
+      cat.id === categoryId ? { ...cat, format } : cat
+    ));
+  };
+
   const resetForm = () => {
     setNewCategoryType("");
     setCustomCategoryName("");
     setCustomCategoryDescription("");
+    setNewCategoryFormat("SINGLE_ELIMINATION");
   };
 
   const getCategoryColor = (type: CategoryType) => {
@@ -116,18 +126,31 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
               </Button>
             </div>
 
-            {newCategoryType === "CUSTOM" && (
+            {newCategoryType && (
               <div className="space-y-2 pt-2">
-                <Input
-                  placeholder="Custom Category Name"
-                  value={customCategoryName}
-                  onChange={(e) => setCustomCategoryName(e.target.value)}
-                />
-                <Input
-                  placeholder="Description (optional)"
-                  value={customCategoryDescription}
-                  onChange={(e) => setCustomCategoryDescription(e.target.value)}
-                />
+                {newCategoryType === "CUSTOM" && (
+                  <>
+                    <Input
+                      placeholder="Custom Category Name"
+                      value={customCategoryName}
+                      onChange={(e) => setCustomCategoryName(e.target.value)}
+                    />
+                    <Input
+                      placeholder="Description (optional)"
+                      value={customCategoryDescription}
+                      onChange={(e) => setCustomCategoryDescription(e.target.value)}
+                    />
+                  </>
+                )}
+                
+                <div className="pt-2">
+                  <h4 className="text-sm font-medium mb-1">Tournament Format</h4>
+                  <TournamentFormatSelector 
+                    value={newCategoryFormat}
+                    onValueChange={setNewCategoryFormat}
+                    categorySpecific={true}
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -178,17 +201,31 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
                   </div>
                 </CardHeader>
                 
-                {/* Show category-specific scoring rules when editing or if tournament is provided */}
-                {(editingCategoryId === category.id && tournament && onUpdateTournament) && (
-                  <CardContent>
-                    <CategoryScoringRules
-                      tournament={tournament}
-                      category={category}
-                      onUpdateCategory={handleUpdateCategory}
-                      onUpdateTournament={onUpdateTournament}
-                    />
-                  </CardContent>
-                )}
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium mb-1">Tournament Format</h4>
+                      <TournamentFormatSelector
+                        value={category.format || "SINGLE_ELIMINATION"}
+                        onValueChange={(format) => handleFormatChange(category.id, format)}
+                        categorySpecific={true}
+                      />
+                    </div>
+                  
+                    {/* Show category-specific scoring rules when editing or if tournament is provided */}
+                    {(editingCategoryId === category.id && tournament && onUpdateTournament) && (
+                      <div className="mt-2 pt-2 border-t">
+                        <h4 className="text-sm font-medium mb-1">Scoring Rules</h4>
+                        <CategoryScoringRules
+                          tournament={tournament}
+                          category={category}
+                          onUpdateCategory={handleUpdateCategory}
+                          onUpdateTournament={onUpdateTournament}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
               </Card>
             ))}
           </div>

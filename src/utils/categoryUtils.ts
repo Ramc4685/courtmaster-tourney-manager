@@ -1,5 +1,5 @@
 
-import { TournamentCategory, CategoryType } from '@/types/tournament';
+import { TournamentCategory, CategoryType, TournamentFormat } from '@/types/tournament';
 
 // Creates default categories with formats for a new tournament
 export const createDefaultCategories = (): TournamentCategory[] => {
@@ -8,14 +8,14 @@ export const createDefaultCategories = (): TournamentCategory[] => {
       id: crypto.randomUUID(),
       name: "Men's Singles",
       type: "MENS_SINGLES" as CategoryType,
-      format: "SINGLE_ELIMINATION",
+      format: "SINGLE_ELIMINATION" as TournamentFormat,
       addDemoData: false
     },
     {
       id: crypto.randomUUID(),
       name: "Women's Singles",
       type: "WOMENS_SINGLES" as CategoryType,
-      format: "SINGLE_ELIMINATION",
+      format: "SINGLE_ELIMINATION" as TournamentFormat,
       addDemoData: false
     }
   ];

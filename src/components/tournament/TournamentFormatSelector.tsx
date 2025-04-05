@@ -3,7 +3,7 @@ import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TournamentFormat } from '@/types/tournament';
-import { TournamentFormatService } from '@/services/tournament/formats/TournamentFormatService';
+import { getFormatDisplayName, getFormatDescription } from '@/utils/categoryUtils';
 
 interface TournamentFormatSelectorProps {
   value: TournamentFormat;
@@ -16,8 +16,16 @@ const TournamentFormatSelector: React.FC<TournamentFormatSelectorProps> = ({
   onValueChange,
   categorySpecific = false
 }) => {
-  const formats = TournamentFormatService.getAllFormats();
-  const selectedFormat = formats.find(f => f.id === value);
+  const formats: {id: TournamentFormat, name: string, description: string}[] = [
+    { id: "SINGLE_ELIMINATION", name: getFormatDisplayName("SINGLE_ELIMINATION"), description: getFormatDescription("SINGLE_ELIMINATION") },
+    { id: "DOUBLE_ELIMINATION", name: getFormatDisplayName("DOUBLE_ELIMINATION"), description: getFormatDescription("DOUBLE_ELIMINATION") },
+    { id: "ROUND_ROBIN", name: getFormatDisplayName("ROUND_ROBIN"), description: getFormatDescription("ROUND_ROBIN") },
+    { id: "SWISS", name: getFormatDisplayName("SWISS"), description: getFormatDescription("SWISS") },
+    { id: "GROUP_KNOCKOUT", name: getFormatDisplayName("GROUP_KNOCKOUT"), description: getFormatDescription("GROUP_KNOCKOUT") },
+    { id: "MULTI_STAGE", name: getFormatDisplayName("MULTI_STAGE"), description: getFormatDescription("MULTI_STAGE") }
+  ];
+  
+  const selectedFormat = formats.find(f => f.id === value) || formats[0];
   
   return (
     <div className="space-y-2">

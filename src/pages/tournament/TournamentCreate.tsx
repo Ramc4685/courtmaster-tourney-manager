@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -16,8 +17,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useTournament } from "@/contexts/tournament/useTournament";
-import { TournamentCategory, CourtStatus, Tournament } from "@/types/tournament";
+import { TournamentCategory, CourtStatus, Tournament, TournamentFormat } from "@/types/tournament";
 import TournamentCategorySection from "@/components/tournament/TournamentCategorySection";
+import TournamentFormatSelector from "@/components/tournament/TournamentFormatSelector";
 import { createDefaultCategories } from "@/utils/categoryUtils";
 import { Grid3X3Icon } from "lucide-react";
 
@@ -33,6 +35,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   startDate: z.date(),
   endDate: z.date().optional(),
+  format: z.string().min(1, { message: "Tournament format is required" }),
   divisionProgression: z.boolean().default(false),
   autoAssignCourts: z.boolean().default(false),
   numCourts: z.number().min(1).max(20).default(4),
@@ -52,6 +55,7 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
     defaultValues: {
       name: "",
       description: "",
+      format: "SINGLE_ELIMINATION",
       startDate: new Date(),
       endDate: undefined,
       divisionProgression: false,
@@ -59,6 +63,18 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
       numCourts: 4,
     },
   });
+
+  // Set format for all categories that don't have a specific one
+  const handleFormatChange = (format: TournamentFormat) => {
+    form.setValue("format", format);
+    
+    // Update any categories that don't have a format specified
+    setCategories(prevCategories => 
+      prevCategories.map(cat => 
+        cat.format ? cat : { ...cat, format }
+      )
+    );
+  };
 
   const onSubmit = async (values: FormValues) => {
     console.log("Form submitted with values:", values);
@@ -74,20 +90,21 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
         status: "AVAILABLE" as CourtStatus  // Explicitly type as CourtStatus
       }));
 
-      // Use the first category's format as the tournament format (or default to SINGLE_ELIMINATION)
-      const tournamentFormat = categories.length > 0 
-        ? categories[0].format || "SINGLE_ELIMINATION" 
-        : "SINGLE_ELIMINATION";
+      // Ensure all categories have a format
+      const finalCategories = categories.map(category => ({
+        ...category,
+        format: category.format || values.format as TournamentFormat
+      }));
 
       const tournament = createTournament({
         name: values.name, // Ensure name is explicitly passed
-        format: tournamentFormat, // Use format from the first category or default
+        format: values.format as TournamentFormat, // Use the main tournament format
         description: values.description,
         startDate: values.startDate,
         endDate: values.endDate,
         divisionProgression: values.divisionProgression,
         autoAssignCourts: values.autoAssignCourts,
-        categories: categories,
+        categories: finalCategories, // Use categories with formats
         status: "DRAFT", // Add required properties
         teams: [],      // Add required empty array
         courts: courts  // Add courts based on numCourts
@@ -148,6 +165,23 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
                     <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter description" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="format"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Default Tournament Format</FormLabel>
+                    <FormControl>
+                      <TournamentFormatSelector
+                        value={field.value as TournamentFormat}
+                        onValueChange={(value) => handleFormatChange(value)}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -245,11 +279,17 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
                   )}
                 />
               </div>
-              <TournamentCategorySection
-                categories={categories}
-                onCategoriesChange={setCategories}
-              />
-              <CardFooter className="px-0">
+              
+              {/* Tournament Category Section */}
+              <div className="pt-4 border-t mt-6">
+                <h3 className="text-lg font-medium mb-4">Tournament Categories</h3>
+                <TournamentCategorySection
+                  categories={categories}
+                  onCategoriesChange={setCategories}
+                />
+              </div>
+              
+              <CardFooter className="px-0 pt-6">
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? "Creating..." : "Create Tournament"}
                 </Button>
