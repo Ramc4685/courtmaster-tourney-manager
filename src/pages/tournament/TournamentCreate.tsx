@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -22,6 +23,7 @@ import TournamentFormatSelector from "@/components/tournament/TournamentFormatSe
 import { createDefaultCategories } from "@/utils/categoryUtils";
 import { Grid3X3Icon } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // Define the component props interface
 interface TournamentCreateProps {
@@ -257,7 +259,7 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => field.onChange(!!checked)}
                         />
                       </FormControl>
                       <FormLabel className="text-sm font-normal">
@@ -274,7 +276,7 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => field.onChange(!!checked)}
                         />
                       </FormControl>
                       <FormLabel className="text-sm font-normal">
@@ -292,7 +294,7 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
                     <Checkbox 
                       id="enableCategories" 
                       checked={showCategories} 
-                      onCheckedChange={(checked) => setShowCategories(checked === true)}
+                      onCheckedChange={(checked) => setShowCategories(!!checked)}
                     />
                     <label htmlFor="enableCategories" className="text-sm font-medium">
                       Enable Categories
