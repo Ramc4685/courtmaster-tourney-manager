@@ -1,5 +1,17 @@
 
-import { Tournament, Match, Court, Team, TournamentFormat, Category, CourtStatus, ScoringSettings } from "@/types/tournament";
+import { 
+  Tournament, 
+  Match, 
+  Court, 
+  Team, 
+  TournamentFormat, 
+  Division, 
+  Category,
+  CourtStatus,
+  ScoringSettings,
+  MatchStatus
+} from "@/types/tournament";
+import { SchedulingOptions, SchedulingResult } from "@/services/tournament/SchedulingService";
 
 export interface TournamentContextType {
   tournaments: Tournament[];
@@ -15,6 +27,7 @@ export interface TournamentContextType {
   updateMatchStatus: (matchId: string, status: string) => Promise<void>;
   updateMatchScore: (matchId: string, setIndex: number, team1Score: number, team2Score: number) => Promise<void>;
   completeMatch: (matchId: string) => Promise<void>;
+  updateMatch: (match: Match) => Promise<void>;
   
   // Court operations
   assignCourt: (matchId: string, courtId: string) => Promise<void>;
@@ -27,12 +40,22 @@ export interface TournamentContextType {
   addTeam: (team: Team) => Promise<void>;
   updateTeam: (team: Team) => Promise<void>;
   deleteTeam: (teamId: string) => Promise<void>;
+  importTeams: (teams: Team[]) => Promise<void>;
   
   // Category operations
   addCategory: (category: Category) => Promise<void>;
   updateCategory: (category: Category) => Promise<void>;
   deleteCategory: (categoryId: string) => Promise<void>;
+  removeCategory: (categoryId: string) => Promise<void>;
   
   // Bracket operations
   generateBrackets: () => Promise<number>;
+  
+  // Additional operations
+  scheduleMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => Promise<void>;
+  scheduleMatches: (teamPairs: { team1: Team; team2: Team }[], options: SchedulingOptions) => Promise<SchedulingResult>;
+  generateMultiStageTournament: () => Promise<void>;
+  advanceToNextStage: () => Promise<void>;
+  loadSampleData: (format?: TournamentFormat) => Promise<void>;
+  loadCategoryDemoData: (tournamentId: string, categoryId: string, format: TournamentFormat) => Promise<void>;
 }

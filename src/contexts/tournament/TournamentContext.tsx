@@ -1,15 +1,13 @@
+
 import React, { createContext, useState, useEffect, useContext, PropsWithChildren } from 'react';
-import { Tournament, Match, Court, Team, TournamentFormat, Category, CourtStatus, ScoringSettings } from "@/types/tournament";
+import { Tournament, Match, Court, Team, TournamentFormat, Category, CourtStatus, ScoringSettings, MatchStatus } from "@/types/tournament";
 import { generateId } from '@/utils/tournamentUtils';
 import { tournamentService } from '@/services/tournament/TournamentService';
 import { matchService } from '@/services/tournament/MatchService';
-import { teamService } from '@/services/tournament/TeamService';
-import { categoryService } from '@/services/tournament/CategoryService';
-import { autoAssignCourts } from '@/utils/courtUtils';
 import { useToast } from '@/hooks/use-toast';
 import { sortTeamsByRanking } from '@/utils/tournamentUtils';
-import { bracketService } from '@/services/tournament/BracketService';
 import { TournamentContextType } from './types';
+import { schedulingService } from '@/services/tournament/SchedulingService';
 
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
@@ -36,17 +34,16 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       id: generateId(),
       name,
       categories,
-      format: TournamentFormat.SingleElimination,
+      format: "SINGLE_ELIMINATION" as TournamentFormat,
       startDate: new Date(),
       endDate: new Date(),
       matches: [],
       teams: [],
       courts: [],
-      status: 'Planning',
+      status: 'DRAFT',
       createdAt: new Date(),
       updatedAt: new Date(),
       scoringSettings: {
-        setsToWin: 2,
         pointsPerSet: 21,
         winByTwo: true,
         maxPoints: 30,
@@ -90,14 +87,11 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
 
   const setCurrentTournamentContext = async (tournament: Tournament) => {
     try {
-      const fetchedTournament = await tournamentService.getTournamentById(tournament.id);
-      if (fetchedTournament) {
-        setCurrentTournament(fetchedTournament);
-      } else {
-        console.error("Tournament not found");
-      }
+      // Use the current tournament directly, since we don't have getTournamentById
+      setCurrentTournament(tournament);
+      await tournamentService.saveCurrentTournament(tournament);
     } catch (error) {
-      console.error("Error fetching tournament:", error);
+      console.error("Error setting current tournament:", error);
     }
   };
 
@@ -105,12 +99,16 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return;
 
     try {
+      // Update local state first
+      const updatedMatches = currentTournament.matches.map(match => 
+        match.id === matchId ? { ...match, status: "IN_PROGRESS" as MatchStatus } : match
+      );
+      
+      const updatedTournament = { ...currentTournament, matches: updatedMatches };
+      await updateTournament(updatedTournament);
+      
+      // Then update the backend
       await matchService.updateMatchStatus(currentTournament.id, matchId, "IN_PROGRESS");
-      // Refresh the tournament data after starting the match
-      const updatedTournament = await tournamentService.getTournamentById(currentTournament.id);
-      if (updatedTournament) {
-        setCurrentTournament(updatedTournament);
-      }
     } catch (error) {
       console.error("Error starting match:", error);
     }
@@ -120,12 +118,16 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return;
 
     try {
+      // Update local state first
+      const updatedMatches = currentTournament.matches.map(match => 
+        match.id === matchId ? { ...match, status: status as MatchStatus } : match
+      );
+      
+      const updatedTournament = { ...currentTournament, matches: updatedMatches };
+      await updateTournament(updatedTournament);
+      
+      // Then update the backend
       await matchService.updateMatchStatus(currentTournament.id, matchId, status as MatchStatus);
-      // Refresh the tournament data after updating the match status
-      const updatedTournament = await tournamentService.getTournamentById(currentTournament.id);
-      if (updatedTournament) {
-        setCurrentTournament(updatedTournament);
-      }
     } catch (error) {
       console.error("Error updating match status:", error);
     }
@@ -135,12 +137,26 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return;
 
     try {
-      await matchService.updateMatchScore(currentTournament.id, matchId, setIndex, team1Score, team2Score);
-      // Refresh the tournament data after updating the match score
-      const updatedTournament = await tournamentService.getTournamentById(currentTournament.id);
-      if (updatedTournament) {
-        setCurrentTournament(updatedTournament);
+      const match = currentTournament.matches.find(m => m.id === matchId);
+      if (!match) return;
+      
+      const scores = [...(match.scores || [])];
+      while (scores.length <= setIndex) {
+        scores.push({ team1Score: 0, team2Score: 0 });
       }
+      
+      scores[setIndex] = { team1Score, team2Score };
+      
+      // Update local state
+      const updatedMatches = currentTournament.matches.map(m => 
+        m.id === matchId ? { ...m, scores } : m
+      );
+      
+      const updatedTournament = { ...currentTournament, matches: updatedMatches };
+      await updateTournament(updatedTournament);
+      
+      // Update backend
+      await matchService.updateMatchScore(currentTournament.id, matchId, setIndex, team1Score, team2Score);
     } catch (error) {
       console.error("Error updating match score:", error);
     }
@@ -150,12 +166,16 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return;
 
     try {
+      // Update local state
+      const updatedMatches = currentTournament.matches.map(match => 
+        match.id === matchId ? { ...match, status: "COMPLETED" as MatchStatus } : match
+      );
+      
+      const updatedTournament = { ...currentTournament, matches: updatedMatches };
+      await updateTournament(updatedTournament);
+      
+      // Update backend
       await matchService.completeMatch(currentTournament.id, matchId);
-      // Refresh the tournament data after completing the match
-      const updatedTournament = await tournamentService.getTournamentById(currentTournament.id);
-      if (updatedTournament) {
-        setCurrentTournament(updatedTournament);
-      }
     } catch (error) {
       console.error("Error completing match:", error);
     }
@@ -165,12 +185,34 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return;
 
     try {
-      await tournamentService.assignCourtToMatch(currentTournament, matchId, courtId);
-      // Refresh the tournament data after assigning the court
-      const updatedTournament = await tournamentService.getTournamentById(currentTournament.id);
-      if (updatedTournament) {
-        setCurrentTournament(updatedTournament);
-      }
+      const match = currentTournament.matches.find(m => m.id === matchId);
+      const court = currentTournament.courts.find(c => c.id === courtId);
+      
+      if (!match || !court) return;
+      
+      // Update match with court
+      const updatedMatch = { ...match, courtNumber: court.number };
+      
+      // Update court status
+      const updatedCourt = { ...court, status: "IN_USE" as CourtStatus, currentMatch: updatedMatch };
+      
+      // Update arrays
+      const updatedMatches = currentTournament.matches.map(m => 
+        m.id === matchId ? updatedMatch : m
+      );
+      
+      const updatedCourts = currentTournament.courts.map(c => 
+        c.id === courtId ? updatedCourt : c
+      );
+      
+      // Update tournament
+      const updatedTournament = { 
+        ...currentTournament, 
+        matches: updatedMatches,
+        courts: updatedCourts
+      };
+      
+      await updateTournament(updatedTournament);
     } catch (error) {
       console.error("Error assigning court:", error);
     }
@@ -180,21 +222,31 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return;
 
     try {
-      // Optimistically update the UI
-      const updatedCourts = currentTournament.courts.map(court =>
-        court.number === courtNumber ? { ...court, status: "AVAILABLE" as CourtStatus, currentMatch: null } : court
+      // Optimize the logic
+      const court = currentTournament.courts.find(c => c.number === courtNumber);
+      if (!court) return;
+      
+      // Update court status
+      const updatedCourt = { ...court, status: "AVAILABLE" as CourtStatus, currentMatch: null };
+      
+      // Update courts array
+      const updatedCourts = currentTournament.courts.map(c => 
+        c.number === courtNumber ? updatedCourt : c
       );
-      const updatedTournament = { ...currentTournament, courts: updatedCourts };
-      setCurrentTournament(updatedTournament);
-
-      // Call the service to update the court status
-      // await courtService.freeCourt(currentTournament.id, courtNumber);
-
-      // Refresh the tournament data after freeing the court
-      // const refreshedTournament = await tournamentService.getTournamentById(currentTournament.id);
-      // if (refreshedTournament) {
-      //   setCurrentTournament(refreshedTournament);
-      // }
+      
+      // Find any matches using this court and remove the court reference
+      const updatedMatches = currentTournament.matches.map(match => 
+        match.courtNumber === courtNumber ? { ...match, courtNumber: undefined } : match
+      );
+      
+      // Update tournament
+      const updatedTournament = { 
+        ...currentTournament, 
+        courts: updatedCourts,
+        matches: updatedMatches
+      };
+      
+      await updateTournament(updatedTournament);
     } catch (error) {
       console.error("Error freeing court:", error);
     }
@@ -204,14 +256,9 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return 0;
 
     try {
-      const { tournament: updatedTournament, assignedCount } = await autoAssignCourts(currentTournament);
-
-      if (updatedTournament) {
-        setCurrentTournament(updatedTournament);
-        return assignedCount;
-      } else {
-        return 0;
-      }
+      const result = await schedulingService.assignCourtsToScheduledMatches(currentTournament);
+      await updateTournament(result.tournament);
+      return result.assignedCourts;
     } catch (error) {
       console.error("Error auto-assigning courts:", error);
       return 0;
@@ -219,37 +266,47 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
   };
 
   // Function to start multiple matches that have courts assigned
-  const startMatchesWithCourts = async () => {
+  const startMatchesWithCourts = async (): Promise<number> => {
     if (!currentTournament) return 0;
     
-    const matchesToStart = currentTournament.matches.filter(
-      match => match.status === "SCHEDULED" && match.courtNumber && match.team1 && match.team2
-    );
-    
-    let startedCount = 0;
-    
-    for (const match of matchesToStart) {
-      try {
+    try {
+      const matchesToStart = currentTournament.matches.filter(
+        match => match.status === "SCHEDULED" && match.courtNumber && match.team1 && match.team2
+      );
+      
+      let startedCount = 0;
+      
+      // Create a copy of the tournament to make multiple updates
+      let updatedTournament = { ...currentTournament };
+      
+      for (const match of matchesToStart) {
+        // Update match status in our copy
+        updatedTournament = {
+          ...updatedTournament,
+          matches: updatedTournament.matches.map(m => 
+            m.id === match.id ? { ...m, status: "IN_PROGRESS" as MatchStatus } : m
+          )
+        };
+        
+        // Update backend in parallel
         await matchService.updateMatchStatus(currentTournament.id, match.id, "IN_PROGRESS");
         startedCount++;
-      } catch (error) {
-        console.error(`Error starting match ${match.id}:`, error);
       }
-    }
-    
-    if (startedCount > 0) {
-      // Refresh the tournament data after starting matches
-      const updatedTournament = await tournamentService.getTournamentById(currentTournament.id);
-      if (updatedTournament) {
-        setCurrentTournament(updatedTournament);
+      
+      if (startedCount > 0) {
+        // Update local state once with all changes
+        await updateTournament(updatedTournament);
       }
+      
+      return startedCount;
+    } catch (error) {
+      console.error("Error starting matches with courts:", error);
+      return 0;
     }
-    
-    return startedCount;
   };
 
   // Initialize scoring for a specific match
-  const initializeScoring = async (matchId: string) => {
+  const initializeScoring = async (matchId: string): Promise<Match | null> => {
     if (!currentTournament) return null;
     
     try {
@@ -262,7 +319,11 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       
       // If match is not started yet, start it
       if (match.status === "SCHEDULED") {
-        await matchService.updateMatchStatus(currentTournament.id, matchId, "IN_PROGRESS");
+        await updateMatchStatus(matchId, "IN_PROGRESS");
+        
+        // Get the updated match from state
+        const updatedMatch = currentTournament.matches.find(m => m.id === matchId);
+        return updatedMatch || null;
       }
       
       // Return the match for navigation
@@ -277,12 +338,11 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return;
 
     try {
-      await teamService.addTeam(currentTournament.id, team);
-      // Refresh the tournament data after adding the team
-      const updatedTournament = await tournamentService.getTournamentById(currentTournament.id);
-      if (updatedTournament) {
-        setCurrentTournament(updatedTournament);
-      }
+      // Add to local state
+      const updatedTeams = [...currentTournament.teams, team];
+      const updatedTournament = { ...currentTournament, teams: updatedTeams };
+      
+      await updateTournament(updatedTournament);
     } catch (error) {
       console.error("Error adding team:", error);
     }
@@ -292,12 +352,13 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return;
 
     try {
-      await teamService.updateTeam(currentTournament.id, team);
-      // Refresh the tournament data after updating the team
-      const updatedTournament = await tournamentService.getTournamentById(currentTournament.id);
-      if (updatedTournament) {
-        setCurrentTournament(updatedTournament);
-      }
+      // Update in local state
+      const updatedTeams = currentTournament.teams.map(t => 
+        t.id === team.id ? team : t
+      );
+      
+      const updatedTournament = { ...currentTournament, teams: updatedTeams };
+      await updateTournament(updatedTournament);
     } catch (error) {
       console.error("Error updating team:", error);
     }
@@ -307,14 +368,28 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return;
 
     try {
-      await teamService.deleteTeam(currentTournament.id, teamId);
-      // Refresh the tournament data after deleting the team
-      const updatedTournament = await tournamentService.getTournamentById(currentTournament.id);
-      if (updatedTournament) {
-        setCurrentTournament(updatedTournament);
-      }
+      // Remove from local state
+      const updatedTeams = currentTournament.teams.filter(t => t.id !== teamId);
+      const updatedTournament = { ...currentTournament, teams: updatedTeams };
+      
+      await updateTournament(updatedTournament);
     } catch (error) {
       console.error("Error deleting team:", error);
+    }
+  };
+
+  // Import multiple teams at once
+  const importTeams = async (teams: Team[]) => {
+    if (!currentTournament) return;
+    
+    try {
+      // Add to local state
+      const updatedTeams = [...currentTournament.teams, ...teams];
+      const updatedTournament = { ...currentTournament, teams: updatedTeams };
+      
+      await updateTournament(updatedTournament);
+    } catch (error) {
+      console.error("Error importing teams:", error);
     }
   };
 
@@ -322,12 +397,11 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return;
 
     try {
-      await categoryService.addCategory(currentTournament.id, category);
-      // Refresh the tournament data after adding the category
-      const updatedTournament = await tournamentService.getTournamentById(currentTournament.id);
-      if (updatedTournament) {
-        setCurrentTournament(updatedTournament);
-      }
+      // Add to local state
+      const updatedCategories = [...currentTournament.categories, category];
+      const updatedTournament = { ...currentTournament, categories: updatedCategories };
+      
+      await updateTournament(updatedTournament);
     } catch (error) {
       console.error("Error adding category:", error);
     }
@@ -337,12 +411,13 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return;
 
     try {
-      await categoryService.updateCategory(currentTournament.id, category);
-      // Refresh the tournament data after updating the category
-      const updatedTournament = await tournamentService.getTournamentById(currentTournament.id);
-      if (updatedTournament) {
-        setCurrentTournament(updatedTournament);
-      }
+      // Update in local state
+      const updatedCategories = currentTournament.categories.map(c => 
+        c.id === category.id ? category : c
+      );
+      
+      const updatedTournament = { ...currentTournament, categories: updatedCategories };
+      await updateTournament(updatedTournament);
     } catch (error) {
       console.error("Error updating category:", error);
     }
@@ -352,32 +427,158 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return;
 
     try {
-      await categoryService.deleteCategory(currentTournament.id, categoryId);
-      // Refresh the tournament data after deleting the category
-      const updatedTournament = await tournamentService.getTournamentById(currentTournament.id);
-      if (updatedTournament) {
-        setCurrentTournament(updatedTournament);
-      }
+      // Remove from local state
+      const updatedCategories = currentTournament.categories.filter(c => c.id !== categoryId);
+      const updatedTournament = { ...currentTournament, categories: updatedCategories };
+      
+      await updateTournament(updatedTournament);
     } catch (error) {
       console.error("Error deleting category:", error);
     }
+  };
+
+  // Alias for deleteCategory for compatibility
+  const removeCategory = async (categoryId: string) => {
+    await deleteCategory(categoryId);
   };
 
   const generateBrackets = async (): Promise<number> => {
     if (!currentTournament) return 0;
 
     try {
-      const { assignedCount, tournament } = await bracketService.generateBrackets(currentTournament.id);
+      const { tournament: updatedTournament, matchesCreated } = await schedulingService.generateBrackets(currentTournament);
 
-      if (tournament) {
-        setCurrentTournament(tournament);
-        return assignedCount;
+      if (updatedTournament) {
+        await updateTournament(updatedTournament);
+        return matchesCreated;
       } else {
         return 0;
       }
     } catch (error) {
       console.error("Error generating brackets:", error);
       return 0;
+    }
+  };
+
+  // Schedule a single match
+  const scheduleMatch = async (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => {
+    if (!currentTournament) return;
+    
+    try {
+      const result = await schedulingService.scheduleMatch(
+        currentTournament, 
+        team1Id, 
+        team2Id, 
+        scheduledTime,
+        courtId,
+        categoryId
+      );
+      
+      if (result.tournament) {
+        await updateTournament(result.tournament);
+      }
+    } catch (error) {
+      console.error("Error scheduling match:", error);
+    }
+  };
+
+  // Schedule multiple matches
+  const scheduleMatches = async (teamPairs: { team1: Team; team2: Team }[], options: any): Promise<any> => {
+    if (!currentTournament) {
+      throw new Error("No tournament selected");
+    }
+    
+    try {
+      const result = await schedulingService.scheduleMatches(currentTournament, teamPairs, options);
+      
+      if (result.tournament) {
+        await updateTournament(result.tournament);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error("Error scheduling matches:", error);
+      throw error;
+    }
+  };
+
+  // Generic update match function
+  const updateMatch = async (match: Match) => {
+    if (!currentTournament) return;
+    
+    try {
+      const updatedMatches = currentTournament.matches.map(m => 
+        m.id === match.id ? match : m
+      );
+      
+      const updatedTournament = { ...currentTournament, matches: updatedMatches };
+      await updateTournament(updatedTournament);
+    } catch (error) {
+      console.error("Error updating match:", error);
+    }
+  };
+
+  // Generate a multi-stage tournament
+  const generateMultiStageTournament = async () => {
+    if (!currentTournament) return;
+    
+    try {
+      const { tournament } = await schedulingService.generateMultiStageTournament(currentTournament);
+      
+      if (tournament) {
+        await updateTournament(tournament);
+      }
+    } catch (error) {
+      console.error("Error generating multi-stage tournament:", error);
+    }
+  };
+
+  // Advance tournament to next stage
+  const advanceToNextStage = async () => {
+    if (!currentTournament) return;
+    
+    try {
+      const { tournament } = await schedulingService.advanceToNextStage(currentTournament);
+      
+      if (tournament) {
+        await updateTournament(tournament);
+      }
+    } catch (error) {
+      console.error("Error advancing tournament to next stage:", error);
+    }
+  };
+
+  // Load sample data
+  const loadSampleData = async (format?: TournamentFormat) => {
+    if (!currentTournament) return;
+    
+    try {
+      const { tournament } = await schedulingService.loadSampleData(currentTournament, format);
+      
+      if (tournament) {
+        await updateTournament(tournament);
+      }
+    } catch (error) {
+      console.error("Error loading sample data:", error);
+    }
+  };
+
+  // Load category demo data
+  const loadCategoryDemoData = async (tournamentId: string, categoryId: string, format: TournamentFormat) => {
+    if (!currentTournament || currentTournament.id !== tournamentId) return;
+    
+    try {
+      const { tournament } = await schedulingService.loadCategoryDemoData(
+        currentTournament, 
+        categoryId, 
+        format
+      );
+      
+      if (tournament) {
+        await updateTournament(tournament);
+      }
+    } catch (error) {
+      console.error("Error loading category demo data:", error);
     }
   };
 
@@ -401,10 +602,19 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     addTeam,
     updateTeam,
     deleteTeam,
+    importTeams,
     addCategory,
     updateCategory,
     deleteCategory,
+    removeCategory,
     generateBrackets,
+    scheduleMatch,
+    scheduleMatches,
+    updateMatch,
+    generateMultiStageTournament,
+    advanceToNextStage,
+    loadSampleData,
+    loadCategoryDemoData
   };
 
   return (
