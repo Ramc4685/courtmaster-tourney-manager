@@ -173,7 +173,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                     className="bg-purple-600 hover:bg-purple-700 flex items-center"
                   >
                     <CalendarIcon className="h-4 w-4 mr-2" />
-                    Schedule & Assign Courts
+                    {completedMatches === 0 ? "Generate Brackets" : "Assign Courts and Start"}
                   </Button>
                   
                   <Button 

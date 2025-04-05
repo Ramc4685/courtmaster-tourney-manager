@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Plus, Calendar, ArrowRight, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -78,7 +77,7 @@ const MatchesTab: React.FC<MatchesTabProps> = ({
           </Button>
           <Button onClick={onAutoScheduleClick} className="flex items-center">
             <Calendar className="h-4 w-4 mr-2" />
-            Generate Brackets & Assign Courts
+            {matches.length === 0 ? "Generate Brackets" : "Assign Courts and Start"}
           </Button>
         </div>
       </div>
@@ -86,7 +85,7 @@ const MatchesTab: React.FC<MatchesTabProps> = ({
       {matches.length === 0 && (
         <Alert className="mb-4">
           <AlertDescription>
-            No matches found. Start by generating brackets or scheduling individual matches.
+            No matches found. Start by generating brackets based on your tournament format, then you can assign courts and start matches.
           </AlertDescription>
         </Alert>
       )}

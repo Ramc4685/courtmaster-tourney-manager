@@ -82,6 +82,7 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
       
       // Assign courts after generating brackets
       if (assignCourts) {
+        // Only assign courts to matches that don't already have courts assigned
         result = await autoAssignCourts();
         
         if (result > 0) {
@@ -119,15 +120,17 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
         onClick={() => setOpen(true)}
       >
         <BadgeAlert className="h-5 w-5 mr-2" />
-        Generate Brackets & Assign Courts
+        {!hasBrackets ? "Generate Brackets" : "Assign Courts and Start"}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Tournament Brackets & Court Assignment</DialogTitle>
+            <DialogTitle>{!hasBrackets ? "Generate Tournament Brackets" : "Assign Courts and Start Matches"}</DialogTitle>
             <DialogDescription>
-              Generate tournament brackets and assign courts to matches.
+              {!hasBrackets 
+                ? "Generate tournament brackets according to the selected formats." 
+                : "Assign courts to matches and start the tournament."}
             </DialogDescription>
           </DialogHeader>
           
@@ -254,7 +257,7 @@ const ScheduleMatches: React.FC<ScheduleMatchesProps> = ({ tournamentId }) => {
             </Button>
             <Button onClick={handleSchedule} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLoading ? "Processing..." : (!hasBrackets ? "Generate Brackets & Assign Courts" : "Assign Courts")}
+              {isLoading ? "Processing..." : (!hasBrackets ? "Generate Brackets" : "Assign Courts and Start")}
             </Button>
           </DialogFooter>
         </DialogContent>
