@@ -68,6 +68,13 @@ const { parse, parseAsync } = nativeModule;`
       } else {
         console.log('Rollup native.js file not found, skipping patch');
       }
+      
+      // Add special handling for esbuild
+      console.log('Setting up esbuild for Vercel environment');
+      process.env.ESBUILD_BINARY_PATH = path.join(process.cwd(), 'node_modules', 'esbuild', 'bin', 'esbuild');
+      
+      // Force esbuild to use JavaScript implementation
+      process.env.ESBUILD_FORCE_JS_BUILD = "true";
     }
   }
   

@@ -27,7 +27,8 @@
       "ROLLUP_SKIP_NODEJS_NATIVE_ADDONS": "true",
       "ROLLUP_NATIVE_BINDINGS": "false",
       "ROLLUP_FORCE_JAVASCRIPT": "true",
-      "NODE_OPTIONS": "--no-warnings"
+      "NODE_OPTIONS": "--no-warnings",
+      "ESBUILD_FORCE_JS_BUILD": "true"
     }
   }
 }
