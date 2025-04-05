@@ -36,20 +36,13 @@ try {
         console.log('Found Rollup native.js file, patching to force JavaScript implementation');
         
         // Replace the content with a version that forces the JS implementation
-        // Using a proper ES module export to avoid the named export issue
+        // Using a pure ES module approach to avoid CommonJS/ESM conflicts
         const patchedContent = `
-// Patched by build-fix.mjs to force JavaScript implementation
-// Export as both ES Module and CommonJS to avoid import/require conflicts
-export function getDefaultRollup() { return null; } // Force JS implementation
-export function isNativeRollupAvailable() { return false; } // Force JS implementation
-export const parse = (code, options) => null; // Mock parse function
-export const parseAsync = async (code, options) => null; // Mock parseAsync function
-
-// For CommonJS compatibility
-exports.getDefaultRollup = getDefaultRollup;
-exports.isNativeRollupAvailable = isNativeRollupAvailable;
-exports.parse = parse;
-exports.parseAsync = parseAsync;
+// Patched by build-fix.mjs to force JavaScript implementation (pure ESM version)
+export function getDefaultRollup() { return null; } 
+export function isNativeRollupAvailable() { return false; } 
+export function parse() { return null; }
+export async function parseAsync() { return null; }
 `;
         
         // Write the patched file
