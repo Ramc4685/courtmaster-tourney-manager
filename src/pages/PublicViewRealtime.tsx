@@ -148,6 +148,7 @@ const LoadingState = () => (
 const PublicViewRealtime = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   
+  // Use our updated hook with proper return types
   const { currentTournament, inProgressMatches, isSubscribed } = useRealtimeTournamentUpdates(tournamentId);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [refreshing, setRefreshing] = useState(false);

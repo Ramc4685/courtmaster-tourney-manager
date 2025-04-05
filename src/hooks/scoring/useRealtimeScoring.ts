@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 // Update import for useTournament
@@ -31,16 +32,23 @@ export function useRealtimeScoring(matchId: string) {
         },
         (payload) => {
           console.log('[DEBUG] Received payload:', payload);
-          if (payload.new) {
+          if (payload.new && typeof payload.new === 'object') {
             try {
-              const updatedTournamentData = JSON.parse(payload.new.data);
-              const updatedMatch = updatedTournamentData.matches.find((m: Match) => m.id === matchId);
+              // Safely check if data property exists and parse it
+              const newData = payload.new as Record<string, any>;
+              if (newData.data) {
+                const updatedTournamentData = typeof newData.data === 'string' 
+                  ? JSON.parse(newData.data) 
+                  : newData.data;
+                
+                const updatedMatch = updatedTournamentData.matches.find((m: Match) => m.id === matchId);
 
-              if (updatedMatch) {
-                console.log(`[DEBUG] Match ${matchId} updated in real-time`);
-                setMatch(updatedMatch);
-              } else {
-                console.log(`[DEBUG] Match ${matchId} not found in updated tournament data`);
+                if (updatedMatch) {
+                  console.log(`[DEBUG] Match ${matchId} updated in real-time`);
+                  setMatch(updatedMatch);
+                } else {
+                  console.log(`[DEBUG] Match ${matchId} not found in updated tournament data`);
+                }
               }
             } catch (error) {
               console.error('Error parsing tournament data:', error);
@@ -66,4 +74,3 @@ export function useRealtimeScoring(matchId: string) {
 
   return match;
 }
-
