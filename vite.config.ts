@@ -47,8 +47,14 @@ export default defineConfig(({ mode }) => ({
     // Use esbuild for all minification to avoid Rollup platform-specific dependencies
     minify: 'esbuild',
     rollupOptions: {
-      // Disable native addons to prevent platform-specific dependencies
-      external: [/@rollup\/rollup-linux-.*/, /@rollup\/rollup-darwin-.*/],
+      // Force the use of the JavaScript implementation of Rollup
+      context: 'globalThis',
+      // Disable all native addons to prevent platform-specific dependencies
+      external: [
+        /@rollup\/rollup-linux-.*/,
+        /@rollup\/rollup-darwin-.*/,
+        /@rollup\/rollup-win32-.*/
+      ],
       output: {
         manualChunks: {
           // Core framework and large dependencies
