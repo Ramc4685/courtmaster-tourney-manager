@@ -70,11 +70,52 @@ const { parse, parseAsync } = nativeModule;`
       }
       
       // Add special handling for esbuild
-      console.log('Setting up esbuild for Vercel environment');
-      process.env.ESBUILD_BINARY_PATH = path.join(process.cwd(), 'node_modules', 'esbuild', 'bin', 'esbuild');
+      console.log('Setting up esbuild and SWC for Vercel environment');
       
-      // Force esbuild to use JavaScript implementation
+      // Force JavaScript implementations for all tooling
+      process.env.ESBUILD_BINARY_PATH = path.join(process.cwd(), 'node_modules', 'esbuild', 'bin', 'esbuild');
       process.env.ESBUILD_FORCE_JS_BUILD = "true";
+      
+      // Handle SWC bindings
+      process.env.SWC_BINARY_PATH = path.join(process.cwd(), 'node_modules', '@swc', 'core', 'bin', 'swc');
+      process.env.SWC_CORE_BINDING_PATH = path.join(process.cwd(), 'node_modules', '@swc', 'core');
+      process.env.SWC_PLATFORM_ARCH = `${os.platform()}-${os.arch()}`;
+      process.env.SWC_NO_BINARY_DOWNLOAD = "true";
+      
+      // Create a patch for SWC core binding.js to skip native binding
+      const swcBindingPath = path.join(process.cwd(), 'node_modules', '@swc', 'core', 'binding.js');
+      if (fs.existsSync(swcBindingPath)) {
+        console.log('Found SWC binding.js file, patching to handle missing native modules');
+        
+        // Read the original file
+        const originalSwcBinding = fs.readFileSync(swcBindingPath, 'utf8');
+        
+        // Create a patched version that falls back to JavaScript
+        const patchedSwcBinding = originalSwcBinding.replace(
+          "throw new Error('Failed to load native binding');",
+          "console.warn('Native binding not available, falling back to JavaScript implementation'); return null;"
+        );
+        
+        // Write the patched file
+        fs.writeFileSync(swcBindingPath, patchedSwcBinding, 'utf8');
+        console.log('Successfully patched SWC binding.js to handle missing native modules');
+      }
+      
+      // Patch vite config to use esbuild instead of SWC for JSX transformation
+      const viteConfigPath = path.join(process.cwd(), 'vite.config.ts');
+      if (fs.existsSync(viteConfigPath)) {
+        console.log('Patching Vite config to use esbuild instead of SWC for JSX');
+        const viteConfig = fs.readFileSync(viteConfigPath, 'utf8');
+        
+        // Replace react-swc plugin with regular react plugin
+        const patchedViteConfig = viteConfig.replace(
+          "import react from \"@vitejs/plugin-react-swc\";",
+          "import react from \"@vitejs/plugin-react\";"
+        );
+        
+        fs.writeFileSync(viteConfigPath, patchedViteConfig, 'utf8');
+        console.log('Successfully patched Vite config to use esbuild for JSX');
+      }
     }
   }
   

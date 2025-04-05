@@ -28,7 +28,8 @@
       "ROLLUP_NATIVE_BINDINGS": "false",
       "ROLLUP_FORCE_JAVASCRIPT": "true",
       "NODE_OPTIONS": "--no-warnings",
-      "ESBUILD_FORCE_JS_BUILD": "true"
+      "ESBUILD_FORCE_JS_BUILD": "true",
+      "SWC_NO_BINARY_DOWNLOAD": "true"
     }
   }
 }
