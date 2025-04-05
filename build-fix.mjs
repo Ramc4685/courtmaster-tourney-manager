@@ -35,19 +35,43 @@ try {
       if (fs.existsSync(rollupNativePath)) {
         console.log('Found Rollup native.js file, patching to force JavaScript implementation');
         
-        // Read the original file
-        const originalContent = fs.readFileSync(rollupNativePath, 'utf8');
-        
         // Replace the content with a version that forces the JS implementation
+        // Using a proper ES module export to avoid the named export issue
         const patchedContent = `
 // Patched by build-fix.mjs to force JavaScript implementation
-exports.getDefaultRollup = function() { return null; }; // Force JS implementation
-exports.isNativeRollupAvailable = function() { return false; }; // Force JS implementation
+// Export as both ES Module and CommonJS to avoid import/require conflicts
+export function getDefaultRollup() { return null; } // Force JS implementation
+export function isNativeRollupAvailable() { return false; } // Force JS implementation
+export const parse = (code, options) => null; // Mock parse function
+export const parseAsync = async (code, options) => null; // Mock parseAsync function
+
+// For CommonJS compatibility
+exports.getDefaultRollup = getDefaultRollup;
+exports.isNativeRollupAvailable = isNativeRollupAvailable;
+exports.parse = parse;
+exports.parseAsync = parseAsync;
 `;
         
         // Write the patched file
         fs.writeFileSync(rollupNativePath, patchedContent, 'utf8');
         console.log('Successfully patched Rollup native.js to force JavaScript implementation');
+        
+        // Also patch the parseAst.js file to handle the proper imports
+        const parseAstPath = path.join(process.cwd(), 'node_modules', 'rollup', 'dist', 'es', 'shared', 'parseAst.js');
+        if (fs.existsSync(parseAstPath)) {
+          console.log('Patching parseAst.js to fix ES/CommonJS module compatibility');
+          const originalAstContent = fs.readFileSync(parseAstPath, 'utf8');
+          
+          // Replace the problematic import with a compatible one
+          const patchedAstContent = originalAstContent.replace(
+            "import { parse, parseAsync } from '../../native.js';",
+            `import * as nativeModule from '../../native.js';
+const { parse, parseAsync } = nativeModule;`
+          );
+          
+          fs.writeFileSync(parseAstPath, patchedAstContent, 'utf8');
+          console.log('Successfully patched parseAst.js for module compatibility');
+        }
       } else {
         console.log('Rollup native.js file not found, skipping patch');
       }
