@@ -9,7 +9,8 @@ import {
   Category,
   CourtStatus,
   ScoringSettings,
-  MatchStatus
+  MatchStatus,
+  TournamentCategory
 } from "@/types/tournament";
 import { SchedulingOptions, SchedulingResult } from "@/services/tournament/SchedulingService";
 
@@ -17,7 +18,7 @@ export interface TournamentContextType {
   tournaments: Tournament[];
   currentTournament: Tournament | null;
   setCurrentTournament: (tournament: Tournament) => Promise<void>;
-  createTournament: (name: string, categories: Category[]) => Promise<Tournament | null>;
+  createTournament: (data: {name: string, description?: string, format?: TournamentFormat, categories: TournamentCategory[]}) => Promise<Tournament>;
   updateTournament: (tournament: Tournament) => Promise<void>;
   deleteTournament: (tournamentId: string) => Promise<void>;
   loadTournaments: () => Promise<void>;
@@ -43,8 +44,8 @@ export interface TournamentContextType {
   importTeams: (teams: Team[]) => Promise<void>;
   
   // Category operations
-  addCategory: (category: Category) => Promise<void>;
-  updateCategory: (category: Category) => Promise<void>;
+  addCategory: (category: TournamentCategory) => Promise<void>;
+  updateCategory: (category: TournamentCategory) => Promise<void>;
   deleteCategory: (categoryId: string) => Promise<void>;
   removeCategory: (categoryId: string) => Promise<void>;
   

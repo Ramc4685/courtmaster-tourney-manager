@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -24,6 +23,7 @@ import { createDefaultCategories } from "@/utils/categoryUtils";
 import { Grid3X3Icon } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { toast } from "@/components/ui/use-toast";
 
 // Define the component props interface
 interface TournamentCreateProps {
@@ -99,30 +99,29 @@ const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated
         format: category.format || values.format as TournamentFormat
       })) : [];
 
-      const tournament = createTournament({
-        name: values.name, // Ensure name is explicitly passed
-        format: values.format as TournamentFormat, // Use the main tournament format
+      // Create the tournament
+      const newTournament = await createTournament({
+        name: values.name,
         description: values.description,
-        startDate: values.startDate,
-        endDate: values.endDate,
-        divisionProgression: values.divisionProgression,
-        autoAssignCourts: values.autoAssignCourts,
-        categories: finalCategories, // Use categories with formats
-        status: "DRAFT", // Add required properties
-        teams: [],      // Add required empty array
-        courts: courts  // Add courts based on numCourts
+        format: values.format as TournamentFormat,
+        categories: finalCategories
       });
 
       // Call the onTournamentCreated callback if provided
-      if (onTournamentCreated) {
-        console.log("Calling onTournamentCreated with tournament:", tournament);
-        onTournamentCreated(tournament);
-      } else {
-        console.log("No onTournamentCreated provided, navigating to:", `/tournament/${tournament.id}`);
-        navigate(`/tournament/${tournament.id}`);
+      if (onTournamentCreated && newTournament) {
+        console.log("Calling onTournamentCreated with tournament:", newTournament);
+        onTournamentCreated(newTournament);
+      } else if (newTournament) {
+        console.log("No onTournamentCreated provided, navigating to:", `/tournament/${newTournament.id}`);
+        navigate(`/tournament/${newTournament.id}`);
       }
     } catch (error) {
       console.error("Error creating tournament:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create tournament. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }

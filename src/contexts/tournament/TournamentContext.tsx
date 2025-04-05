@@ -1,11 +1,10 @@
 
-import React, { createContext, useState, useEffect, useContext, PropsWithChildren } from 'react';
-import { Tournament, Match, Court, Team, TournamentFormat, Category, CourtStatus, ScoringSettings, MatchStatus } from "@/types/tournament";
+import React, { createContext, useState, useEffect, PropsWithChildren } from 'react';
+import { Tournament, Match, Court, Team, TournamentFormat, TournamentCategory, CourtStatus, ScoringSettings, MatchStatus, TournamentStatus, TournamentStage, Division } from "@/types/tournament";
 import { generateId } from '@/utils/tournamentUtils';
 import { tournamentService } from '@/services/tournament/TournamentService';
 import { matchService } from '@/services/tournament/MatchService';
-import { useToast } from '@/hooks/use-toast';
-import { sortTeamsByRanking } from '@/utils/tournamentUtils';
+import { toast } from '@/components/ui/use-toast';
 import { TournamentContextType } from './types';
 import { schedulingService } from '@/services/tournament/SchedulingService';
 
@@ -14,7 +13,6 @@ export const TournamentContext = createContext<TournamentContextType | undefined
 export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [currentTournament, setCurrentTournament] = useState<Tournament | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     loadTournaments();
@@ -29,26 +27,27 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     }
   };
 
-  const createTournament = async (name: string, categories: Category[]): Promise<Tournament | null> => {
+  const createTournament = async (data: {name: string, description?: string, format?: TournamentFormat, categories: TournamentCategory[]}): Promise<Tournament> => {
     const newTournament: Tournament = {
       id: generateId(),
-      name,
-      categories,
-      format: "SINGLE_ELIMINATION" as TournamentFormat,
+      name: data.name,
+      categories: data.categories, // This is now TournamentCategory[] to match the Tournament type
+      format: data.format || "SINGLE_ELIMINATION" as TournamentFormat,
       startDate: new Date(),
       endDate: new Date(),
       matches: [],
       teams: [],
       courts: [],
-      status: 'DRAFT',
+      status: 'DRAFT' as TournamentStatus,
+      currentStage: "INITIAL_ROUND" as TournamentStage,
       createdAt: new Date(),
       updatedAt: new Date(),
       scoringSettings: {
-        pointsPerSet: 21,
-        winByTwo: true,
-        maxPoints: 30,
-        maxSets: 5
-      }
+        maxPoints: 21,
+        maxSets: 3,
+        requireTwoPointLead: true,
+        maxTwoPointLeadScore: 30
+      } as ScoringSettings
     };
 
     try {
@@ -57,7 +56,7 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       return createdTournament;
     } catch (error) {
       console.error("Error creating tournament:", error);
-      return null;
+      throw error;
     }
   };
 
@@ -67,7 +66,9 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       setTournaments(prevTournaments =>
         prevTournaments.map(t => (t.id === tournament.id ? tournament : t))
       );
-      setCurrentTournament(tournament);
+      if (currentTournament?.id === tournament.id) {
+        setCurrentTournament(tournament);
+      }
     } catch (error) {
       console.error("Error updating tournament:", error);
     }
@@ -79,7 +80,9 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       setTournaments(prevTournaments =>
         prevTournaments.filter(t => t.id !== tournamentId)
       );
-      setCurrentTournament(null);
+      if (currentTournament?.id === tournamentId) {
+        setCurrentTournament(null);
+      }
     } catch (error) {
       console.error("Error deleting tournament:", error);
     }
@@ -87,7 +90,6 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
 
   const setCurrentTournamentContext = async (tournament: Tournament) => {
     try {
-      // Use the current tournament directly, since we don't have getTournamentById
       setCurrentTournament(tournament);
       await tournamentService.saveCurrentTournament(tournament);
     } catch (error) {
@@ -227,7 +229,7 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       if (!court) return;
       
       // Update court status
-      const updatedCourt = { ...court, status: "AVAILABLE" as CourtStatus, currentMatch: null };
+      const updatedCourt = { ...court, status: "AVAILABLE" as CourtStatus, currentMatch: undefined };
       
       // Update courts array
       const updatedCourts = currentTournament.courts.map(c => 
@@ -257,8 +259,11 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
 
     try {
       const result = await schedulingService.assignCourtsToScheduledMatches(currentTournament);
-      await updateTournament(result.tournament);
-      return result.assignedCourts;
+      if (result.tournament) {
+        await updateTournament(result.tournament);
+        return result.assignedCourts;
+      }
+      return 0;
     } catch (error) {
       console.error("Error auto-assigning courts:", error);
       return 0;
@@ -393,7 +398,7 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     }
   };
 
-  const addCategory = async (category: Category) => {
+  const addCategory = async (category: TournamentCategory) => {
     if (!currentTournament) return;
 
     try {
@@ -407,7 +412,7 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     }
   };
 
-  const updateCategory = async (category: Category) => {
+  const updateCategory = async (category: TournamentCategory) => {
     if (!currentTournament) return;
 
     try {
@@ -446,10 +451,10 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return 0;
 
     try {
-      const { tournament: updatedTournament, matchesCreated } = await schedulingService.generateBrackets(currentTournament);
+      const { tournament, matchesCreated } = await schedulingService.generateBrackets(currentTournament);
 
-      if (updatedTournament) {
-        await updateTournament(updatedTournament);
+      if (tournament) {
+        await updateTournament(tournament);
         return matchesCreated;
       } else {
         return 0;
@@ -483,7 +488,7 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
   };
 
   // Schedule multiple matches
-  const scheduleMatches = async (teamPairs: { team1: Team; team2: Team }[], options: any): Promise<any> => {
+  const scheduleMatches = async (teamPairs: { team1: Team; team2: Team }[], options: SchedulingOptions): Promise<SchedulingResult> => {
     if (!currentTournament) {
       throw new Error("No tournament selected");
     }
@@ -622,12 +627,4 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       {children}
     </TournamentContext.Provider>
   );
-};
-
-export const useTournament = (): TournamentContextType => {
-  const context = useContext(TournamentContext);
-  if (!context) {
-    throw new Error("useTournament must be used within a TournamentProvider");
-  }
-  return context;
 };
