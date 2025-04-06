@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useStandaloneMatchStore } from '@/stores/standaloneMatchStore';
 import { Match, StandaloneMatch } from '@/types/tournament';
@@ -10,10 +9,9 @@ export const useStandaloneScoring = (matchId: string | null) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scoringMatch, setScoringMatch] = useState<Match | null>(null);
-  const prevMatchIdRef = useRef<string | null>(null);
   const initialLoadCompleted = useRef(false);
   const updatingStoreRef = useRef(false);
-
+  
   // Convert standalone match to regular match compatible with scoring components
   const convertToScoringMatch = useCallback((standaloneMatch: StandaloneMatch | null): Match | null => {
     if (!standaloneMatch) return null;
@@ -36,7 +34,7 @@ export const useStandaloneScoring = (matchId: string | null) => {
     } as Match;
   }, []);
 
-  // Load standalone match only when matchId changes
+  // Load standalone match only when matchId changes and only once
   useEffect(() => {
     // Skip if no matchId provided
     if (!matchId) {
@@ -44,8 +42,8 @@ export const useStandaloneScoring = (matchId: string | null) => {
       return;
     }
 
-    // Skip if this matchId was already loaded (prevents infinite loops)
-    if (prevMatchIdRef.current === matchId && initialLoadCompleted.current) {
+    // Skip if this matchId was already loaded
+    if (initialLoadCompleted.current) {
       return;
     }
 
@@ -55,16 +53,29 @@ export const useStandaloneScoring = (matchId: string | null) => {
       setError(null);
       
       try {
-        const result = await standaloneMatchStore.loadMatchById(matchId);
-        if (!result) {
-          console.log("Match not found after loading");
-          setError('Match not found');
-          setScoringMatch(null);
-        } else {
-          console.log("Successfully loaded match");
-          // Convert standalone match to scoring match format
-          const converted = convertToScoringMatch(result);
+        // Get the current match from the store first to avoid unnecessary loads
+        const currentMatch = standaloneMatchStore.currentMatch;
+        
+        // If the current match is already the one we want, use it
+        if (currentMatch && currentMatch.id === matchId) {
+          console.log("Using current match from store");
+          const converted = convertToScoringMatch(currentMatch);
           setScoringMatch(converted);
+        } else {
+          // Otherwise, load the match from the store
+          console.log("Loading match from store");
+          const result = standaloneMatchStore.loadMatchById(matchId);
+          
+          if (!result) {
+            console.log("Match not found after loading");
+            setError('Match not found');
+            setScoringMatch(null);
+          } else {
+            console.log("Successfully loaded match");
+            // Convert standalone match to scoring match format
+            const converted = convertToScoringMatch(result);
+            setScoringMatch(converted);
+          }
         }
       } catch (err) {
         console.error('Error loading standalone match:', err);
@@ -72,8 +83,7 @@ export const useStandaloneScoring = (matchId: string | null) => {
         setScoringMatch(null);
       } finally {
         setIsLoading(false);
-        // Update the previous matchId for comparison in future renders
-        prevMatchIdRef.current = matchId;
+        // Mark that we've completed the initial load
         initialLoadCompleted.current = true;
       }
     };
@@ -91,11 +101,18 @@ export const useStandaloneScoring = (matchId: string | null) => {
     
     // Only update if there's a currentMatch and it's actually different
     if (storeMatch) {
+      // Skip if we don't have a current scoring match
+      if (!scoringMatch) {
+        const converted = convertToScoringMatch(storeMatch);
+        setScoringMatch(converted);
+        return;
+      }
+      
       // Check if scores are actually different by comparing string representations
       const storeScoresJson = JSON.stringify(storeMatch.scores || []);
       const currentScoresJson = JSON.stringify(scoringMatch?.scores || []);
       
-      if (!scoringMatch || storeScoresJson !== currentScoresJson) {
+      if (storeScoresJson !== currentScoresJson) {
         console.log("Store match changed, updating scoring match");
         const converted = convertToScoringMatch(storeMatch);
         setScoringMatch(converted);

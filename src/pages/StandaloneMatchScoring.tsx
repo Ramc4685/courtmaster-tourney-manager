@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -18,6 +18,8 @@ const StandaloneMatchScoring = () => {
   const standaloneMatchStore = useStandaloneMatchStore();
   const [currentSet, setCurrentSet] = useState(0);
   const [scorerName, setScorerName] = useState('Anonymous Scorer');
+  const [isLoading, setIsLoading] = useState(true);
+  const initialLoadComplete = useRef(false);
   
   // Effect to load match by ID when component mounts
   useEffect(() => {
@@ -26,15 +28,21 @@ const StandaloneMatchScoring = () => {
       return;
     }
     
-    const match = standaloneMatchStore.loadMatchById(matchId);
-    if (!match) {
-      toast({
-        title: "Match not found",
-        description: "Could not find the requested match.",
-        variant: "destructive"
-      });
-      navigate('/scoring/standalone');
-    } else {
+    // Only load the match if we haven't already
+    if (!initialLoadComplete.current) {
+      setIsLoading(true);
+      
+      const match = standaloneMatchStore.loadMatchById(matchId);
+      if (!match) {
+        toast({
+          title: "Match not found",
+          description: "Could not find the requested match.",
+          variant: "destructive"
+        });
+        navigate('/scoring/standalone');
+        return;
+      }
+      
       // Initialize current set to last set
       setCurrentSet(match.scores.length > 0 ? match.scores.length - 1 : 0);
       
@@ -42,17 +50,37 @@ const StandaloneMatchScoring = () => {
       if (match.scorerName) {
         setScorerName(match.scorerName);
       }
+      
+      setIsLoading(false);
+      initialLoadComplete.current = true;
     }
-  }, [matchId, navigate, toast, standaloneMatchStore]);
+  }, [matchId, navigate, toast]);
 
   const match = standaloneMatchStore.currentMatch;
 
   // If no match, show loading
-  if (!match) {
+  if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
           <p>Loading match data...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!match) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <p>Match not found. Please go back to the standalone matches list.</p>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/scoring/standalone')} 
+            className="mt-4"
+          >
+            Back to Matches
+          </Button>
         </div>
       </div>
     );

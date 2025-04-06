@@ -60,6 +60,14 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
     return <ScoringContainer errorMessage="Match not found" />;
   }
 
+  // Create a handler for onScoreChange to prevent nested state updates
+  const handleScoreChange = (team: "team1" | "team2", increment: boolean) => {
+    // Wrap in setTimeout to break the synchronous update chain
+    setTimeout(() => {
+      onScoreChange(team, increment);
+    }, 0);
+  };
+
   return (
     <ScoringContainer>
       {/* Top action bar */}
@@ -89,7 +97,7 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
       {/* Scoring interface */}
       <ScoringMatchDetail
         match={match}
-        onScoreChange={onScoreChange}
+        onScoreChange={handleScoreChange}
         onNewSet={onNewSet}
         onCompleteMatch={onCompleteMatch}
         currentSet={currentSet}

@@ -146,12 +146,24 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
       },
 
       loadMatchById: (id: string): StandaloneMatch | null => {
+        // Get current match from the store
+        const currentMatch = get().currentMatch;
+        
+        // If the match is already the current match, just return it to prevent re-renders
+        if (currentMatch?.id === id) {
+          return currentMatch;
+        }
+        
+        // Find the match in the matches array
         const match = get().matches.find((m) => m.id === id) || null;
-        if (match) {
+        
+        // Only update currentMatch if we found a match and it's different from the current one
+        if (match && (!currentMatch || currentMatch.id !== match.id)) {
           set({
             currentMatch: match
           });
         }
+        
         return match;
       },
 
