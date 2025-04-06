@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
@@ -39,6 +38,7 @@ interface StandaloneMatchStoreState {
   updateMatchStatus: (matchId: string, status: MatchStatus) => boolean;
   completeMatch: (matchId: string, scorerName?: string) => boolean;
   updateCourtNumber: (matchId: string, courtNumber: number) => void;
+  getMatchById: (id: string) => StandaloneMatch | null;
 }
 
 export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
@@ -46,6 +46,11 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
     (set, get) => ({
       matches: [] as StandaloneMatch[],
       currentMatch: null as StandaloneMatch | null,
+
+      // Add a new method that gets a match by ID without setting it as current match
+      getMatchById: (id: string): StandaloneMatch | null => {
+        return get().matches.find((m) => m.id === id) || null;
+      },
 
       createMatch: (matchData: Partial<StandaloneMatch>): StandaloneMatch => {
         // Generate a new ID for the match

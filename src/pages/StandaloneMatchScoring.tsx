@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -32,7 +31,7 @@ const StandaloneMatchScoring = () => {
     if (!initialLoadComplete.current) {
       setIsLoading(true);
       
-      // Use a flag to prevent infinite updates
+      // Use the getMatchById method to avoid setting currentMatch and causing rerender loops
       const match = standaloneMatchStore.getMatchById(matchId);
       if (match) {
         // Initialize current set to last set
@@ -42,6 +41,9 @@ const StandaloneMatchScoring = () => {
         if (match.scorerName) {
           setScorerName(match.scorerName);
         }
+        
+        // Now that we've initialized our local state, we can safely load the match
+        standaloneMatchStore.loadMatchById(matchId);
       } else {
         toast({
           title: "Match not found",
