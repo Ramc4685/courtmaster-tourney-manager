@@ -62,10 +62,10 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
 
   // Create a handler for onScoreChange to prevent nested state updates
   const handleScoreChange = (team: "team1" | "team2", increment: boolean) => {
-    // Wrap in setTimeout to break the synchronous update chain
-    setTimeout(() => {
+    // Use requestAnimationFrame instead of setTimeout for better performance
+    requestAnimationFrame(() => {
       onScoreChange(team, increment);
-    }, 0);
+    });
   };
 
   return (

@@ -32,8 +32,17 @@ const StandaloneMatchScoring = () => {
     if (!initialLoadComplete.current) {
       setIsLoading(true);
       
-      const match = standaloneMatchStore.loadMatchById(matchId);
-      if (!match) {
+      // Use a flag to prevent infinite updates
+      const match = standaloneMatchStore.getMatchById(matchId);
+      if (match) {
+        // Initialize current set to last set
+        setCurrentSet(match.scores.length > 0 ? match.scores.length - 1 : 0);
+        
+        // Initialize scorer name if match has it
+        if (match.scorerName) {
+          setScorerName(match.scorerName);
+        }
+      } else {
         toast({
           title: "Match not found",
           description: "Could not find the requested match.",
@@ -41,14 +50,6 @@ const StandaloneMatchScoring = () => {
         });
         navigate('/scoring/standalone');
         return;
-      }
-      
-      // Initialize current set to last set
-      setCurrentSet(match.scores.length > 0 ? match.scores.length - 1 : 0);
-      
-      // Initialize scorer name if match has it
-      if (match.scorerName) {
-        setScorerName(match.scorerName);
       }
       
       setIsLoading(false);
@@ -120,7 +121,10 @@ const StandaloneMatchScoring = () => {
     }
     
     // Update the score in the store
-    standaloneMatchStore.updateMatchScore(match.id, currentSet, team1Score, team2Score, scorerName);
+    // Use requestAnimationFrame to prevent nested updates
+    requestAnimationFrame(() => {
+      standaloneMatchStore.updateMatchScore(match.id, currentSet, team1Score, team2Score, scorerName);
+    });
   };
 
   // Handle creating a new set
