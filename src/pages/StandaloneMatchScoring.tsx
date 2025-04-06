@@ -57,7 +57,7 @@ const StandaloneMatchScoring = () => {
       setIsLoading(false);
       initialLoadComplete.current = true;
     }
-  }, [matchId, navigate, toast]);
+  }, [matchId, navigate, toast, standaloneMatchStore]);
 
   const match = standaloneMatchStore.currentMatch;
 
