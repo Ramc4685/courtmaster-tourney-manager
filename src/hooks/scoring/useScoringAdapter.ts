@@ -1,7 +1,6 @@
-
 import { useScoringStore } from "@/stores/scoring";
 import { useTournamentStore } from "@/stores/tournamentStore";
-import { useTournament } from "@/contexts/tournament/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament";
 import { useStandaloneMatchStore } from "@/stores/standaloneMatchStore";
 import { Match, ScorerType, StandaloneMatch } from "@/types/tournament";
 import { useEffect, useState } from "react";

@@ -1,10 +1,11 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, ChevronRight, Trophy } from "lucide-react";
-import { useTournament } from "@/contexts/tournament/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 

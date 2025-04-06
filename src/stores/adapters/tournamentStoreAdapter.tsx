@@ -1,69 +1,178 @@
-import React, { ReactNode } from 'react';
-import { useTournament as useTournamentFromContext } from "@/contexts/tournament/TournamentContext";
-import { useTournamentStore } from '../tournamentStore';
-import { SchedulingOptions, SchedulingResult } from '@/services/tournament/SchedulingService';
-import { Team, Tournament, TournamentCategory, TournamentFormat } from '@/types/tournament';
+import { create } from 'zustand';
+import { useTournament } from '@/contexts/tournament/useTournament';
+import { Tournament, Match, Team, TournamentFormat } from '@/types/tournament';
 
-/**
- * This adapter provides a compatibility layer that allows components to
- * gradually migrate from Context API to Zustand while maintaining the same API.
- * 
- * It checks if we're using Zustand (controlled by the USE_ZUSTAND flag)
- * and returns either the Zustand-based implementation or the Context-based one.
- */
+interface TournamentStoreState {
+  tournaments: Tournament[];
+  currentTournament: Tournament | null;
+  loadTournaments: () => Promise<void>;
+  createTournament: (name: string, format: TournamentFormat) => Promise<void>;
+  updateTournament: (tournament: Tournament) => Promise<void>;
+  deleteTournament: (tournamentId: string) => Promise<void>;
+  addTeamToTournament: (team: Team) => Promise<void>;
+  removeTeamFromTournament: (teamId: string) => Promise<void>;
+  addMatchToTournament: (match: Match) => Promise<void>;
+  removeMatchFromTournament: (matchId: string) => Promise<void>;
+}
 
-// Flag to control which implementation we use
-// This would eventually be set to true once migration is complete
-const USE_ZUSTAND = process.env.USE_ZUSTAND === 'true';
-
-// Rename the hook to avoid conflicts
-export const useTournamentWithStore = () => {
-  // Get the original context - used when USE_ZUSTAND is false
-  const tournamentContext = useTournamentFromContext();
-  
-  // Get the Zustand store - used when USE_ZUSTAND is true
-  const tournamentStore = useTournamentStore();
-  
-  // If we're using Zustand, return the store implementation
-  if (USE_ZUSTAND) {
-    return {
-      ...tournamentStore,
-      // Add any methods from context that aren't yet implemented in Zustand
-      scheduleMatches: async (
-        teamPairs: { team1: Team; team2: Team }[],
-        options: SchedulingOptions
-      ): Promise<SchedulingResult> => {
-        // This would eventually be implemented in the Zustand store
-        // For now, delegate to the context implementation
-        return tournamentContext.scheduleMatches(teamPairs, options);
+export const useTournamentStore = create<TournamentStoreState>((set, get) => ({
+  tournaments: [],
+  currentTournament: null,
+  loadTournaments: async () => {
+    // Placeholder for loading tournaments from API
+    const mockTournaments: Tournament[] = [
+      {
+        id: '1',
+        name: 'Tournament 1',
+        format: TournamentFormat.SINGLE_ELIMINATION,
+        startDate: new Date(),
+        endDate: new Date(),
+        matches: [],
+        teams: [],
+        courts: [],
+        status: 'DRAFT',
+        currentStage: 'INITIAL_ROUND',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        categories: [],
+        scoringSettings: {
+          maxPoints: 21,
+          maxSets: 3,
+          requireTwoPointLead: true,
+          maxTwoPointLeadScore: 30,
+        },
       },
-      addCategory: tournamentContext.addCategory,
-      removeCategory: tournamentContext.removeCategory,
-      updateCategory: tournamentContext.updateCategory,
-      loadCategoryDemoData: tournamentContext.loadCategoryDemoData,
-      // Add other methods that exist in context but not yet in Zustand
+      {
+        id: '2',
+        name: 'Tournament 2',
+        format: TournamentFormat.ROUND_ROBIN,
+        startDate: new Date(),
+        endDate: new Date(),
+        matches: [],
+        teams: [],
+        courts: [],
+        status: 'DRAFT',
+        currentStage: 'INITIAL_ROUND',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        categories: [],
+        scoringSettings: {
+          maxPoints: 21,
+          maxSets: 3,
+          requireTwoPointLead: true,
+          maxTwoPointLeadScore: 30,
+        },
+      },
+    ];
+    set({ tournaments: mockTournaments });
+  },
+  createTournament: async (name: string, format: TournamentFormat) => {
+    // Placeholder for creating a tournament via API
+    const newTournament: Tournament = {
+      id: Date.now().toString(),
+      name,
+      format,
+      startDate: new Date(),
+      endDate: new Date(),
+      matches: [],
+      teams: [],
+      courts: [],
+      status: 'DRAFT',
+      currentStage: 'INITIAL_ROUND',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      categories: [],
+      scoringSettings: {
+        maxPoints: 21,
+        maxSets: 3,
+        requireTwoPointLead: true,
+        maxTwoPointLeadScore: 30,
+      },
     };
-  }
-  
-  // Use the original context implementation
-  return tournamentContext;
-};
-
-// An optional compatibility provider that can be used during migration
-// This syncs data between Context and Zustand store during the transition period
-export const TournamentStoreCompatibilityProvider = ({ children }: { children: ReactNode }) => {
-  const tournamentContext = useTournamentFromContext();
-  const {
-    setCurrentTournament,
-    updateTournament
-  } = useTournamentStore();
-  
-  // Sync from context to store when context changes
-  React.useEffect(() => {
-    if (tournamentContext.currentTournament) {
-      setCurrentTournament(tournamentContext.currentTournament);
-    }
-  }, [tournamentContext.currentTournament]);
-  
-  return <>{children}</>;
-};
+    set((state) => ({ tournaments: [...state.tournaments, newTournament] }));
+  },
+  updateTournament: async (tournament: Tournament) => {
+    // Placeholder for updating a tournament via API
+    set((state) => ({
+      tournaments: state.tournaments.map((t) => (t.id === tournament.id ? tournament : t)),
+    }));
+  },
+  deleteTournament: async (tournamentId: string) => {
+    // Placeholder for deleting a tournament via API
+    set((state) => ({
+      tournaments: state.tournaments.filter((t) => t.id !== tournamentId),
+    }));
+  },
+  addTeamToTournament: async (team: Team) => {
+    set((state) => {
+      if (state.currentTournament) {
+        const updatedTournament = {
+          ...state.currentTournament,
+          teams: [...state.currentTournament.teams, team],
+        };
+        return {
+          ...state,
+          currentTournament: updatedTournament,
+          tournaments: state.tournaments.map((t) =>
+            t.id === updatedTournament.id ? updatedTournament : t
+          ),
+        };
+      }
+      return state;
+    });
+  },
+  removeTeamFromTournament: async (teamId: string) => {
+    set((state) => {
+      if (state.currentTournament) {
+        const updatedTournament = {
+          ...state.currentTournament,
+          teams: state.currentTournament.teams.filter((team) => team.id !== teamId),
+        };
+        return {
+          ...state,
+          currentTournament: updatedTournament,
+          tournaments: state.tournaments.map((t) =>
+            t.id === updatedTournament.id ? updatedTournament : t
+          ),
+        };
+      }
+      return state;
+    });
+  },
+  addMatchToTournament: async (match: Match) => {
+    set((state) => {
+      if (state.currentTournament) {
+        const updatedTournament = {
+          ...state.currentTournament,
+          matches: [...state.currentTournament.matches, match],
+        };
+        return {
+          ...state,
+          currentTournament: updatedTournament,
+          tournaments: state.tournaments.map((t) =>
+            t.id === updatedTournament.id ? updatedTournament : t
+          ),
+        };
+      }
+      return state;
+    });
+  },
+  removeMatchFromTournament: async (matchId: string) => {
+    set((state) => {
+      if (state.currentTournament) {
+        const updatedTournament = {
+          ...state.currentTournament,
+          matches: state.currentTournament.matches.filter((match) => match.id !== matchId),
+        };
+        return {
+          ...state,
+          currentTournament: updatedTournament,
+          tournaments: state.tournaments.map((t) =>
+            t.id === updatedTournament.id ? updatedTournament : t
+          ),
+        };
+      }
+      return state;
+    });
+  },
+}));

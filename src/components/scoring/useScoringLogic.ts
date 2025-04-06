@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from "react";
 import { Match, Court, Tournament, ScoringSettings } from "@/types/tournament";
-import { useTournament } from "@/contexts/tournament/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament";
 import { useToast } from "@/hooks/use-toast";
 import { isSetComplete, isMatchComplete, getDefaultScoringSettings } from "@/utils/matchUtils";
 

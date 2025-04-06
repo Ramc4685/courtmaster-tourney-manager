@@ -12,7 +12,25 @@ import {
   MatchStatus,
   TournamentCategory
 } from "@/types/tournament";
-import { SchedulingOptions, SchedulingResult } from "@/services/tournament/SchedulingService";
+
+// Define SchedulingOptions and SchedulingResult types since they're used in the context
+export interface SchedulingOptions {
+  startDate: Date;
+  startTime: string;
+  matchDuration: number;
+  breakDuration: number;
+  assignCourts: boolean;
+  autoStartMatches: boolean;
+  respectFormat: boolean;
+}
+
+export interface SchedulingResult {
+  tournament?: Tournament;
+  matchesScheduled: number;
+  courtsAssigned: number;
+  matchesStarted: number;
+  errors?: string[];
+}
 
 export interface TournamentContextType {
   tournaments: Tournament[];

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { X, PlusCircle, User, Info } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -5,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormDescription } from "@/components/ui/form";
-import { useTournament } from "@/contexts/tournament/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament";
 import { Team, Player } from "@/types/tournament";
 import { useToast } from "@/hooks/use-toast";
 import { generateTeamName, generateCreativeTeamName } from "@/utils/teamNameUtils";

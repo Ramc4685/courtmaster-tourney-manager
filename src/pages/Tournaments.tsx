@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useTournament } from '@/contexts/tournament/TournamentContext';
+import { useTournament } from '@/contexts/tournament/useTournament';
 import PageHeader from '@/components/shared/PageHeader';
 import { Plus, CalendarDays, Users, Medal } from 'lucide-react';
 import { format } from 'date-fns';

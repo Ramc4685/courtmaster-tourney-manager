@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useTournament } from "@/contexts/tournament/TournamentContext";
+import { useTournament } from "@/contexts/tournament/useTournament";
 import { Team, Player } from "@/types/tournament";
 import { FileUp, AlertCircle, Upload, FileText } from "lucide-react";
 
@@ -29,6 +29,7 @@ const ImportTeamsDialog: React.FC<ImportTeamsDialogProps> = ({
   const [delimiter, setDelimiter] = useState<string>(',');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { importTeams } = useTournament();
 
   const parseTeams = (text: string, delimiter: string = ','): Team[] => {
     if (!text.trim()) {
@@ -163,7 +164,7 @@ const ImportTeamsDialog: React.FC<ImportTeamsDialogProps> = ({
     }
     
     try {
-      onImportTeams(teams);
+      importTeams(teams);
       
       toast({
         title: "Teams imported",
