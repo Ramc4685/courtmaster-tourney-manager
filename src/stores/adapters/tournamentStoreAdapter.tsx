@@ -25,7 +25,7 @@ export const useTournamentStore = create<TournamentStoreState>((set, get) => ({
       {
         id: '1',
         name: 'Tournament 1',
-        format: 'SINGLE_ELIMINATION' as TournamentFormat,
+        format: 'SINGLE_ELIMINATION', // Use string literal instead of enum reference
         startDate: new Date(),
         endDate: new Date(),
         matches: [],
@@ -46,7 +46,7 @@ export const useTournamentStore = create<TournamentStoreState>((set, get) => ({
       {
         id: '2',
         name: 'Tournament 2',
-        format: 'ROUND_ROBIN' as TournamentFormat,
+        format: 'ROUND_ROBIN', // Use string literal instead of enum reference
         startDate: new Date(),
         endDate: new Date(),
         matches: [],

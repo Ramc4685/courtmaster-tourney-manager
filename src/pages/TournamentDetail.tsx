@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -369,6 +368,7 @@ const TournamentDetail = () => {
       <UnifiedScheduleDialog
         open={scheduleDialogOpen}
         onOpenChange={setScheduleDialogOpen}
+        tournament={currentTournament}  // Pass the currentTournament as a prop
       />
 
       {/* Delete Tournament Dialog */}

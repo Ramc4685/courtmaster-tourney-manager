@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, PropsWithChildren } from 'react';
 import { Tournament, Match, Court, Team, TournamentFormat, TournamentCategory, CourtStatus, ScoringSettings, MatchStatus, TournamentStatus, TournamentStage, Division } from "@/types/tournament";
 import { generateId } from '@/utils/tournamentUtils';
@@ -499,7 +500,13 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
         await updateTournament(result.tournament);
       }
       
-      return result;
+      return {
+        tournament: result.tournament,
+        matchesScheduled: result.matchesScheduled,
+        courtsAssigned: result.courtsAssigned,
+        matchesStarted: result.matchesStarted,
+        errors: result.errors
+      };
     } catch (error) {
       console.error("Error scheduling matches:", error);
       throw error;

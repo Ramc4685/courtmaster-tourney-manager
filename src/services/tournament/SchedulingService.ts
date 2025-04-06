@@ -1,20 +1,24 @@
 
 import { Tournament, Team, TournamentFormat, Match } from "@/types/tournament";
 
+// Update to match types from contexts/tournament/types.ts
 export interface SchedulingOptions {
-  date: Date;
+  startDate: Date;
   startTime: string;
   matchDuration: number;
+  breakDuration: number;
   assignCourts: boolean;
   autoStartMatches: boolean;
-  division?: string;
+  respectFormat: boolean;
 }
 
+// Update to match types from contexts/tournament/types.ts
 export interface SchedulingResult {
-  scheduledMatches: number;
-  assignedCourts: number;
-  startedMatches: number;
   tournament: Tournament;
+  matchesScheduled: number;
+  courtsAssigned: number;
+  matchesStarted: number;
+  errors?: string[];
 }
 
 class SchedulingService {
@@ -72,9 +76,9 @@ class SchedulingService {
     
     // For now, just return the tournament with no changes
     return {
-      scheduledMatches: 0,
-      assignedCourts: 0,
-      startedMatches: 0,
+      matchesScheduled: 0,
+      courtsAssigned: 0,
+      matchesStarted: 0,
       tournament
     };
   }

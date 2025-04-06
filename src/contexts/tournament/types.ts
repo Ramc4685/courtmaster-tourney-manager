@@ -13,7 +13,7 @@ import {
   TournamentCategory
 } from "@/types/tournament";
 
-// Define SchedulingOptions and SchedulingResult types since they're used in the context
+// Define SchedulingOptions and SchedulingResult types to match the services implementation
 export interface SchedulingOptions {
   startDate: Date;
   startTime: string;
