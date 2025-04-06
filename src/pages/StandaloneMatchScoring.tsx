@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import MatchAuditInfo from '@/components/match/MatchAuditInfo';
 import { MatchScore, StandaloneMatch, Match } from '@/types/tournament';
 import { Card, CardContent } from '@/components/ui/card';
 import PageHeader from '@/components/shared/PageHeader';
+import { isSetComplete, getDefaultScoringSettings } from '@/utils/matchUtils';
 
 const StandaloneMatchScoring = () => {
   const { matchId } = useParams<{ matchId: string }>();
@@ -19,6 +21,7 @@ const StandaloneMatchScoring = () => {
   const [scorerName, setScorerName] = useState('Anonymous Scorer');
   const [isLoading, setIsLoading] = useState(true);
   const initialLoadComplete = useRef(false);
+  const scoringSettings = getDefaultScoringSettings();
   
   // Effect to load match by ID when component mounts
   useEffect(() => {
@@ -31,8 +34,8 @@ const StandaloneMatchScoring = () => {
     if (!initialLoadComplete.current) {
       setIsLoading(true);
       
-      // Use the getMatchById method to avoid setting currentMatch and causing rerender loops
-      const match = standaloneMatchStore.getMatchById(matchId);
+      // Find the match in the store first without setting it as current
+      const match = standaloneMatchStore.matches.find(m => m.id === matchId);
       if (match) {
         // Initialize current set to last set
         setCurrentSet(match.scores.length > 0 ? match.scores.length - 1 : 0);
@@ -122,16 +125,71 @@ const StandaloneMatchScoring = () => {
       team2Score = increment ? team2Score + 1 : Math.max(0, team2Score - 1);
     }
     
+    // Check if this set would be completed with these scores
+    const setWouldBeComplete = isSetComplete(team1Score, team2Score, scoringSettings);
+    
     // Update the score in the store
     // Use requestAnimationFrame to prevent nested updates
     requestAnimationFrame(() => {
       standaloneMatchStore.updateMatchScore(match.id, currentSet, team1Score, team2Score, scorerName);
+      
+      // If the set is now complete, show appropriate dialog
+      if (setWouldBeComplete) {
+        // Check if the match would be complete with this set
+        const updatedScores = [...match.scores];
+        while (updatedScores.length <= currentSet) {
+          updatedScores.push({ team1Score: 0, team2Score: 0 });
+        }
+        updatedScores[currentSet] = { team1Score, team2Score };
+        
+        const setWins = countSetsWon(updatedScores);
+        
+        if (setWins.team1 >= Math.ceil(scoringSettings.maxSets / 2) || 
+            setWins.team2 >= Math.ceil(scoringSettings.maxSets / 2)) {
+          // Match would be complete - show complete match dialog
+          toast({
+            title: "Set Complete",
+            description: "This set is now complete. Match win condition has been met!"
+          });
+        } else if (currentSet + 1 < scoringSettings.maxSets) {
+          // Show the toast for completed set
+          toast({
+            title: "Set Complete",
+            description: `Set ${currentSet + 1} is complete. You can start a new set.`
+          });
+        }
+      }
     });
+  };
+
+  // Helper function to count sets won
+  const countSetsWon = (scores: MatchScore[]) => {
+    let team1 = 0;
+    let team2 = 0;
+    
+    scores.forEach(score => {
+      if (isSetComplete(score.team1Score, score.team2Score, scoringSettings)) {
+        if (score.team1Score > score.team2Score) team1++;
+        else if (score.team2Score > score.team1Score) team2++;
+      }
+    });
+    
+    return { team1, team2 };
   };
 
   // Handle creating a new set
   const handleNewSet = () => {
     const newSetIndex = match.scores.length;
+    
+    // Check if we've reached the maximum number of sets
+    if (newSetIndex >= scoringSettings.maxSets) {
+      toast({
+        title: "Maximum sets reached",
+        description: `This match is limited to ${scoringSettings.maxSets} sets.`
+      });
+      return;
+    }
+    
     standaloneMatchStore.updateMatchScore(match.id, newSetIndex, 0, 0, scorerName);
     setCurrentSet(newSetIndex);
     

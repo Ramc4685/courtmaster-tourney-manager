@@ -19,28 +19,32 @@ export const isSetComplete = (
 ): boolean => {
   const { maxPoints, requireTwoPointLead, maxTwoPointLeadScore } = settings;
   
-  // First check if regular win condition has been met (reached maxPoints with at least 2-point lead)
-  if ((team1Score >= maxPoints || team2Score >= maxPoints)) {
+  // First check if either team has reached or exceeded the standard max points (21)
+  if (team1Score >= maxPoints || team2Score >= maxPoints) {
     const scoreDifference = Math.abs(team1Score - team2Score);
     
-    // Win by 2+ points condition
+    // If a 2-point lead is required (standard badminton rules)
     if (requireTwoPointLead) {
+      // If there's at least a 2-point difference, the set is complete
       if (scoreDifference >= 2) {
         return true;
       }
+      
+      // If either score has reached the absolute maximum (30), the set is complete regardless of lead
+      const maxScore = Math.max(team1Score, team2Score);
+      if (maxScore >= (maxTwoPointLeadScore || 30)) {
+        return true;
+      }
+      
+      // Otherwise, continue playing (not complete yet)
+      return false;
     } else {
-      // No 2-point lead required, just reaching max points is enough
+      // If no 2-point lead is required (non-standard), just reaching max points is enough
       return true;
-    }
-    
-    // Special case: if either player reaches the absolute maximum score
-    const maxScore = Math.max(team1Score, team2Score);
-    if (maxScore >= (maxTwoPointLeadScore || 30)) {
-      // At max allowed score, only need a 1-point lead
-      return scoreDifference >= 1;
     }
   }
   
+  // If neither team has reached max points, the set is not complete
   return false;
 };
 

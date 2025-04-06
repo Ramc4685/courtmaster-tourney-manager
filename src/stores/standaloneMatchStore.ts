@@ -1,7 +1,9 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
 import { AuditLog, Match, MatchScore, MatchStatus, Player, StandaloneMatch, Team, TournamentCategory } from '@/types/tournament';
+import { isSetComplete, determineMatchWinnerAndLoser, getDefaultScoringSettings } from '@/utils/matchUtils';
 
 // Define a simplified audit log type for standalone matches
 interface StandaloneAuditLog {
@@ -26,6 +28,7 @@ interface StandaloneMatchStoreState {
   updateMatch: (match: StandaloneMatch) => StandaloneMatch;
   deleteMatch: (id: string) => void;
   loadMatchById: (id: string) => StandaloneMatch | null;
+  getMatchById: (id: string) => StandaloneMatch | null;
   setCurrentMatch: (match: StandaloneMatch | null) => void;
   saveMatch: () => Promise<boolean>;
   updateMatchScore: (
@@ -38,7 +41,6 @@ interface StandaloneMatchStoreState {
   updateMatchStatus: (matchId: string, status: MatchStatus) => boolean;
   completeMatch: (matchId: string, scorerName?: string) => boolean;
   updateCourtNumber: (matchId: string, courtNumber: number) => void;
-  getMatchById: (id: string) => StandaloneMatch | null;
 }
 
 export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
@@ -47,7 +49,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
       matches: [] as StandaloneMatch[],
       currentMatch: null as StandaloneMatch | null,
 
-      // Add a new method that gets a match by ID without setting it as current match
+      // Get a match by ID without setting it as current match
       getMatchById: (id: string): StandaloneMatch | null => {
         return get().matches.find((m) => m.id === id) || null;
       },
@@ -200,6 +202,8 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
         team2Score: number, 
         scorerName?: string
       ) => {
+        const scoringSettings = getDefaultScoringSettings();
+        
         set((state) => {
           const match = state.matches.find((m) => m.id === matchId);
           if (!match) return state;
@@ -222,14 +226,18 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
             team2Score
           };
 
+          // Check if set is complete based on badminton rules
+          const setComplete = isSetComplete(team1Score, team2Score, scoringSettings);
+          
           // Create a default audit log with the scorer information
           const scoreAuditLog: AuditLog = {
             timestamp: new Date(),
-            action: `Score updated for set ${setIndex + 1}`,
+            action: `Score updated for set ${setIndex + 1}${setComplete ? ' (Set Complete)' : ''}`,
             details: { 
               score: `${team1Score}-${team2Score}`,
               scorer: scorerName || 'admin',
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
+              setComplete
             },
             user_id: 'system'
           };
@@ -290,24 +298,27 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
       },
 
       completeMatch: (matchId: string, scorerName?: string): boolean => {
+        const scoringSettings = getDefaultScoringSettings();
+        
         set((state) => {
           const match = state.matches.find((m) => m.id === matchId);
           if (!match) return state;
 
-          // Determine the winner based on scores
+          // Determine the winner based on scores using badminton rules
           let winner = null;
-          if (match.scores.length > 0) {
-            let team1Sets = 0;
-            let team2Sets = 0;
+          let team1Sets = 0;
+          let team2Sets = 0;
 
-            match.scores.forEach((score) => {
+          match.scores.forEach((score) => {
+            // Check if set is complete based on badminton rules
+            if (isSetComplete(score.team1Score, score.team2Score, scoringSettings)) {
               if (score.team1Score > score.team2Score) team1Sets++;
               else if (score.team2Score > score.team1Score) team2Sets++;
-            });
+            }
+          });
 
-            if (team1Sets > team2Sets) winner = match.team1;
-            else if (team2Sets > team1Sets) winner = match.team2;
-          }
+          if (team1Sets > team2Sets) winner = match.team1;
+          else if (team2Sets > team1Sets) winner = match.team2;
 
           // Create completion audit log
           const completionAuditLog: AuditLog = {
@@ -315,7 +326,9 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
             action: 'Match completed',
             details: { 
               winner: winner ? winner.name : 'No winner determined',
-              scorer: scorerName || 'admin'
+              scorer: scorerName || 'admin',
+              team1Sets,
+              team2Sets
             },
             user_id: 'system'
           };
@@ -325,6 +338,7 @@ export const useStandaloneMatchStore = create<StandaloneMatchStoreState>()(
             status: 'COMPLETED' as MatchStatus,
             updatedAt: new Date(),
             winner,
+            loser: winner ? (winner.id === match.team1.id ? match.team2 : match.team1) : undefined,
             scorerName: scorerName || 'admin',
             endTime: new Date(),
             auditLogs: [...match.auditLogs, completionAuditLog]
