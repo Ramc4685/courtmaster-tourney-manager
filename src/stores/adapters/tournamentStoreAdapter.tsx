@@ -1,5 +1,6 @@
+
 import { create } from 'zustand';
-import { useTournament } from '@/contexts/tournament/useTournament';
+import { useTournament } from '@/contexts/TournamentContext';
 import { Tournament, Match, Team, TournamentFormat } from '@/types/tournament';
 
 interface TournamentStoreState {
@@ -24,7 +25,7 @@ export const useTournamentStore = create<TournamentStoreState>((set, get) => ({
       {
         id: '1',
         name: 'Tournament 1',
-        format: TournamentFormat.SINGLE_ELIMINATION,
+        format: 'SINGLE_ELIMINATION' as TournamentFormat,
         startDate: new Date(),
         endDate: new Date(),
         matches: [],
@@ -45,7 +46,7 @@ export const useTournamentStore = create<TournamentStoreState>((set, get) => ({
       {
         id: '2',
         name: 'Tournament 2',
-        format: TournamentFormat.ROUND_ROBIN,
+        format: 'ROUND_ROBIN' as TournamentFormat,
         startDate: new Date(),
         endDate: new Date(),
         matches: [],

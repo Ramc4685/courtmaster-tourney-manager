@@ -1,11 +1,10 @@
-
 import React, { createContext, useState, useEffect, PropsWithChildren } from 'react';
 import { Tournament, Match, Court, Team, TournamentFormat, TournamentCategory, CourtStatus, ScoringSettings, MatchStatus, TournamentStatus, TournamentStage, Division } from "@/types/tournament";
 import { generateId } from '@/utils/tournamentUtils';
 import { tournamentService } from '@/services/tournament/TournamentService';
 import { matchService } from '@/services/tournament/MatchService';
 import { toast } from '@/components/ui/use-toast';
-import { TournamentContextType } from './types';
+import { TournamentContextType, SchedulingOptions, SchedulingResult } from './types';
 import { schedulingService } from '@/services/tournament/SchedulingService';
 
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -487,7 +486,7 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     }
   };
 
-  // Schedule multiple matches
+  // Update the scheduleMatches function to use the correct types
   const scheduleMatches = async (teamPairs: { team1: Team; team2: Team }[], options: SchedulingOptions): Promise<SchedulingResult> => {
     if (!currentTournament) {
       throw new Error("No tournament selected");
