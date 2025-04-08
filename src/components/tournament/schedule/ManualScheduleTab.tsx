@@ -18,7 +18,7 @@ interface FormData {
 
 interface ManualScheduleTabProps {
   tournament: any;
-  selectedDivision: Division;
+  selectedDivision: DivisionType;
   onDivisionChange: (value: DivisionType) => void;
   onScheduleMatch: (formData: FormData) => void;
   onCancel: () => void;

@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Trophy, Clock, Users2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Match, Division } from '@/types/tournament';
+import { Match } from '@/types/tournament';
+import { DivisionType } from '@/types/tournament-enums';
 
 const PublicView: React.FC = () => {
   const { id } = useParams<{ id: string }>();

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Calendar, Clock, Wand2 } from "lucide-react";
 import { format } from "date-fns";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { DialogFooter } from "@/components/ui/dialog";
-import { Division, Tournament } from "@/types/tournament";
+import { DivisionType, Tournament } from "@/types/tournament"; //Corrected import
 import SuggestedMatchPairs from "./SuggestedMatchPairs";
 
 interface AutoScheduleTabProps {
@@ -48,7 +47,7 @@ const AutoScheduleTab: React.FC<AutoScheduleTabProps> = ({
         <Select 
           value={selectedDivision} 
           onValueChange={(value: string) => {
-            onDivisionChange(value as Division);
+            onDivisionChange(value as DivisionType); //Corrected type
             onGenerateSuggestedPairs();
           }}
         >
