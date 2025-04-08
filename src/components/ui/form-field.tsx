@@ -1,19 +1,35 @@
-import React from 'react';
-import { Input } from './input';
-import { Label } from './label';
-import { FormMessage } from './form';
+
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
 interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+  label?: string;
   error?: string;
 }
 
-export function FormField({ label, error, ...props }: FormFieldProps) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={props.id || props.name}>{label}</Label>
-      <Input {...props} />
-      {error && <FormMessage>{error}</FormMessage>}
-    </div>
-  );
-} 
+const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
+  ({ label, error, className, ...props }, ref) => {
+    return (
+      <div className="space-y-2">
+        {label && (
+          <label htmlFor={props.id} className="text-sm font-medium">
+            {label}
+          </label>
+        )}
+        <input
+          ref={ref}
+          className={cn(
+            "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            className
+          )}
+          {...props}
+        />
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </div>
+    );
+  }
+);
+
+FormField.displayName = "FormField";
+
+export { FormField };
