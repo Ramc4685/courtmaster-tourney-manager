@@ -7,7 +7,7 @@ interface TournamentStatusBadgeProps {
   status: TournamentStatus | string;
 }
 
-const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ status }) => {
+export const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ status }) => {
   let variant: 'default' | 'secondary' | 'destructive' | 'outline';
   let label: string;
 
@@ -40,4 +40,4 @@ const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ status })
   return <Badge variant={variant}>{label}</Badge>;
 };
 
-export default TournamentStatusBadge;
+
