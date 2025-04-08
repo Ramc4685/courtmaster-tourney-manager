@@ -9,11 +9,10 @@ import BracketTab from "./BracketTab";
 import MatchesTab from "./MatchesTab";
 import TeamsTab from "./TeamsTab";
 import { useMediaQuery } from "@/hooks/use-mobile";
-import ScoreEntrySection from "@/components/tournament/score-entry/ScoreEntrySection";
 import { useTournament } from "@/contexts/tournament/useTournament";
 import { toast } from '@/components/ui/use-toast';
 
-interface CategoryTabsProps {
+export interface CategoryTabsProps {
   tournament: Tournament;
   activeTab: string;
 }
@@ -96,17 +95,19 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
   };
 
   // Handle team updates
-  const handleTeamUpdate = (team) => {
+  const handleTeamUpdate = (team: any) => {
     const updatedTeams = (tournament.teams || []).map(t => 
       t.id === team.id ? team : t
     );
     
+    const { id, ...rest } = tournament;
     const updatedTournament = {
-      ...tournament,
+      ...rest,
+      id,
       teams: updatedTeams
     };
     
-    updateTournament(updatedTournament);
+    updateTournament(id, updatedTournament);
   };
 
   // For mobile view, use a dropdown instead of tabs
@@ -155,10 +156,6 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
           )}
           {activeTab === "matches" && currentCategory && (
             <>
-              <ScoreEntrySection 
-                matches={categoryMatches} 
-                onMatchUpdate={updateMatch} 
-              />
               <MatchesTab 
                 matches={categoryMatches}
                 teams={categoryTeams}
@@ -225,10 +222,6 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ tournament, activeTab }) =>
         )}
         {activeTab === "matches" && currentCategory && (
           <>
-            <ScoreEntrySection 
-              matches={categoryMatches} 
-              onMatchUpdate={updateMatch} 
-            />
             <MatchesTab 
               matches={categoryMatches}
               teams={categoryTeams}

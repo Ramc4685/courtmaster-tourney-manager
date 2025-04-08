@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -20,13 +21,23 @@ import MatchCreateDialog from '@/components/match/MatchCreateDialog';
 import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator";
-import { OverviewTab } from '@/components/tournament/tabs/OverviewTab';
-import { CategoryTabs } from '@/components/tournament/tabs/CategoryTabs';
-import { TeamManagementTab } from '@/components/tournament/tabs/TeamManagementTab';
-import { ScheduleMatches } from '@/components/tournament/actions/ScheduleMatches';
-import { UnifiedScheduleDialog } from '@/components/tournament/UnifiedScheduleDialog';
-import { ScheduleMatchDialog } from '@/components/tournament/ScheduleMatchDialog';
-import { ScoreEntrySection } from '@/components/tournament/score-entry/ScoreEntrySection';
+import OverviewTab from '@/components/tournament/tabs/OverviewTab';
+import CategoryTabs from '@/components/tournament/tabs/CategoryTabs';
+import ScheduleMatches from '@/components/tournament/actions/ScheduleMatches';
+import UnifiedScheduleDialog from '@/components/tournament/UnifiedScheduleDialog';
+import ScheduleMatchDialog from '@/components/tournament/ScheduleMatchDialog';
+import ScoreEntrySection from '@/components/tournament/score-entry/ScoreEntrySection';
+
+// Creating a simple TeamManagementTab since it's missing
+const TeamManagementTab: React.FC<{ tournament: Tournament }> = ({ tournament }) => {
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">Team Management</h2>
+      <p>Manage teams for {tournament.name}</p>
+      {/* Team management content would go here */}
+    </div>
+  );
+};
 
 const TournamentDetail: React.FC = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
@@ -157,6 +168,11 @@ const TournamentDetail: React.FC = () => {
     }
   };
 
+  const handleUpdateTournament = (tournament: Tournament) => {
+    const { id, ...data } = tournament;
+    updateTournament(id, data);
+  };
+
   return (
     <div>
       <PageHeader
@@ -205,10 +221,19 @@ const TournamentDetail: React.FC = () => {
         </TabsList>
         <Separator className="my-2" />
         <TabsContent value="overview" className="space-y-4">
-          <OverviewTab tournament={currentTournament} />
+          <OverviewTab 
+            tournament={currentTournament} 
+            onUpdateTournament={handleUpdateTournament}
+            onGenerateMultiStageTournament={handleGenerateMultiStageTournament}
+            onAdvanceToNextStage={handleAdvanceToNextStage}
+            onScheduleDialogOpen={() => setIsScheduleMatchDialogOpen(true)}
+          />
         </TabsContent>
         <TabsContent value="categories" className="space-y-4">
-          <CategoryTabs tournament={currentTournament} />
+          <CategoryTabs 
+            tournament={currentTournament} 
+            activeTab={activeTab}
+          />
         </TabsContent>
         <TabsContent value="teams" className="space-y-4">
           <TeamManagementTab tournament={currentTournament} />
@@ -244,7 +269,7 @@ const TournamentDetail: React.FC = () => {
           />
         </TabsContent>
         <TabsContent value="scoring" className="space-y-4">
-          <ScoreEntrySection />
+          <ScoreEntrySection matches={currentTournament.matches} onMatchUpdate={handleMatchUpdated} />
         </TabsContent>
       </Tabs>
 
@@ -257,7 +282,7 @@ const TournamentDetail: React.FC = () => {
         open={isImportTeamsDialogOpen}
         onOpenChange={setIsImportTeamsDialogOpen}
         tournamentId={tournamentId || ""}
-        onTeamsImported={handleTeamsImported}
+        onImportTeams={handleTeamsImported}
       />
       <MatchCreateDialog
         open={isCreateMatchDialogOpen}

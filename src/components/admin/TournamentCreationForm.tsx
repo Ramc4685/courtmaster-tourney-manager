@@ -2,7 +2,6 @@
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -12,16 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { tournamentFormSchema, TournamentFormValues, TournamentFormat } from "./tournament/types";
 import BasicInfoTab from "./tournament/BasicInfoTab";
@@ -30,7 +20,7 @@ import DivisionsTab from "./tournament/DivisionsTab";
 import RegistrationTab from "./tournament/RegistrationTab";
 import ScoringTab from "./tournament/ScoringTab";
 
-interface CreateTournamentFormProps {
+export interface CreateTournamentFormProps {
   onSubmit: (data: TournamentFormValues) => void;
 }
 
