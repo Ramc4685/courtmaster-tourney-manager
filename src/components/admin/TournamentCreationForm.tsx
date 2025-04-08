@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,7 +12,8 @@ import {
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { tournamentFormSchema, TournamentFormValues, TournamentFormat } from "./tournament/types";
+import { tournamentFormSchema, TournamentFormValues } from "./tournament/types";
+import { TournamentFormat } from "@/types/tournament-enums";
 import BasicInfoTab from "./tournament/BasicInfoTab";
 import FormatTab from "./tournament/FormatTab";
 import DivisionsTab from "./tournament/DivisionsTab";

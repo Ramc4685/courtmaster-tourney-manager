@@ -1,87 +1,88 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast";
 import { tournamentFormSchema, TournamentFormValues } from "./types";
 import BasicInfoTab from "./BasicInfoTab";
-import FormatTab from "./FormatTab";
 import DivisionsTab from "./DivisionsTab";
 import RegistrationTab from "./RegistrationTab";
-import ScoringTab from "./ScoringTab";
 
-interface CreateTournamentFormProps {
-  onSubmit: (data: TournamentFormValues) => void;
-}
+const CreateTournamentForm: React.FC = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit }) => {
   const form = useForm<TournamentFormValues>({
     resolver: zodResolver(tournamentFormSchema),
     defaultValues: {
       name: "",
       location: "",
+      startDate: new Date(),
+      endDate: new Date(),
       description: "",
-      registrationEnabled: false,
+      registrationEnabled: true,
       divisions: [],
-      scoringRules: {
-        pointsToWin: 11,
-        mustWinByTwo: true,
-      },
-      categoryRegistrationRules: [],
     },
   });
 
+  const onSubmit = async (data: TournamentFormValues) => {
+    try {
+      // TODO: Implement tournament creation
+      console.log("Form data:", data);
+      toast({
+        title: "Success",
+        description: "Tournament created successfully",
+      });
+      navigate("/admin/tournaments");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create tournament",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <BasicInfoTab form={form} />
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Create Tournament</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="basic" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="divisions">Divisions & Categories</TabsTrigger>
+              <TabsTrigger value="registration">Registration</TabsTrigger>
+            </TabsList>
+            <TabsContent value="basic">
+              <BasicInfoTab form={form} />
+            </TabsContent>
+            <TabsContent value="divisions">
+              <DivisionsTab form={form} />
+            </TabsContent>
+            <TabsContent value="registration">
+              <RegistrationTab form={form} />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
 
-        <Tabs defaultValue="format" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="format">Format</TabsTrigger>
-            <TabsTrigger value="divisions">Divisions</TabsTrigger>
-            <TabsTrigger value="registration">Registration</TabsTrigger>
-            <TabsTrigger value="scoring">Scoring</TabsTrigger>
-          </TabsList>
-          <TabsContent value="format">
-            <FormatTab form={form} />
-          </TabsContent>
-          <TabsContent value="divisions">
-            <DivisionsTab form={form} />
-          </TabsContent>
-          <TabsContent value="registration">
-            <RegistrationTab form={form} />
-          </TabsContent>
-          <TabsContent value="scoring">
-            <ScoringTab form={form} />
-          </TabsContent>
-        </Tabs>
-
-        <Button type="submit" className="w-full">
-          Create Tournament
+      <div className="flex justify-end gap-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => navigate("/admin/tournaments")}
+        >
+          Cancel
         </Button>
-      </form>
-    </Form>
+        <Button type="submit">Create Tournament</Button>
+      </div>
+    </form>
   );
 };
 

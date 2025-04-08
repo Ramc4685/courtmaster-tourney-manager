@@ -1,164 +1,204 @@
 import React from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useFieldArray, useFormContext, UseFormReturn } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { UseFormReturn } from "react-hook-form";
-import { TournamentFormValues, CategoryType } from "./types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Trash2 } from "lucide-react";
+import { TournamentFormValues } from "./types";
+import { CategoryType, TournamentFormat } from "@/types/tournament-enums";
+import { v4 as uuidv4 } from "uuid";
 
 interface DivisionsTabProps {
   form: UseFormReturn<TournamentFormValues>;
 }
 
 const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
-  // Add a new division
-  const addDivision = () => {
-    const divisions = form.getValues("divisions") || [];
-    form.setValue("divisions", [
-      ...divisions,
-      { name: "", categories: [] },
-    ]);
+  const { fields: divisionFields, append: appendDivision, remove: removeDivision } = useFieldArray({
+    control: form.control,
+    name: "divisions",
+  });
+
+  const handleAddDivision = () => {
+    appendDivision({
+      id: uuidv4(),
+      name: "",
+      type: "MENS",
+      categories: [],
+    });
   };
 
-  // Remove a division
-  const removeDivision = (index: number) => {
-    const divisions = form.getValues("divisions") || [];
-    form.setValue(
-      "divisions",
-      divisions.filter((_, i) => i !== index)
-    );
-  };
-
-  // Add a category to a division
-  const addCategory = (divisionIndex: number) => {
-    const divisions = form.getValues("divisions") || [];
-    const updatedDivisions = [...divisions];
-    updatedDivisions[divisionIndex].categories = [
-      ...updatedDivisions[divisionIndex].categories,
-      { name: "", type: CategoryType.MENS_SINGLES },
-    ];
-    form.setValue("divisions", updatedDivisions);
-  };
-
-  // Remove a category from a division
-  const removeCategory = (divisionIndex: number, categoryIndex: number) => {
-    const divisions = form.getValues("divisions") || [];
-    const updatedDivisions = [...divisions];
-    updatedDivisions[divisionIndex].categories = 
-      updatedDivisions[divisionIndex].categories.filter((_, i) => i !== categoryIndex);
-    form.setValue("divisions", updatedDivisions);
+  const handleAddCategory = (divisionIndex: number) => {
+    const divisions = form.getValues("divisions");
+    const division = divisions[divisionIndex];
+    division.categories.push({
+      id: uuidv4(),
+      name: "",
+      type: CategoryType.MENS_SINGLES,
+      format: TournamentFormat.SINGLE_ELIMINATION,
+    });
+    form.setValue("divisions", divisions);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Divisions</h3>
-        <Button type="button" variant="outline" size="sm" onClick={addDivision}>
+        <h3 className="text-lg font-medium">Divisions & Categories</h3>
+        <Button type="button" onClick={handleAddDivision}>
           <Plus className="h-4 w-4 mr-2" />
           Add Division
         </Button>
       </div>
 
-      {form.watch("divisions")?.map((division, divisionIndex) => (
-        <Card key={divisionIndex} className="p-4">
-          <div className="flex justify-between items-center mb-4">
-            <FormField
-              control={form.control}
-              name={`divisions.${divisionIndex}.name`}
-              render={({ field }) => (
-                <FormItem className="flex-1 mr-4">
-                  <FormControl>
-                    <Input placeholder="Division name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button 
-              type="button" 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => removeDivision(divisionIndex)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h4 className="text-sm font-medium">Categories</h4>
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm" 
-                onClick={() => addCategory(divisionIndex)}
+      {divisionFields.map((division, divisionIndex) => (
+        <Card key={division.id}>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Division {divisionIndex + 1}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => removeDivision(divisionIndex)}
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Category
+                <Trash2 className="h-4 w-4" />
               </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name={`divisions.${divisionIndex}.name`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Division Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g., Men's Division" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name={`divisions.${divisionIndex}.type`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Division Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select division type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="MENS">Men's</SelectItem>
+                        <SelectItem value="WOMENS">Women's</SelectItem>
+                        <SelectItem value="MIXED">Mixed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            {division.categories?.map((category, categoryIndex) => (
-              <div key={categoryIndex} className="flex items-center gap-2">
-                <FormField
-                  control={form.control}
-                  name={`divisions.${divisionIndex}.categories.${categoryIndex}.name`}
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormControl>
-                        <Input placeholder="Category name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`divisions.${divisionIndex}.categories.${categoryIndex}.type`}
-                  render={({ field }) => (
-                    <FormItem className="w-40">
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value={CategoryType.MENS_SINGLES}>Men's Singles</SelectItem>
-                          <SelectItem value={CategoryType.WOMENS_SINGLES}>Women's Singles</SelectItem>
-                          <SelectItem value={CategoryType.MENS_DOUBLES}>Men's Doubles</SelectItem>
-                          <SelectItem value={CategoryType.WOMENS_DOUBLES}>Women's Doubles</SelectItem>
-                          <SelectItem value={CategoryType.MIXED_DOUBLES}>Mixed Doubles</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => removeCategory(divisionIndex, categoryIndex)}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h4 className="text-sm font-medium">Categories</h4>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAddCategory(divisionIndex)}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Category
                 </Button>
               </div>
-            ))}
-          </div>
+
+              {division.categories?.map((category, categoryIndex) => (
+                <Card key={category.id}>
+                  <CardContent className="pt-6">
+                    <div className="grid grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name={`divisions.${divisionIndex}.categories.${categoryIndex}.name`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Category Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="e.g., Men's Singles" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`divisions.${divisionIndex}.categories.${categoryIndex}.type`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Category Type</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select category type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {Object.values(CategoryType).map((type) => (
+                                  <SelectItem key={type} value={type}>
+                                    {type.replace(/_/g, " ")}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`divisions.${divisionIndex}.categories.${categoryIndex}.format`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Tournament Format</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select format" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {Object.values(TournamentFormat).map((format) => (
+                                  <SelectItem key={format} value={format}>
+                                    {format.replace(/_/g, " ")}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
         </Card>
       ))}
     </div>

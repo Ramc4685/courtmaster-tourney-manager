@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { Tournament, TournamentFormat, TournamentCategory, CategoryType, TournamentStatus, Match, Team } from "@/types/tournament";
+import { Tournament, TournamentCategory, TournamentStatus, Match, Team } from "@/types/tournament";
+import { TournamentFormat, CategoryType } from "@/types/tournament-enums";
 import { TournamentFormValues } from "@/components/admin/tournament/types";
 
 interface TournamentStore {
