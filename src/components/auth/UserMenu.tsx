@@ -15,7 +15,7 @@ import { LogOut, Settings, User } from 'lucide-react';
 import { useAuth } from '@/contexts/auth/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-const UserMenu: React.FC = () => {
+export const UserMenu: React.FC = () => {
   const { user, logout, demoMode } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -85,4 +85,4 @@ const UserMenu: React.FC = () => {
   );
 };
 
-export default UserMenu;
+
