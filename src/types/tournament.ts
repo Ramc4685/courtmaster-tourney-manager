@@ -1,4 +1,3 @@
-
 // Define types for tournament-related entities
 export type TournamentStatus = "DRAFT" | "PUBLISHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 export type MatchStatus = "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "DEFERRED";
@@ -7,7 +6,8 @@ export type DivisionType = "MENS" | "WOMENS" | "MIXED";
 export type StageType = "GROUP" | "KNOCKOUT" | "FINAL";
 export type ScorerType = "MANUAL" | "AUTOMATIC" | "TOURNAMENT" | "STANDALONE";
 export type TournamentFormat = "SINGLE_ELIMINATION" | "DOUBLE_ELIMINATION" | "ROUND_ROBIN" | "GROUP_KNOCKOUT" | "SWISS" | "MULTI_STAGE";
-export type CategoryType = "MENS_SINGLES" | "WOMENS_SINGLES" | "MENS_DOUBLES" | "WOMENS_DOUBLES" | "MIXED_DOUBLES";
+// Import CategoryType from tournament-enums.ts instead of defining it here
+import { CategoryType } from "./tournament-enums";
 
 // Define interfaces for data structures
 export interface AuditLog {
@@ -111,14 +111,14 @@ export interface TournamentCategory {
     type: CategoryType;
     division?: string;
     format?: TournamentFormat;
+    isCustom?: boolean;
+    description?: string;
 }
 
 export interface ScoringSettings {
-    matchFormat: 'TIMED' | 'STANDARD';
-    pointsPerMatch: number;
+    pointsToWin: number;
+    mustWinByTwo: boolean;
     maxPoints: number;
-    maxSets: number;
-    allowNegativeScores: boolean;
 }
 
 export interface Division {

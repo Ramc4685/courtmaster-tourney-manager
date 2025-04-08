@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-export default function Login() {
+const Login = () => {
   return (
     <div className="container py-6">
       <Card className="max-w-md mx-auto">
@@ -15,4 +15,6 @@ export default function Login() {
       </Card>
     </div>
   );
-} 
+};
+
+export default Login; 

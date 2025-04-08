@@ -1,102 +1,46 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Home from './pages/home'; // lowercase 'h' instead of uppercase 'H'
-import Tournaments from './pages/Tournaments';
-import TournamentDetail from './pages/TournamentDetail'; // Updated to correct path
-import TournamentCreate from './pages/TournamentCreate';
-import Scoring from './pages/Scoring';
-import PublicView from './pages/PublicView';
-import StandaloneScoring from './pages/StandaloneScoring';
-import StandaloneMatchScoring from './pages/StandaloneMatchScoring';
-import Pricing from './pages/Pricing';
-import Login from './pages/Login';
-import Share from './pages/Share';
+import Home from './pages/home';
 import { TournamentProvider } from './contexts/tournament/TournamentContext';
 import { AuthProvider } from './contexts/auth/AuthContext';
 import Layout from './components/layout/Layout';
-import TournamentManagement from "@/components/admin/TournamentManagement";
-import TournamentCreationForm from "@/components/admin/TournamentCreationForm";
+import TournamentCreationForm from './components/admin/tournament/TournamentCreationForm';
+import { TournamentList } from './components/tournament/TournamentList';
+import { TournamentView } from './components/tournament/TournamentView';
+import { ScoringView } from './components/scoring/ScoringView';
+import PublicView from './components/public/PublicView';
+import Profile from './components/profile/Profile';
+import Settings from './components/settings/Settings';
+import AdminDashboard from './components/admin/AdminDashboard';
+import Login from './components/auth/Login';
 
 function App() {
-  // Handler function for the tournament creation form
-  const handleTournamentSubmit = (data) => {
-    console.log("Tournament form submitted:", data);
-    // Further processing can be added here
-  };
+  // Add debugging
+  useEffect(() => {
+    console.log('App component mounted');
+    return () => {
+      console.log('App component unmounted');
+    };
+  }, []);
+
+  console.log('App component rendering');
 
   return (
     <Router>
       <AuthProvider>
         <TournamentProvider>
           <Routes>
-            <Route path="/" element={
-              <Layout>
-                <Home />
-              </Layout>
-            } />
-            <Route path="/login" element={
-              <Layout>
-                <Login />
-              </Layout>
-            } />
-            <Route path="/tournaments" element={
-              <Layout>
-                <Tournaments />
-              </Layout>
-            } />
-            <Route path="/tournaments/new" element={
-              <Layout>
-                <TournamentCreate />
-              </Layout>
-            } />
-            <Route path="/tournament/create" element={
-              <Layout>
-                <TournamentCreate />
-              </Layout>
-            } />
-            <Route path="/tournament/:tournamentId" element={
-              <Layout>
-                <TournamentDetail />
-              </Layout>
-            } />
-            <Route path="/scoring/:tournamentId" element={
-              <Layout>
-                <Scoring />
-              </Layout>
-            } />
-            <Route path="/scoring/:tournamentId/:matchId" element={
-              <Layout>
-                <Scoring />
-              </Layout>
-            } />
-            <Route path="/public/:tournamentId" element={
-              <Layout>
-                <PublicView />
-              </Layout>
-            } />
-            <Route path="/scoring/standalone" element={
-              <Layout>
-                <StandaloneScoring />
-              </Layout>
-            } />
-            <Route path="/scoring/standalone/:matchId" element={
-              <Layout>
-                <StandaloneMatchScoring />
-              </Layout>
-            } />
-            <Route path="/pricing" element={
-              <Layout>
-                <Pricing />
-              </Layout>
-            } />
-            <Route path="/share/:tournamentId" element={
-              <Layout>
-                <Share />
-              </Layout>
-            } />
-            <Route path="/tournaments" element={<TournamentManagement />} />
-            <Route path="/tournaments/create" element={<TournamentCreationForm onSubmit={handleTournamentSubmit} />} />
+            <Route path="/" element={<Layout><Home /></Layout>} />
+            <Route path="/tournaments" element={<Layout><TournamentList /></Layout>} />
+            <Route path="/tournament/create" element={<Layout><TournamentCreationForm /></Layout>} />
+            <Route path="/tournament/:id" element={<Layout><TournamentView /></Layout>} />
+            <Route path="/scoring/:id" element={<Layout><ScoringView /></Layout>} />
+            <Route path="/scoring/standalone" element={<Layout><ScoringView /></Layout>} />
+            <Route path="/public/:id" element={<Layout><PublicView /></Layout>} />
+            <Route path="/profile" element={<Layout><Profile /></Layout>} />
+            <Route path="/settings" element={<Layout><Settings /></Layout>} />
+            <Route path="/admin" element={<Layout><AdminDashboard /></Layout>} />
+            <Route path="/login" element={<Layout><Login /></Layout>} />
           </Routes>
         </TournamentProvider>
       </AuthProvider>

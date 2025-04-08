@@ -11,13 +11,9 @@ export const divisionSchema = z.object({
     type: z.nativeEnum(CategoryType),
     format: z.nativeEnum(TournamentFormat),
     scoringSettings: z.object({
-      matchFormat: z.enum(["TIMED", "STANDARD"]),
-      pointsPerMatch: z.number().min(1),
+      pointsToWin: z.number().min(1),
+      mustWinByTwo: z.boolean(),
       maxPoints: z.number().min(1),
-      maxSets: z.number().min(1),
-      allowNegativeScores: z.boolean(),
-      requireTwoPointLead: z.boolean(),
-      maxTwoPointLeadScore: z.number().min(1),
     }).optional(),
   })),
 });
@@ -37,10 +33,9 @@ export const tournamentFormSchema = z.object({
   registrationDeadline: z.date().optional(),
   maxTeams: z.number().min(2).optional(),
   scoringRules: z.object({
-    pointsToWin: z.number().min(1).optional(),
-    pointsToWinBy: z.number().min(1).optional(),
-    maxPoints: z.number().min(1).optional(),
-    mustWinByTwo: z.boolean().optional(),
+    pointsToWin: z.number().min(1),
+    mustWinByTwo: z.boolean(),
+    maxPoints: z.number().min(1),
   }).optional(),
   divisions: z.array(divisionSchema).default([]),
   categoryRegistrationRules: z.array(z.any()).default([]),
@@ -51,10 +46,18 @@ export type TournamentFormValues = z.infer<typeof tournamentFormSchema>;
 export type DivisionFormValues = z.infer<typeof divisionSchema>;
 
 export interface Division {
-  id?: string;
+  id: string;
   name: string;
-  type: CategoryType;
-  description?: string;
-  maxTeams?: number;
-  minTeams?: number;
+  type: "MENS" | "WOMENS" | "MIXED";
+  categories: {
+    id: string;
+    name: string;
+    type: CategoryType;
+    format: TournamentFormat;
+    scoringSettings?: {
+      pointsToWin: number;
+      mustWinByTwo: boolean;
+      maxPoints: number;
+    };
+  }[];
 }

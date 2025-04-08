@@ -13,15 +13,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { playerRegistrationSchema, PlayerRegistration } from "@/types/registration";
 import { useToast } from "@/components/ui/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface PlayerRegistrationFormProps {
   tournamentId: string;
   onSubmit: (data: PlayerRegistration) => Promise<void>;
+  registrationDeadline?: Date;
 }
 
 const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   tournamentId,
   onSubmit,
+  registrationDeadline,
 }) => {
   const { toast } = useToast();
   const form = useForm<PlayerRegistration>({
@@ -34,8 +38,21 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
     },
   });
 
+  // Check if registration is closed
+  const isRegistrationClosed = registrationDeadline ? new Date() > new Date(registrationDeadline) : false;
+
   const handleSubmit = async (data: PlayerRegistration) => {
     try {
+      // Check if registration is closed before submitting
+      if (isRegistrationClosed) {
+        toast({
+          title: "Registration Closed",
+          description: "The registration deadline has passed.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       await onSubmit(data);
       
       // Store registration data in local storage
@@ -62,17 +79,60 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-6">
+      {isRegistrationClosed && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Registration is closed. The deadline has passed.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="firstName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>First Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter your first name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="lastName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Last Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter your last name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <FormField
             control={form.control}
-            name="firstName"
+            name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>First Name</FormLabel>
+                <FormLabel>Email Address</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter your first name" {...field} />
+                  <Input
+                    type="email"
+                    placeholder="Enter your email address"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -81,60 +141,28 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
 
           <FormField
             control={form.control}
-            name="lastName"
+            name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Last Name</FormLabel>
+                <FormLabel>Phone Number (Optional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter your last name" {...field} />
+                  <Input
+                    type="tel"
+                    placeholder="Enter your phone number"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-        </div>
 
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email Address</FormLabel>
-              <FormControl>
-                <Input
-                  type="email"
-                  placeholder="Enter your email address"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone Number (Optional)</FormLabel>
-              <FormControl>
-                <Input
-                  type="tel"
-                  placeholder="Enter your phone number"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <Button type="submit" className="w-full">
-          Submit Registration
-        </Button>
-      </form>
-    </Form>
+          <Button type="submit" className="w-full" disabled={isRegistrationClosed}>
+            Submit Registration
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 };
 

@@ -1,9 +1,11 @@
-
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import { isSupabaseConfigured } from './services/storage/StorageService'
 import { toast } from 'sonner'
+
+// Add more detailed debugging
+console.log('Application starting...');
 
 // Check if Supabase is configured and show a warning if not
 if (!isSupabaseConfigured()) {
@@ -26,8 +28,15 @@ console.log('Initializing app render');
 // Make sure we're finding the root element
 const rootElement = document.getElementById("root");
 if (!rootElement) {
-  console.error("Root element not found!");
+  console.error("Root element not found! Check if the HTML file has a div with id='root'");
 } else {
   console.log('Root element found, rendering app');
-  createRoot(rootElement).render(<App />);
+  try {
+    const root = createRoot(rootElement);
+    console.log('Root created successfully');
+    root.render(<App />);
+    console.log('App rendered successfully');
+  } catch (error) {
+    console.error('Error rendering app:', error);
+  }
 }

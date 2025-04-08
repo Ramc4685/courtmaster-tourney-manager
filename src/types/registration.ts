@@ -12,16 +12,16 @@ export type PlayerRegistration = z.infer<typeof playerRegistrationSchema>;
 
 // Team member schema
 export const teamMemberSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
+  name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
-  isTeamCaptain: z.boolean().default(false),
 });
 
 // Team registration schema
 export const teamRegistrationSchema = z.object({
   teamName: z.string().min(1, "Team name is required"),
+  captainName: z.string().min(1, "Captain name is required"),
+  captainEmail: z.string().email("Invalid email address"),
+  captainPhone: z.string().optional(),
   members: z.array(teamMemberSchema).min(1, "At least one team member is required"),
 });
 

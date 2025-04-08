@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useEffect } from "react";
 import Navbar from "./Navbar";
 
 interface LayoutProps {
@@ -7,6 +6,16 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  // Add debugging
+  useEffect(() => {
+    console.log('Layout component mounted');
+    return () => {
+      console.log('Layout component unmounted');
+    };
+  }, []);
+
+  console.log('Layout component rendering');
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />

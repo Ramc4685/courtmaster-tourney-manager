@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,8 +7,18 @@ import { useTournament } from '@/contexts/tournament/useTournament';
 import { useAuth } from '@/contexts/auth/AuthContext';
 
 const Home = () => {
+  // Add debugging
+  useEffect(() => {
+    console.log('Home component mounted');
+    return () => {
+      console.log('Home component unmounted');
+    };
+  }, []);
+
   const { tournaments } = useTournament();
   const { user } = useAuth();
+  
+  console.log('Home component rendering', { tournamentsCount: tournaments.length, user });
   
   const activeTournaments = tournaments.filter(t => t.status !== 'COMPLETED');
   const upcomingMatches = tournaments.flatMap(t => 
@@ -101,17 +110,16 @@ const Home = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
-                Completed Matches
+                Activity
               </CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {tournaments.reduce((acc, t) => 
-                  acc + (t.matches?.filter(m => m.status === 'COMPLETED')?.length || 0), 0)}
+                {tournaments.reduce((acc, t) => acc + (t.matches?.filter(m => m.status === 'IN_PROGRESS').length || 0), 0)}
               </div>
               <p className="text-xs text-muted-foreground">
-                Out of {tournaments.reduce((acc, t) => acc + (t.matches?.length || 0), 0)} total
+                Matches in progress
               </p>
             </CardContent>
           </Card>

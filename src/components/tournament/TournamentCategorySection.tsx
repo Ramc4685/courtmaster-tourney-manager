@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Trash2, Edit } from "lucide-react";
@@ -6,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CategoryType, TournamentCategory, Tournament, TournamentFormat } from "@/types/tournament";
+import { TournamentCategory, Tournament, TournamentFormat } from "@/types/tournament";
+import { CategoryType } from "@/types/tournament-enums";
 import CategoryScoringRules from "@/components/scoring/CategoryScoringRules";
 import TournamentFormatSelector from "@/components/tournament/TournamentFormatSelector";
 
@@ -18,12 +18,12 @@ interface TournamentCategorySectionProps {
 }
 
 const categoryOptions: { value: CategoryType; label: string }[] = [
-  { value: "MENS_SINGLES", label: "Men's Singles" },
-  { value: "WOMENS_SINGLES", label: "Women's Singles" },
-  { value: "MENS_DOUBLES", label: "Men's Doubles" },
-  { value: "WOMENS_DOUBLES", label: "Women's Doubles" },
-  { value: "MIXED_DOUBLES", label: "Mixed Doubles" },
-  { value: "CUSTOM", label: "Custom Category" }
+  { value: CategoryType.MENS_SINGLES, label: "Men's Singles" },
+  { value: CategoryType.WOMENS_SINGLES, label: "Women's Singles" },
+  { value: CategoryType.MENS_DOUBLES, label: "Men's Doubles" },
+  { value: CategoryType.WOMENS_DOUBLES, label: "Women's Doubles" },
+  { value: CategoryType.MIXED_DOUBLES, label: "Mixed Doubles" },
+  { value: CategoryType.CUSTOM, label: "Custom Category" }
 ];
 
 const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({ 

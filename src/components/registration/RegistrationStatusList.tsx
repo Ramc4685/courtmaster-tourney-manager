@@ -149,8 +149,7 @@ const RegistrationStatusList: React.FC<RegistrationStatusListProps> = ({
                 <TableCell>{registration.teamName}</TableCell>
                 <TableCell>{registration.members.length}</TableCell>
                 <TableCell>
-                  {registration.members.find((m) => m.isTeamCaptain)?.firstName}{" "}
-                  {registration.members.find((m) => m.isTeamCaptain)?.lastName}
+                  {registration.captainName}
                 </TableCell>
                 <TableCell>
                   <Badge
