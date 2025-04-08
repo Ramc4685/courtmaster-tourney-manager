@@ -1,3 +1,4 @@
+
 import { Match, MatchScore } from '@/types/tournament';
 import { ScoringSettings } from '@/types/scoring';
 
@@ -148,4 +149,51 @@ export const countSetsWon = (scores: MatchScore[], team: "team1" | "team2"): num
       return team2Score > team1Score;
     }
   }).length;
+};
+
+/**
+ * Updates bracket progression after a match is completed.
+ * This function finds the next match in the bracket and updates it with the winner.
+ * @param tournament The tournament containing all matches
+ * @param completedMatch The match that was just completed
+ * @param winnerTeamId The ID of the team that won (either "team1" or "team2")
+ * @returns The updated tournament with bracket progression applied
+ */
+export const updateBracketProgression = (tournament: any, completedMatch: any, winnerTeamId: "team1" | "team2"): any => {
+  // If match doesn't have a nextMatchId property, no progression is needed
+  if (!completedMatch.nextMatchId) {
+    return tournament;
+  }
+
+  // Find the next match in the bracket
+  const nextMatch = tournament.matches.find((m: any) => m.id === completedMatch.nextMatchId);
+  if (!nextMatch) {
+    return tournament; // Next match not found, no change needed
+  }
+
+  // Determine which slot in the next match the winner should go to (team1 or team2)
+  // This is based on the completed match's position in the bracket
+  const winnerTeam = completedMatch[winnerTeamId]; // Get the winning team object
+  
+  // Update the next match with the winner
+  // If the nextMatchPosition is "team1", update team1, otherwise update team2
+  const nextMatchPosition = completedMatch.nextMatchPosition || "team1";
+  
+  const updatedNextMatch = {
+    ...nextMatch,
+    [nextMatchPosition]: winnerTeam,
+    updatedAt: new Date()
+  };
+
+  // Update the match in the tournament's matches array
+  const updatedMatches = tournament.matches.map((m: any) => 
+    m.id === nextMatch.id ? updatedNextMatch : m
+  );
+
+  // Return the updated tournament
+  return {
+    ...tournament,
+    matches: updatedMatches,
+    updatedAt: new Date()
+  };
 };
