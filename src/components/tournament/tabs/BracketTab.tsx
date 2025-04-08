@@ -8,14 +8,14 @@ import { Info } from "lucide-react";
 
 interface BracketTabProps {
   tournament: Tournament;
-  category?: TournamentCategory; // Added category prop
+  category?: TournamentCategory;
 }
 
 const BracketTab: React.FC<BracketTabProps> = ({ tournament, category }) => {
-  const [currentDivision, setCurrentDivision] = useState<Division>("DIVISION_1");
+  const [currentDivision, setCurrentDivision] = useState<string>("DIVISION_1");
   
   // Check if tournament has moved to the playoff stage
-  const hasPlayoffMatches = tournament.matches.some(m => m.stage === "PLAYOFF_KNOCKOUT");
+  const hasPlayoffMatches = tournament.matches.some(m => String(m.stage) === "PLAYOFF_KNOCKOUT");
   
   // Add debugging for category props
   console.log("BracketTab rendering with category:", category?.name);
@@ -39,7 +39,7 @@ const BracketTab: React.FC<BracketTabProps> = ({ tournament, category }) => {
       <Tabs 
         defaultValue="DIVISION_1" 
         value={currentDivision}
-        onValueChange={(value) => setCurrentDivision(value as Division)}
+        onValueChange={(value) => setCurrentDivision(value)}
         className="w-fit"
       >
         <TabsList>

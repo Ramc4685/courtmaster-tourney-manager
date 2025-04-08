@@ -6,19 +6,19 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { TournamentStage } from "@/types/tournament";
+import { TournamentStageEnum } from "@/types/tournament-enums";
 
 interface TournamentSeedingSettingsProps {
   useSeeding: boolean;
   onUseSeedingChange: (value: boolean) => void;
-  stagesToSeed: TournamentStage[];
-  onStagesToSeedChange: (stages: TournamentStage[]) => void;
+  stagesToSeed: string[];
+  onStagesToSeedChange: (stages: string[]) => void;
 }
 
-const stageOptions: { value: TournamentStage; label: string }[] = [
-  { value: "INITIAL_ROUND", label: "Initial Round" },
-  { value: "DIVISION_PLACEMENT", label: "Division Placement" },
-  { value: "PLAYOFF_KNOCKOUT", label: "Playoff Knockout" }
+const stageOptions: { value: string; label: string }[] = [
+  { value: TournamentStageEnum.INITIAL_ROUND, label: "Initial Round" },
+  { value: TournamentStageEnum.DIVISION_PLACEMENT, label: "Division Placement" },
+  { value: TournamentStageEnum.PLAYOFF_KNOCKOUT, label: "Playoff Knockout" }
 ];
 
 const TournamentSeedingSettings: React.FC<TournamentSeedingSettingsProps> = ({
@@ -27,7 +27,7 @@ const TournamentSeedingSettings: React.FC<TournamentSeedingSettingsProps> = ({
   stagesToSeed,
   onStagesToSeedChange
 }) => {
-  const toggleStageSeeding = (stage: TournamentStage) => {
+  const toggleStageSeeding = (stage: string) => {
     if (stagesToSeed.includes(stage)) {
       onStagesToSeedChange(stagesToSeed.filter(s => s !== stage));
     } else {

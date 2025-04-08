@@ -1,3 +1,4 @@
+
 export interface ScoringRule {
   id: string;
   name: string;
@@ -16,16 +17,14 @@ export interface ScoringRule {
 }
 
 export interface ScoringSettings {
+  pointsToWin: number;
+  mustWinByTwo: boolean;
   maxPoints: number;
+  // Additional required properties
+  maxSets: number;
   requireTwoPointLead: boolean;
   maxTwoPointLeadScore: number;
-  maxSets: number;
-  setsToWin: number;
-  tiebreakRules?: {
-    pointsToWin: number;
-    requireTwoPointLead: boolean;
-    maxPoints: number;
-  };
+  setsToWin?: number;
 }
 
 export interface ScoreValidationResult {
@@ -54,4 +53,4 @@ export interface MatchScore {
   winner: 'team1' | 'team2' | null;
   duration: number;
   auditLogs: ScoreAuditLog[];
-} 
+}

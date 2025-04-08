@@ -1,3 +1,4 @@
+
 export enum CategoryType {
   MENS_SINGLES = "MENS_SINGLES",
   WOMENS_SINGLES = "WOMENS_SINGLES",
@@ -14,4 +15,24 @@ export enum TournamentFormat {
   GROUP_KNOCKOUT = "GROUP_KNOCKOUT",
   SWISS = "SWISS",
   MULTI_STAGE = "MULTI_STAGE"
-} 
+}
+
+// Adding the missing enums to fix Division and TournamentStage issues
+export enum DivisionEnum {
+  DIVISION_1 = "DIVISION_1",
+  DIVISION_2 = "DIVISION_2",
+  DIVISION_3 = "DIVISION_3",
+  INITIAL = "INITIAL",
+  QUALIFIER_DIV1 = "QUALIFIER_DIV1",
+  QUALIFIER_DIV2 = "QUALIFIER_DIV2",
+  GROUP_DIV3 = "GROUP_DIV3"
+}
+
+export enum TournamentStageEnum {
+  INITIAL_ROUND = "INITIAL_ROUND",
+  DIVISION_PLACEMENT = "DIVISION_PLACEMENT",
+  PLAYOFF_KNOCKOUT = "PLAYOFF_KNOCKOUT",
+  GROUP = "GROUP",
+  KNOCKOUT = "KNOCKOUT",
+  FINAL = "FINAL"
+}

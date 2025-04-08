@@ -1,4 +1,3 @@
-
 // Define types for tournament-related entities
 export type TournamentStatus = "DRAFT" | "PUBLISHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 export type MatchStatus = "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "DEFERRED";
@@ -8,7 +7,7 @@ export type StageType = "GROUP" | "KNOCKOUT" | "FINAL" | "INITIAL_ROUND" | "DIVI
 export type ScorerType = "MANUAL" | "AUTOMATIC" | "TOURNAMENT" | "STANDALONE";
 export type TournamentFormat = "SINGLE_ELIMINATION" | "DOUBLE_ELIMINATION" | "ROUND_ROBIN" | "GROUP_KNOCKOUT" | "SWISS" | "MULTI_STAGE";
 // Import CategoryType from tournament-enums.ts instead of defining it here
-import { CategoryType } from "./tournament-enums";
+import { CategoryType, TournamentFormat as TournamentFormatEnum } from "./tournament-enums";
 
 // Define interfaces for data structures
 export interface AuditLog {
@@ -20,13 +19,16 @@ export interface AuditLog {
     user_id?: string;
     userName?: string;
     type?: string; // Added to support existing code
+    metadata?: any; // Added to support existing code
 }
 
 export interface StandaloneAuditLog {
+  id?: string;
   timestamp: Date;
   action: string;
   details: string | Record<string, any>;
   user_id?: string;
+  userId?: string;
   userName?: string;
 }
 
@@ -94,7 +96,7 @@ export interface Match {
     updatedAt?: Date;
     auditLogs?: StandaloneAuditLog[];
     scorerName?: string;
-    bracketRound?: number; // Adding missing properties
+    bracketRound?: number;
     bracketPosition?: number;
     nextMatchId?: string;
 }

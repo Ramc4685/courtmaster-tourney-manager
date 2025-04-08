@@ -24,7 +24,7 @@ const MatchAuditViewer: React.FC<MatchAuditViewerProps> = ({
       case "SCORE_UPDATED":
         return <Badge variant="success">Score</Badge>;
       case "MATCH_STARTED":
-        return <Badge variant="info">Started</Badge>;
+        return <Badge variant="secondary">Started</Badge>; // Changed from "info" to "secondary"
       case "MATCH_COMPLETED":
         return <Badge variant="success">Completed</Badge>;
       case "MATCH_CANCELLED":
