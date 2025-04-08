@@ -1,20 +1,20 @@
-
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Home from './pages/home';
-import { TournamentProvider } from './contexts/tournament/TournamentContext';
-import { AuthProvider } from './contexts/auth/AuthContext';
-import Layout from './components/layout/Layout';
-import TournamentCreationForm from './components/admin/tournament/TournamentCreationForm';
-import { TournamentList } from './components/tournament/TournamentList';
-import TournamentView from './components/tournament/TournamentView';
-import ScoringView from './components/scoring/ScoringView';
-import PublicView from './components/public/PublicView';
-import Profile from './components/profile/Profile';
-import Settings from './components/settings/Settings';
-import AdminDashboard from './components/admin/AdminDashboard';
-import Login from './components/auth/Login';
-import { getDefaultScoringSettings } from './utils/matchUtils';
+import Home from '@/pages/home';
+import { TournamentProvider } from '@/contexts/tournament/TournamentContext';
+import { AuthProvider } from '@/contexts/auth/AuthContext';
+import Layout from '@/components/layout/Layout';
+import TournamentCreationForm from '@/components/admin/tournament/TournamentCreationForm';
+import { TournamentList } from '@/components/tournament/TournamentList';
+import TournamentDetails from '@/pages/tournament/TournamentDetails';
+import { ScoringView } from '@/components/match/ScoringView';
+import PublicView from '@/components/public/PublicView';
+import Profile from '@/components/profile/Profile';
+import Settings from '@/components/settings/Settings';
+import AdminDashboard from '@/components/admin/AdminDashboard';
+import Login from '@/components/auth/Login';
+import { getDefaultScoringSettings } from '@/utils/matchUtils';
+import { MatchStatus, TournamentStage, Division } from '@/types/tournament-enums';
 
 function App() {
   // Add debugging
@@ -35,7 +35,7 @@ function App() {
             <Route path="/" element={<Layout><Home /></Layout>} />
             <Route path="/tournaments" element={<Layout><TournamentList /></Layout>} />
             <Route path="/tournament/create" element={<Layout><TournamentCreationForm /></Layout>} />
-            <Route path="/tournament/:id" element={<Layout><TournamentView /></Layout>} />
+            <Route path="/tournament/:id" element={<Layout><TournamentDetails /></Layout>} />
             <Route 
               path="/scoring/:id" 
               element={
@@ -44,8 +44,19 @@ function App() {
                     match={{
                       id: 'placeholder',
                       tournamentId: 'placeholder',
-                      status: 'SCHEDULED' as MatchStatus,
-                      scores: []
+                      team1Id: 'placeholder',
+                      team2Id: 'placeholder',
+                      status: MatchStatus.SCHEDULED,
+                      division: Division.MENS,
+                      stage: TournamentStage.GROUP_STAGE,
+                      round: 1,
+                      scores: {
+                        team1: [],
+                        team2: []
+                      },
+                      auditLogs: [],
+                      createdAt: new Date(),
+                      updatedAt: new Date()
                     }}
                     scoringSettings={getDefaultScoringSettings()}
                     onMatchComplete={(matchId, winnerId) => {
@@ -63,8 +74,19 @@ function App() {
                     match={{
                       id: 'placeholder',
                       tournamentId: 'placeholder',
-                      status: 'SCHEDULED' as MatchStatus,
-                      scores: []
+                      team1Id: 'placeholder',
+                      team2Id: 'placeholder',
+                      status: MatchStatus.SCHEDULED,
+                      division: Division.MENS,
+                      stage: TournamentStage.GROUP_STAGE,
+                      round: 1,
+                      scores: {
+                        team1: [],
+                        team2: []
+                      },
+                      auditLogs: [],
+                      createdAt: new Date(),
+                      updatedAt: new Date()
                     }}
                     scoringSettings={getDefaultScoringSettings()}
                     onMatchComplete={(matchId, winnerId) => {

@@ -34,8 +34,16 @@ export default function TournamentCreationForm() {
     },
   });
 
-  const onSubmit = async (data: TournamentFormValues) => {
+  const onSubmit = async (values: TournamentFormValues) => {
     try {
+      // Convert string dates to Date objects
+      const data = {
+        ...values,
+        startDate: values.startDate ? new Date(values.startDate) : undefined,
+        endDate: values.endDate ? new Date(values.endDate) : undefined,
+        registrationDeadline: values.registrationDeadline ? new Date(values.registrationDeadline) : undefined,
+      };
+
       const tournament = await createTournament(data);
       toast({
         title: "Tournament Created",
@@ -43,6 +51,7 @@ export default function TournamentCreationForm() {
       });
       navigate(`/tournament/${tournament.id}`);
     } catch (error) {
+      console.error('Error creating tournament:', error);
       toast({
         title: "Error",
         description: "Failed to create tournament. Please try again.",
@@ -102,7 +111,7 @@ export default function TournamentCreationForm() {
                 <FormField
                   type="number"
                   label="Max Teams"
-                  {...form.register('maxTeams')}
+                  {...form.register('maxTeams', { valueAsNumber: true })}
                   error={form.formState.errors.maxTeams?.message}
                 />
                 <div className="flex items-center space-x-2">

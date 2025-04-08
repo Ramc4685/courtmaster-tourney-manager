@@ -1,4 +1,5 @@
-import { Tournament, Match, Team, ScoringSettings, MatchStatus } from "@/types/tournament";
+import { Tournament, Match, Team, ScoringSettings } from "@/types/tournament";
+import { ScorerType } from "@/types/tournament-enums";
 import { generateId } from "./tournamentUtils";
 
 /**
@@ -14,7 +15,7 @@ export const updateBracketProgression = (
   winnerId: string
 ): Tournament => {
   const completedMatch = tournament.matches.find(m => m.id === completedMatchId);
-  if (!completedMatch || !completedMatch.nextMatchId) {
+  if (!completedMatch) {
     return tournament;
   }
 
@@ -54,20 +55,61 @@ export const updateBracketProgression = (
   };
 };
 
+/**
+ * Determines the winner and loser of a match based on scores and scoring settings
+ * @param match The match to analyze
+ * @param settings Scoring settings to apply
+ * @returns Object containing winner and loser teams, or null if match is not complete
+ */
+export const determineMatchWinnerAndLoser = (
+  match: Match,
+  settings: ScoringSettings
+): { winner: Team; loser: Team } | null => {
+  if (!match.scores || !match.team1 || !match.team2) {
+    return null;
+  }
+
+  // Count sets won by each team
+  let team1SetsWon = 0;
+  let team2SetsWon = 0;
+
+  // Iterate through scores array
+  for (let i = 0; i < match.scores.team1.length; i++) {
+    const team1Score = match.scores.team1[i];
+    const team2Score = match.scores.team2[i];
+    
+    if (team1Score > team2Score) {
+      team1SetsWon++;
+    } else if (team2Score > team1Score) {
+      team2SetsWon++;
+    }
+  }
+
+  // Determine winner based on sets won
+  if (team1SetsWon > team2SetsWon) {
+    return {
+      winner: match.team1,
+      loser: match.team2
+    };
+  } else if (team2SetsWon > team1SetsWon) {
+    return {
+      winner: match.team2,
+      loser: match.team1
+    };
+  }
+
+  return null;
+};
+
 // Default scoring settings for badminton
 export const getDefaultScoringSettings = (): ScoringSettings => {
   return {
-    pointsToWin: 21,
-    mustWinByTwo: true,
-    maxPoints: 30,
-    maxSets: 3,
-    requireTwoPointLead: true,
-    maxTwoPointLeadScore: 30,
     setsToWin: 2,
-    tiebreakRules: {
-      pointsToWin: 11,
-      requireTwoPointLead: true,
-      maxPoints: 15
-    }
+    gamesPerSet: 21,
+    pointsPerGame: 21,
+    tiebreakAt: 20,
+    tiebreakPoints: 11,
+    allowWalkover: true,
+    defaultScorerType: ScorerType.REFEREE
   };
 };
