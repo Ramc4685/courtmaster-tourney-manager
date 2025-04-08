@@ -1,77 +1,92 @@
-import React from 'react';
-import { Card } from '@/components/ui/card';
-import { ScoreEntry } from './ScoreEntry';
-import { useMatchScoring } from '@/hooks/useMatchScoring';
-import { MatchScore, ScoreAuditLog } from '@/types/scoring';
+
+import React, { useEffect, useState } from "react";
+import { Match, MatchScore, ScoringSettings } from "@/types/tournament";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { validateBadmintonScore, BADMINTON_SCORING_SETTINGS } from "@/utils/scoringRules";
+import { useToast } from "@/components/ui/use-toast";
 
 interface MatchScoringProps {
-  sport: string;
-  team1Name: string;
-  team2Name: string;
-  onMatchComplete: (winner: 'team1' | 'team2', scores: MatchScore[]) => void;
-  readOnly?: boolean;
+  match: Match;
+  onScoreUpdate: (scores: MatchScore[]) => void;
+  onMatchComplete: () => void;
+  settings?: ScoringSettings;
 }
 
 export const MatchScoring: React.FC<MatchScoringProps> = ({
-  sport,
-  team1Name,
-  team2Name,
+  match,
+  onScoreUpdate,
   onMatchComplete,
-  readOnly = false
+  settings = BADMINTON_SCORING_SETTINGS
 }) => {
-  const {
-    currentSet,
-    matchComplete,
-    winner,
-    handleScoreChange,
-    handleSetComplete,
-    getTeamSetsWon,
-    getCurrentSetScore
-  } = useMatchScoring({
-    sport,
-    onMatchComplete
-  });
+  const [scores, setScores] = useState<MatchScore[]>(match.scores || []);
+  const [currentSet, setCurrentSet] = useState(scores.length);
+  const { toast } = useToast();
+
+  const updateScore = (team: 'team1' | 'team2', increment: boolean) => {
+    const newScores = [...scores];
+    if (!newScores[currentSet]) {
+      newScores[currentSet] = { team1Score: 0, team2Score: 0 };
+    }
+    
+    const delta = increment ? 1 : -1;
+    if (team === 'team1') {
+      newScores[currentSet].team1Score = Math.max(0, newScores[currentSet].team1Score + delta);
+    } else {
+      newScores[currentSet].team2Score = Math.max(0, newScores[currentSet].team2Score + delta);
+    }
+    
+    if (validateBadmintonScore(newScores, settings)) {
+      setScores(newScores);
+      onScoreUpdate(newScores);
+    }
+  };
+
+  useEffect(() => {
+    const isMatchComplete = scores.length === settings.maxSets || 
+      scores.filter(s => s.team1Score > s.team2Score).length > settings.maxSets / 2 ||
+      scores.filter(s => s.team2Score > s.team1Score).length > settings.maxSets / 2;
+      
+    if (isMatchComplete) {
+      onMatchComplete();
+    }
+  }, [scores, settings]);
 
   return (
-    <Card className="p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Match Scoring</h2>
-        <div className="grid grid-cols-2 gap-4 text-center">
-          <div>
-            <h3 className="text-lg font-semibold">{team1Name}</h3>
-            <p className="text-sm text-gray-500">
-              Sets won: {getTeamSetsWon('team1')}
-            </p>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold">{team2Name}</h3>
-            <p className="text-sm text-gray-500">
-              Sets won: {getTeamSetsWon('team2')}
-            </p>
+    <Card className="p-4">
+      <div className="space-y-4">
+        {/* Current Set Score */}
+        <div className="flex justify-between items-center">
+          <div className="text-2xl font-bold">Set {currentSet + 1}</div>
+          <div className="flex gap-8">
+            <div className="text-center">
+              <div className="text-3xl font-bold">{scores[currentSet]?.team1Score || 0}</div>
+              <Button onClick={() => updateScore('team1', true)}>+</Button>
+              <Button onClick={() => updateScore('team1', false)}>-</Button>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold">{scores[currentSet]?.team2Score || 0}</div>
+              <Button onClick={() => updateScore('team2', true)}>+</Button>
+              <Button onClick={() => updateScore('team2', false)}>-</Button>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div className="space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Set {currentSet}</h3>
-          <ScoreEntry
-            sport={sport}
-            initialScore={getCurrentSetScore()}
-            onScoreChange={handleScoreChange}
-            onSetComplete={handleSetComplete}
-            readOnly={readOnly || matchComplete}
-          />
+        
+        {/* Previous Sets */}
+        <div className="space-y-2">
+          {scores.slice(0, currentSet).map((score, idx) => (
+            <div key={idx} className="flex justify-between items-center">
+              <div>Set {idx + 1}</div>
+              <div className="flex gap-4">
+                <div>{score.team1Score}</div>
+                <div>{score.team2Score}</div>
+              </div>
+            </div>
+          ))}
         </div>
-
-        {matchComplete && (
-          <div className="text-center">
-            <h3 className="text-xl font-bold text-green-600">
-              Match Complete! {winner === 'team1' ? team1Name : team2Name} wins!
-            </h3>
-          </div>
-        )}
       </div>
     </Card>
   );
-}; 
+};
+
+export default MatchScoring;

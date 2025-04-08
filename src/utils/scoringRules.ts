@@ -1,5 +1,5 @@
-
 import { ScoringSettings, ScoreValidationResult, MatchScore, ScoreAuditLog } from '@/types/tournament';
+import { Match } from "@/types/tournament";
 
 /**
  * Validates a set score according to scoring rules
@@ -119,3 +119,62 @@ export const getDefaultVolleyballScoringSettings = (): ScoringSettings => {
     setsToWin: 3
   };
 };
+
+import { Match, ScoringSettings, MatchScore } from "@/types/tournament";
+
+export const BADMINTON_SCORING_SETTINGS: ScoringSettings = {
+  maxPoints: 21,
+  maxSets: 3,
+  requireTwoPointLead: true,
+  maxTwoPointLeadScore: 30,
+  pointsToWin: 21,
+  minPointDifference: 2
+};
+
+export function validateBadmintonScore(scores: MatchScore[], settings: ScoringSettings = BADMINTON_SCORING_SETTINGS): boolean {
+  if (!scores.length) return false;
+
+  const setsWonByTeam1 = scores.filter(s => s.team1Score > s.team2Score).length;
+  const setsWonByTeam2 = scores.filter(s => s.team2Score > s.team1Score).length;
+
+  // Check if either team has won enough sets
+  if (setsWonByTeam1 > settings.maxSets / 2 || setsWonByTeam2 > settings.maxSets / 2) {
+    return true;
+  }
+
+  // Validate individual set scores
+  return scores.every(score => {
+    const { team1Score, team2Score } = score;
+    const maxScore = Math.max(team1Score, team2Score);
+    const minScore = Math.min(team1Score, team2Score);
+
+    // Basic point validation
+    if (maxScore < settings.pointsToWin) return true;
+
+    // Two-point lead validation
+    if (settings.requireTwoPointLead) {
+      const pointDiff = Math.abs(team1Score - team2Score);
+      if (pointDiff < settings.minPointDifference) return false;
+
+      // Check maximum score cap
+      if (settings.maxTwoPointLeadScore && maxScore > settings.maxTwoPointLeadScore) {
+        return false;
+      }
+    }
+
+    return maxScore >= settings.pointsToWin;
+  });
+}
+
+export function determineMatchWinner(match: Match, settings: ScoringSettings = BADMINTON_SCORING_SETTINGS): "team1" | "team2" | null {
+  const { scores } = match;
+  if (!validateBadmintonScore(scores, settings)) return null;
+
+  const setsWonByTeam1 = scores.filter(s => s.team1Score > s.team2Score).length;
+  const setsWonByTeam2 = scores.filter(s => s.team2Score > s.team1Score).length;
+
+  if (setsWonByTeam1 > settings.maxSets / 2) return "team1";
+  if (setsWonByTeam2 > settings.maxSets / 2) return "team2";
+
+  return null;
+}
