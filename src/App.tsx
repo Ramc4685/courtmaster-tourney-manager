@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Layout } from '@/components/layout/Layout';
 import Home from '@/pages/home';
 import { TournamentProvider } from '@/contexts/tournament/TournamentContext';
 import { AuthProvider } from '@/contexts/auth/AuthContext';
