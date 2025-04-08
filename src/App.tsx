@@ -44,7 +44,8 @@ function App() {
                     match={{
                       id: 'placeholder',
                       tournamentId: 'placeholder',
-                      status: 'SCHEDULED'
+                      status: 'SCHEDULED' as MatchStatus,
+                      scores: []
                     }}
                     scoringSettings={getDefaultScoringSettings()}
                     onMatchComplete={(matchId, winnerId) => {
@@ -62,7 +63,8 @@ function App() {
                     match={{
                       id: 'placeholder',
                       tournamentId: 'placeholder',
-                      status: 'SCHEDULED'
+                      status: 'SCHEDULED' as MatchStatus,
+                      scores: []
                     }}
                     scoringSettings={getDefaultScoringSettings()}
                     onMatchComplete={(matchId, winnerId) => {

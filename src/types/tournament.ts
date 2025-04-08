@@ -29,8 +29,11 @@ export interface Team {
   players: Player[];
   division?: DivisionType;
   category?: string;
+  initialRanking?: number;
   createdAt?: Date;
   updatedAt?: Date;
+  created_by?: string;
+  updated_by?: string;
 }
 
 export interface TournamentCategory {
@@ -38,6 +41,8 @@ export interface TournamentCategory {
   name: string;
   type: CategoryType;
   division: string;
+  format?: TournamentFormat;
+  scoringSettings?: ScoringSettings;
 }
 
 export interface Court {
@@ -50,6 +55,8 @@ export interface Court {
   location?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  created_by?: string;
+  updated_by?: string;
 }
 
 export interface AuditLog {
@@ -61,6 +68,7 @@ export interface AuditLog {
   details: Record<string, any>;
   type?: string;
   metadata?: Record<string, any>;
+  user_id?: string;
 }
 
 export interface StandaloneAuditLog {
@@ -120,9 +128,11 @@ export interface Match {
   updatedAt?: Date;
   createdAt?: Date;
   updated_by?: string;
+  created_by?: string;
   category?: TournamentCategory;
   scorerName?: string;
   auditLogs?: AuditLog[];
+  groupName?: string;
 }
 
 export interface StandaloneMatch {
@@ -174,6 +184,7 @@ export interface Tournament {
   updatedAt: Date;
   currentStage?: TournamentStage;
   updated_by?: string;
+  created_by?: string;
 }
 
 export interface ScoringRule {
@@ -214,93 +225,26 @@ export interface ScoreValidationResult {
   warnings: string[];
 }
 
-// Now fix the App.tsx issue with match scores
-<lov-write file_path="src/App.tsx">
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Home from './pages/home';
-import { TournamentProvider } from './contexts/tournament/TournamentContext';
-import { AuthProvider } from './contexts/auth/AuthContext';
-import Layout from './components/layout/Layout';
-import TournamentCreationForm from './components/admin/tournament/TournamentCreationForm';
-import { TournamentList } from './components/tournament/TournamentList';
-import TournamentView from './components/tournament/TournamentView';
-import ScoringView from './components/scoring/ScoringView';
-import PublicView from './components/public/PublicView';
-import Profile from './components/profile/Profile';
-import Settings from './components/settings/Settings';
-import AdminDashboard from './components/admin/AdminDashboard';
-import Login from './components/auth/Login';
-import { getDefaultScoringSettings } from './utils/matchUtils';
-
-function App() {
-  // Add debugging
-  useEffect(() => {
-    console.log('App component mounted');
-    return () => {
-      console.log('App component unmounted');
-    };
-  }, []);
-
-  console.log('App component rendering');
-
-  return (
-    <Router>
-      <AuthProvider>
-        <TournamentProvider>
-          <Routes>
-            <Route path="/" element={<Layout><Home /></Layout>} />
-            <Route path="/tournaments" element={<Layout><TournamentList /></Layout>} />
-            <Route path="/tournament/create" element={<Layout><TournamentCreationForm /></Layout>} />
-            <Route path="/tournament/:id" element={<Layout><TournamentView /></Layout>} />
-            <Route 
-              path="/scoring/:id" 
-              element={
-                <Layout>
-                  <ScoringView 
-                    match={{
-                      id: 'placeholder',
-                      tournamentId: 'placeholder',
-                      status: 'SCHEDULED',
-                      scores: [] // Fix the missing scores property
-                    }}
-                    scoringSettings={getDefaultScoringSettings()}
-                    onMatchComplete={(matchId, winnerId) => {
-                      console.log(`Match ${matchId} completed, winner: ${winnerId}`);
-                    }}
-                  />
-                </Layout>
-              } 
-            />
-            <Route 
-              path="/scoring/standalone" 
-              element={
-                <Layout>
-                  <ScoringView 
-                    match={{
-                      id: 'placeholder',
-                      tournamentId: 'placeholder',
-                      status: 'SCHEDULED',
-                      scores: [] // Fix the missing scores property
-                    }}
-                    scoringSettings={getDefaultScoringSettings()}
-                    onMatchComplete={(matchId, winnerId) => {
-                      console.log(`Match ${matchId} completed, winner: ${winnerId}`);
-                    }}
-                  />
-                </Layout>
-              } 
-            />
-            <Route path="/public/:id" element={<Layout><PublicView /></Layout>} />
-            <Route path="/profile" element={<Layout><Profile /></Layout>} />
-            <Route path="/settings" element={<Layout><Settings /></Layout>} />
-            <Route path="/admin" element={<Layout><AdminDashboard /></Layout>} />
-            <Route path="/login" element={<Layout><Login /></Layout>} />
-          </Routes>
-        </TournamentProvider>
-      </AuthProvider>
-    </Router>
-  );
+// Type to define category registration rules
+export interface CategoryRegistrationRule {
+  categoryId: string;
+  maxTeams: number;
+  requirePlayerProfile: boolean;
+  allowExternalPlayers: boolean;
+  requireApproval: boolean;
 }
 
-export default App;
+// Type to define seeding rules
+export interface SeedingRule {
+  method: 'manual' | 'ranking' | 'random';
+  respectGroups: boolean;
+  protectTopSeeds: boolean;
+}
+
+// Bracket progression type
+export interface BracketProgression {
+  sourceMatchId: string;
+  targetMatchId: string;
+  position: 'team1' | 'team2';
+  condition: 'winner' | 'loser';
+}
