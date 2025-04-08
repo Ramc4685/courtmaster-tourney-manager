@@ -1,16 +1,18 @@
 export type TournamentStatus = "DRAFT" | "PUBLISHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 export type MatchStatus = "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "DEFERRED";
 export type CourtStatus = "AVAILABLE" | "IN_USE" | "MAINTENANCE";
-export type DivisionType = "MENS_SINGLES" | "WOMENS_SINGLES" | "MENS_DOUBLES" | "WOMENS_DOUBLES" | "MIXED_DOUBLES";
-export type StageType = "INITIAL_ROUND" | "QUARTER_FINALS" | "SEMI_FINALS" | "FINALS";
-export type ScorerType = "TOURNAMENT" | "STANDALONE";
+export type DivisionType = "MENS" | "WOMENS" | "MIXED";
+export type StageType = "GROUP" | "KNOCKOUT" | "FINAL";
+export type ScorerType = "MANUAL" | "AUTOMATIC";
+export type TournamentFormat = "SINGLE_ELIMINATION" | "DOUBLE_ELIMINATION" | "ROUND_ROBIN";
+export type CategoryType = "MENS_SINGLES" | "WOMENS_SINGLES" | "MENS_DOUBLES" | "WOMENS_DOUBLES" | "MIXED_DOUBLES";
 
 export interface AuditLog {
-    timestamp: Date;
+    id: string;
     action: string;
+    timestamp: Date;
+    userId: string;
     details: Record<string, any>;
-    user_id: string;
-    userName: string;
 }
 
 export interface StandaloneAuditLog {
@@ -24,20 +26,21 @@ export interface StandaloneAuditLog {
 export interface Player {
     id: string;
     name: string;
-    email?: string;
+    email: string;
     phone?: string;
+    division: DivisionType;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface Team {
     id: string;
     name: string;
     players: Player[];
-    seed?: number;
-    wins?: number;
-    losses?: number;
-    initialRanking?: number;
-    rankingPoints?: number;
-    status?: 'ACTIVE' | 'INACTIVE';
+    division: DivisionType;
+    category: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface MatchScore {
@@ -50,25 +53,19 @@ export interface MatchScore {
 export interface Match {
     id: string;
     tournamentId: string;
-    matchNumber?: string;
-    team1: Team;
-    team2: Team;
-    division: DivisionType;
     stage: StageType;
-    scheduledTime?: Date;
-    completedTime?: Date;
-    courtNumber?: number;
+    round: number;
+    team1Id: string;
+    team2Id: string;
+    courtId?: string;
     status: MatchStatus;
-    scores: MatchScore[];
-    winner?: Team;
-    loser?: Team;
-    category?: TournamentCategory;
-    auditLogs?: AuditLog[];
-    createdAt?: Date;
-    updatedAt?: Date;
-    courtName?: string;
-    scorerName?: string;
-    endTime?: Date;
+    score?: {
+        team1: number;
+        team2: number;
+    };
+    winnerId?: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface StandaloneMatch {
@@ -101,37 +98,38 @@ export interface StandaloneMatch {
 export interface Court {
     id: string;
     name: string;
-    number: number;
     status: CourtStatus;
-    currentMatch?: Match;
+    currentMatchId?: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface TournamentCategory {
     id: string;
     name: string;
-    type: DivisionType;
+    type: CategoryType;
+    division: string;
 }
 
 export interface Tournament {
     id: string;
     name: string;
+    description?: string;
+    format: TournamentFormat;
+    status: TournamentStatus;
     startDate: Date;
     endDate: Date;
-    location?: string;
-    description?: string;
-    status: TournamentStatus;
-    matches: Match[];
-    teams: Team[];
-    courts: Court[];
+    location: string;
+    registrationEnabled: boolean;
+    registrationDeadline?: Date;
+    maxTeams?: number;
+    scoringRules?: string;
     categories: TournamentCategory[];
-    createdBy?: string;
-    updatedBy?: string;
-    createdAt?: Date;
-    updatedAt?: Date;
-    contactEmail?: string;
-    contactPhone?: string;
-    isPublic?: boolean;
-    logoUrl?: string;
+    teams: Team[];
+    matches: Match[];
+    courts: Court[];
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface ScoringSettings {

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './pages/home'; // lowercase 'h' instead of uppercase 'H'
@@ -15,6 +14,8 @@ import Share from './pages/Share';
 import { TournamentProvider } from './contexts/tournament/TournamentContext';
 import { AuthProvider } from './contexts/auth/AuthContext';
 import Layout from './components/layout/Layout';
+import TournamentManagement from "@/components/admin/TournamentManagement";
+import TournamentCreationForm from "@/components/admin/TournamentCreationForm";
 
 function App() {
   return (
@@ -87,6 +88,8 @@ function App() {
                 <Share />
               </Layout>
             } />
+            <Route path="/tournaments" element={<TournamentManagement />} />
+            <Route path="/tournaments/create" element={<TournamentCreationForm />} />
           </Routes>
         </TournamentProvider>
       </AuthProvider>
