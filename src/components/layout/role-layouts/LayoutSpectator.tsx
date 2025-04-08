@@ -7,7 +7,7 @@ interface LayoutProps {
   permissions: UserPermissions;
 }
 
-const LayoutSpectator: React.FC<LayoutProps> = ({ children, permissions }) => {
+export const LayoutSpectator: React.FC<LayoutProps> = ({ children, permissions }) => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
@@ -39,4 +39,4 @@ const LayoutSpectator: React.FC<LayoutProps> = ({ children, permissions }) => {
   );
 };
 
-export default LayoutSpectator;
+
