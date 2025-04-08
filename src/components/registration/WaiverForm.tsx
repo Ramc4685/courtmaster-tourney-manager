@@ -25,10 +25,15 @@ interface WaiverFormData {
 
 const WaiverForm: React.FC<WaiverFormProps> = ({ onSubmit }) => {
   const form = useForm<WaiverFormData>();
+  const [agreementDate, setAgreementDate] = useState(new Date().toISOString().split('T')[0]);
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl mx-auto p-6 bg-card rounded-lg border">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold mb-2">Tournament Participation Waiver</h2>
+          <p className="text-muted-foreground">Please read carefully and acknowledge below</p>
+        </div>
         <div className="prose max-w-none">
           <h2>Liability Waiver</h2>
           <p>By signing this waiver, you acknowledge and agree to the following:</p>
