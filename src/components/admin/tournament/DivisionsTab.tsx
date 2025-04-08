@@ -1,5 +1,6 @@
+
 import React from "react";
-import { useFieldArray, useFormContext, UseFormReturn } from "react-hook-form";
+import { useFieldArray, UseFormReturn } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { TournamentFormValues } from "./types";
-import { CategoryType, TournamentFormat } from "@/types/tournament-enums";
+import { CategoryType, TournamentFormat, PlayType, DivisionType } from "@/types/tournament-enums";
 import { v4 as uuidv4 } from "uuid";
 
 interface DivisionsTabProps {
@@ -24,7 +25,7 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
     appendDivision({
       id: uuidv4(),
       name: "",
-      type: "MENS",
+      type: DivisionType.MENS,
       categories: [],
     });
   };
@@ -35,7 +36,7 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
     division.categories.push({
       id: uuidv4(),
       name: "",
-      type: CategoryType.MENS_SINGLES,
+      playType: PlayType.SINGLES,
       format: TournamentFormat.SINGLE_ELIMINATION,
     });
     form.setValue("divisions", divisions);
@@ -97,9 +98,11 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="MENS">Men's</SelectItem>
-                        <SelectItem value="WOMENS">Women's</SelectItem>
-                        <SelectItem value="MIXED">Mixed</SelectItem>
+                        {Object.values(DivisionType).map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type.replace(/_/g, " ")}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -133,7 +136,7 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
                           <FormItem>
                             <FormLabel>Category Name</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="e.g., Men's Singles" />
+                              <Input {...field} placeholder="e.g., Elite Singles" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -141,21 +144,21 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
                       />
                       <FormField
                         control={form.control}
-                        name={`divisions.${divisionIndex}.categories.${categoryIndex}.type`}
+                        name={`divisions.${divisionIndex}.categories.${categoryIndex}.playType`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Category Type</FormLabel>
+                            <FormLabel>Play Type</FormLabel>
                             <Select
                               onValueChange={field.onChange}
                               defaultValue={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Select category type" />
+                                  <SelectValue placeholder="Select play type" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {Object.values(CategoryType).map((type) => (
+                                {Object.values(PlayType).map((type) => (
                                   <SelectItem key={type} value={type}>
                                     {type.replace(/_/g, " ")}
                                   </SelectItem>
@@ -205,4 +208,4 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
   );
 };
 
-export default DivisionsTab; 
+export default DivisionsTab;

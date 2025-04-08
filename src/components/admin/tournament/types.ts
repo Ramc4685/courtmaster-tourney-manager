@@ -1,22 +1,43 @@
 import { z } from "zod";
-import { TournamentFormat, CategoryType } from '@/types/tournament-enums';
+import { TournamentFormat, CategoryType, PlayType, DivisionType } from '@/types/tournament-enums';
+
+export const categorySchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, "Category name is required"),
+  playType: z.nativeEnum(PlayType),
+  format: z.nativeEnum(TournamentFormat),
+  scoringSettings: z.object({
+    pointsToWin: z.number().min(1),
+    mustWinByTwo: z.boolean(),
+    maxPoints: z.number().min(1),
+  }).optional(),
+});
 
 export const divisionSchema = z.object({
   id: z.string(),
   name: z.string().min(1, "Division name is required"),
-  type: z.enum(["MENS", "WOMENS", "MIXED"]),
-  categories: z.array(z.object({
-    id: z.string(),
-    name: z.string().min(1, "Category name is required"),
-    type: z.nativeEnum(CategoryType),
-    format: z.nativeEnum(TournamentFormat),
-    scoringSettings: z.object({
-      pointsToWin: z.number().min(1),
-      mustWinByTwo: z.boolean(),
-      maxPoints: z.number().min(1),
-    }).optional(),
-  })),
+  type: z.nativeEnum(DivisionType),
+  categories: z.array(categorySchema),
 });
+
+export interface Category {
+  id: string;
+  name: string;
+  playType: PlayType;
+  format: TournamentFormat;
+  scoringSettings?: {
+    pointsToWin: number;
+    mustWinByTwo: boolean;
+    maxPoints: number;
+  };
+}
+
+export interface Division {
+  id: string;
+  name: string;
+  type: DivisionType;
+  categories: Category[];
+}
 
 export const tournamentFormSchema = z
   .object({
@@ -58,20 +79,3 @@ export const tournamentFormSchema = z
 
 export type TournamentFormValues = z.infer<typeof tournamentFormSchema>;
 export type DivisionFormValues = z.infer<typeof divisionSchema>;
-
-export interface Division {
-  id: string;
-  name: string;
-  type: "MENS" | "WOMENS" | "MIXED";
-  categories: {
-    id: string;
-    name: string;
-    type: CategoryType;
-    format: TournamentFormat;
-    scoringSettings?: {
-      pointsToWin: number;
-      mustWinByTwo: boolean;
-      maxPoints: number;
-    };
-  }[];
-}
