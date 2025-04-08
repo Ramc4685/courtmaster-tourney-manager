@@ -1,12 +1,11 @@
 import React, { useEffect } from "react";
-import Navbar from "./Navbar";
+import { Navbar } from "./Navbar";
 
 interface LayoutProps {
-  children?: React.ReactNode;
+  children: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
-  // Add debugging
+export const Layout: React.FC<LayoutProps> = ({ children }) => {
   useEffect(() => {
     console.log('Layout component mounted');
     return () => {
@@ -17,18 +16,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   console.log('Layout component rendering');
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="flex-1 container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6">
         {children}
       </main>
-      <footer className="bg-white border-t border-gray-200 py-4">
-        <div className="container mx-auto px-4 text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} CourtMaster Tournament Manager
-        </div>
-      </footer>
     </div>
   );
 };
-
-export default Layout;

@@ -31,7 +31,8 @@ function App() {
     <Router>
       <AuthProvider>
         <TournamentProvider>
-          <RoleBasedLayout> {/* Updated Layout wrapper */}
+          <Layout>
+            <RoleBasedLayout>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/tournaments" element={<TournamentList />} />
@@ -99,7 +100,8 @@ function App() {
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/login" element={<Login />} />
             </Routes>
-          </RoleBasedLayout> {/* Updated Layout closing tag */}
+          </RoleBasedLayout>
+          </Layout>
         </TournamentProvider>
       </AuthProvider>
     </Router>

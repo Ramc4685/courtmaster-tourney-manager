@@ -1,13 +1,15 @@
 import React from 'react';
-import { useTournament } from '@/contexts/tournament/useTournament';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Trophy, Plus, Calendar } from 'lucide-react';
+import { TournamentStatusBadge } from './TournamentStatusBadge';
+import { useTournament } from '@/contexts/tournament/useTournament';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Plus } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
-export function TournamentList() {
+export const TournamentList = () => {
   const { tournaments, isLoading, error } = useTournament();
 
   if (isLoading) {
@@ -48,7 +50,7 @@ export function TournamentList() {
     );
   }
 
-  if (!tournaments.length) {
+  if (!tournaments?.length) {
     return (
       <div className="container px-4 py-6">
         <div className="flex justify-between items-center mb-6">
@@ -79,34 +81,43 @@ export function TournamentList() {
   }
 
   return (
-    <div className="container px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Tournaments</h1>
-        <Button asChild>
-          <Link to="/tournament/create">
-            <Plus className="h-4 w-4 mr-2" />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Tournaments</h1>
+        <Link to="/tournament/create">
+          <Button className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
             Create Tournament
-          </Link>
-        </Button>
+          </Button>
+        </Link>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {tournaments.map((tournament) => (
-          <Card key={tournament.id} className="hover:shadow-md transition-shadow duration-200">
-            <CardHeader>
-              <CardTitle className="line-clamp-1">{tournament.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                {new Date(tournament.startDate).toLocaleDateString()} - {new Date(tournament.endDate).toLocaleDateString()}
-              </p>
-              <Button asChild variant="outline" className="w-full">
-                <Link to={`/tournament/${tournament.id}`}>View Details</Link>
-              </Button>
-            </CardContent>
-          </Card>
+          <Link key={tournament.id} to={`/tournament/${tournament.id}`}>
+            <Card className="hover:bg-muted/50 transition-colors">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="truncate">{tournament.name}</span>
+                  <TournamentStatusBadge status={tournament.status} />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span>{new Date(tournament.startDate).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4" />
+                    <span>{tournament.format}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
     </div>
   );
-} 
+};
