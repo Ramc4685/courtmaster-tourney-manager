@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 
 export enum TournamentFormat {
@@ -43,6 +44,14 @@ export const tournamentFormSchema = z.object({
       type: z.nativeEnum(CategoryType),
     })).default([]),
   })).default([]),
+  // New field for controlling registration requirements by category
+  categoryRegistrationRules: z.array(z.object({
+    categoryId: z.string(),
+    minAge: z.number().optional(),
+    maxAge: z.number().optional(),
+    gender: z.enum(["male", "female", "any"]).optional(),
+    skillLevel: z.enum(["beginner", "intermediate", "advanced", "elite", "any"]).optional(),
+  })).optional(),
 });
 
 export type TournamentFormValues = z.infer<typeof tournamentFormSchema>;
@@ -53,4 +62,4 @@ export interface Division {
     name: string;
     type: CategoryType;
   }[];
-} 
+}
