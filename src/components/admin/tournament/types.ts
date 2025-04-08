@@ -22,12 +22,11 @@ export const tournamentFormSchema = z
   .object({
     name: z.string().min(3, "Name must be at least 3 characters"),
     location: z.string().min(3, "Location must be at least 3 characters"),
+    gameType: z.nativeEnum(GameType).default(GameType.BADMINTON),
     startDate: z.date({
       required_error: "Start date is required",
     }),
-    endDate: z.date({
-      required_error: "End date is required",
-    }),
+    endDate: z.date().optional(),
     format: z.nativeEnum(TournamentFormat),
     description: z.string().optional(),
     registrationEnabled: z.boolean().default(false),

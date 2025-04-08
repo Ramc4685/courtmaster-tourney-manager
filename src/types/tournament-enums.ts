@@ -40,18 +40,24 @@ export enum CourtStatus {
   RESERVED = 'RESERVED'
 }
 
-export enum Division {
-  MENS = 'MENS',
-  WOMENS = 'WOMENS',
-  MIXED = 'MIXED',
-  OPEN = 'OPEN'
+export enum GameType {
+  BADMINTON = "BADMINTON",
+  VOLLEYBALL = "VOLLEYBALL",
+  TABLE_TENNIS = "TABLE_TENNIS",
+  TENNIS = "TENNIS"
 }
 
 export enum CategoryType {
-  SINGLES = 'SINGLES',
-  DOUBLES = 'DOUBLES',
-  TEAM = 'TEAM',
-  CUSTOM = 'CUSTOM'
+  MENS = "MENS",
+  WOMENS = "WOMENS",
+  MIXED = "MIXED",
+  KIDS = "KIDS",
+  CUSTOM = "CUSTOM"
+}
+
+export enum PlayType {
+  SINGLES = "SINGLES",
+  DOUBLES = "DOUBLES"
 }
 
 export enum ScorerType {

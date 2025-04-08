@@ -22,10 +22,12 @@ const TournamentCreationForm = React.forwardRef<HTMLFormElement, {}>(({  }, ref)
     defaultValues: {
       name: '',
       location: '',
+      gameType: GameType.BADMINTON,
       format: TournamentFormat.SINGLE_ELIMINATION,
       registrationEnabled: false,
       divisions: [],
       requirePlayerProfile: false,
+      maxTeams: undefined,
       scoringRules: {
         pointsToWin: 21,
         mustWinByTwo: true,
@@ -70,6 +72,19 @@ const TournamentCreationForm = React.forwardRef<HTMLFormElement, {}>(({  }, ref)
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Game Type</label>
+                  <select 
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                    {...form.register('gameType')}
+                  >
+                    {Object.values(GameType).map(type => (
+                      <option key={type} value={type}>
+                        {type.replace(/_/g, ' ')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <FormField
                   label="Tournament Name"
                   {...form.register('name')}
