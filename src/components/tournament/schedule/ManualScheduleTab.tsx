@@ -19,7 +19,7 @@ interface FormData {
 interface ManualScheduleTabProps {
   tournament: any;
   selectedDivision: Division;
-  onDivisionChange: (value: Division) => void;
+  onDivisionChange: (value: DivisionType) => void;
   onScheduleMatch: (formData: FormData) => void;
   onCancel: () => void;
 }

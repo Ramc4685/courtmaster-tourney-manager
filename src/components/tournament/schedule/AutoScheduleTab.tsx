@@ -12,9 +12,9 @@ import SuggestedMatchPairs from "./SuggestedMatchPairs";
 
 interface AutoScheduleTabProps {
   tournament: Tournament;
-  selectedDivision: Division;
+  selectedDivision: DivisionType;
   suggestedPairs: { team1: any; team2: any }[];
-  onDivisionChange: (value: Division) => void;
+  onDivisionChange: (value: DivisionType) => void;
   onGenerateSuggestedPairs: () => void;
   onScheduleAllMatches: () => void;
   onCancel: () => void;
