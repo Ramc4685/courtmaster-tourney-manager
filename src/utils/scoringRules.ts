@@ -1,5 +1,6 @@
 import { ScoringSettings, ScoreValidationResult, MatchScore, ScoreAuditLog } from '@/types/tournament';
 import { Match } from "@/types/tournament";
+import { Match, Score, ScoringSystem } from '@/types/tournament';
 
 /**
  * Validates a set score according to scoring rules
@@ -120,8 +121,6 @@ export const getDefaultVolleyballScoringSettings = (): ScoringSettings => {
   };
 };
 
-import { Match, ScoringSettings, MatchScore } from "@/types/tournament";
-
 export const BADMINTON_SCORING_SETTINGS: ScoringSettings = {
   maxPoints: 21,
   maxSets: 3,
@@ -131,50 +130,52 @@ export const BADMINTON_SCORING_SETTINGS: ScoringSettings = {
   minPointDifference: 2
 };
 
-export function validateBadmintonScore(scores: MatchScore[], settings: ScoringSettings = BADMINTON_SCORING_SETTINGS): boolean {
-  if (!scores.length) return false;
 
-  const setsWonByTeam1 = scores.filter(s => s.team1Score > s.team2Score).length;
-  const setsWonByTeam2 = scores.filter(s => s.team2Score > s.team1Score).length;
+export const BadmintonScoringRules = {
+  validateScore: (scores: MatchScore[]): boolean => {
+    if (!scores.length) return true;
 
-  // Check if either team has won enough sets
-  if (setsWonByTeam1 > settings.maxSets / 2 || setsWonByTeam2 > settings.maxSets / 2) {
-    return true;
-  }
+    const lastSet = scores[scores.length - 1];
+    const { team1Score, team2Score } = lastSet;
 
-  // Validate individual set scores
-  return scores.every(score => {
-    const { team1Score, team2Score } = score;
-    const maxScore = Math.max(team1Score, team2Score);
-    const minScore = Math.min(team1Score, team2Score);
-
-    // Basic point validation
-    if (maxScore < settings.pointsToWin) return true;
-
-    // Two-point lead validation
-    if (settings.requireTwoPointLead) {
-      const pointDiff = Math.abs(team1Score - team2Score);
-      if (pointDiff < settings.minPointDifference) return false;
-
-      // Check maximum score cap
-      if (settings.maxTwoPointLeadScore && maxScore > settings.maxTwoPointLeadScore) {
-        return false;
-      }
+    // Standard game to 21 points
+    if (Math.max(team1Score, team2Score) >= 21) {
+      // Winner must have 2 point lead or reach 30
+      if (Math.max(team1Score, team2Score) === 30) return true;
+      return Math.abs(team1Score - team2Score) >= 2;
     }
 
-    return maxScore >= settings.pointsToWin;
-  });
-}
+    return true;
+  },
 
-export function determineMatchWinner(match: Match, settings: ScoringSettings = BADMINTON_SCORING_SETTINGS): "team1" | "team2" | null {
-  const { scores } = match;
-  if (!validateBadmintonScore(scores, settings)) return null;
+  isMatchComplete: (scores: MatchScore[]): boolean => {
+    if (scores.length < 2) return false;
 
-  const setsWonByTeam1 = scores.filter(s => s.team1Score > s.team2Score).length;
-  const setsWonByTeam2 = scores.filter(s => s.team2Score > s.team1Score).length;
+    let team1Sets = 0;
+    let team2Sets = 0;
 
-  if (setsWonByTeam1 > settings.maxSets / 2) return "team1";
-  if (setsWonByTeam2 > settings.maxSets / 2) return "team2";
+    scores.forEach(score => {
+      if (score.team1Score > score.team2Score) team1Sets++;
+      if (score.team2Score > score.team1Score) team2Sets++;
+    });
 
-  return null;
-}
+    return team1Sets === 2 || team2Sets === 2;
+  },
+
+  getWinner: (match: Match): string | null => {
+    if (!match.scores.length) return null;
+
+    let team1Sets = 0;
+    let team2Sets = 0;
+
+    match.scores.forEach(score => {
+      if (score.team1Score > score.team2Score) team1Sets++;
+      if (score.team2Score > score.team1Score) team2Sets++;
+    });
+
+    if (team1Sets === 2) return match.team1Id;
+    if (team2Sets === 2) return match.team2Id;
+
+    return null;
+  }
+};

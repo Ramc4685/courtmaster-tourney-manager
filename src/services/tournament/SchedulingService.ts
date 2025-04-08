@@ -1,7 +1,6 @@
+import { Tournament, Team, TournamentFormat, Match, Court } from "@/types/tournament";
+import { findCourtById, findMatchById } from "@/utils/tournamentUtils";
 
-import { Tournament, Team, TournamentFormat, Match } from "@/types/tournament";
-
-// Update to match types from contexts/tournament/types.ts
 export interface SchedulingOptions {
   startDate: Date;
   startTime: string;
@@ -10,9 +9,9 @@ export interface SchedulingOptions {
   assignCourts: boolean;
   autoStartMatches: boolean;
   respectFormat: boolean;
+  optimizeCourts?: boolean;
 }
 
-// Update to match types from contexts/tournament/types.ts
 export interface SchedulingResult {
   tournament: Tournament;
   matchesScheduled: number;
@@ -22,6 +21,21 @@ export interface SchedulingResult {
 }
 
 class SchedulingService {
+  private calculateCourtEfficiency(court: Court, matches: Match[]): number {
+    const matchesOnCourt = matches.filter(m => m.courtNumber === court.number);
+    return matchesOnCourt.length;
+  }
+
+  private findOptimalCourt(courts: Court[], match: Match, matches: Match[]): Court | null {
+    return courts
+      .filter(c => c.status === "AVAILABLE")
+      .reduce((best, current) => {
+        const currentEfficiency = this.calculateCourtEfficiency(current, matches);
+        const bestEfficiency = best ? this.calculateCourtEfficiency(best, matches) : -1;
+        return currentEfficiency > bestEfficiency ? current : best;
+      }, null as Court | null);
+  }
+
   // Generate brackets for a tournament
   async generateBrackets(tournament: Tournament): Promise<{ tournament: Tournament; matchesCreated: number }> {
     // Implementation would go here
@@ -71,16 +85,44 @@ class SchedulingService {
     teamPairs: { team1: Team; team2: Team }[],
     options: SchedulingOptions
   ): Promise<SchedulingResult> {
-    // Implementation would go here
-    console.log("Scheduling multiple matches in tournament:", tournament.name);
-    
-    // For now, just return the tournament with no changes
-    return {
+    const result: SchedulingResult = {
+      tournament: { ...tournament },
       matchesScheduled: 0,
       courtsAssigned: 0,
       matchesStarted: 0,
-      tournament
+      errors: []
     };
+
+    let currentTime = new Date(options.startDate);
+    currentTime.setHours(parseInt(options.startTime.split(':')[0]));
+    currentTime.setMinutes(parseInt(options.startTime.split(':')[1]));
+
+    for (const pair of teamPairs) {
+      const match: Match = {
+        id: `match-${Date.now()}-${Math.random()}`,
+        team1Id: pair.team1.id,
+        team2Id: pair.team2.id,
+        status: "SCHEDULED",
+        scheduledTime: new Date(currentTime),
+        scores: [],
+        createdAt: new Date()
+      };
+
+      if (options.assignCourts && options.optimizeCourts) {
+        const optimalCourt = this.findOptimalCourt(tournament.courts, match, result.tournament.matches);
+        if (optimalCourt) {
+          match.courtNumber = optimalCourt.number;
+          result.courtsAssigned++;
+        }
+      }
+
+      result.tournament.matches.push(match);
+      result.matchesScheduled++;
+
+      currentTime = new Date(currentTime.getTime() + (options.matchDuration + options.breakDuration) * 60000);
+    }
+
+    return result;
   }
   
   // Start a match
@@ -144,6 +186,23 @@ class SchedulingService {
     
     // For now, just return the tournament with no changes
     return { tournament };
+  }
+
+  async optimizeExistingSchedule(tournament: Tournament): Promise<Tournament> {
+    const scheduledMatches = tournament.matches
+      .filter(m => m.status === "SCHEDULED")
+      .sort((a, b) => (a.scheduledTime?.getTime() || 0) - (b.scheduledTime?.getTime() || 0));
+
+    const availableCourts = tournament.courts.filter(c => c.status === "AVAILABLE");
+
+    for (const match of scheduledMatches) {
+      const optimalCourt = this.findOptimalCourt(availableCourts, match, tournament.matches);
+      if (optimalCourt) {
+        match.courtNumber = optimalCourt.number;
+      }
+    }
+
+    return tournament;
   }
 }
 
