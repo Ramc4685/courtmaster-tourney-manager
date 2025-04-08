@@ -16,7 +16,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   console.log('Layout component rendering');
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background font-sans antialiased">
       <Navbar />
       <main className="container mx-auto px-4 py-6">
         {children}
