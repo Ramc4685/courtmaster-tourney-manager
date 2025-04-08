@@ -4,7 +4,7 @@ import {
   TournamentStage,
   MatchStatus,
   CourtStatus,
-  Division,
+  DivisionType,
   CategoryType,
   ScorerType
 } from './tournament-enums';
@@ -24,7 +24,7 @@ export interface Team {
   id: string;
   name: string;
   seed?: number;
-  division?: Division;
+  division?: DivisionType;
   players?: Player[];
   createdAt: Date;
   updatedAt: Date;
@@ -34,7 +34,7 @@ export interface TournamentCategory {
   id: string;
   name: string;
   type: CategoryType;
-  division: Division;
+  division: DivisionType;
   isCustom?: boolean;
   description?: string;
   createdAt: Date;
@@ -76,7 +76,7 @@ export interface Match {
   winnerId?: string;
   loserId?: string;
   status: MatchStatus;
-  division: Division;
+  division: DivisionType;
   stage: TournamentStage;
   round: number;
   courtId?: string;
@@ -110,7 +110,7 @@ export interface Tournament {
   registrationDeadline: Date;
   location: string;
   description?: string;
-  divisions: Division[];
+  divisions: DivisionType[];
   category: CategoryType;
   scoringSettings: ScoringSettings;
   teams: Team[];
