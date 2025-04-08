@@ -1,190 +1,73 @@
-import { Match, ScoringSettings, Team, Tournament, Division, TournamentStage, TournamentCategory } from "@/types/tournament";
+import { Tournament, Match, Team, ScoringSettings, MatchStatus } from "@/types/tournament";
 import { generateId } from "./tournamentUtils";
 
-// Get default scoring settings (updated for badminton)
-export const getDefaultScoringSettings = (): ScoringSettings => {
+/**
+ * Updates bracket progression data between matches
+ * @param tournament The tournament containing matches
+ * @param completedMatchId The match that was just completed
+ * @param winnerId ID of the winning team or "team1"/"team2"
+ * @returns Tournament with updated bracket progression
+ */
+export const updateBracketProgression = (
+  tournament: Tournament,
+  completedMatchId: string,
+  winnerId: string
+): Tournament => {
+  const completedMatch = tournament.matches.find(m => m.id === completedMatchId);
+  if (!completedMatch || !completedMatch.nextMatchId) {
+    return tournament;
+  }
+
+  // Find the next match
+  const nextMatch = tournament.matches.find(m => m.id === completedMatch.nextMatchId);
+  if (!nextMatch) {
+    return tournament;
+  }
+
+  // Determine which team won (actual Team object or "team1"/"team2")
+  const winningTeam = typeof winnerId === 'string' && (winnerId === 'team1' || winnerId === 'team2')
+    ? completedMatch[winnerId]
+    : tournament.teams.find(t => t.id === winnerId);
+
+  if (!winningTeam) {
+    console.error("Winner team not found");
+    return tournament;
+  }
+
+  // Update the next match with the winning team
+  const position = completedMatch.nextMatchPosition || 'team1';
+  const updatedNextMatch = {
+    ...nextMatch,
+    [position]: winningTeam,
+    updatedAt: new Date()
+  };
+
+  // Update the tournament with the modified matches
+  const updatedMatches = tournament.matches.map(m => 
+    m.id === updatedNextMatch.id ? updatedNextMatch : m
+  );
+
   return {
-    maxPoints: 21, // Standard badminton scoring to 21 points
-    maxSets: 3,    // Best of 3 sets in badminton
-    requireTwoPointLead: true, // Badminton requires 2-point lead to win
-    maxTwoPointLeadScore: 30   // Maximum score with two-point lead rule (can go beyond 21)
+    ...tournament,
+    matches: updatedMatches,
+    updatedAt: new Date()
   };
 };
 
-// Determine if a set is complete based on badminton rules
-export const isSetComplete = (
-  team1Score: number,
-  team2Score: number,
-  settings: ScoringSettings
-): boolean => {
-  const { maxPoints, requireTwoPointLead, maxTwoPointLeadScore } = settings;
-  
-  // First check if either team has reached or exceeded the standard max points (21)
-  if (team1Score >= maxPoints || team2Score >= maxPoints) {
-    const scoreDifference = Math.abs(team1Score - team2Score);
-    
-    // If a 2-point lead is required (standard badminton rules)
-    if (requireTwoPointLead) {
-      // If there's at least a 2-point difference, the set is complete
-      if (scoreDifference >= 2) {
-        return true;
-      }
-      
-      // If either score has reached the absolute maximum (30), the set is complete regardless of lead
-      const maxScore = Math.max(team1Score, team2Score);
-      if (maxScore >= (maxTwoPointLeadScore || 30)) {
-        return true;
-      }
-      
-      // Otherwise, continue playing (not complete yet)
-      return false;
-    } else {
-      // If no 2-point lead is required (non-standard), just reaching max points is enough
-      return true;
-    }
-  }
-  
-  // If neither team has reached max points, the set is not complete
-  return false;
-};
-
-// Determine if a match is complete
-export const isMatchComplete = (match: Match, settings: ScoringSettings): boolean => {
-  const { maxSets } = settings;
-  
-  // Count sets won by each team
-  let team1Sets = 0;
-  let team2Sets = 0;
-  
-  match.scores.forEach(score => {
-    if (isSetComplete(score.team1Score, score.team2Score, settings)) {
-      if (score.team1Score > score.team2Score) {
-        team1Sets++;
-      } else {
-        team2Sets++;
-      }
-    }
-  });
-  
-  // In best-of-N format, a player needs to win (maxSets/2)+1 sets
-  const setsNeededToWin = Math.ceil(maxSets / 2);
-  
-  return team1Sets >= setsNeededToWin || team2Sets >= setsNeededToWin;
-};
-
-// Determine winner and loser of a match
-export const determineMatchWinnerAndLoser = (
-  match: Match, 
-  settings: ScoringSettings
-): { winner: Team, loser: Team } | null => {
-  // Count sets won by each team
-  let team1Sets = 0;
-  let team2Sets = 0;
-  
-  match.scores.forEach(score => {
-    if (isSetComplete(score.team1Score, score.team2Score, settings)) {
-      if (score.team1Score > score.team2Score) {
-        team1Sets++;
-      } else {
-        team2Sets++;
-      }
-    }
-  });
-  
-  if (team1Sets > team2Sets) {
-    return { winner: match.team1, loser: match.team2 };
-  } else if (team2Sets > team1Sets) {
-    return { winner: match.team2, loser: match.team1 };
-  }
-  
-  return null; // No winner yet
-};
-
-// Update bracket progression
-export const updateBracketProgression = (
-  tournament: Tournament,
-  match: Match,
-  winner: Team
-): Tournament => {
-  // If the match has a next match defined, update that match
-  if (match.nextMatchId) {
-    const nextMatch = tournament.matches.find(m => m.id === match.nextMatchId);
-    
-    if (nextMatch) {
-      // Determine if this match feeds into team1 or team2 of the next match
-      // This logic would depend on your tournament bracket structure
-      // For simplicity, we'll assume there's a pattern to determine this
-      
-      // For example, if match positions are structured in a way that
-      // odd-numbered positions feed into team1 and even into team2:
-      const updatedNextMatch = { ...nextMatch };
-      
-      if (match.bracketPosition && match.bracketPosition % 2 === 1) {
-        updatedNextMatch.team1 = winner;
-      } else {
-        updatedNextMatch.team2 = winner;
-      }
-      
-      const updatedMatches = tournament.matches.map(m => 
-        m.id === nextMatch.id ? updatedNextMatch : m
-      );
-      
-      return {
-        ...tournament,
-        matches: updatedMatches
-      };
-    }
-  }
-  
-  return tournament;
-};
-
-// Count the number of sets won by each team
-export const countSetsWon = (match: Match): { team1Sets: number, team2Sets: number } => {
-  let team1Sets = 0;
-  let team2Sets = 0;
-  
-  match.scores.forEach(score => {
-    if (score.team1Score > score.team2Score) {
-      team1Sets++;
-    } else if (score.team2Score > score.team1Score) {
-      team2Sets++;
-    }
-    // If scores are equal, no one wins the set
-  });
-  
-  return { team1Sets, team2Sets };
-};
-
-// Create a new match with generated ID
-export const createMatch = (
-  tournamentId: string,
-  team1: Team,
-  team2: Team,
-  division: Division | string,
-  stage: TournamentStage | string,
-  scheduledTime?: Date,
-  courtNumber?: number
-): Match => {
-  // Use team1's category, or team2's if team1 doesn't have one
-  const category = team1.category || team2.category;
-  
-  if (!category) {
-    throw new Error("Cannot create match: Teams must have a category assigned");
-  }
-
+// Default scoring settings for badminton
+export const getDefaultScoringSettings = (): ScoringSettings => {
   return {
-    id: generateId(),
-    tournamentId,
-    team1,
-    team2,
-    scores: [],
-    division: division as Division,
-    stage: stage as TournamentStage,
-    scheduledTime,
-    status: "SCHEDULED",
-    courtNumber,
-    updatedAt: new Date(),
-    category // Add the required category field
+    pointsToWin: 21,
+    mustWinByTwo: true,
+    maxPoints: 30,
+    maxSets: 3,
+    requireTwoPointLead: true,
+    maxTwoPointLeadScore: 30,
+    setsToWin: 2,
+    tiebreakRules: {
+      pointsToWin: 11,
+      requireTwoPointLead: true,
+      maxPoints: 15
+    }
   };
 };

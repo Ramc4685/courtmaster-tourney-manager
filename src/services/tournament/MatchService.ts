@@ -168,6 +168,7 @@ export class MatchService {
     };
     
     // Update bracket progression with the winner
+    // Make sure we pass the proper winner identifier (team1 or team2)
     updatedTournament = updateBracketProgression(updatedTournament, updatedMatch, winner);
     
     await tournamentService.updateTournament(updatedTournament);

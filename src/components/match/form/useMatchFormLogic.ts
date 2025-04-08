@@ -195,50 +195,10 @@ export const useMatchFormLogic = () => {
     team2Players,
     showTeam1Alert,
     showTeam2Alert,
-    handleAddPlayer: (team: "team1" | "team2") => {
-      if (team === "team1") {
-        setTeam1Players([...team1Players, '']);
-      } else {
-        setTeam2Players([...team2Players, '']);
-      }
-    },
-    handleRemovePlayer: (team: "team1" | "team2", index: number) => {
-      if (team === "team1") {
-        if (team1Players.length <= 1) return;
-        const newPlayers = [...team1Players];
-        newPlayers.splice(index, 1);
-        setTeam1Players(newPlayers);
-      } else {
-        if (team2Players.length <= 1) return;
-        const newPlayers = [...team2Players];
-        newPlayers.splice(index, 1);
-        setTeam2Players(newPlayers);
-      }
-    },
-    handlePlayerChange: (team: "team1" | "team2", index: number, value: string) => {
-      if (team === "team1") {
-        const newPlayers = [...team1Players];
-        newPlayers[index] = value;
-        setTeam1Players(newPlayers);
-        form.setValue("team1Players", newPlayers.filter(p => p.trim() !== ''));
-      } else {
-        const newPlayers = [...team2Players];
-        newPlayers[index] = value;
-        setTeam2Players(newPlayers);
-        form.setValue("team2Players", newPlayers.filter(p => p.trim() !== ''));
-      }
-    },
-    handleTeamNameChange: (team: "team1" | "team2", value: string) => {
-      if (team === "team1") {
-        form.setValue('team1Name', value);
-        setTeam1NameEdited(true);
-        setShowTeam1Alert(false);
-      } else {
-        form.setValue('team2Name', value);
-        setTeam2NameEdited(true);
-        setShowTeam2Alert(false);
-      }
-    },
+    handleAddPlayer,
+    handleRemovePlayer,
+    handlePlayerChange,
+    handleTeamNameChange,
     onSubmit
   };
 };

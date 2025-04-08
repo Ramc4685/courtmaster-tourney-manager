@@ -1,11 +1,12 @@
 
 import React from "react";
-import { Match, Team, Tournament, Division } from "@/types/tournament";
+import { Match, Team, Tournament, Division, DivisionType } from "@/types/tournament";
 import { cn } from "@/lib/utils";
+import { DivisionEnum } from "@/types/tournament-enums";
 
 interface TournamentBracketProps {
   tournament: Tournament;
-  division?: Division;
+  division?: string;
   onMatchClick?: (match: Match) => void;
 }
 
@@ -16,7 +17,7 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({
 }) => {
   // Filter matches for the selected division and playoff stage
   const divisionMatches = tournament.matches.filter(
-    (match) => match.division === division && match.stage === "PLAYOFF_KNOCKOUT"
+    (match) => String(match.division) === division && match.stage === "PLAYOFF_KNOCKOUT"
   );
 
   const maxRound = Math.max(...divisionMatches.map((m) => m.bracketRound || 0));
@@ -44,7 +45,7 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({
     return rounds;
   };
 
-  const getRoundName = (roundIndex: number, totalRounds: number, div: Division) => {
+  const getRoundName = (roundIndex: number, totalRounds: number, div: string) => {
     if (div === "DIVISION_1" || div === "DIVISION_2") {
       if (roundIndex === 0) return "Round of 16";
       if (roundIndex === 1) return "Quarterfinals";
@@ -58,7 +59,7 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({
     return `Round ${roundIndex + 1}`;
   };
 
-  const getDivisionColor = (div: Division) => {
+  const getDivisionColor = (div: string) => {
     switch (div) {
       case "DIVISION_1":
         return "bg-purple-500 text-white";
@@ -88,7 +89,7 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({
   return (
     <div className="space-y-4">
       <div className={`py-2 px-4 text-center font-semibold rounded-md ${getDivisionColor(division)}`}>
-        {division.replace("_", " ")}
+        {typeof division === 'string' ? division.replace("_", " ") : "Division"}
       </div>
       
       <div className="overflow-x-auto pb-4">
@@ -132,14 +133,14 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({
                         <div className="p-2">
                           <TeamSlot
                             team={match.team1}
-                            isWinner={match.status === "COMPLETED" && match.winner?.id === match.team1.id}
-                            score={match.scores.length > 0 ? match.scores[match.scores.length - 1].team1Score : undefined}
+                            isWinner={match.status === "COMPLETED" && match.winner?.id === match.team1?.id}
+                            score={match.scores?.length > 0 ? match.scores[match.scores.length - 1].team1Score : undefined}
                           />
                           <div className="my-1 border-t border-gray-100"></div>
                           <TeamSlot
                             team={match.team2}
-                            isWinner={match.status === "COMPLETED" && match.winner?.id === match.team2.id}
-                            score={match.scores.length > 0 ? match.scores[match.scores.length - 1].team2Score : undefined}
+                            isWinner={match.status === "COMPLETED" && match.winner?.id === match.team2?.id}
+                            score={match.scores?.length > 0 ? match.scores[match.scores.length - 1].team2Score : undefined}
                           />
                         </div>
                       </>

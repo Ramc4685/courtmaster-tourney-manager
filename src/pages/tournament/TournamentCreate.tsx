@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TournamentFormValues, TournamentFormat } from '@/components/admin/tournament/types';
+import { TournamentFormValues } from '@/components/admin/tournament/types';
+import { TournamentFormat } from '@/types/tournament-enums';
 import { Tournament } from '@/types/tournament';
 import { toast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

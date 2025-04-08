@@ -1,9 +1,9 @@
-
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useScoringState } from "./useScoringState";
 import { useScoringActions } from "./useScoringActions";
 import { useParams } from "react-router-dom";
 import { useTournament } from "@/contexts/tournament/useTournament";
+import { Match } from "@/types/tournament";
 
 export const useScoringLogic = () => {
   console.log("[DEBUG] Initializing useScoringLogic hook");
@@ -18,10 +18,33 @@ export const useScoringLogic = () => {
   
   // Get state management
   const state = useScoringState();
-  
-  // Get actions
-  const actions = useScoringActions(state);
 
+  // Match-specific handlers
+  const onScoreChange = useCallback((team: "team1" | "team2", increment: boolean) => {
+    if (!state.selectedMatch) return;
+    state.handleScoreChange(team, increment);
+  }, [state]);
+
+  const onNewSet = useCallback(() => {
+    if (!state.selectedMatch) return;
+    state.handleNewSet();
+  }, [state]);
+
+  const onCompleteMatch = useCallback(() => {
+    if (!state.selectedMatch) return;
+    state.handleCompleteMatch();
+  }, [state]);
+  
+  // Get actions with the proper dependencies
+  const actions = useScoringActions({
+    match: state.selectedMatch,
+    currentSet: state.currentSet,
+    scoringSettings: state.scoringSettings,
+    onScoreChange,
+    onNewSet,
+    onCompleteMatch
+  });
+  
   // If we have a matchId param, select that match when the component loads
   useEffect(() => {
     if (matchId && currentTournament?.matches) {
@@ -31,13 +54,13 @@ export const useScoringLogic = () => {
       if (match) {
         console.log("[DEBUG] Found match, selecting it:", match.id);
         setTimeout(() => {
-          actions.handleSelectMatch(match);
+          state.handleSelectMatch(match);
         }, 100);
       } else {
         console.log("[DEBUG] Match not found with ID:", matchId);
       }
     }
-  }, [matchId, currentTournament, actions]);
+  }, [matchId, currentTournament, state]);
   
   // Initial logging (only once)
   useEffect(() => {
@@ -93,6 +116,7 @@ export const useScoringLogic = () => {
     }, 0);
   };
 
+  // Combine the state and actions into a single API
   return {
     // State
     currentTournament: state.currentTournament,
@@ -111,17 +135,27 @@ export const useScoringLogic = () => {
     setNewSetDialogOpen: safeSetNewSetDialogOpen,
     setCompleteMatchDialogOpen: safeSetCompleteMatchDialogOpen,
     setActiveView: safeSetActiveView,
-    setSelectedMatch: state.safeSetSelectedMatch,
+    
+    // From state
+    setSelectedMatch: state.setSelectedMatch,
     setSelectedCourt: state.setSelectedCourt,
     
-    // Actions
-    handleSelectMatch: actions.handleSelectMatch,
-    handleSelectCourt: actions.handleSelectCourt,
-    handleScoreChange: actions.handleScoreChange,
-    handleStartMatch: actions.handleStartMatch,
-    handleCompleteMatch: actions.handleCompleteMatch,
-    handleNewSet: actions.handleNewSet,
-    handleUpdateScoringSettings: actions.handleUpdateScoringSettings,
-    handleBackToCourts: actions.handleBackToCourts
+    // Action handlers
+    handleSelectMatch: state.handleSelectMatch,
+    handleSelectCourt: state.handleSelectCourt,
+    handleScoreChange: state.handleScoreChange,
+    handleStartMatch: state.handleStartMatch,
+    handleNewSet: state.handleNewSet,
+    handleCompleteMatch: state.handleCompleteMatch,
+    
+    // Score increment/decrement handlers from useScoringActions
+    handleIncrementScore: actions.handleIncrementScore,
+    handleDecrementScore: actions.handleDecrementScore,
+    isSetFinished: actions.isSetFinished,
+    isMatchFinished: actions.isMatchFinished,
+    
+    // Other handlers from state
+    handleUpdateScoringSettings: state.handleUpdateScoringSettings,
+    handleBackToCourts: state.handleBackToCourts
   };
 };

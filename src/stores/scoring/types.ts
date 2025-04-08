@@ -1,40 +1,34 @@
 
-import { Match, Court, ScoringSettings, StandaloneMatch } from "@/types/tournament";
+import { Match, Court, StandaloneMatch, ScoringSettings } from '@/types/tournament';
+
+export type ScoringView = "courts" | "scoring";
 
 export interface ScoringState {
-  // State
+  // Current state
   selectedMatch: Match | StandaloneMatch | null;
   selectedCourt: Court | null;
   currentSet: number;
   settingsOpen: boolean;
-  activeView: "courts" | "scoring";
+  activeView: ScoringView;
   newSetDialogOpen: boolean;
   completeMatchDialogOpen: boolean;
   scoringSettings: ScoringSettings;
   
-  // Actions
+  // State setters
   setSelectedMatch: (match: Match | StandaloneMatch | null) => void;
   setSelectedCourt: (court: Court | null) => void;
   setCurrentSet: (setIndex: number) => void;
   setSettingsOpen: (open: boolean) => void;
-  setActiveView: (view: "courts" | "scoring") => void;
+  setActiveView: (view: ScoringView) => void;
   setNewSetDialogOpen: (open: boolean) => void;
   setCompleteMatchDialogOpen: (open: boolean) => void;
   setScoringSettings: (settings: ScoringSettings) => void;
   
-  // Business logic for tournament matches
-  handleSelectMatch: (match: Match | StandaloneMatch) => void;
-  handleSelectCourt: (court: Court) => void;
-  handleScoreChange: (team: "team1" | "team2", increment: boolean) => void;
-  handleStartMatch: (match: Match | StandaloneMatch) => void;
-  handleCompleteMatch: () => void;
-  handleNewSet: () => void;
-  handleUpdateScoringSettings: (settings: ScoringSettings) => void;
-  handleBackToCourts: () => void;
-  
-  // Business logic for standalone matches
-  handleStandaloneScoreChange: (team: "team1" | "team2", increment: boolean, standaloneStore: any) => void;
-  handleStandaloneStartMatch: (matchId: string, standaloneStore: any) => void;
-  handleStandaloneCompleteMatch: (standaloneStore: any) => void;
-  handleStandaloneNewSet: (standaloneStore: any) => void;
+  // Score actions
+  updateScore: (team: "team1" | "team2", setIndex: number, value: number) => void;
+  incrementScore: (team: "team1" | "team2", setIndex: number) => void;
+  decrementScore: (team: "team1" | "team2", setIndex: number) => void;
+  addNewSet: () => void;
+  completeMatch: () => void;
+  selectCourt: (court: Court) => void;
 }

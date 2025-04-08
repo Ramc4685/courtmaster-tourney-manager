@@ -1,145 +1,110 @@
+
 import React from "react";
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Match, AuditLog } from "@/types/tournament";
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from "@/components/ui/table";
-import { Clipboard, UserCircle, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatDistanceToNow } from "date-fns";
 
 interface MatchAuditViewerProps {
   match: Match;
+  auditLogs?: AuditLog[];
 }
 
-const MatchAuditViewer: React.FC<MatchAuditViewerProps> = ({ match }) => {
-  const [open, setOpen] = React.useState(false);
+const MatchAuditViewer: React.FC<MatchAuditViewerProps> = ({
+  match,
+  auditLogs = [],
+}) => {
+  // Filter out audit logs that don't have details
+  const validAuditLogs = auditLogs.filter(log => !!log.details);
 
-  // Format audit log details for display
-  const formatDetails = (details: Record<string, any> | undefined) => {
-    if (!details) return "No details";
-    
-    return Object.entries(details)
-      .filter(([key, value]) => value !== undefined)
-      .map(([key, value]) => {
-        // Format date objects
-        if (value instanceof Date) {
-          return `${key}: ${value.toLocaleString()}`;
-        }
-        
-        // Handle nested objects/arrays
-        if (typeof value === "object") {
-          return `${key}: ${JSON.stringify(value)}`;
-        }
-        
-        return `${key}: ${value}`;
-      })
-      .join(", ");
+  // Function to render badges based on action type
+  const getActionBadge = (action: string) => {
+    switch (action) {
+      case "SCORE_UPDATED":
+        return <Badge variant="success">Score</Badge>;
+      case "MATCH_STARTED":
+        return <Badge variant="secondary">Started</Badge>; // Changed from "info" to "secondary"
+      case "MATCH_COMPLETED":
+        return <Badge variant="success">Completed</Badge>;
+      case "MATCH_CANCELLED":
+        return <Badge variant="destructive">Cancelled</Badge>;
+      case "COURT_ASSIGNED":
+        return <Badge variant="outline">Court</Badge>;
+      default:
+        return <Badge variant="secondary">{action}</Badge>;
+    }
   };
 
+  // Format the details for display
+  const formatDetails = (details: Record<string, any> | string) => {
+    if (typeof details === "string") {
+      return details; // Just return the string as is
+    }
+
+    // Handle object details
+    if (details.score) {
+      return `Score: ${details.score}`;
+    } else if (details.newStatus) {
+      return `Status: ${details.newStatus}`;
+    } else if (details.courtNumber) {
+      return `Court: ${details.courtNumber}`;
+    } else {
+      // Try to create a readable message from the details
+      return Object.entries(details)
+        .map(([key, value]) => `${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`)
+        .join(", ");
+    }
+  };
+
+  // If there are no audit logs, show a placeholder
+  if (validAuditLogs.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Match History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-500">
+            No match history available yet.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="flex items-center">
-          <Clipboard className="h-4 w-4 mr-2" />
-          View Audit Log
-        </Button>
-      </DialogTrigger>
-      
-      <DialogContent className="sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Match Audit Log</DialogTitle>
-        </DialogHeader>
-        
-        {/* Match Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div className="space-y-2">
-            <div className="text-sm font-medium">Match Details</div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-semibold">Match Number:</span>
-              <span>{match.matchNumber || "Not assigned"}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-semibold">Teams:</span>
-              <span>{match.team1?.name || 'TBD'} vs {match.team2?.name || 'TBD'}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-semibold">Status:</span>
-              <span>{match.status}</span>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="text-sm font-medium">Timeline</div>
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="h-4 w-4" />
-              <span className="font-semibold">Created:</span>
-              <span>{match.createdAt ? new Date(match.createdAt).toLocaleString() : "Unknown"}</span>
-            </div>
-            {match.endTime && (
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4" />
-                <span className="font-semibold">Ended:</span>
-                <span>{new Date(match.endTime).toLocaleString()}</span>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Match History</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ScrollArea className="h-[300px] px-4">
+          <div className="space-y-4 pt-1 pb-4">
+            {validAuditLogs.map((log, index) => (
+              <div key={index} className="flex flex-col space-y-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    {getActionBadge(log.action)}
+                    <span className="text-xs text-gray-500">
+                      {log.userName || "System"}
+                    </span>
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    {formatDistanceToNow(new Date(log.timestamp), {
+                      addSuffix: true,
+                    })}
+                  </span>
+                </div>
+                <p className="text-sm pl-2 border-l-2 border-gray-200">
+                  {typeof log.details === "string" ? log.details : formatDetails(log.details)}
+                </p>
               </div>
-            )}
-            {match.scorerName && (
-              <div className="flex items-center gap-2 text-sm">
-                <UserCircle className="h-4 w-4" />
-                <span className="font-semibold">Scorer:</span>
-                <span>{match.scorerName}</span>
-              </div>
-            )}
+            ))}
           </div>
-        </div>
-        
-        {/* Audit Log Table */}
-        <div className="border rounded-md max-h-[400px] overflow-y-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Time</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Details</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {match.auditLogs && match.auditLogs.length > 0 ? (
-                match.auditLogs.map((log, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell className="whitespace-nowrap">
-                      {new Date(log.timestamp).toLocaleString()}
-                    </TableCell>
-                    <TableCell>{log.action}</TableCell>
-                    <TableCell>{log.user_id}</TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {formatDetails(log.details)}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    No audit logs available
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 };
 

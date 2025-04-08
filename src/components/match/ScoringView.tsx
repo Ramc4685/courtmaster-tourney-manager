@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,9 +18,9 @@ export function ScoringView({ match, scoringSettings, onMatchComplete }: Scoring
 
   const handleSetComplete = (setNumber: number, team1Score: number, team2Score: number) => {
     // Determine winner based on scores
-    const winnerId = team1Score > team2Score ? match.team1Id : match.team2Id;
+    const winnerId = team1Score > team2Score ? match.team1?.id : match.team2?.id;
     
-    if (winnerId === match.team1Id) {
+    if (winnerId === match.team1?.id) {
       setTeam1Score(prev => prev + 1);
     } else {
       setTeam2Score(prev => prev + 1);
@@ -28,8 +29,10 @@ export function ScoringView({ match, scoringSettings, onMatchComplete }: Scoring
   };
 
   const handleMatchComplete = () => {
-    const winnerId = team1Score > team2Score ? match.team1Id : match.team2Id;
-    onMatchComplete(match.id, winnerId);
+    const winnerId = team1Score > team2Score ? match.team1?.id : match.team2?.id;
+    if (winnerId) {
+      onMatchComplete(match.id, winnerId);
+    }
   };
 
   return (

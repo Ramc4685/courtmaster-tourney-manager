@@ -37,9 +37,8 @@ export const StandaloneMatchProvider: React.FC<{ children: ReactNode }> = ({ chi
     },
     
     loadMatchById: async (id: string) => {
-      // Wrap the synchronous store function in a promise to match the type
-      const match = standaloneStore.loadMatchById(id);
-      return Promise.resolve(match);
+      // Use the store's loadMatchById method
+      return Promise.resolve(standaloneStore.loadMatchById(id));
     },
     
     createMatch: (match: Partial<StandaloneMatch>) => {
@@ -47,9 +46,8 @@ export const StandaloneMatchProvider: React.FC<{ children: ReactNode }> = ({ chi
     },
     
     updateMatch: async (match: StandaloneMatch) => {
-      // Wrap the synchronous store function in a promise to match the type
-      const updatedMatch = standaloneStore.updateMatch(match);
-      return Promise.resolve(updatedMatch);
+      // Use the store's updateMatch function which now returns the updated match
+      return Promise.resolve(standaloneStore.updateMatch(match));
     },
     
     deleteMatch: async (id: string) => {
@@ -62,9 +60,8 @@ export const StandaloneMatchProvider: React.FC<{ children: ReactNode }> = ({ chi
       standaloneStore.setCurrentMatch(match);
     },
 
-    // Optional save match function, returning a promise
+    // Use store's saveMatch function
     saveMatch: async () => {
-      // Use store's saveMatch function if it exists
       return standaloneStore.saveMatch();
     }
   };

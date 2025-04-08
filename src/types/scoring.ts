@@ -1,3 +1,4 @@
+
 export interface ScoringRule {
   id: string;
   name: string;
@@ -16,11 +17,14 @@ export interface ScoringRule {
 }
 
 export interface ScoringSettings {
+  pointsToWin: number;
+  mustWinByTwo: boolean;
   maxPoints: number;
+  // Additional required properties
+  maxSets: number;
   requireTwoPointLead: boolean;
   maxTwoPointLeadScore: number;
-  maxSets: number;
-  setsToWin: number;
+  setsToWin?: number;
   tiebreakRules?: {
     pointsToWin: number;
     requireTwoPointLead: boolean;
@@ -50,8 +54,8 @@ export interface ScoreAuditLog {
 export interface MatchScore {
   team1Score: number;
   team2Score: number;
-  isComplete: boolean;
-  winner: 'team1' | 'team2' | null;
-  duration: number;
-  auditLogs: ScoreAuditLog[];
-} 
+  isComplete?: boolean;
+  winner?: 'team1' | 'team2' | null;
+  duration?: number;
+  auditLogs?: ScoreAuditLog[];
+}
