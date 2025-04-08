@@ -12,11 +12,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import DivisionsTab from './DivisionsTab';
 
-export default function TournamentCreationForm() {
+const TournamentCreationForm = React.forwardRef<HTMLFormElement, {}>(({  }, ref) => {
   const navigate = useNavigate();
   const { createTournament } = useTournament();
   const { toast } = useToast();
-  
+
   const form = useForm<TournamentFormValues>({
     resolver: zodResolver(tournamentFormSchema),
     defaultValues: {
@@ -61,7 +61,7 @@ export default function TournamentCreationForm() {
   };
 
   return (
-    <Card>
+    <Card className="w-full max-w-3xl mx-auto" ref={ref}>
       <CardHeader>
         <CardTitle>Create New Tournament</CardTitle>
       </CardHeader>
@@ -135,9 +135,9 @@ export default function TournamentCreationForm() {
                 )}
               </div>
             </div>
-            
+
             <DivisionsTab form={form} />
-            
+
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={() => navigate('/tournaments')}>
                 Cancel
@@ -149,4 +149,8 @@ export default function TournamentCreationForm() {
       </CardContent>
     </Card>
   );
-} 
+});
+
+TournamentCreationForm.displayName = "TournamentCreationForm";
+
+export default TournamentCreationForm;
