@@ -1,321 +1,155 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { 
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter
-} from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useTournament } from "@/contexts/tournament/useTournament";
-import { TournamentCategory, CourtStatus, Tournament, TournamentFormat } from "@/types/tournament";
-import TournamentCategorySection from "@/components/tournament/TournamentCategorySection";
-import TournamentFormatSelector from "@/components/tournament/TournamentFormatSelector";
-import { createDefaultCategories } from "@/utils/categoryUtils";
-import { Grid3X3Icon } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { toast } from "@/components/ui/use-toast";
 
-// Define the component props interface
-interface TournamentCreateProps {
-  onTournamentCreated?: (tournament: Tournament) => void;
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { TournamentFormValues, TournamentFormat } from '@/components/admin/tournament/types';
+import { Tournament } from '@/types/tournament';
+import { toast } from '@/components/ui/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTournament } from '@/contexts/tournament/useTournament';
+import CreateTournamentForm from '@/components/admin/TournamentCreationForm';
+import { Button } from '@/components/ui/button';
+import { PackagePlus, Loader2 } from 'lucide-react';
+
+// Define props to match what's expected by the parent component
+interface TournamentCreateComponentProps {
+  onTournamentCreated: (tournament: Tournament) => void;
 }
 
-const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Tournament name must be at least 2 characters.",
-  }),
-  description: z.string().optional(),
-  startDate: z.date(),
-  endDate: z.date().optional(),
-  format: z.string().min(1, { message: "Tournament format is required" }),
-  divisionProgression: z.boolean().default(false),
-  autoAssignCourts: z.boolean().default(false),
-  numCourts: z.number().min(1).max(20).default(4),
-});
-
-type FormValues = z.infer<typeof formSchema>;
-
-// Update component to accept props
-const TournamentCreate: React.FC<TournamentCreateProps> = ({ onTournamentCreated }) => {
-  const { createTournament, loadSampleData } = useTournament();
+const TournamentCreate: React.FC<TournamentCreateComponentProps> = ({ onTournamentCreated }) => {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [categories, setCategories] = useState<TournamentCategory[]>(createDefaultCategories());
-  const [showCategories, setShowCategories] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const { createTournament, loadSampleData } = useTournament();
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      format: "SINGLE_ELIMINATION",
-      startDate: new Date(),
-      endDate: undefined,
-      divisionProgression: false,
-      autoAssignCourts: false,
-      numCourts: 4,
-    },
-  });
-
-  // Set format for all categories that don't have a specific one
-  const handleFormatChange = (format: TournamentFormat) => {
-    form.setValue("format", format);
-    
-    // Update any categories that don't have a format specified
-    setCategories(prevCategories => 
-      prevCategories.map(cat => 
-        cat.format ? cat : { ...cat, format }
-      )
-    );
-  };
-
-  const onSubmit = async (values: FormValues) => {
-    console.log("Form submitted with values:", values);
-    setIsSubmitting(true);
+  const handleCreateTournament = async (data: TournamentFormValues) => {
+    setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate network request
-
-      // Generate courts based on numCourts value
-      const courts = Array.from({ length: values.numCourts }, (_, index) => ({
-        id: crypto.randomUUID(),
-        name: `Court ${index + 1}`,
-        number: index + 1,
-        status: "AVAILABLE" as CourtStatus  // Explicitly type as CourtStatus
-      }));
-
-      // Ensure all categories have a format
-      const finalCategories = showCategories ? categories.map(category => ({
-        ...category,
-        format: category.format || values.format as TournamentFormat
-      })) : [];
-
-      // Create the tournament
-      const newTournament = await createTournament({
-        name: values.name,
-        description: values.description,
-        format: values.format as TournamentFormat,
-        categories: finalCategories
+      const tournament = await createTournament(data);
+      toast({
+        title: "Tournament Created",
+        description: `${data.name} has been created successfully!`,
       });
-
-      // Call the onTournamentCreated callback if provided
-      if (onTournamentCreated && newTournament) {
-        console.log("Calling onTournamentCreated with tournament:", newTournament);
-        onTournamentCreated(newTournament);
-      } else if (newTournament) {
-        console.log("No onTournamentCreated provided, navigating to:", `/tournament/${newTournament.id}`);
-        navigate(`/tournament/${newTournament.id}`);
-      }
+      
+      onTournamentCreated(tournament);
     } catch (error) {
       console.error("Error creating tournament:", error);
       toast({
         title: "Error",
         description: "Failed to create tournament. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
+    }
+  };
+
+  const handleLoadSample = async (format: TournamentFormat) => {
+    setIsLoading(true);
+    try {
+      await loadSampleData(format);
+      toast({
+        title: "Sample Data Loaded",
+        description: "Sample tournament has been created successfully!",
+      });
+      navigate("/tournaments");
+    } catch (error) {
+      console.error("Error loading sample data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load sample data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">Create Tournament</h1>
-        <Button variant="secondary" onClick={() => loadSampleData()}>
-          <Grid3X3Icon className="h-4 w-4 mr-2" />
-          Load Sample Data
-        </Button>
-      </div>
+    <div className="container mx-auto py-6 space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Tournament Details</CardTitle>
+          <CardTitle>Create New Tournament</CardTitle>
           <CardDescription>
-            Enter the details for your new tournament.
+            Set up your tournament details, format, and settings.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tournament Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter tournament name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter description" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="format"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tournament Format</FormLabel>
-                    <FormControl>
-                      <TournamentFormatSelector
-                        value={field.value as TournamentFormat}
-                        onValueChange={(value) => handleFormatChange(value)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="startDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Start Date</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          value={field.value ? new Date(field.value).toISOString().split('T')[0] : ""}
-                          onChange={(e) => field.onChange(new Date(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="endDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>End Date (Optional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          value={field.value ? new Date(field.value).toISOString().split('T')[0] : ""}
-                          onChange={(e) => field.onChange(new Date(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="numCourts"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Number of Courts</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={20}
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="flex items-center space-x-4 pt-2">
-                <FormField
-                  control={form.control}
-                  name="divisionProgression"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={(checked) => field.onChange(!!checked)}
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal">
-                        Enable Division Progression
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="autoAssignCourts"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={(checked) => field.onChange(!!checked)}
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal">
-                        Auto Assign Courts
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="pt-4 border-t mt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium">Tournament Categories</h3>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="enableCategories" 
-                      checked={showCategories} 
-                      onCheckedChange={(checked) => setShowCategories(!!checked)}
-                    />
-                    <label htmlFor="enableCategories" className="text-sm font-medium">
-                      Enable Categories
-                    </label>
-                  </div>
+        <CardContent>
+          <Tabs defaultValue="manual">
+            <TabsList className="mb-4">
+              <TabsTrigger value="manual">Manual Setup</TabsTrigger>
+              <TabsTrigger value="templates">Templates</TabsTrigger>
+            </TabsList>
+            <TabsContent value="manual">
+              <CreateTournamentForm onSubmit={handleCreateTournament} />
+            </TabsContent>
+            <TabsContent value="templates">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Tournament Templates</h3>
+                <p className="text-muted-foreground">
+                  Choose a pre-configured tournament template to get started quickly.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                  <Card className="cursor-pointer hover:border-primary transition-all">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Single Elimination</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Classic bracket tournament with single elimination format.
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => handleLoadSample(TournamentFormat.SINGLE_ELIMINATION)}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <PackagePlus className="h-4 w-4 mr-2" />}
+                        Load Template
+                      </Button>
+                    </CardContent>
+                  </Card>
+                  <Card className="cursor-pointer hover:border-primary transition-all">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Double Elimination</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Two chances for each team with winners and losers brackets.
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => handleLoadSample(TournamentFormat.DOUBLE_ELIMINATION)}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <PackagePlus className="h-4 w-4 mr-2" />}
+                        Load Template
+                      </Button>
+                    </CardContent>
+                  </Card>
+                  <Card className="cursor-pointer hover:border-primary transition-all">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Round Robin</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Each team plays against every other team once.
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => handleLoadSample(TournamentFormat.ROUND_ROBIN)}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <PackagePlus className="h-4 w-4 mr-2" />}
+                        Load Template
+                      </Button>
+                    </CardContent>
+                  </Card>
                 </div>
-                
-                {showCategories && (
-                  <TournamentCategorySection
-                    categories={categories}
-                    onCategoriesChange={setCategories}
-                  />
-                )}
               </div>
-              
-              <CardFooter className="px-0 pt-6">
-                <Button type="submit" disabled={isSubmitting} className="w-full">
-                  {isSubmitting ? "Creating..." : "Create Tournament"}
-                </Button>
-              </CardFooter>
-            </form>
-          </Form>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>

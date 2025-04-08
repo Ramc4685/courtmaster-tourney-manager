@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './pages/home'; // lowercase 'h' instead of uppercase 'H'
@@ -18,6 +19,12 @@ import TournamentManagement from "@/components/admin/TournamentManagement";
 import TournamentCreationForm from "@/components/admin/TournamentCreationForm";
 
 function App() {
+  // Handler function for the tournament creation form
+  const handleTournamentSubmit = (data) => {
+    console.log("Tournament form submitted:", data);
+    // Further processing can be added here
+  };
+
   return (
     <Router>
       <AuthProvider>
@@ -89,7 +96,7 @@ function App() {
               </Layout>
             } />
             <Route path="/tournaments" element={<TournamentManagement />} />
-            <Route path="/tournaments/create" element={<TournamentCreationForm />} />
+            <Route path="/tournaments/create" element={<TournamentCreationForm onSubmit={handleTournamentSubmit} />} />
           </Routes>
         </TournamentProvider>
       </AuthProvider>

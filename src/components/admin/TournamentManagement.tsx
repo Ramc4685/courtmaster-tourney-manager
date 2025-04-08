@@ -1,7 +1,8 @@
+
 import React from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { format } from "date-fns";
-import { Plus } from "lucide-react";
+import { Plus, Users, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -144,7 +145,7 @@ const TournamentManagement: React.FC = () => {
               </TableCell>
               <TableCell>{tournament.teams.length}</TableCell>
               <TableCell>{tournament.matches.length}</TableCell>
-              <TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -152,7 +153,18 @@ const TournamentManagement: React.FC = () => {
                     asChild
                   >
                     <Link to={`/admin/tournaments/${tournament.id}/registrations`}>
+                      <Users className="h-4 w-4 mr-1" />
                       Registrations
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                  >
+                    <Link to={`/admin/tournaments/${tournament.id}/settings`}>
+                      <Settings className="h-4 w-4 mr-1" />
+                      Settings
                     </Link>
                   </Button>
                 </div>

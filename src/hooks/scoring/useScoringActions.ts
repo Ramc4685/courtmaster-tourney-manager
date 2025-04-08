@@ -283,12 +283,14 @@ export const useScoringActions = (state: any) => {
   const handleUpdateScoringSettings = useCallback((newSettings) => {
     if (!currentTournament) return;
     
+    const { id, ...rest } = currentTournament;
     const updatedTournament = {
-      ...currentTournament,
+      ...rest,
       scoringSettings: newSettings,
       updatedAt: new Date()
     };
-    updateTournament(updatedTournament);
+    
+    updateTournament(id, updatedTournament);
   }, [currentTournament, updateTournament]);
   
   const handleBackToCourts = useCallback(() => {

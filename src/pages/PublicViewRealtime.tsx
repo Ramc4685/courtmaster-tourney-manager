@@ -1,303 +1,203 @@
 
-import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
-import { useParams } from "react-router-dom";
-import { RefreshCw, Award, Clock, Calendar, Radio } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import Layout from "@/components/layout/Layout";
-import MatchCard from "@/components/shared/MatchCard";
-import CourtCard from "@/components/shared/CourtCard";
-import { Match, Division } from "@/types/tournament";
-import { format } from "date-fns";
-import { useRealtimeTournamentUpdates } from "@/hooks/useRealtimeTournamentUpdates";
-import { throttle } from "@/utils/performanceUtils";
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { useRealtimeTournamentUpdates } from '@/hooks/useRealtimeTournamentUpdates';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Trophy, Clock, Users2, WifiOff, Wifi } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Match, Division } from '@/types/tournament';
 
-// Lazy loaded components
-const LazyTournamentHeader = React.lazy(() => import("@/components/tournament/TournamentHeader"));
-
-// Error boundary for lazy loaded components
-const ErrorBoundary = ({ children }: { children: React.ReactNode }) => {
-  const [hasError, setHasError] = useState(false);
-  
-  useEffect(() => {
-    const errorHandler = () => setHasError(true);
-    window.addEventListener('error', errorHandler);
-    return () => window.removeEventListener('error', errorHandler);
-  }, []);
-  
-  if (hasError) {
-    return <div className="p-4 text-red-500">Something went wrong. Please refresh the page.</div>;
-  }
-  
-  return <>{children}</>;
-};
-
-// Optimized match card with memo
-const MemoizedMatchCard = React.memo(MatchCard);
-
-// Component to display matches grouped by division
-const MatchesByDivision = React.memo(({ matches }: { matches: Match[] }) => {
-  // Memoize the grouping operation to avoid unnecessary recalculations
-  const groupedMatches = useMemo(() => {
-    return matches.reduce((groups, match) => {
-      const division = match.division;
-      if (!groups[division]) {
-        groups[division] = [];
-      }
-      groups[division].push(match);
-      return groups;
-    }, {} as Record<Division, Match[]>);
-  }, [matches]);
-  
-  // Memoize the entries to avoid recreation on each render
-  const divisionEntries = useMemo(() => {
-    return Object.entries(groupedMatches);
-  }, [groupedMatches]);
-
-  const getDivisionLabel = useCallback((division: string) => {
-    switch (division) {
-      case "GROUP_DIV3": return "Division 3 - Group Stage";
-      case "DIVISION_1": return "Division 1";
-      case "DIVISION_2": return "Division 2";
-      case "DIVISION_3": return "Division 3";
-      case "QUALIFIER_DIV1": return "Division 1 - Qualifiers";
-      case "QUALIFIER_DIV2": return "Division 2 - Qualifiers";
-      case "INITIAL": return "Initial Round";
-      default: return division;
-    }
-  }, []);
-
-  const getStatusLabel = useCallback((status: string) => {
-    switch (status) {
-      case "SCHEDULED": return "Not Started";
-      case "IN_PROGRESS": return "In Progress";
-      case "COMPLETED": return "Completed";
-      case "CANCELLED": return "Cancelled";
-      default: return status;
-    }
-  }, []);
-
-  if (divisionEntries.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">No matches found</p>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      {divisionEntries.map(([division, divMatches]) => (
-        <div key={division} className="mb-6">
-          <h3 className="font-semibold text-lg mb-3 flex items-center">
-            <Award className="h-5 w-5 text-court-blue mr-2" />
-            {getDivisionLabel(division)}
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {divMatches.map((match) => (
-              <div key={match.id} className="border rounded-lg p-4">
-                <MemoizedMatchCard match={match} />
-                <div className="mt-2 flex justify-between">
-                  {match.scheduledTime && (
-                    <div className="text-sm text-gray-500 flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      <span>{format(new Date(match.scheduledTime), "MMM d, yyyy")}</span>
-                      <Clock className="h-4 w-4 ml-3 mr-1" />
-                      <span>{format(new Date(match.scheduledTime), "h:mm a")}</span>
-                    </div>
-                  )}
-                  <Badge variant={match.status === "IN_PROGRESS" ? "secondary" : "outline"}>
-                    {getStatusLabel(match.status)}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </>
-  );
-});
-
-// Optimized court list with virtualization
-const CourtsList = React.memo(({ courts }: { courts: any[] }) => {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {courts.map((court) => (
-        <CourtCard key={court.id} court={court} detailed />
-      ))}
-    </div>
-  );
-});
-
-// Loading state component
-const LoadingState = () => (
-  <div className="space-y-4">
-    <Skeleton className="h-12 w-3/4" />
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <Skeleton className="h-40" />
-      <Skeleton className="h-40" />
-      <Skeleton className="h-40" />
-      <Skeleton className="h-40" />
-    </div>
-  </div>
-);
-
-const PublicViewRealtime = () => {
-  const { tournamentId } = useParams<{ tournamentId: string }>();
-  
-  // Use our updated hook with proper return types
-  const { currentTournament, inProgressMatches, isSubscribed } = useRealtimeTournamentUpdates(tournamentId);
-  const [lastRefreshed, setLastRefreshed] = useState(new Date());
-  const [refreshing, setRefreshing] = useState(false);
+const PublicViewRealtime: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState("live");
-
-  // Memoize filtered matches to avoid unnecessary filtering on each render
-  const completedMatches = useMemo(() => 
-    currentTournament?.matches.filter((match) => match.status === "COMPLETED") || [],
-    [currentTournament?.matches]
-  );
-
-  const upcomingMatches = useMemo(() => 
-    currentTournament?.matches
-      .filter((match) => match.status === "SCHEDULED")
-      .sort((a, b) => {
-        if (a.scheduledTime && b.scheduledTime) {
-          return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
-        } else if (a.scheduledTime) {
-          return -1;
-        } else if (b.scheduledTime) {
-          return 1;
-        }
-        return 0;
-      }) || [],
-    [currentTournament?.matches]
-  );
-
-  // Throttle the refresh function to prevent rapid successive calls
-  const handleRefresh = useCallback(throttle(() => {
-    setRefreshing(true);
-    setLastRefreshed(new Date());
-    setTimeout(() => setRefreshing(false), 500);
-  }, 1000), []);
-
-  // Update last refreshed time when we get new data
-  useEffect(() => {
-    if (currentTournament) {
-      setLastRefreshed(new Date());
-    }
-  }, [currentTournament, inProgressMatches]);
-
-  // Handle tab change with performance optimization
-  const handleTabChange = useCallback((value: string) => {
-    setActiveTab(value);
-    // Prefetch data for the selected tab if needed
-  }, []);
+  
+  const realtime = useRealtimeTournamentUpdates(id || '');
+  const { isConnected, lastUpdated, currentTournament, inProgressMatches, isSubscribed } = realtime;
 
   if (!currentTournament) {
     return (
-      <Layout>
-        <div className="max-w-6xl mx-auto">
-          <p>No tournament selected. Please select a tournament first.</p>
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center h-[80vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
   }
 
-  return (
-    <Layout>
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">{currentTournament.name}</h1>
-            <p className="text-gray-500">
-              Live Tournament Updates
-              {isSubscribed && (
-                <Badge variant="outline" className="ml-2 bg-green-50">
-                  <Radio className="h-3 w-3 text-green-500 mr-1" /> Live
-                </Badge>
-              )}
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500">
-              Last updated: {lastRefreshed.toLocaleTimeString()}
-            </span>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
-              <RefreshCw className={`h-4 w-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          </div>
+  // Divide matches by status
+  const scheduledMatches = currentTournament.matches.filter(m => m.status === 'SCHEDULED');
+  const completedMatches = currentTournament.matches.filter(m => m.status === 'COMPLETED');
+
+  const renderMatchList = (matches: Match[]) => {
+    if (!matches || matches.length === 0) {
+      return (
+        <div className="py-4 text-center text-muted-foreground">
+          No matches in this category.
         </div>
+      );
+    }
 
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-6">
-          <TabsList className="mb-4">
+    return (
+      <div className="space-y-4">
+        {matches.map(match => (
+          <Card key={match.id} className="overflow-hidden">
+            <div className="bg-muted px-4 py-2 flex justify-between items-center">
+              <span className="text-sm font-medium">
+                {match.team1?.name || 'TBD'} vs {match.team2?.name || 'TBD'}
+              </span>
+              <Badge variant={
+                match.status === 'COMPLETED' ? 'default' : 
+                match.status === 'IN_PROGRESS' ? 'secondary' : 
+                'outline'
+              }>
+                {match.status}
+              </Badge>
+            </div>
+            <CardContent className="p-4">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-sm text-muted-foreground">Time:</p>
+                  <p className="text-sm font-medium">
+                    {match.scheduledTime ? format(new Date(match.scheduledTime), 'PPp') : 'Not scheduled'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Court:</p>
+                  <p className="text-sm font-medium">
+                    {match.courtNumber ? `Court ${match.courtNumber}` : 'Not assigned'}
+                  </p>
+                </div>
+                {match.scores && match.scores.length > 0 && (
+                  <div className="col-span-2 mt-2">
+                    <p className="text-sm text-muted-foreground">Score:</p>
+                    <div className="flex space-x-2">
+                      {match.scores.map((score, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs">
+                          Set {idx + 1}: {score.team1Score}-{score.team2Score}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold">{currentTournament.name}</h1>
+            <Badge variant={isConnected ? "success" : "destructive"} className="flex items-center gap-1">
+              {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+              {isConnected ? "Live Updates" : "Offline"}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-2">
+            <Badge variant="outline" className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {format(new Date(currentTournament.startDate), 'PP')} - {format(new Date(currentTournament.endDate), 'PP')}
+            </Badge>
+            <Badge variant="outline" className="flex items-center gap-1">
+              <Trophy className="h-3 w-3" />
+              {currentTournament.format}
+            </Badge>
+            <Badge variant="outline" className="flex items-center gap-1">
+              <Users2 className="h-3 w-3" />
+              {currentTournament.teams.length} Teams
+            </Badge>
+          </div>
+          
+          {currentTournament.description && (
+            <p className="mt-4 text-muted-foreground">{currentTournament.description}</p>
+          )}
+          
+          {lastUpdated && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Last updated: {format(lastUpdated, 'PPp')}
+            </p>
+          )}
+        </div>
+        
+        <Separator className="my-6" />
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="live">Live Matches</TabsTrigger>
-            <TabsTrigger value="courts">Courts</TabsTrigger>
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="schedule">Schedule</TabsTrigger>
+            <TabsTrigger value="results">Results</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="live">
-            <ErrorBoundary>
-              <Suspense fallback={<LoadingState />}>
-                {inProgressMatches.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">No matches currently in progress</p>
-                  </div>
+          
+          <TabsContent value="live" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Live Matches</CardTitle>
+                <CardDescription>
+                  Matches currently in progress with real-time score updates
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {inProgressMatches && inProgressMatches.length > 0 ? (
+                  renderMatchList(inProgressMatches)
                 ) : (
-                  <MatchesByDivision matches={inProgressMatches} />
-                )}
-              </Suspense>
-            </ErrorBoundary>
-          </TabsContent>
-
-          <TabsContent value="courts">
-            <ErrorBoundary>
-              <Suspense fallback={<LoadingState />}>
-                <CourtsList courts={currentTournament.courts} />
-              </Suspense>
-            </ErrorBoundary>
-          </TabsContent>
-
-          <TabsContent value="upcoming">
-            <ErrorBoundary>
-              <Suspense fallback={<LoadingState />}>
-                {upcomingMatches.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">No upcoming matches scheduled</p>
+                  <div className="py-12 text-center">
+                    <p className="text-muted-foreground">No matches currently in progress.</p>
+                    <Button variant="outline" className="mt-4" onClick={() => setActiveTab("schedule")}>
+                      View Scheduled Matches
+                    </Button>
                   </div>
-                ) : (
-                  <MatchesByDivision matches={upcomingMatches} />
                 )}
-              </Suspense>
-            </ErrorBoundary>
+              </CardContent>
+            </Card>
           </TabsContent>
-
-          <TabsContent value="completed">
-            <ErrorBoundary>
-              <Suspense fallback={<LoadingState />}>
-                {completedMatches.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">No completed matches yet</p>
-                  </div>
+          
+          <TabsContent value="schedule" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Upcoming Matches</CardTitle>
+                <CardDescription>
+                  All scheduled matches for {currentTournament.name}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {renderMatchList(scheduledMatches)}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="results" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Results</CardTitle>
+                <CardDescription>
+                  Completed matches and their outcomes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {completedMatches.length > 0 ? (
+                  renderMatchList(completedMatches)
                 ) : (
-                  <MatchesByDivision matches={completedMatches} />
+                  <div className="py-12 text-center">
+                    <p className="text-muted-foreground">No completed matches yet.</p>
+                    <Button variant="outline" className="mt-4" onClick={() => setActiveTab("schedule")}>
+                      View Scheduled Matches
+                    </Button>
+                  </div>
                 )}
-              </Suspense>
-            </ErrorBoundary>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
+    </div>
   );
 };
 
-export default React.memo(PublicViewRealtime);
+export default PublicViewRealtime;

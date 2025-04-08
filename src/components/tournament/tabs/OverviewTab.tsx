@@ -1,18 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { Terminal, CalendarIcon, Clock, Award, ActivitySquare, BarChart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tournament } from "@/types/tournament";
+import React from 'react';
+import { Tournament } from '@/types/tournament';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Calendar, Users, LayoutGrid, PlaySquare, Shuffle, Trophy } from 'lucide-react';
 import { format } from 'date-fns';
-import TournamentFormatExplanation from "@/components/tournament/TournamentFormatExplanation";
-import TournamentSettings from "@/components/tournament/TournamentSettings";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useTournament } from "@/contexts/tournament/useTournament";
-import { useToast } from "@/components/ui/use-toast";
+import TournamentSettings from '@/components/tournament/TournamentSettings';
 
-interface OverviewTabProps {
+export interface OverviewTabProps {
   tournament: Tournament;
   onUpdateTournament: (tournament: Tournament) => void;
   onGenerateMultiStageTournament: () => void;
@@ -20,249 +16,168 @@ interface OverviewTabProps {
   onScheduleDialogOpen: () => void;
 }
 
-const OverviewTab: React.FC<OverviewTabProps> = ({
+const OverviewTab: React.FC<OverviewTabProps> = ({ 
   tournament,
   onUpdateTournament,
   onGenerateMultiStageTournament,
   onAdvanceToNextStage,
   onScheduleDialogOpen
 }) => {
-  const { loadCategoryDemoData } = useTournament();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  
-  const getNextStageName = (currentStage: string) => {
-    switch (currentStage) {
-      case "INITIAL_ROUND": return "Division Placement";
-      case "DIVISION_PLACEMENT": return "Playoff Knockout";
-      case "PLAYOFF_KNOCKOUT": return "Completed";
-      case "GROUP_STAGE": return "Elimination Round";
-      default: return "Next Stage";
-    }
+  const formatDate = (date: Date) => {
+    if (!date) return 'Not set';
+    return format(new Date(date), 'MMM d, yyyy');
   };
-  
-  // Ensure arrays exist before accessing their properties
-  const matches = tournament.matches || [];
-  const teams = tournament.teams || [];
-  const courts = tournament.courts || [];
-  const categories = tournament.categories || [];
-  
-  // Calculate tournament statistics
-  const totalMatches = matches.length;
-  const completedMatches = matches.filter(m => m.status === "COMPLETED").length;
-  const inProgressMatches = matches.filter(m => m.status === "IN_PROGRESS").length;
-  const progressPercentage = totalMatches > 0 ? (completedMatches / totalMatches) * 100 : 0;
-  
-  // Get status badge color
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "DRAFT": return "bg-gray-500";
-      case "PUBLISHED": return "bg-blue-500";
-      case "IN_PROGRESS": return "bg-green-500";
-      case "COMPLETED": return "bg-purple-500";
-      default: return "bg-gray-500";
+      case 'DRAFT': return 'bg-gray-200 text-gray-800';
+      case 'PUBLISHED': return 'bg-blue-100 text-blue-800';
+      case 'IN_PROGRESS': return 'bg-green-100 text-green-800';
+      case 'COMPLETED': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  // Set up tabs for overview
-  const [activeTab, setActiveTab] = useState("summary");
-  
-  // Handle loading demo data for all categories
-  const handleLoadDemoDataForAllCategories = async () => {
-    if (!tournament.categories || tournament.categories.length === 0) {
-      toast({
-        title: "No categories found",
-        description: "Please add categories to the tournament first",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setLoading(true);
-    
-    try {
-      // Load demo data for each category
-      for (const category of tournament.categories) {
-        await loadCategoryDemoData(tournament.id, category.id, tournament.format);
-      }
-      
-      toast({
-        title: "Demo data loaded",
-        description: `Loaded demo data for ${tournament.categories.length} categories`,
-      });
-    } catch (error) {
-      console.error("Error loading demo data:", error);
-      toast({
-        title: "Error loading demo data",
-        description: "There was an error loading the demo data. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
+  const getFormatLabel = (format: string) => {
+    switch (format) {
+      case 'SINGLE_ELIMINATION': return 'Single Elimination';
+      case 'DOUBLE_ELIMINATION': return 'Double Elimination';
+      case 'ROUND_ROBIN': return 'Round Robin';
+      case 'SWISS': return 'Swiss System';
+      case 'GROUP_KNOCKOUT': return 'Group + Knockout';
+      case 'MULTI_STAGE': return 'Multi-Stage';
+      default: return format;
     }
   };
-  
+
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="summary">Tournament Summary</TabsTrigger>
-          <TabsTrigger value="settings">Tournament Settings</TabsTrigger>
-          <TabsTrigger value="format">Tournament Format</TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              <div className="flex items-center">
+                <Trophy className="h-4 w-4 mr-2 text-muted-foreground" />
+                Tournament Format
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{getFormatLabel(tournament.format)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {tournament.currentStage && `Current Stage: ${tournament.currentStage.replace(/_/g, ' ')}`}
+            </p>
+          </CardContent>
+        </Card>
         
-        <TabsContent value="summary" className="space-y-6">
-          {/* Tournament Summary Card */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="col-span-1 lg:col-span-2">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl">Tournament Summary</CardTitle>
-                  <Badge className={`${getStatusColor(tournament.status)}`}>
-                    {tournament.status}
-                  </Badge>
-                </div>
-                <CardDescription>Key information about the tournament</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Current Stage</p>
-                    <p className="text-base font-semibold">
-                      {tournament.currentStage ? tournament.currentStage.replace(/_/g, " ") : "Not Set"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Start Date</p>
-                    <p className="text-base font-semibold">
-                      {tournament.startDate ? format(new Date(tournament.startDate), 'PPP') : 'N/A'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">End Date</p>
-                    <p className="text-base font-semibold">
-                      {tournament.endDate ? format(new Date(tournament.endDate), 'PPP') : 'N/A'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Teams</p>
-                    <p className="text-base font-semibold">{teams.length}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Categories</p>
-                    <p className="text-base font-semibold">{categories.length}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Courts</p>
-                    <p className="text-base font-semibold">{courts.length}</p>
-                  </div>
-                </div>
-                
-                {/* Tournament Progress */}
-                <div className="space-y-2 pt-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Tournament Progress</span>
-                    <span>{completedMatches} of {totalMatches} matches completed</span>
-                  </div>
-                  <Progress value={progressPercentage} className="h-2" />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                  <Button 
-                    onClick={onScheduleDialogOpen}
-                    className="bg-purple-600 hover:bg-purple-700 flex items-center"
-                  >
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    {completedMatches === 0 ? "Generate Brackets" : "Assign Courts and Start"}
-                  </Button>
-                  
-                  <Button 
-                    onClick={onGenerateMultiStageTournament}
-                    className="bg-blue-600 hover:bg-blue-700 flex items-center"
-                    title="Creates brackets and match schedules for all categories based on the tournament format"
-                  >
-                    <ActivitySquare className="h-4 w-4 mr-2" />
-                    Generate Tournament Brackets
-                  </Button>
-                </div>
-                
-                {/* Demo Data Button */}
-                <Button 
-                  onClick={handleLoadDemoDataForAllCategories}
-                  variant="outline"
-                  className="w-full mt-2"
-                  disabled={loading}
-                >
-                  {loading ? "Loading..." : "Load Demo Data for All Categories"}
-                </Button>
-              </CardContent>
-            </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              <div className="flex items-center">
+                <Users className="h-4 w-4 mr-2 text-muted-foreground" />
+                Teams
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{tournament.teams.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {tournament.maxTeams ? `Maximum: ${tournament.maxTeams}` : 'No team limit set'}
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                Tournament Dates
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-md font-bold">{formatDate(tournament.startDate)}</div>
+            {tournament.endDate && (
+              <div className="text-sm">to {formatDate(tournament.endDate)}</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Tournament Status</CardTitle>
+            <CardDescription>Current state and progress of the tournament</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Status:</span>
+              <Badge className={getStatusColor(tournament.status)}>
+                {tournament.status}
+              </Badge>
+            </div>
             
-            {/* Tournament Statistics */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-xl">
-                  <BarChart className="h-5 w-5 mr-2" />
-                  Tournament Stats
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Match Statistics */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Completed Matches</span>
-                    <span className="font-semibold">{completedMatches}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">In Progress</span>
-                    <span className="font-semibold">{inProgressMatches}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Scheduled</span>
-                    <span className="font-semibold">
-                      {matches.filter(m => m.status === "SCHEDULED").length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Courts in Use</span>
-                    <span className="font-semibold">
-                      {courts.filter(c => c.status === "IN_USE").length}
-                    </span>
-                  </div>
-                </div>
-                
-                {/* Tournament Status Information */}
-                <div className="space-y-2 border-t pt-3 text-sm">
-                  <p><strong>Generate Tournament Brackets:</strong> Creates match schedules and brackets based on the selected tournament format for each category.</p>
-                  <p><strong>Tournament Status:</strong> Changes from Draft to In Progress when matches start being played.</p>
-                </div>
-                
-                {/* Stage Progression */}
-                {tournament.status !== "COMPLETED" && tournament.status !== "DRAFT" && tournament.currentStage && (
-                  <Button 
-                    onClick={onAdvanceToNextStage}
-                    className="w-full mt-2 bg-green-600 hover:bg-green-700 flex items-center justify-center"
-                  >
-                    <Award className="h-4 w-4 mr-2" />
-                    Advance to {getNextStageName(tournament.currentStage)}
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+            <Separator />
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span>Total Matches:</span>
+                <span className="font-medium">{tournament.matches.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Completed Matches:</span>
+                <span className="font-medium">
+                  {tournament.matches.filter(m => m.status === 'COMPLETED').length}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>In Progress:</span>
+                <span className="font-medium">
+                  {tournament.matches.filter(m => m.status === 'IN_PROGRESS').length}
+                </span>
+              </div>
+            </div>
+            
+            <Separator />
+            
+            <div className="flex flex-col space-y-2">
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={onScheduleDialogOpen}
+              >
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                Schedule Matches
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={onGenerateMultiStageTournament}
+              >
+                <Shuffle className="h-4 w-4 mr-2" />
+                Generate Tournament
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={onAdvanceToNextStage}
+              >
+                <PlaySquare className="h-4 w-4 mr-2" />
+                Advance to Next Stage
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
         
-        <TabsContent value="settings">
-          <TournamentSettings 
-            tournament={tournament}
-            onUpdateTournament={onUpdateTournament}
-          />
-        </TabsContent>
-        
-        <TabsContent value="format">
-          <TournamentFormatExplanation tournament={tournament} />
-        </TabsContent>
-      </Tabs>
+        <TournamentSettings 
+          tournament={tournament} 
+          onUpdateTournament={onUpdateTournament} 
+        />
+      </div>
     </div>
   );
 };

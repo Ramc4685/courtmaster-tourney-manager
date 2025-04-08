@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,6 +47,7 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
         pointsToWin: 11,
         mustWinByTwo: true,
       },
+      categoryRegistrationRules: [],
     },
   });
 
@@ -83,4 +85,4 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
   );
 };
 
-export default CreateTournamentForm; 
+export default CreateTournamentForm;

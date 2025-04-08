@@ -1,9 +1,14 @@
+
 import { z } from "zod";
 
+// Make sure this matches the enum in src/types/tournament.ts
 export enum TournamentFormat {
   SINGLE_ELIMINATION = "SINGLE_ELIMINATION",
   DOUBLE_ELIMINATION = "DOUBLE_ELIMINATION",
   ROUND_ROBIN = "ROUND_ROBIN",
+  SWISS = "SWISS",
+  GROUP_KNOCKOUT = "GROUP_KNOCKOUT",
+  MULTI_STAGE = "MULTI_STAGE",
 }
 
 export enum CategoryType {
@@ -12,6 +17,7 @@ export enum CategoryType {
   MENS_DOUBLES = "MENS_DOUBLES",
   WOMENS_DOUBLES = "WOMENS_DOUBLES",
   MIXED_DOUBLES = "MIXED_DOUBLES",
+  CUSTOM = "CUSTOM",
 }
 
 // Define the form schema with Zod
@@ -43,6 +49,16 @@ export const tournamentFormSchema = z.object({
       type: z.nativeEnum(CategoryType),
     })).default([]),
   })).default([]),
+  // New field for controlling registration requirements by category
+  categoryRegistrationRules: z.array(z.object({
+    categoryId: z.string(),
+    minAge: z.number().optional(),
+    maxAge: z.number().optional(),
+    gender: z.enum(["male", "female", "any"]).optional(),
+    skillLevel: z.enum(["beginner", "intermediate", "advanced", "elite", "any"]).optional(),
+  })).optional(),
+  // Add requirePlayerProfile field
+  requirePlayerProfile: z.boolean().default(false),
 });
 
 export type TournamentFormValues = z.infer<typeof tournamentFormSchema>;
@@ -53,4 +69,4 @@ export interface Division {
     name: string;
     type: CategoryType;
   }[];
-} 
+}

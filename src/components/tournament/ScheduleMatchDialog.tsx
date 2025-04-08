@@ -1,238 +1,240 @@
 
 import React, { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { Team, Court, TournamentCategory, Division } from "@/types/tournament";
 import { useTournament } from "@/contexts/tournament/useTournament";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Division, Team } from "@/types/tournament";
-import ManualScheduleTab from "./schedule/ManualScheduleTab";
-import AutoScheduleTab from "./schedule/AutoScheduleTab";
 
-interface FormData {
-  team1Id: string;
-  team2Id: string;
-  courtId: string;
-  scheduledDate: string;
-  scheduledTime: string;
-}
-
-interface ScheduleMatchDialogProps {
+export interface ScheduleMatchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tournamentId: string;
+  onCreateMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => void;
 }
 
 const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
   open,
   onOpenChange,
   tournamentId,
+  onCreateMatch
 }) => {
-  const { currentTournament, scheduleMatch, autoAssignCourts } = useTournament();
-  const { toast } = useToast();
-  const [selectedDivision, setSelectedDivision] = useState<Division>("INITIAL");
-  const [suggestedPairs, setSuggestedPairs] = useState<{ team1: Team; team2: Team }[]>([]);
-  const [autoScheduleDate, setAutoScheduleDate] = useState<string>(
-    format(new Date(), "yyyy-MM-dd")
-  );
-  const [autoScheduleTime, setAutoScheduleTime] = useState<string>("12:00");
-  const [matchDuration, setMatchDuration] = useState<number>(60); // Default match duration in minutes
+  const { currentTournament } = useTournament();
+  const [team1Id, setTeam1Id] = useState("");
+  const [team2Id, setTeam2Id] = useState("");
+  const [scheduledDate, setScheduledDate] = useState<Date | undefined>(new Date());
+  const [scheduledTime, setScheduledTime] = useState("12:00");
+  const [courtId, setCourtId] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<TournamentCategory | null>(null);
 
+  // Update selected category when categoryId changes
   useEffect(() => {
-    // Set the appropriate division based on the tournament's current stage
-    if (currentTournament) {
-      switch (currentTournament.currentStage) {
-        case "INITIAL_ROUND":
-          setSelectedDivision("INITIAL");
-          break;
-        case "DIVISION_PLACEMENT":
-          setSelectedDivision("QUALIFIER_DIV1");
-          break;
-        case "PLAYOFF_KNOCKOUT":
-          setSelectedDivision("DIVISION_1");
-          break;
-        default:
-          setSelectedDivision("INITIAL");
-      }
+    if (categoryId && currentTournament) {
+      const category = currentTournament.categories.find(c => c.id === categoryId) || null;
+      setSelectedCategory(category);
+    } else {
+      setSelectedCategory(null);
     }
-  }, [currentTournament]);
+  }, [categoryId, currentTournament]);
 
-  // Generate suggested team pairs based on current tournament stage and division
-  const generateSuggestedPairs = () => {
-    if (!currentTournament) return;
-
-    const scheduledMatchTeamIds = currentTournament.matches
-      .map(match => [match.team1.id, match.team2.id])
-      .flat();
-
-    // Get teams that aren't already in matches for the selected division and stage
-    const availableTeams = currentTournament.teams.filter(team => 
-      !scheduledMatchTeamIds.includes(team.id) ||
-      !currentTournament.matches.some(
-        m => (m.team1.id === team.id || m.team2.id === team.id) && 
-             m.division === selectedDivision &&
-             m.stage === currentTournament.currentStage
-      )
-    );
-
-    // Sort teams by initial ranking if available
-    const sortedTeams = [...availableTeams].sort((a, b) => 
-      (a.initialRanking || 999) - (b.initialRanking || 999)
-    );
-
-    // Generate pairs based on sorted rankings (highest vs lowest)
-    const pairs: { team1: Team; team2: Team }[] = [];
-    const halfLength = Math.floor(sortedTeams.length / 2);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     
-    for (let i = 0; i < halfLength; i++) {
-      pairs.push({
-        team1: sortedTeams[i], // Top ranked team
-        team2: sortedTeams[sortedTeams.length - 1 - i] // Bottom ranked team
-      });
-    }
-
-    setSuggestedPairs(pairs);
-  };
-
-  useEffect(() => {
-    if (open && currentTournament) {
-      generateSuggestedPairs();
-    }
-  }, [open, selectedDivision, currentTournament]);
-
-  const handleSubmit = (formData: FormData) => {
-    const { team1Id, team2Id, courtId, scheduledDate, scheduledTime } = formData;
-
-    if (team1Id === team2Id) {
-      toast({
-        title: "Invalid team selection",
-        description: "A team cannot play against itself",
-        variant: "destructive",
-      });
+    if (!team1Id || !team2Id || !scheduledDate || !categoryId) {
       return;
     }
-
-    // Combine date and time
-    const dateTime = new Date(`${scheduledDate}T${scheduledTime}`);
-
-    // Call the schedule match function
-    scheduleMatch(team1Id, team2Id, dateTime, courtId || undefined);
-
-    // Show success message
-    toast({
-      title: "Match scheduled",
-      description: "The match has been scheduled successfully",
-    });
-
-    // Close dialog
-    onOpenChange(false);
+    
+    // Convert date and time to a Date object
+    const [hours, minutes] = scheduledTime.split(':').map(Number);
+    const scheduledDateTime = new Date(scheduledDate);
+    scheduledDateTime.setHours(hours, minutes, 0);
+    
+    // Call onCreateMatch with the selected values
+    // Only pass courtId if it's not "none" (our special value for no court)
+    onCreateMatch(
+      team1Id, 
+      team2Id, 
+      scheduledDateTime, 
+      courtId !== "none" ? courtId : undefined,
+      categoryId
+    );
   };
 
-  const scheduleAllMatches = () => {
-    if (!currentTournament || suggestedPairs.length === 0) {
-      toast({
-        title: "No matches to schedule",
-        description: "There are no available matches to schedule.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const availableTeams = currentTournament?.teams || [];
+  const availableCourts = currentTournament?.courts.filter(court => court.status === "AVAILABLE") || [];
+  const availableCategories = currentTournament?.categories || [];
 
-    // Get all available courts
-    const availableCourts = currentTournament.courts.filter(c => c.status === "AVAILABLE");
-    
-    // Parse the starting date and time
-    const baseDateTime = new Date(`${autoScheduleDate}T${autoScheduleTime}`);
-    
-    // Schedule as many matches as possible
-    let scheduledCount = 0;
-    const maxInitialMatches = Math.min(availableCourts.length, suggestedPairs.length);
-    
-    // First, schedule matches on all available courts
-    for (let i = 0; i < maxInitialMatches; i++) {
-      const { team1, team2 } = suggestedPairs[i];
-      const courtId = availableCourts[i].id;
-      
-      // Calculate match time (staggered by 5 minutes to prevent exact same time)
-      const matchTime = new Date(baseDateTime);
-      matchTime.setMinutes(matchTime.getMinutes() + (i * 5));
-      
-      scheduleMatch(team1.id, team2.id, matchTime, courtId);
-      scheduledCount++;
-    }
-    
-    // Then, create additional scheduled matches that will be assigned to courts as they become available
-    for (let i = maxInitialMatches; i < suggestedPairs.length; i++) {
-      const { team1, team2 } = suggestedPairs[i];
-      
-      // Calculate match time - add match duration minutes for each group of matches
-      // This is just an estimate for when courts might be available
-      const groupIndex = Math.floor(i / (availableCourts.length || 1));
-      const matchTime = new Date(baseDateTime);
-      matchTime.setMinutes(matchTime.getMinutes() + (groupIndex * matchDuration) + (i * 5));
-      
-      // Don't assign a court for these matches
-      scheduleMatch(team1.id, team2.id, matchTime);
-      scheduledCount++;
-    }
-    
-    // Auto-assign courts for upcoming matches if courts are available
-    if (availableCourts.length > 0) {
-      autoAssignCourts();
-    }
-    
-    toast({
-      title: "Bulk scheduling complete",
-      description: `Successfully scheduled ${scheduledCount} matches.`,
-    });
-    
-    // Refresh suggested pairs
-    generateSuggestedPairs();
-    
-    // Close the dialog
-    onOpenChange(false);
+  // Filter out team2 options to prevent selecting the same team
+  const team2Options = availableTeams.filter(team => team.id !== team1Id);
+  
+  // Filter teams by selected category
+  const getTeamsByCategory = (categoryId: string) => {
+    if (!categoryId) return availableTeams;
+    // In a real implementation, teams would be filtered by category
+    // For now, we'll assume all teams can play in all categories
+    return availableTeams;
   };
-
-  if (!currentTournament) return null;
-
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Schedule Match</DialogTitle>
-          <DialogDescription>
-            Create or auto-schedule matches between teams
-          </DialogDescription>
+          <DialogTitle>Schedule New Match</DialogTitle>
         </DialogHeader>
-
-        <Tabs defaultValue="auto" className="w-full">
-          <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="manual">Manual Schedule</TabsTrigger>
-            <TabsTrigger value="auto">Auto Schedule</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="manual">
-            <ManualScheduleTab 
-              tournament={currentTournament}
-              selectedDivision={selectedDivision}
-              onDivisionChange={setSelectedDivision}
-              onScheduleMatch={handleSubmit}
-              onCancel={() => onOpenChange(false)}
-            />
-          </TabsContent>
-
-          <TabsContent value="auto">
-            <AutoScheduleTab 
-              tournament={currentTournament}
-              selectedDivision={selectedDivision}
-              suggestedPairs={suggestedPairs}
-              onDivisionChange={setSelectedDivision}
-              onGenerateSuggestedPairs={generateSuggestedPairs}
-              onScheduleAllMatches={scheduleAllMatches}
-              onCancel={() => onOpenChange(false)}
-            />
-          </TabsContent>
-        </Tabs>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            {/* Category Selection */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category" className="text-right">
+                Category
+              </Label>
+              <Select
+                value={categoryId}
+                onValueChange={(value) => {
+                  setCategoryId(value);
+                  // Reset team selections when category changes
+                  setTeam1Id("");
+                  setTeam2Id("");
+                }}
+                required
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableCategories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name} {category.format ? `(${category.format})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="team1" className="text-right">
+                Team 1
+              </Label>
+              <Select
+                value={team1Id}
+                onValueChange={setTeam1Id}
+                disabled={!categoryId}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select Team 1" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getTeamsByCategory(categoryId).map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="team2" className="text-right">
+                Team 2
+              </Label>
+              <Select
+                value={team2Id}
+                onValueChange={setTeam2Id}
+                disabled={!team1Id}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select Team 2" />
+                </SelectTrigger>
+                <SelectContent>
+                  {team2Options.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Date</Label>
+              <div className="col-span-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !scheduledDate && "text-muted-foreground"
+                      )}
+                    >
+                      {scheduledDate ? format(scheduledDate, "PPP") : (
+                        <span>Pick a date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={scheduledDate}
+                      onSelect={setScheduledDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="time" className="text-right">
+                Time
+              </Label>
+              <input
+                type="time"
+                id="time"
+                value={scheduledTime}
+                onChange={(e) => setScheduledTime(e.target.value)}
+                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="court" className="text-right">
+                Court (Optional)
+              </Label>
+              <Select
+                value={courtId}
+                onValueChange={setCourtId}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select Court (Optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Court Assigned</SelectItem>
+                  {availableCourts.map((court) => (
+                    <SelectItem key={court.id} value={court.id}>
+                      {court.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit">Schedule Match</Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
