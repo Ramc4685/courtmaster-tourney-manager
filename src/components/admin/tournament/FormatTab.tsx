@@ -19,7 +19,8 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
-import { TournamentFormValues, TournamentFormat } from "./types";
+import { TournamentFormValues } from "./types";
+import { TournamentFormat } from "@/types/tournament-enums";
 
 interface FormatTabProps {
   form: UseFormReturn<TournamentFormValues>;
