@@ -1,12 +1,22 @@
+
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
-// Mock the matchScoringStore
-vi.mock('@/stores/matchScoringStore', () => ({
-  useMatchScoringStore: vi.fn(),
-}));
+// Global mocks
+window.matchMedia = window.matchMedia || function() {
+  return {
+    matches: false,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+  };
+};
 
-// Mock the useMatchScoring hook
-vi.mock('@/hooks/useMatchScoring', () => ({
-  useMatchScoring: vi.fn(),
-})); 
+// Use this file to set up any global test configuration
+
+// Mock for ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+  constructor(callback: any) {}
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};

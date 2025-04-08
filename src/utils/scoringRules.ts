@@ -1,57 +1,16 @@
-import { ScoringRule, ScoringSettings, ScoreValidationResult, MatchScore } from '@/types/scoring';
 
-// Default scoring rules for different sports
-export const defaultScoringRules: Record<string, ScoringRule> = {
-  badminton: {
-    id: 'badminton',
-    name: 'Badminton',
-    sport: 'badminton',
-    maxPoints: 21,
-    requireTwoPointLead: true,
-    maxTwoPointLeadScore: 30,
-    maxSets: 3,
-    setsToWin: 2,
-    tiebreakRules: {
-      pointsToWin: 11,
-      requireTwoPointLead: true,
-      maxPoints: 15
-    }
-  },
-  tennis: {
-    id: 'tennis',
-    name: 'Tennis',
-    sport: 'tennis',
-    maxPoints: 6,
-    requireTwoPointLead: true,
-    maxTwoPointLeadScore: 7,
-    maxSets: 5,
-    setsToWin: 3,
-    tiebreakRules: {
-      pointsToWin: 7,
-      requireTwoPointLead: true,
-      maxPoints: 10
-    }
-  },
-  volleyball: {
-    id: 'volleyball',
-    name: 'Volleyball',
-    sport: 'volleyball',
-    maxPoints: 25,
-    requireTwoPointLead: true,
-    maxTwoPointLeadScore: 27,
-    maxSets: 5,
-    setsToWin: 3,
-    tiebreakRules: {
-      pointsToWin: 15,
-      requireTwoPointLead: true,
-      maxPoints: 17
-    }
-  }
-};
+import { ScoringSettings, ScoreValidationResult, MatchScore, ScoreAuditLog } from '@/types/tournament';
 
-// Validate a score based on the scoring rules
-export const validateScore = (
-  score: MatchScore,
+/**
+ * Validates a set score according to scoring rules
+ * @param team1Score Score for team 1
+ * @param team2Score Score for team 2
+ * @param settings Scoring settings to apply
+ * @returns Validation result with errors and warnings
+ */
+export const validateSetScore = (
+  team1Score: number,
+  team2Score: number,
   settings: ScoringSettings
 ): ScoreValidationResult => {
   const result: ScoreValidationResult = {
@@ -60,110 +19,103 @@ export const validateScore = (
     warnings: []
   };
 
-  // Check if scores are within valid range
-  if (score.team1Score < 0 || score.team2Score < 0) {
+  // Check for negative scores
+  if (team1Score < 0 || team2Score < 0) {
     result.isValid = false;
     result.errors.push('Scores cannot be negative');
   }
 
-  // Check if either score exceeds maximum points
-  if (score.team1Score > settings.maxTwoPointLeadScore || 
-      score.team2Score > settings.maxTwoPointLeadScore) {
+  // Check if scores are too high
+  if (team1Score > settings.maxPoints || team2Score > settings.maxPoints) {
     result.isValid = false;
-    result.errors.push(`Score cannot exceed ${settings.maxTwoPointLeadScore} points`);
+    result.errors.push(`Scores cannot exceed the maximum of ${settings.maxPoints}`);
   }
 
-  // Check if a two-point lead is required and if it's satisfied
-  if (settings.requireTwoPointLead) {
-    const scoreDiff = Math.abs(score.team1Score - score.team2Score);
-    const maxScore = Math.max(score.team1Score, score.team2Score);
-    
-    if (maxScore >= settings.maxPoints && scoreDiff < 2) {
-      result.warnings.push('Two-point lead required to win');
+  // Check for win conditions
+  const winningScore = Math.max(team1Score, team2Score);
+  const losingScore = Math.min(team1Score, team2Score);
+  const scoreDifference = winningScore - losingScore;
+
+  // If a team has reached winning score
+  if (winningScore >= settings.pointsToWin) {
+    // Check for required lead
+    if (settings.mustWinByTwo && scoreDifference < 2 && winningScore < settings.maxTwoPointLeadScore) {
+      result.isValid = false;
+      result.errors.push(`A two-point lead is required to win below ${settings.maxTwoPointLeadScore} points`);
+    }
+  } else {
+    // Winning score not reached
+    if (Math.max(team1Score, team2Score) === settings.pointsToWin - 1) {
+      result.warnings.push(`One more point needed to reach the winning score of ${settings.pointsToWin}`);
     }
   }
 
   return result;
 };
 
-// Determine if a set is complete based on the scoring rules
-export const isSetComplete = (
-  team1Score: number,
-  team2Score: number,
-  settings: ScoringSettings
-): boolean => {
-  const maxScore = Math.max(team1Score, team2Score);
-  const scoreDiff = Math.abs(team1Score - team2Score);
-
-  // Check if either player has reached the maximum points
-  if (maxScore >= settings.maxPoints) {
-    // If two-point lead is required
-    if (settings.requireTwoPointLead) {
-      // Set is complete if there's a two-point lead
-      if (scoreDiff >= 2) {
-        return true;
-      }
-      // Set is complete if max score is reached
-      if (maxScore >= settings.maxTwoPointLeadScore) {
-        return true;
-      }
-      return false;
-    }
-    // If no two-point lead required, set is complete
-    return true;
-  }
-
-  return false;
-};
-
-// Determine the winner of a set
-export const getSetWinner = (
-  team1Score: number,
-  team2Score: number,
-  settings: ScoringSettings
-): 'team1' | 'team2' | null => {
-  if (!isSetComplete(team1Score, team2Score, settings)) {
-    return null;
-  }
-
-  return team1Score > team2Score ? 'team1' : 'team2';
-};
-
-// Create an audit log entry for a score change
+/**
+ * Creates a standardized audit log entry for score changes
+ * @param setIndex The set being modified
+ * @param previousScore Previous score
+ * @param newScore New score
+ * @param userId User making the change
+ * @param reason Optional reason for the change
+ * @returns Audit log entry
+ */
 export const createScoreAuditLog = (
-  action: string,
-  score: MatchScore,
-  scorer: string,
-  previousScore?: string,
+  setIndex: number,
+  previousScore: MatchScore,
+  newScore: MatchScore,
+  userId: string,
   reason?: string
 ): ScoreAuditLog => {
   return {
     timestamp: new Date(),
-    action,
+    action: 'SCORE_UPDATE',
+    user_id: userId,
     details: {
-      score: `${score.team1Score}-${score.team2Score}`,
-      scorer,
-      setComplete: score.isComplete,
-      previousScore,
+      score: `Set ${setIndex + 1}: ${newScore.team1Score}-${newScore.team2Score}`,
+      scorer: userId,
+      setComplete: newScore.isComplete || false,
+      previousScore: `${previousScore.team1Score}-${previousScore.team2Score}`,
       reason
-    },
-    user_id: 'system' // This should be replaced with actual user ID
+    }
   };
 };
 
-// Get default scoring settings for a sport
-export const getDefaultScoringSettings = (sport: string): ScoringSettings => {
-  const rule = defaultScoringRules[sport.toLowerCase()];
-  if (!rule) {
-    throw new Error(`No default scoring rules found for sport: ${sport}`);
-  }
-
+/**
+ * Returns default scoring settings for badminton
+ * @returns Default scoring settings
+ */
+export const getDefaultBadmintonScoringSettings = (): ScoringSettings => {
   return {
-    maxPoints: rule.maxPoints,
-    requireTwoPointLead: rule.requireTwoPointLead,
-    maxTwoPointLeadScore: rule.maxTwoPointLeadScore,
-    maxSets: rule.maxSets,
-    setsToWin: rule.setsToWin,
-    tiebreakRules: rule.tiebreakRules
+    pointsToWin: 21,
+    mustWinByTwo: true,
+    maxPoints: 30,
+    maxSets: 3,
+    requireTwoPointLead: true,
+    maxTwoPointLeadScore: 30,
+    setsToWin: 2,
+    tiebreakRules: {
+      pointsToWin: 11,
+      requireTwoPointLead: true,
+      maxPoints: 15
+    }
   };
-}; 
+};
+
+/**
+ * Returns default scoring settings for volleyball
+ * @returns Default volleyball scoring settings
+ */
+export const getDefaultVolleyballScoringSettings = (): ScoringSettings => {
+  return {
+    pointsToWin: 25,
+    mustWinByTwo: true,
+    maxPoints: 30,
+    maxSets: 5,
+    requireTwoPointLead: true,
+    maxTwoPointLeadScore: 30,
+    setsToWin: 3
+  };
+};

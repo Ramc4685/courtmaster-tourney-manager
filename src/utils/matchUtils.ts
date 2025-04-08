@@ -1,6 +1,5 @@
 
-import { Match, MatchScore } from '@/types/tournament';
-import { ScoringSettings } from '@/types/scoring';
+import { Match, MatchScore, ScoringSettings } from '@/types/tournament';
 
 /**
  * Validates if a set is complete based on the scoring settings.
@@ -16,6 +15,7 @@ export const isSetComplete = (team1Score: number, team2Score: number, scoringSet
     if (requireTwoPointLead) {
       return Math.abs(team1Score - team2Score) >= 2;
     }
+    return true;
   }
 
   if (team1Score >= pointsToWin || team2Score >= pointsToWin) {
@@ -93,9 +93,10 @@ export const determineMatchWinnerAndLoser = (match: Match, scoringSettings: Scor
   let team2Wins = 0;
 
   for (const score of match.scores || []) {
-    if (score.team1Score > score.team2Score) {
+    const winner = getSetWinner(score.team1Score, score.team2Score, scoringSettings);
+    if (winner === "team1") {
       team1Wins++;
-    } else {
+    } else if (winner === "team2") {
       team2Wins++;
     }
   }
@@ -108,15 +109,15 @@ export const determineMatchWinnerAndLoser = (match: Match, scoringSettings: Scor
  * @param sport Sport for which to generate default settings.
  * @returns Default scoring settings.
  */
-export const getDefaultScoringSettings = (sport: string = "volleyball"): ScoringSettings => {
+export const getDefaultScoringSettings = (sport: string = "badminton"): ScoringSettings => {
   return {
-    pointsToWin: 25,
+    pointsToWin: 21,
     mustWinByTwo: true,
     maxPoints: 30,
-    maxSets: 5,
+    maxSets: 3,
     requireTwoPointLead: true,
     maxTwoPointLeadScore: 30,
-    setsToWin: 3,
+    setsToWin: 2,
   };
 };
 

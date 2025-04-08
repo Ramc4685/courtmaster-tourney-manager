@@ -1,4 +1,53 @@
 
+// Basic enum types for the tournament system
+export enum TournamentFormat {
+  SINGLE_ELIMINATION = "SINGLE_ELIMINATION",
+  DOUBLE_ELIMINATION = "DOUBLE_ELIMINATION",
+  ROUND_ROBIN = "ROUND_ROBIN",
+  SWISS = "SWISS",
+  GROUP_KNOCKOUT = "GROUP_KNOCKOUT",
+  MULTI_STAGE = "MULTI_STAGE"
+}
+
+export enum TournamentStatus {
+  DRAFT = "DRAFT",
+  PUBLISHED = "PUBLISHED",
+  IN_PROGRESS = "IN_PROGRESS",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED"
+}
+
+export enum MatchStatus {
+  SCHEDULED = "SCHEDULED",
+  IN_PROGRESS = "IN_PROGRESS",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED",
+  DEFERRED = "DEFERRED"
+}
+
+export enum CourtStatus {
+  AVAILABLE = "AVAILABLE",
+  IN_USE = "IN_USE",
+  MAINTENANCE = "MAINTENANCE"
+}
+
+export enum DivisionType {
+  MENS = "MENS",
+  WOMENS = "WOMENS",
+  MIXED = "MIXED"
+}
+
+export enum StageType {
+  GROUP = "GROUP",
+  KNOCKOUT = "KNOCKOUT",
+  FINAL = "FINAL"
+}
+
+export enum ScorerType {
+  MANUAL = "MANUAL",
+  AUTOMATIC = "AUTOMATIC"
+}
+
 export enum CategoryType {
   MENS_SINGLES = "MENS_SINGLES",
   WOMENS_SINGLES = "WOMENS_SINGLES",
@@ -8,31 +57,5 @@ export enum CategoryType {
   CUSTOM = "CUSTOM"
 }
 
-export enum TournamentFormat {
-  SINGLE_ELIMINATION = "SINGLE_ELIMINATION",
-  DOUBLE_ELIMINATION = "DOUBLE_ELIMINATION",
-  ROUND_ROBIN = "ROUND_ROBIN",
-  GROUP_KNOCKOUT = "GROUP_KNOCKOUT",
-  SWISS = "SWISS",
-  MULTI_STAGE = "MULTI_STAGE"
-}
-
-// Adding the missing enums to fix Division and TournamentStage issues
-export enum DivisionEnum {
-  DIVISION_1 = "DIVISION_1",
-  DIVISION_2 = "DIVISION_2",
-  DIVISION_3 = "DIVISION_3",
-  INITIAL = "INITIAL",
-  QUALIFIER_DIV1 = "QUALIFIER_DIV1",
-  QUALIFIER_DIV2 = "QUALIFIER_DIV2",
-  GROUP_DIV3 = "GROUP_DIV3"
-}
-
-export enum TournamentStageEnum {
-  INITIAL_ROUND = "INITIAL_ROUND",
-  DIVISION_PLACEMENT = "DIVISION_PLACEMENT",
-  PLAYOFF_KNOCKOUT = "PLAYOFF_KNOCKOUT",
-  GROUP = "GROUP",
-  KNOCKOUT = "KNOCKOUT",
-  FINAL = "FINAL"
-}
+export type TournamentStage = "INITIAL_ROUND" | "PRELIMINARY" | "GROUP_STAGE" | "QUARTER_FINALS" | "SEMI_FINALS" | "FINALS";
+export type Division = "MENS" | "WOMENS" | "MIXED" | "OPEN" | "JUNIOR" | "SENIOR" | "MASTERS";
