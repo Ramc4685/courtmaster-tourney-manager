@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from '@/pages/home';
 import { TournamentProvider } from '@/contexts/tournament/TournamentContext';
 import { AuthProvider } from '@/contexts/auth/AuthContext';
-import Layout from '@/components/layout/Layout';
+import RoleBasedLayout from '@/components/layout/RoleBasedLayout'; // Updated import
 import TournamentCreationForm from '@/components/admin/tournament/TournamentCreationForm';
 import { TournamentList } from '@/components/tournament/TournamentList';
 import TournamentDetails from '@/pages/tournament/TournamentDetails';
@@ -31,15 +31,15 @@ function App() {
     <Router>
       <AuthProvider>
         <TournamentProvider>
-          <Routes>
-            <Route path="/" element={<Layout><Home /></Layout>} />
-            <Route path="/tournaments" element={<Layout><TournamentList /></Layout>} />
-            <Route path="/tournament/create" element={<Layout><TournamentCreationForm /></Layout>} />
-            <Route path="/tournament/:id" element={<Layout><TournamentDetails /></Layout>} />
-            <Route 
-              path="/scoring/:id" 
-              element={
-                <Layout>
+          <RoleBasedLayout> {/* Updated Layout wrapper */}
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/tournaments" element={<TournamentList />} />
+              <Route path="/tournament/create" element={<TournamentCreationForm />} />
+              <Route path="/tournament/:id" element={<TournamentDetails />} />
+              <Route 
+                path="/scoring/:id" 
+                element={
                   <ScoringView 
                     match={{
                       id: 'placeholder',
@@ -63,13 +63,11 @@ function App() {
                       console.log(`Match ${matchId} completed, winner: ${winnerId}`);
                     }}
                   />
-                </Layout>
-              } 
-            />
-            <Route 
-              path="/scoring/standalone" 
-              element={
-                <Layout>
+                } 
+              />
+              <Route 
+                path="/scoring/standalone" 
+                element={
                   <ScoringView 
                     match={{
                       id: 'placeholder',
@@ -93,15 +91,15 @@ function App() {
                       console.log(`Match ${matchId} completed, winner: ${winnerId}`);
                     }}
                   />
-                </Layout>
-              } 
-            />
-            <Route path="/public/:id" element={<Layout><PublicView /></Layout>} />
-            <Route path="/profile" element={<Layout><Profile /></Layout>} />
-            <Route path="/settings" element={<Layout><Settings /></Layout>} />
-            <Route path="/admin" element={<Layout><AdminDashboard /></Layout>} />
-            <Route path="/login" element={<Layout><Login /></Layout>} />
-          </Routes>
+                } 
+              />
+              <Route path="/public/:id" element={<PublicView />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/login" element={<Login />} />
+            </Routes>
+          </RoleBasedLayout> {/* Updated Layout closing tag */}
         </TournamentProvider>
       </AuthProvider>
     </Router>
