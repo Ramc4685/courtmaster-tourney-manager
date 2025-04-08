@@ -1,190 +1,195 @@
-import { Match, ScoringSettings, Team, Tournament, Division, TournamentStage, TournamentCategory } from "@/types/tournament";
-import { generateId } from "./tournamentUtils";
+import { Match, ScoringSettings, Tournament, Division, TournamentStage, TournamentCategory } from "@/types/tournament";
 
-// Get default scoring settings (updated for badminton)
+// Default scoring settings
 export const getDefaultScoringSettings = (): ScoringSettings => {
   return {
-    maxPoints: 21, // Standard badminton scoring to 21 points
-    maxSets: 3,    // Best of 3 sets in badminton
-    requireTwoPointLead: true, // Badminton requires 2-point lead to win
-    maxTwoPointLeadScore: 30   // Maximum score with two-point lead rule (can go beyond 21)
+    pointsToWin: 21,
+    mustWinByTwo: true,
+    maxPoints: 30,
+    maxSets: 3,
+    requireTwoPointLead: true,
+    maxTwoPointLeadScore: 30
   };
 };
 
-// Determine if a set is complete based on badminton rules
+// Check if a set is complete based on scoring rules
 export const isSetComplete = (
   team1Score: number,
   team2Score: number,
-  settings: ScoringSettings
+  scoringSettings: ScoringSettings
 ): boolean => {
-  const { maxPoints, requireTwoPointLead, maxTwoPointLeadScore } = settings;
+  const { pointsToWin, mustWinByTwo, maxPoints } = scoringSettings;
   
-  // First check if either team has reached or exceeded the standard max points (21)
-  if (team1Score >= maxPoints || team2Score >= maxPoints) {
+  // Check if any team has reached the minimum points to win
+  const reachedMinPoints = team1Score >= pointsToWin || team2Score >= pointsToWin;
+  
+  // If "must win by two" is enabled, check the point difference
+  if (mustWinByTwo && scoringSettings.requireTwoPointLead) {
     const scoreDifference = Math.abs(team1Score - team2Score);
+    const reachedMaxPoints = team1Score >= scoringSettings.maxTwoPointLeadScore || team2Score >= scoringSettings.maxTwoPointLeadScore;
     
-    // If a 2-point lead is required (standard badminton rules)
-    if (requireTwoPointLead) {
-      // If there's at least a 2-point difference, the set is complete
-      if (scoreDifference >= 2) {
-        return true;
-      }
-      
-      // If either score has reached the absolute maximum (30), the set is complete regardless of lead
-      const maxScore = Math.max(team1Score, team2Score);
-      if (maxScore >= (maxTwoPointLeadScore || 30)) {
-        return true;
-      }
-      
-      // Otherwise, continue playing (not complete yet)
-      return false;
-    } else {
-      // If no 2-point lead is required (non-standard), just reaching max points is enough
-      return true;
-    }
+    // Set is complete if:
+    // 1. A team has reached minimum points AND has a 2+ point lead, OR
+    // 2. A team has reached the maximum points
+    return (reachedMinPoints && scoreDifference >= 2) || reachedMaxPoints;
+  } else {
+    // If "must win by two" is disabled, only check if minimum points are reached
+    return reachedMinPoints;
   }
-  
-  // If neither team has reached max points, the set is not complete
-  return false;
 };
 
-// Determine if a match is complete
-export const isMatchComplete = (match: Match, settings: ScoringSettings): boolean => {
-  const { maxSets } = settings;
-  
+// Check if a match is complete based on sets won
+export const isMatchComplete = (
+  match: Match,
+  scoringSettings: ScoringSettings
+): boolean => {
   // Count sets won by each team
-  let team1Sets = 0;
-  let team2Sets = 0;
+  const setsWon = {
+    team1: 0,
+    team2: 0
+  };
   
-  match.scores.forEach(score => {
-    if (isSetComplete(score.team1Score, score.team2Score, settings)) {
+  // Count how many sets each team has won
+  match.scores?.forEach(score => {
+    if (isSetComplete(score.team1Score, score.team2Score, scoringSettings)) {
       if (score.team1Score > score.team2Score) {
-        team1Sets++;
-      } else {
-        team2Sets++;
+        setsWon.team1++;
+      } else if (score.team2Score > score.team1Score) {
+        setsWon.team2++;
       }
     }
   });
   
-  // In best-of-N format, a player needs to win (maxSets/2)+1 sets
-  const setsNeededToWin = Math.ceil(maxSets / 2);
-  
-  return team1Sets >= setsNeededToWin || team2Sets >= setsNeededToWin;
+  // Match is complete if either team has won majority of sets
+  // For example, in a best-of-3 format, a team needs to win 2 sets
+  const setsNeededToWin = Math.ceil(scoringSettings.maxSets / 2);
+  return setsWon.team1 >= setsNeededToWin || setsWon.team2 >= setsNeededToWin;
 };
 
-// Determine winner and loser of a match
-export const determineMatchWinnerAndLoser = (
-  match: Match, 
-  settings: ScoringSettings
-): { winner: Team, loser: Team } | null => {
+// Determine the winner of a match
+export const getMatchWinner = (
+  match: Match,
+  scoringSettings: ScoringSettings
+): string | null => {
   // Count sets won by each team
-  let team1Sets = 0;
-  let team2Sets = 0;
+  const setsWon = {
+    team1: 0,
+    team2: 0
+  };
   
-  match.scores.forEach(score => {
-    if (isSetComplete(score.team1Score, score.team2Score, settings)) {
+  // Count how many sets each team has won
+  match.scores?.forEach(score => {
+    if (isSetComplete(score.team1Score, score.team2Score, scoringSettings)) {
       if (score.team1Score > score.team2Score) {
-        team1Sets++;
-      } else {
-        team2Sets++;
+        setsWon.team1++;
+      } else if (score.team2Score > score.team1Score) {
+        setsWon.team2++;
       }
     }
   });
   
-  if (team1Sets > team2Sets) {
-    return { winner: match.team1, loser: match.team2 };
-  } else if (team2Sets > team1Sets) {
-    return { winner: match.team2, loser: match.team1 };
+  // Determine winner based on sets won
+  const setsNeededToWin = Math.ceil(scoringSettings.maxSets / 2);
+  if (setsWon.team1 >= setsNeededToWin) {
+    return match.team1Id || null;
+  } else if (setsWon.team2 >= setsNeededToWin) {
+    return match.team2Id || null;
   }
   
   return null; // No winner yet
 };
 
-// Update bracket progression
-export const updateBracketProgression = (
-  tournament: Tournament,
-  match: Match,
-  winner: Team
-): Tournament => {
-  // If the match has a next match defined, update that match
-  if (match.nextMatchId) {
-    const nextMatch = tournament.matches.find(m => m.id === match.nextMatchId);
+// Get next match in the bracket
+export const getNextMatch = (
+  currentMatch: Match,
+  matches: Match[]
+): Match | null => {
+  // If the current match has a next match ID, find that match
+  if (currentMatch.nextMatchId) {
+    return matches.find(m => m.id === currentMatch.nextMatchId) || null;
+  }
+  
+  // Otherwise, try to find the next match based on bracket position
+  if (typeof currentMatch.bracketPosition === 'number' && typeof currentMatch.bracketRound === 'number') {
+    const nextRound = currentMatch.bracketRound + 1;
+    const nextPosition = Math.floor(currentMatch.bracketPosition / 2);
     
-    if (nextMatch) {
-      // Determine if this match feeds into team1 or team2 of the next match
-      // This logic would depend on your tournament bracket structure
-      // For simplicity, we'll assume there's a pattern to determine this
-      
-      // For example, if match positions are structured in a way that
-      // odd-numbered positions feed into team1 and even into team2:
-      const updatedNextMatch = { ...nextMatch };
-      
-      if (match.bracketPosition && match.bracketPosition % 2 === 1) {
-        updatedNextMatch.team1 = winner;
-      } else {
-        updatedNextMatch.team2 = winner;
-      }
-      
-      const updatedMatches = tournament.matches.map(m => 
-        m.id === nextMatch.id ? updatedNextMatch : m
-      );
-      
-      return {
-        ...tournament,
-        matches: updatedMatches
-      };
-    }
+    return matches.find(m => 
+      m.bracketRound === nextRound && 
+      m.bracketPosition === nextPosition
+    ) || null;
   }
   
-  return tournament;
+  return null;
 };
 
-// Count the number of sets won by each team
-export const countSetsWon = (match: Match): { team1Sets: number, team2Sets: number } => {
-  let team1Sets = 0;
-  let team2Sets = 0;
-  
-  match.scores.forEach(score => {
-    if (score.team1Score > score.team2Score) {
-      team1Sets++;
-    } else if (score.team2Score > score.team1Score) {
-      team2Sets++;
+// Generate match display names
+export const getMatchDisplayName = (
+  match: Match,
+  format: string, 
+  round: number
+): string => {
+  if (format === 'SINGLE_ELIMINATION') {
+    const totalRounds = 4; // Example: for a 16-team tournament
+    const lastRound = totalRounds;
+    
+    if (round === lastRound) return 'Final';
+    if (round === lastRound - 1) return 'Semi-Final';
+    if (round === lastRound - 2) return 'Quarter-Final';
+    return `Round ${round}`;
+  } else if (format === 'DOUBLE_ELIMINATION') {
+    // Handle double elimination naming
+    if (match.status === 'COMPLETED') {
+      return `${format} Match ${match.id}`;
     }
-    // If scores are equal, no one wins the set
-  });
-  
-  return { team1Sets, team2Sets };
+    return `${format} R${round}`;
+  } else {
+    // Default match naming
+    return `Match ${match.id}`;
+  }
 };
 
-// Create a new match with generated ID
-export const createMatch = (
-  tournamentId: string,
-  team1: Team,
-  team2: Team,
-  division: Division | string,
-  stage: TournamentStage | string,
-  scheduledTime?: Date,
-  courtNumber?: number
-): Match => {
-  // Use team1's category, or team2's if team1 doesn't have one
-  const category = team1.category || team2.category;
-  
-  if (!category) {
-    throw new Error("Cannot create match: Teams must have a category assigned");
-  }
-
+// Create a new match object
+export const createEmptyMatch = (tournamentId: string, matchId: string): Match => {
   return {
-    id: generateId(),
-    tournamentId,
-    team1,
-    team2,
+    id: matchId,
+    tournamentId: tournamentId,
+    status: 'SCHEDULED',
+    division: 'MENS',
+    stage: 'KNOCKOUT',
     scores: [],
-    division: division as Division,
-    stage: stage as TournamentStage,
-    scheduledTime,
-    status: "SCHEDULED",
-    courtNumber,
-    updatedAt: new Date(),
-    category // Add the required category field
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+};
+
+// Create a sample match for testing
+export const createSampleMatch = (): Match => {
+  return {
+    id: 'sample-match-1',
+    tournamentId: 'sample-tournament',
+    team1Id: 'team-1',
+    team2Id: 'team-2',
+    team1: {
+      id: 'team-1',
+      name: 'Team 1',
+      players: [{ id: 'player-1', name: 'Player 1' }]
+    },
+    team2: {
+      id: 'team-2',
+      name: 'Team 2',
+      players: [{ id: 'player-2', name: 'Player 2' }]
+    },
+    status: 'SCHEDULED',
+    scores: [],
+    division: 'MENS',
+    stage: 'KNOCKOUT',
+    category: {
+      id: 'mens-singles',
+      name: 'Men\'s Singles',
+      type: 'MENS_SINGLES'
+    },
+    createdAt: new Date(),
+    updatedAt: new Date()
   };
 };

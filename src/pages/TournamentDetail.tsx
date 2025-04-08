@@ -1,340 +1,439 @@
 
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Tournament, 
-  Team, 
-  Court, 
-  Match, 
-  TournamentCategory,
-  TournamentFormat
-} from "@/types/tournament";
-import { Separator } from "@/components/ui/separator";
-import { Loader2, Settings, CalendarDays, Users, TrophyIcon, LayoutGrid } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useTournament } from "@/contexts/tournament/useTournament";
-import { useToast } from "@/components/ui/use-toast";
-import TournamentHeader from "@/components/tournament/TournamentHeader";
-import TabContentWrapper from "@/components/ui/tab-content-wrapper";
-import AddTeamDialog from "@/components/tournament/AddTeamDialog";
-import ImportTeamsDialog from "@/components/tournament/ImportTeamsDialog";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import OverviewTab from "@/components/tournament/tabs/OverviewTab";
-import CategoryTabs from "@/components/tournament/tabs/CategoryTabs";
-import TeamManagementTab from "@/components/tournament/tabs/TeamManagementTab";
-import ScheduleMatches from "@/components/tournament/actions/ScheduleMatches";
-import UnifiedScheduleDialog from "@/components/tournament/UnifiedScheduleDialog";
-import ScheduleMatchDialog from "@/components/tournament/ScheduleMatchDialog";
-import ScoreEntrySection from "@/components/tournament/score-entry/ScoreEntrySection";
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { useTournament } from '@/contexts/tournament/useTournament';
+import { Tournament } from '@/types/tournament';
+import { Court } from '@/types/tournament';
+import { Match } from '@/types/tournament';
+import { TournamentCategory } from '@/types/tournament';
+import { TournamentFormat } from '@/types/tournament';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import CategoryTabs from '@/components/tournament/tabs/CategoryTabs';
+import BracketTab from '@/components/tournament/tabs/BracketTab';
+import MatchesTab from '@/components/tournament/tabs/MatchesTab';
+import TeamsTab from '@/components/tournament/tabs/TeamsTab';
+import CourtsTab from '@/components/tournament/tabs/CourtsTab';
+import OverviewTab from '@/components/tournament/tabs/OverviewTab';
+import TournamentHeader from '@/components/tournament/TournamentHeader';
+import { toast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import AddTeamDialog from '@/components/tournament/AddTeamDialog';
+import ImportTeamsDialog from '@/components/tournament/ImportTeamsDialog';
+import ScheduleMatchDialog from '@/components/tournament/ScheduleMatchDialog';
+import TeamManagementTab from '@/components/tournament/tabs/TeamManagementTab';
+import ScoreEntrySection from '@/components/tournament/score-entry/ScoreEntrySection';
+import { Team } from '@/types/tournament';
 
 const TournamentDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { toast } = useToast();
-  const navigate = useNavigate();
-
-  // State for UI
-  const [activeTab, setActiveTab] = useState("overview");
-  const [isAddTeamDialogOpen, setIsAddTeamDialogOpen] = useState(false);
-  const [isImportTeamsDialogOpen, setIsImportTeamsDialogOpen] = useState(false);
-  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
-  const [isScheduleMatchDialogOpen, setIsScheduleMatchDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Get tournament context
+  const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [categoryTab, setCategoryTab] = useState<string>('all');
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [teamDialogOpen, setTeamDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [scheduleMatchDialogOpen, setScheduleMatchDialogOpen] = useState(false);
   const { 
-    tournaments,
-    currentTournament,
-    setCurrentTournament,
-    isLoading: isTournamentLoading,
+    currentTournament, 
+    loadTournaments, 
+    deleteTournament,
+    updateTournament,
     addTeam,
     importTeams,
-    updateMatch,
-    assignCourt,
-    scheduleMatch,
+    scheduleMatch, 
+    generateBrackets,
     autoAssignCourts,
-    generateMultiStageTournament,
-    advanceToNextStage,
-    updateMatchStatus,
-    updateTournament
   } = useTournament();
 
-  // Load the tournament when component mounts
   useEffect(() => {
-    if (!id) return;
-
-    const fetchTournament = async () => {
-      setIsLoading(true);
-      
-      // Find tournament in context
-      const tournament = tournaments.find(t => t.id === id);
-      
-      if (tournament) {
-        setCurrentTournament(tournament);
-        setIsLoading(false);
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Tournament not found",
-          description: "The requested tournament could not be found."
+    if (id) {
+      setLoading(true);
+      loadTournaments()
+        .then(() => {
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error('Error loading tournaments:', error);
+          setLoading(false);
+          toast({
+            title: 'Error',
+            description: 'Failed to load tournament data',
+            variant: 'destructive',
+          });
         });
-        navigate('/tournaments');
-      }
-    };
-
-    fetchTournament();
-  }, [id, tournaments, setCurrentTournament, toast, navigate]);
-
-  // Update page title
-  useEffect(() => {
-    if (currentTournament) {
-      document.title = `${currentTournament.name} - Tournament Manager`;
-    } else {
-      document.title = "Tournament Details - Tournament Manager";
     }
-  }, [currentTournament]);
+  }, [id, loadTournaments]);
 
-  // Handle tournament loading state
-  if (isLoading || isTournamentLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground">Loading tournament data...</p>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (currentTournament && currentTournament.id === id) {
+      setTournament(currentTournament);
+    }
+  }, [currentTournament, id]);
 
-  // Handle 404
-  if (!currentTournament) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="text-3xl font-bold">Tournament Not Found</div>
-        <p className="mt-2 text-muted-foreground">
-          The tournament you're looking for doesn't exist or you don't have access to it.
-        </p>
-        <Button className="mt-4" onClick={() => navigate('/tournaments')}>
-          Back to Tournaments
-        </Button>
-      </div>
-    );
-  }
+  const handleDeleteTournament = async () => {
+    if (!tournament) return;
 
-  // Handle add team
+    try {
+      await deleteTournament(tournament.id);
+      toast({
+        title: 'Tournament Deleted',
+        description: 'The tournament has been deleted successfully',
+      });
+      // Navigate away after deletion
+      window.location.href = '/tournaments';
+    } catch (error) {
+      console.error('Error deleting tournament:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete tournament',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
   const handleAddTeam = (team: Team) => {
+    if (!tournament) return;
+
     addTeam(team);
-    setIsAddTeamDialogOpen(false);
     toast({
-      title: "Team added",
-      description: `${team.name} has been added to the tournament.`,
+      title: 'Team Added',
+      description: `${team.name} has been added to the tournament`,
     });
   };
 
-  // Handle import teams
   const handleImportTeams = (teams: Team[]) => {
+    if (!tournament) return;
+
     importTeams(teams);
-    setIsImportTeamsDialogOpen(false);
-    
     toast({
-      title: "Teams imported",
-      description: `${teams.length} teams have been imported into the tournament.`,
+      title: 'Teams Imported',
+      description: `${teams.length} teams have been imported`,
     });
   };
 
-  // Handle update tournament
-  const handleUpdateTournament = (updatedTournament: Tournament) => {
-    updateTournament(updatedTournament);
-    
-    toast({
-      title: "Tournament updated",
-      description: "Tournament details have been updated successfully.",
-    });
-  };
-
-  // Schedule a match
-  const handleScheduleMatch = (
-    team1Id: string, 
-    team2Id: string, 
-    scheduledTime: Date, 
+  const handleCreateMatch = (
+    team1Id: string,
+    team2Id: string,
+    scheduledTime: Date,
     courtId?: string,
     categoryId?: string
   ) => {
+    if (!tournament) return;
+
     scheduleMatch(team1Id, team2Id, scheduledTime, courtId, categoryId);
-    setIsScheduleMatchDialogOpen(false);
-    
     toast({
-      title: "Match scheduled",
-      description: `Match has been scheduled for ${format(scheduledTime, "PPp")}.`,
+      title: 'Match Scheduled',
+      description: 'The match has been scheduled successfully',
     });
   };
 
+  const handleGenerateBrackets = async () => {
+    if (!tournament) return;
+
+    try {
+      const matchesGenerated = await generateBrackets();
+      toast({
+        title: 'Brackets Generated',
+        description: `${matchesGenerated} matches have been generated`,
+      });
+    } catch (error) {
+      console.error('Error generating brackets:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate brackets',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAutoAssignCourts = async () => {
+    if (!tournament) return;
+
+    try {
+      const courtsAssigned = await autoAssignCourts();
+      toast({
+        title: 'Courts Assigned',
+        description: `${courtsAssigned} courts have been assigned`,
+      });
+    } catch (error) {
+      console.error('Error assigning courts:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to assign courts',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleUpdateTournament = (updatedTournament: Tournament) => {
+    updateTournament(updatedTournament);
+    setTournament(updatedTournament);
+    toast({
+      title: 'Tournament Updated',
+      description: 'Tournament settings have been updated',
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="space-y-6">
+          <Skeleton className="h-12 w-3/4" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="md:col-span-3">
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-8 w-1/3" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-64 w-full" />
+                </CardContent>
+              </Card>
+            </div>
+            <div>
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-full" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!tournament) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Tournament Not Found</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>We couldn't find the tournament you're looking for.</p>
+            <Button className="mt-4" onClick={() => window.location.href = '/tournaments'}>
+              Back to Tournaments
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto p-4">
-      {/* Tournament Header */}
+    <div className="container mx-auto px-4 py-8 space-y-6">
       <TournamentHeader 
-        tournament={currentTournament} 
-        onUpdateTournament={handleUpdateTournament}
+        tournament={tournament} 
+        updateTournament={handleUpdateTournament}
       />
-      
-      <Separator className="my-6" />
-      
-      {/* Main Tournament Content */}
-      <Tabs 
-        defaultValue="overview" 
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="space-y-4"
-      >
-        <TabsList className="grid grid-cols-5">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <TrophyIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Overview</span>
-          </TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-2">
-            <LayoutGrid className="h-4 w-4" />
-            <span className="hidden sm:inline">Categories</span>
-          </TabsTrigger>
-          <TabsTrigger value="teams" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Teams</span>
-          </TabsTrigger>
-          <TabsTrigger value="schedule" className="flex items-center gap-2">
-            <CalendarDays className="h-4 w-4" />
-            <span className="hidden sm:inline">Schedule</span>
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">Settings</span>
-          </TabsTrigger>
-        </TabsList>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-4">
-          <TabContentWrapper>
-            <OverviewTab 
-              tournament={currentTournament}
-              onUpdateTournament={handleUpdateTournament}
-              onGenerateMultiStageTournament={generateMultiStageTournament}
-              onAdvanceToNextStage={advanceToNextStage}
-              onScheduleDialogOpen={() => setIsScheduleDialogOpen(true)}
-            />
-          </TabContentWrapper>
-        </TabsContent>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3 space-y-6">
+          <CategoryTabs tournament={tournament} activeTab={activeTab} />
 
-        {/* Categories Tab */}
-        <TabsContent value="categories" className="space-y-4">
-          <TabContentWrapper>
-            <CategoryTabs 
-              tournament={currentTournament}
-              updateMatch={updateMatch}
-              assignCourt={assignCourt}
-              loadCategoryDemoData={() => {}} // Placeholder for now
-            />
-          </TabContentWrapper>
-        </TabsContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="bracket">Bracket</TabsTrigger>
+              <TabsTrigger value="matches">Matches</TabsTrigger>
+              <TabsTrigger value="teams">Teams</TabsTrigger>
+              <TabsTrigger value="courts">Courts</TabsTrigger>
+              <TabsTrigger value="team-management">Team Management</TabsTrigger>
+              <TabsTrigger value="score-entry">Score Entry</TabsTrigger>
+            </TabsList>
 
-        {/* Teams Tab */}
-        <TabsContent value="teams" className="space-y-4">
-          <TabContentWrapper>
-            <TeamManagementTab tournament={currentTournament} />
-            
-            <AddTeamDialog
-              open={isAddTeamDialogOpen}
-              onOpenChange={setIsAddTeamDialogOpen}
-              onAddTeam={handleAddTeam}
-            />
-            
-            <ImportTeamsDialog
-              open={isImportTeamsDialogOpen}
-              onOpenChange={setIsImportTeamsDialogOpen}
-              tournamentId={currentTournament.id}
-              onTeamsImported={handleImportTeams}
-            />
-          </TabContentWrapper>
-        </TabsContent>
+            <TabsContent value="overview">
+              <OverviewTab tournament={tournament} />
+            </TabsContent>
 
-        {/* Schedule Tab */}
-        <TabsContent value="schedule" className="space-y-4">
-          <TabContentWrapper>
-            <Card>
-              <CardHeader>
-                <CardTitle>Match Scheduling</CardTitle>
-                <CardDescription>
-                  Schedule matches, assign courts, and manage tournament progress.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ScheduleMatches 
-                  tournamentId={currentTournament.id}
-                  onAutoSchedule={() => setIsScheduleDialogOpen(true)}
-                />
+            <TabsContent value="bracket">
+              <div className="flex justify-end mb-4">
+                <Button variant="secondary" onClick={handleGenerateBrackets}>
+                  Generate Brackets
+                </Button>
+              </div>
+              <BracketTab tournament={tournament} />
+            </TabsContent>
 
-                <Separator className="my-6" />
+            <TabsContent value="matches">
+              <div className="flex justify-end mb-4 space-x-2">
+                <Button variant="outline" onClick={() => setScheduleMatchDialogOpen(true)}>
+                  Schedule Match
+                </Button>
+                <Button variant="secondary" onClick={handleAutoAssignCourts}>
+                  Auto-Assign Courts
+                </Button>
+              </div>
+              <MatchesTab
+                matches={tournament.matches}
+                courts={tournament.courts}
+                onCourtAssign={(matchId, courtId) => {
+                  // Implement court assignment logic
+                  console.log(`Assigning match ${matchId} to court ${courtId}`);
+                }}
+              />
+            </TabsContent>
 
-                <ScoreEntrySection 
-                  tournamentId={currentTournament.id}
-                />
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <div className="flex items-center space-x-2">
-                  <Badge variant="outline">
-                    {currentTournament.matches.length} Matches Total
-                  </Badge>
-                  <Badge variant="outline">
-                    {currentTournament.matches.filter(m => m.status === "COMPLETED").length} Completed
-                  </Badge>
+            <TabsContent value="teams">
+              <div className="flex justify-end mb-4 space-x-2">
+                <Button variant="outline" onClick={() => setTeamDialogOpen(true)}>
+                  Add Team
+                </Button>
+                <Button variant="secondary" onClick={() => setImportDialogOpen(true)}>
+                  Import Teams
+                </Button>
+              </div>
+              <TeamsTab
+                tournament={tournament}
+                categories={tournament.categories}
+              />
+            </TabsContent>
+
+            <TabsContent value="courts">
+              <CourtsTab courts={tournament.courts} />
+            </TabsContent>
+
+            <TabsContent value="team-management">
+              <TeamManagementTab tournament={tournament} />
+            </TabsContent>
+
+            <TabsContent value="score-entry">
+              <ScoreEntrySection
+                tournamentId={tournament.id}
+              />
+            </TabsContent>
+          </Tabs>
+
+          <AddTeamDialog 
+            open={teamDialogOpen} 
+            onOpenChange={setTeamDialogOpen}
+            onAddTeam={handleAddTeam}
+          />
+
+          <ImportTeamsDialog
+            open={importDialogOpen}
+            onOpenChange={setImportDialogOpen}
+            tournamentId={tournament.id}
+            onTeamsImported={handleImportTeams}
+          />
+
+          <ScheduleMatchDialog
+            open={scheduleMatchDialogOpen}
+            onOpenChange={setScheduleMatchDialogOpen}
+            tournamentId={tournament.id}
+            onCreateMatch={handleCreateMatch}
+          />
+        </div>
+
+        <div className="space-y-4">
+          {/* Tournament Actions Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Tournament Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col space-y-2">
+                <Button variant="secondary" onClick={handleGenerateBrackets}>
+                  Generate Brackets
+                </Button>
+                <Button variant="secondary" onClick={handleAutoAssignCourts}>
+                  Assign Courts
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
+                  Delete Tournament
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tournament Info Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Tournament Info</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div>
+                  <span className="font-semibold">Format: </span>
+                  <span>{tournament.format}</span>
                 </div>
-                <div className="flex space-x-2">
-                  <Button 
-                    onClick={() => setIsScheduleMatchDialogOpen(true)}
-                    variant="secondary"
-                  >
-                    Schedule Match
-                  </Button>
-                  <Button 
-                    onClick={() => setIsScheduleDialogOpen(true)}
-                  >
-                    Auto Schedule
-                  </Button>
+                <div>
+                  <span className="font-semibold">Start Date: </span>
+                  <span>{new Date(tournament.startDate).toLocaleDateString()}</span>
                 </div>
-              </CardFooter>
-            </Card>
-          </TabContentWrapper>
-        </TabsContent>
+                <div>
+                  <span className="font-semibold">End Date: </span>
+                  <span>{new Date(tournament.endDate).toLocaleDateString()}</span>
+                </div>
+                <div>
+                  <span className="font-semibold">Location: </span>
+                  <span>{tournament.location || 'Not specified'}</span>
+                </div>
+                <div>
+                  <span className="font-semibold">Teams: </span>
+                  <span>{tournament.teams.length}</span>
+                </div>
+                <div>
+                  <span className="font-semibold">Matches: </span>
+                  <span>{tournament.matches.length}</span>
+                </div>
+                <div>
+                  <span className="font-semibold">Courts: </span>
+                  <span>{tournament.courts.length}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
-        {/* Settings Tab */}
-        <TabsContent value="settings" className="space-y-4">
-          <TabContentWrapper>
-            <Card>
-              <CardHeader>
-                <CardTitle>Tournament Settings</CardTitle>
-                <CardDescription>
-                  Configure tournament details, formats, and scoring rules.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* Tournament settings content will go here */}
-                <p>Settings coming soon</p>
-              </CardContent>
-            </Card>
-          </TabContentWrapper>
-        </TabsContent>
-      </Tabs>
-      
-      {/* Dialogs */}
-      <UnifiedScheduleDialog
-        open={isScheduleDialogOpen}
-        onOpenChange={setIsScheduleDialogOpen}
-        tournament={currentTournament}
-      />
-      
-      <ScheduleMatchDialog
-        open={isScheduleMatchDialogOpen}
-        onOpenChange={setIsScheduleMatchDialogOpen}
-        tournamentId={currentTournament.id}
-        onCreateMatch={handleScheduleMatch}
-      />
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the tournament
+              and all its associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTournament} className="bg-red-500 hover:bg-red-600">
+              Delete Tournament
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

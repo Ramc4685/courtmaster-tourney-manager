@@ -1,9 +1,10 @@
+
 // Define types for tournament-related entities
 export type TournamentStatus = "DRAFT" | "PUBLISHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 export type MatchStatus = "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "DEFERRED";
 export type CourtStatus = "AVAILABLE" | "IN_USE" | "MAINTENANCE";
-export type DivisionType = "MENS" | "WOMENS" | "MIXED";
-export type StageType = "GROUP" | "KNOCKOUT" | "FINAL";
+export type DivisionType = "MENS" | "WOMENS" | "MIXED" | "INITIAL";
+export type StageType = "GROUP" | "KNOCKOUT" | "FINAL" | "INITIAL_ROUND" | "DIVISION_PLACEMENT" | "PLAYOFF_KNOCKOUT";
 export type ScorerType = "MANUAL" | "AUTOMATIC" | "TOURNAMENT" | "STANDALONE";
 export type TournamentFormat = "SINGLE_ELIMINATION" | "DOUBLE_ELIMINATION" | "ROUND_ROBIN" | "GROUP_KNOCKOUT" | "SWISS" | "MULTI_STAGE";
 // Import CategoryType from tournament-enums.ts instead of defining it here
@@ -18,6 +19,7 @@ export interface AuditLog {
     details: Record<string, any>;
     user_id?: string;
     userName?: string;
+    type?: string; // Added to support existing code
 }
 
 export interface StandaloneAuditLog {
@@ -92,6 +94,9 @@ export interface Match {
     updatedAt?: Date;
     auditLogs?: StandaloneAuditLog[];
     scorerName?: string;
+    bracketRound?: number; // Adding missing properties
+    bracketPosition?: number;
+    nextMatchId?: string;
 }
 
 export interface Court {
@@ -113,12 +118,18 @@ export interface TournamentCategory {
     format?: TournamentFormat;
     isCustom?: boolean;
     description?: string;
+    scoringSettings?: ScoringSettings; // Added to support CategoryScoringRules.tsx
+    addDemoData?: boolean; // Added to support categoryUtils.ts
 }
 
 export interface ScoringSettings {
     pointsToWin: number;
     mustWinByTwo: boolean;
     maxPoints: number;
+    // Additional properties that are used but were missing
+    maxSets: number;
+    requireTwoPointLead: boolean;
+    maxTwoPointLeadScore: number;
 }
 
 export interface Division {
@@ -188,6 +199,11 @@ export interface Tournament {
     updatedAt?: Date;
     created_by?: string;
     updated_by?: string;
+    // Adding missing properties referenced in errors
+    formatConfig?: any;
+    divisionProgression?: any;
+    metadata?: any;
+    autoAssignCourts?: boolean;
 }
 
 // Additional type fixes for specific components
@@ -205,3 +221,37 @@ export interface SchedulingResult {
 
 // Fix Category/TournamentCategory confusion
 export type Category = TournamentCategory;
+
+// Add types needed by components
+export interface TournamentHeaderProps {
+  tournament: Tournament;
+  updateTournament: (tournament: Tournament) => void;
+}
+
+export interface AddTeamDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onAddTeam: (team: Team) => void;
+}
+
+export interface ImportTeamsDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  tournamentId: string;
+  onTeamsImported: (teams: Team[]) => void;
+}
+
+export interface ScheduleMatchesProps {
+  tournamentId: string;
+  onAutoSchedule: () => void;
+}
+
+export interface ScoreEntrySectionProps {
+  tournamentId: string;
+}
+
+export interface ScoringViewProps {
+  match: Match;
+  scoringSettings: ScoringSettings;
+  onMatchComplete: (matchId: string, winnerId: string) => void;
+}
