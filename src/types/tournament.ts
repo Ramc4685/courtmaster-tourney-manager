@@ -12,13 +12,12 @@ import { CategoryType, TournamentFormat as TournamentFormatEnum } from "./tourna
 // Define interfaces for data structures
 export interface AuditLog {
     id: string;
-    action: string;
-    timestamp: Date;
     userId: string;
-    details: Record<string, any>;
-    user_id?: string;
-    userName?: string;
+    user_id?: string; // For backward compatibility
+    timestamp: Date;
+    action: string;
     type?: string; // Added to support existing code
+    details: Record<string, any>;
     metadata?: any; // Added to support existing code
 }
 

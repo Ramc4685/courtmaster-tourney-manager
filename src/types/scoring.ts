@@ -25,6 +25,11 @@ export interface ScoringSettings {
   requireTwoPointLead: boolean;
   maxTwoPointLeadScore: number;
   setsToWin?: number;
+  tiebreakRules?: {
+    pointsToWin: number;
+    requireTwoPointLead: boolean;
+    maxPoints: number;
+  };
 }
 
 export interface ScoreValidationResult {
@@ -49,8 +54,8 @@ export interface ScoreAuditLog {
 export interface MatchScore {
   team1Score: number;
   team2Score: number;
-  isComplete: boolean;
-  winner: 'team1' | 'team2' | null;
-  duration: number;
-  auditLogs: ScoreAuditLog[];
+  isComplete?: boolean;
+  winner?: 'team1' | 'team2' | null;
+  duration?: number;
+  auditLogs?: ScoreAuditLog[];
 }

@@ -132,6 +132,24 @@ export const actions = (set: ScoringStore['set'], get: ScoringStore['get']) => (
     });
   },
 
+  handleStartMatch: (match: Match) => {
+    if (!match) return;
+    
+    set({ 
+      selectedMatch: match,
+      currentSet: 0,
+      activeView: "scoring"
+    });
+  },
+
+  handleUpdateScoringSettings: (settings: ScoringSettings) => {
+    set({ scoringSettings: settings });
+  },
+
+  handleBackToCourts: () => {
+    set({ activeView: "courts" });
+  },
+
   setActiveView: (view: ScoringState['activeView']) => {
     set({ activeView: view });
   },
