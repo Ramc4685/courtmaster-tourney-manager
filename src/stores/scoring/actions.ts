@@ -1,290 +1,142 @@
+import { Match, Court, Tournament } from '@/types/tournament';
+import { ScoringSettings } from '@/types/scoring'; 
+import { ScoringState, ScoringStore } from './types';
+import { getDefaultScoringSettings, isSetComplete, isMatchComplete } from '@/utils/matchUtils';
 
-import { Match, Court, ScoringSettings, StandaloneMatch } from "@/types/tournament";
-import { StoreApi, GetState } from "zustand";
-import { ScoringState } from "./types";
-import { useTournamentStore } from "../tournamentStore";
-import { isSetComplete, isMatchComplete } from "@/utils/matchUtils";
-import { useToast } from "@/hooks/use-toast";
+export const actions = (set: ScoringStore['set'], get: ScoringStore['get']) => ({
+  initializeScoring: async (matchId: string): Promise<Match | null> => {
+    // Fetch the current tournament
+    const tournament = get().currentTournament;
 
-export const createScoringActions = (
-  set: StoreApi<ScoringState>["setState"],
-  get: GetState<ScoringState>
-) => ({
-  // Business logic methods
-  handleSelectMatch: (match: Match | StandaloneMatch) => {
-    console.log(`[DEBUG] Selecting match: ${match.id} (${match.team1.name} vs ${match.team2.name})`);
-    
-    // Check if this is a standalone match or a tournament match
-    const isStandaloneMatch = !('tournamentId' in match);
-    
-    if (isStandaloneMatch) {
-      // Handle standalone match selection
-      set({ 
-        selectedMatch: match,
-        currentSet: match.scores.length > 0 ? match.scores.length - 1 : 0,
-        activeView: "scoring"
-      });
-      return;
+    if (!tournament) {
+      console.error("No tournament loaded");
+      return null;
     }
-    
-    // It's a tournament match, use the tournament store
-    const { currentTournament } = useTournamentStore.getState();
-    if (!currentTournament) {
-      console.error('[ERROR] Cannot select tournament match: No current tournament selected.');
-      return;
+
+    // Find the match within the tournament
+    const match = tournament.matches.find(match => match.id === matchId);
+
+    if (!match) {
+      console.error(`Match with id ${matchId} not found in the tournament`);
+      return null;
     }
-    
-    // Find the latest version of the match
-    const latestMatch = currentTournament.matches.find(m => m.id === match.id) || match;
-    
-    // Set the current set index (default to the last set, or 0 if no sets)
-    const setIndex = latestMatch.scores.length > 0 ? latestMatch.scores.length - 1 : 0;
-    console.log(`[DEBUG] Setting current set to ${setIndex}`);
-    
+
+    // Set the selected match and default scoring settings
+    set({
+      selectedMatch: match,
+      scoringSettings: tournament.scoringSettings || getDefaultScoringSettings(),
+      currentSet: 0,
+      settingsOpen: false,
+      newSetDialogOpen: false,
+      completeMatchDialogOpen: false,
+      activeView: "scoring"
+    });
+
+    return match;
+  },
+
+  handleSelectCourt: (court: Court) => {
+    set({ selectedCourt: court });
+  },
+
+  handleSelectMatch: (match: Match) => {
     set({ 
-      selectedMatch: latestMatch, 
-      currentSet: setIndex,
+      selectedMatch: match,
+      currentSet: 0,
       activeView: "scoring"
     });
   },
-  
-  handleSelectCourt: (court: Court) => {
-    console.log(`[DEBUG] Selecting court: #${court.number} (${court.name || 'Unnamed'})`);
-    
-    set({ selectedCourt: court });
-    
-    if (court.currentMatch) {
-      console.log(`[DEBUG] Court has active match, selecting match: ${court.currentMatch.id}`);
-      get().handleSelectMatch(court.currentMatch);
-    } else {
-      console.log(`[DEBUG] Court has no active match.`);
-    }
-  },
-  
+
   handleScoreChange: (team: "team1" | "team2", increment: boolean) => {
-    const { selectedMatch, currentSet, scoringSettings } = get();
-    if (!selectedMatch) {
-      console.error('[ERROR] Cannot update score: No match selected.');
-      return;
-    }
-    
-    // Check if this is a standalone match or a tournament match
-    const isStandaloneMatch = !('tournamentId' in selectedMatch);
-    
-    if (isStandaloneMatch) {
-      // We should use the standalone handler for this case
-      console.log('[DEBUG] Using standalone score handling method');
-      return;
-    }
-    
-    // Get tournament operations from tournament store for tournament matches
-    const { updateMatchScore } = useTournamentStore.getState();
-    
-    console.log(`[DEBUG] Updating score for ${team} (${increment ? 'increment' : 'decrement'}) for set ${currentSet}`);
-    
-    let scores = [...selectedMatch.scores];
-    if (scores.length === 0) {
-      console.log(`[DEBUG] No scores found, initializing with 0-0`);
-      scores = [{ team1Score: 0, team2Score: 0 }];
-    }
-    
-    const currentScore = scores[currentSet] || { team1Score: 0, team2Score: 0 };
-    let team1Score = currentScore.team1Score;
-    let team2Score = currentScore.team2Score;
-    
-    if (team === "team1") {
-      team1Score = increment 
-        ? Math.min(scoringSettings.maxPoints + 10, team1Score + 1) // Allow going beyond maxPoints for win by 2
-        : Math.max(0, team1Score - 1);
-      console.log(`[DEBUG] Updated team1 score: ${currentScore.team1Score} -> ${team1Score}`);
-    } else {
-      team2Score = increment 
-        ? Math.min(scoringSettings.maxPoints + 10, team2Score + 1) // Allow going beyond maxPoints for win by 2
-        : Math.max(0, team2Score - 1);
-      console.log(`[DEBUG] Updated team2 score: ${currentScore.team2Score} -> ${team2Score}`);
-    }
-    
-    // Call the updateMatchScore method from the tournament store for tournament matches
-    const tournamentMatch = selectedMatch as Match; // Cast as tournament match
-    updateMatchScore(tournamentMatch.id, currentSet, team1Score, team2Score);
-    
-    // Update our local selected match to reflect the new score immediately
-    const updatedScores = [...selectedMatch.scores];
-    if (updatedScores.length <= currentSet) {
-      console.log(`[DEBUG] Adding new set(s) to score array, current length=${updatedScores.length}, need index=${currentSet}`);
-      while (updatedScores.length <= currentSet) {
-        updatedScores.push({ team1Score: 0, team2Score: 0 });
+    set((state) => {
+      if (!state.selectedMatch) return state;
+
+      const currentSet = state.currentSet;
+      const scores = [...(state.selectedMatch.scores || [])];
+
+      // Ensure the set exists
+      while (scores.length <= currentSet) {
+        scores.push({ team1Score: 0, team2Score: 0 });
       }
-    }
-    updatedScores[currentSet] = { team1Score, team2Score };
-    
-    const updatedMatch = {
-      ...selectedMatch,
-      scores: updatedScores
-    };
-    set({ selectedMatch: updatedMatch });
-    
-    // Check if set or match is complete based on rules
-    const setComplete = isSetComplete(team1Score, team2Score, scoringSettings);
-    if (setComplete) {
-      const matchComplete = isMatchComplete(updatedMatch as Match, scoringSettings);
-      
-      if (matchComplete) {
-        set({ completeMatchDialogOpen: true });
+
+      let { team1Score, team2Score } = scores[currentSet];
+
+      // Update the score based on the team and increment
+      if (team === "team1") {
+        team1Score = increment ? team1Score + 1 : Math.max(0, team1Score - 1);
       } else {
-        set({ newSetDialogOpen: true });
+        team2Score = increment ? team2Score + 1 : Math.max(0, team2Score - 1);
       }
-    }
-  },
-  
-  handleStartMatch: (match: Match | StandaloneMatch) => {
-    if (!match.courtNumber) {
-      console.warn(`[WARN] Cannot start match ${match.id}: No court assigned`);
-      // Use toast inside the function
-      const { toast } = useToast();
-      toast({
-        title: "Court assignment required",
-        description: "A match must be assigned to a court before it can start.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Check if this is a standalone match or a tournament match
-    const isStandaloneMatch = !('tournamentId' in match);
-    
-    if (isStandaloneMatch) {
-      console.log('[DEBUG] This is a standalone match, should use standalone handler');
-      return;
-    }
-    
-    // Get tournament operations from tournament store for tournament matches
-    const { updateMatchStatus } = useTournamentStore.getState();
-    
-    console.log(`[DEBUG] Starting match: ${match.id} (${match.team1.name} vs ${match.team2.name})`);
-    updateMatchStatus(match.id, "IN_PROGRESS");
-    
-    // Select the match to view scoring
-    get().handleSelectMatch(match);
-    
-    // Use toast inside the function
-    const { toast } = useToast();
-    toast({
-      title: "Match started",
-      description: "The match has been started and is now in progress."
-    });
-  },
-  
-  handleCompleteMatch: () => {
-    const { selectedMatch } = get();
-    if (!selectedMatch) {
-      console.error('[ERROR] Cannot complete match: No match selected.');
-      return;
-    }
-    
-    // Check if this is a standalone match or a tournament match
-    const isStandaloneMatch = !('tournamentId' in selectedMatch);
-    
-    if (isStandaloneMatch) {
-      console.log('[DEBUG] This is a standalone match, should use standalone handler');
-      return;
-    }
-    
-    // Get tournament operations from tournament store
-    const { completeMatch } = useTournamentStore.getState();
-    
-    console.log(`[DEBUG] Completing match: ${selectedMatch.id}`);
-    completeMatch(selectedMatch.id);
-    
-    // Use toast inside the function
-    const { toast } = useToast();
-    toast({
-      title: "Match completed",
-      description: "The match has been marked as complete."
-    });
-    
-    set({ 
-      selectedMatch: null,
-      activeView: "courts",
-      completeMatchDialogOpen: false
-    });
-  },
-  
-  handleNewSet: () => {
-    const { selectedMatch, scoringSettings } = get();
-    if (!selectedMatch) {
-      console.error('[ERROR] Cannot create new set: No match selected.');
-      return;
-    }
-    
-    // Check if this is a standalone match or a tournament match
-    const isStandaloneMatch = !('tournamentId' in selectedMatch);
-    
-    if (isStandaloneMatch) {
-      console.log('[DEBUG] This is a standalone match, should use standalone handler');
-      return;
-    }
-    
-    // Get tournament operations from tournament store
-    const { updateMatchScore } = useTournamentStore.getState();
-    
-    const newSetIndex = selectedMatch.scores.length;
-    console.log(`[DEBUG] Creating new set ${newSetIndex + 1} for match ${selectedMatch.id}`);
-    
-    if (newSetIndex >= scoringSettings.maxSets) {
-      console.warn(`[WARN] Maximum sets (${scoringSettings.maxSets}) reached`);
-      // Use toast inside the function
-      const { toast } = useToast();
-      toast({
-        title: "Maximum sets reached",
-        description: `This match is limited to ${scoringSettings.maxSets} sets.`
-      });
-      return;
-    }
-    
-    // Initialize the new set with 0-0 score
-    updateMatchScore(selectedMatch.id, newSetIndex, 0, 0);
-    
-    // Update our local state to reflect the new set
-    const updatedScores = [...selectedMatch.scores, { team1Score: 0, team2Score: 0 }];
-    const updatedMatch = {
-      ...selectedMatch,
-      scores: updatedScores
-    };
-    
-    set({ 
-      selectedMatch: updatedMatch,
-      currentSet: newSetIndex,
-      newSetDialogOpen: false
-    });
-    
-    // Use toast inside the function
-    const { toast } = useToast();
-    toast({
-      title: "New set started",
-      description: `Set ${newSetIndex + 1} has been started.`
-    });
-  },
-  
-  handleUpdateScoringSettings: (newSettings: ScoringSettings) => {
-    console.log(`[DEBUG] Updating scoring settings:`, newSettings);
-    set({ scoringSettings: newSettings });
-    
-    // Get tournament operations from tournament store
-    const { currentTournament, updateTournament } = useTournamentStore.getState();
-    
-    if (currentTournament) {
-      const updatedTournament = {
-        ...currentTournament,
-        scoringSettings: newSettings,
-        updatedAt: new Date(),
-        updated_by: currentTournament.updated_by // Preserve the updated_by field
+
+      // Update the score in the array
+      scores[currentSet] = { team1Score, team2Score };
+
+      // Return the updated state
+      return {
+        ...state,
+        selectedMatch: {
+          ...state.selectedMatch,
+          scores: scores,
+        },
       };
-      updateTournament(updatedTournament);
-    }
+    });
   },
-  
-  handleBackToCourts: () => {
-    set({ activeView: "courts" });
-  }
+
+  handleNewSet: () => {
+    set((state) => {
+      if (!state.selectedMatch || !state.scoringSettings) return state;
+
+      const newSetIndex = state.selectedMatch.scores ? state.selectedMatch.scores.length : 0;
+
+      if (newSetIndex >= state.scoringSettings.maxSets) {
+        alert("Maximum sets reached");
+        return state;
+      }
+
+      return {
+        ...state,
+        selectedMatch: {
+          ...state.selectedMatch,
+          scores: [...(state.selectedMatch.scores || []), { team1Score: 0, team2Score: 0 }],
+        },
+        currentSet: newSetIndex,
+      };
+    });
+  },
+
+  handleCompleteMatch: () => {
+    set((state) => {
+      if (!state.selectedMatch || !state.scoringSettings) return state;
+
+      const team1Sets = state.selectedMatch.scores?.filter(
+        (score) => score.team1Score > score.team2Score && isSetComplete(score.team1Score, score.team2Score, state.scoringSettings!)
+      ).length || 0;
+      const team2Sets = state.selectedMatch.scores?.filter(
+        (score) => score.team2Score > score.team1Score && isSetComplete(score.team1Score, score.team2Score, state.scoringSettings!)
+      ).length || 0;
+
+      const setsToWin = state.scoringSettings.setsToWin || Math.ceil(state.scoringSettings.maxSets / 2);
+
+      let winner: "team1" | "team2" | null = null;
+      if (team1Sets >= setsToWin) {
+        winner = "team1";
+      } else if (team2Sets >= setsToWin) {
+        winner = "team2";
+      }
+
+      return {
+        ...state,
+        matchComplete: true,
+        winner: winner,
+      };
+    });
+  },
+
+  setActiveView: (view: ScoringState['activeView']) => {
+    set({ activeView: view });
+  },
+
+  setCurrentTournament: (tournament: Tournament) => {
+    set({ currentTournament: tournament });
+  },
 });

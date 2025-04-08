@@ -1,3 +1,4 @@
+
 import { Match, ScoringSettings, MatchScore, Team, Tournament } from "@/types/tournament";
 
 export const getDefaultScoringSettings = (): ScoringSettings => ({
@@ -7,6 +8,7 @@ export const getDefaultScoringSettings = (): ScoringSettings => ({
   maxSets: 3,
   requireTwoPointLead: true,
   maxTwoPointLeadScore: 30,
+  setsToWin: 2, // Default to best of 3 (need to win 2 sets)
 });
 
 export const validateScore = (
@@ -70,13 +72,27 @@ export const isSetComplete = (
   return false;
 };
 
+// New function to check if a match is complete
+export const isMatchComplete = (match: Match, scoringSettings: ScoringSettings): boolean => {
+  if (!match.scores || match.scores.length === 0) {
+    return false;
+  }
+  
+  const team1Sets = countSetsWon(match.scores, "team1");
+  const team2Sets = countSetsWon(match.scores, "team2");
+  
+  const setsToWin = scoringSettings.setsToWin || Math.ceil(scoringSettings.maxSets / 2);
+  
+  return team1Sets >= setsToWin || team2Sets >= setsToWin;
+};
+
 export function generateMatchNumber(tournament: Tournament): string {
   const nextMatchNumber = tournament.matches.length + 1;
   const paddedMatchNumber = String(nextMatchNumber).padStart(3, '0');
   return `M-${paddedMatchNumber}`;
 }
 
-// Add the missing determineMatchWinnerAndLoser and countSetsWon functions
+// Function to determine match winner and loser
 export function determineMatchWinnerAndLoser(match: Match, scoringSettings: ScoringSettings) {
   if (!match.scores || match.scores.length === 0) {
     return null;
@@ -104,6 +120,7 @@ export function determineMatchWinnerAndLoser(match: Match, scoringSettings: Scor
   return null;
 }
 
+// Function to count sets won by a team
 export function countSetsWon(scores: MatchScore[], team: "team1" | "team2"): number {
   if (!scores || !scores.length) return 0;
   
@@ -116,7 +133,8 @@ export function countSetsWon(scores: MatchScore[], team: "team1" | "team2"): num
   }).length;
 }
 
-export function updateBracketProgression(tournament: Tournament, match: Match): Tournament {
+// Function to update bracket progression
+export function updateBracketProgression(tournament: Tournament, match: Match, winner?: Team): Tournament {
   if (!match.nextMatchId || match.status !== "COMPLETED" || !match.winner) {
     return tournament;
   }
@@ -130,8 +148,8 @@ export function updateBracketProgression(tournament: Tournament, match: Match): 
   
   const updatedNextMatch = {
     ...nextMatch,
-    [isLowerBracket ? 'team2' : 'team1']: match.winner,
-    [isLowerBracket ? 'team2Id' : 'team1Id']: match.winner.id
+    [isLowerBracket ? 'team2' : 'team1']: match.winner || winner,
+    [isLowerBracket ? 'team2Id' : 'team1Id']: (match.winner || winner)?.id
   };
   
   const updatedMatches = tournament.matches.map(m => 
@@ -143,3 +161,12 @@ export function updateBracketProgression(tournament: Tournament, match: Match): 
     matches: updatedMatches
   };
 }
+
+// Adding utility functions for tournament format support
+export const isBadmintonSingles = (categoryType: string): boolean => {
+  return categoryType === "MENS_SINGLES" || categoryType === "WOMENS_SINGLES";
+};
+
+export const isBadmintonDoubles = (categoryType: string): boolean => {
+  return categoryType === "MENS_DOUBLES" || categoryType === "WOMENS_DOUBLES" || categoryType === "MIXED_DOUBLES";
+};
