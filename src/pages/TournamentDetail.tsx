@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -292,10 +291,13 @@ const TournamentDetail: React.FC = () => {
       <UnifiedScheduleDialog
         open={isUnifiedScheduleDialogOpen}
         onOpenChange={setIsUnifiedScheduleDialogOpen}
+        tournament={currentTournament}
       />
       <ScheduleMatchDialog
         open={isScheduleMatchDialogOpen}
         onOpenChange={setIsScheduleMatchDialogOpen}
+        tournamentId={tournamentId || ""}
+        onCreateMatch={handleCreateMatch}
       />
     </div>
   );

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -22,11 +23,11 @@ import OverviewTab from '@/components/tournament/tabs/OverviewTab';
 import CategoryTabs from '@/components/tournament/tabs/CategoryTabs';
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from '@/components/ui/use-toast';
-import { UnifiedScheduleDialog } from '@/components/tournament/UnifiedScheduleDialog';
+import UnifiedScheduleDialog from '@/components/tournament/UnifiedScheduleDialog';
 import { generateId } from '@/utils/tournamentUtils';
 import { useAuth } from '@/contexts/auth/AuthContext';
 import { useRealtimeTournamentUpdates } from '@/hooks/useRealtimeTournamentUpdates';
-import { ScoringSettingsDialog } from '@/components/tournament/ScoringSettingsDialog';
+import ScoringSettingsDialog from '@/components/tournament/ScoringSettingsDialog';
 import { ScoringSettings } from '@/types/tournament';
 
 const TournamentDetails: React.FC = () => {
@@ -45,12 +46,13 @@ const TournamentDetails: React.FC = () => {
     generateMultiStageTournament,
     advanceToNextStage,
     updateMatchStatus,
+    updateTournament
   } = useTournament();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [openAddTeamDialog, setOpenAddTeamDialog] = useState(false);
   const [openImportTeamsDialog, setOpenImportTeamsDialog] = useState(false);
-	const [openScheduleMatchDialog, setOpenScheduleMatchDialog] = useState(false);
+  const [openScheduleMatchDialog, setOpenScheduleMatchDialog] = useState(false);
   const [openUnifiedScheduleDialog, setOpenUnifiedScheduleDialog] = useState(false);
   const [openScoringSettingsDialog, setOpenScoringSettingsDialog] = useState(false);
   const [selectedTab, setSelectedTab] = React.useState("overview");
@@ -187,10 +189,16 @@ const TournamentDetails: React.FC = () => {
           {/* <TabsTrigger value="teams">Teams</TabsTrigger> */}
         </TabsList>
         <TabsContent value="overview" className="space-y-4">
-          <OverviewTab tournament={tournament} />
+          <OverviewTab 
+            tournament={tournament} 
+            onUpdateTournament={(tournament) => updateTournament(tournament.id, tournament)}
+            onGenerateMultiStageTournament={handleGenerateMultiStageTournament}
+            onAdvanceToNextStage={handleAdvanceToNextStage}
+            onScheduleDialogOpen={() => setOpenScheduleMatchDialog(true)}
+          />
         </TabsContent>
         <TabsContent value="categories">
-          <CategoryTabs tournament={tournament} updateMatch={updateMatch} assignCourt={assignCourt} loadCategoryDemoData={() => {}} />
+          <CategoryTabs tournament={tournament} />
         </TabsContent>
       </Tabs>
 
@@ -204,17 +212,20 @@ const TournamentDetails: React.FC = () => {
         open={openImportTeamsDialog} 
         onOpenChange={setOpenImportTeamsDialog} 
         tournamentId={tournamentId || ""}
+        onImportTeams={handleImportTeams}
       />
 
       <ScheduleMatchDialog
         open={openScheduleMatchDialog}
         onOpenChange={setOpenScheduleMatchDialog}
+        tournamentId={tournamentId || ""}
         onCreateMatch={handleScheduleMatch}
       />
 
       <UnifiedScheduleDialog
         open={openUnifiedScheduleDialog}
         onOpenChange={setOpenUnifiedScheduleDialog}
+        tournament={tournament}
       />
 
       <ScoringSettingsDialog

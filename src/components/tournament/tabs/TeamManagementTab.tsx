@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Upload } from 'lucide-react';
+import { Plus, Upload, Trash, Edit } from 'lucide-react';
 import { Tournament, Team } from '@/types/tournament';
 import { useTournament } from '@/contexts/tournament/useTournament';
 
@@ -12,7 +12,7 @@ interface TeamManagementTabProps {
 export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({ tournament }) => {
   const [openAddTeamDialog, setOpenAddTeamDialog] = React.useState(false);
   const [openImportTeamsDialog, setOpenImportTeamsDialog] = React.useState(false);
-  const { addTeam, importTeams, updateTeam, deleteTeam } = useTournament();
+  const { addTeam, importTeams } = useTournament();
 
   const handleAddTeam = (team: Team) => {
     addTeam(team);
@@ -43,13 +43,13 @@ export const TeamManagementTab: React.FC<TeamManagementTabProps> = ({ tournament
           {tournament.teams.map((team) => (
             <div key={team.id} className="border rounded-lg p-4">
               <h3 className="font-medium">{team.name}</h3>
-              {team.members && (
+              {team.players && (
                 <div className="mt-2">
-                  <p className="text-sm text-gray-500">Members:</p>
+                  <p className="text-sm text-gray-500">Players:</p>
                   <ul className="list-disc list-inside">
-                    {team.members.map((member, idx) => (
+                    {team.players.map((player, idx) => (
                       <li key={idx} className="text-sm">
-                        {member.name}
+                        {player.name}
                       </li>
                     ))}
                   </ul>

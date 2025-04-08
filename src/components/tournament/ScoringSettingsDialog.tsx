@@ -42,14 +42,10 @@ export const ScoringSettingsDialog: React.FC<ScoringSettingsDialogProps> = ({
   const onSubmit = async (data: any) => {
     try {
       // Update the tournament with new scoring settings
-      const updatedTournament = {
-        ...tournament,
+      await updateTournament(tournament.id, {
         scoringRules: JSON.stringify(data),
         updatedAt: new Date()
-      };
-      
-      // Call the updateTournament function with the correct parameters
-      await updateTournament(tournament.id, updatedTournament);
+      });
 
       toast({
         title: "Settings Updated",
@@ -88,7 +84,7 @@ export const ScoringSettingsDialog: React.FC<ScoringSettingsDialogProps> = ({
                 min: { value: 1, message: "Must be at least 1" }
               })}
             />
-            {errors.pointsToWin && <p className="text-sm text-red-500">{errors.pointsToWin.message}</p>}
+            {errors.pointsToWin && <p className="text-sm text-red-500">{errors.pointsToWin.message?.toString()}</p>}
           </div>
           
           <div className="flex items-center space-x-2">
@@ -110,7 +106,7 @@ export const ScoringSettingsDialog: React.FC<ScoringSettingsDialogProps> = ({
                   min: { value: 1, message: "Must be at least 1" }
                 })}
               />
-              {errors.maxPoints && <p className="text-sm text-red-500">{errors.maxPoints.message}</p>}
+              {errors.maxPoints && <p className="text-sm text-red-500">{errors.maxPoints.message?.toString()}</p>}
             </div>
           )}
           
@@ -125,7 +121,7 @@ export const ScoringSettingsDialog: React.FC<ScoringSettingsDialogProps> = ({
                 max: { value: 7, message: "Must not exceed 7" }
               })}
             />
-            {errors.maxSets && <p className="text-sm text-red-500">{errors.maxSets.message}</p>}
+            {errors.maxSets && <p className="text-sm text-red-500">{errors.maxSets.message?.toString()}</p>}
           </div>
 
           <DialogFooter>

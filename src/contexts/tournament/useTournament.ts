@@ -33,6 +33,8 @@ interface TournamentStore {
   // Team operations
   addTeam: (team: Team) => Promise<void>;
   importTeams: (teams: Team[]) => Promise<void>;
+  updateTeam: (team: Team) => Promise<void>;
+  deleteTeam: (teamId: string) => Promise<void>;
   
   // Additional tournament operations
   generateBrackets: () => Promise<number>;
@@ -209,6 +211,35 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
   importTeams: async (teams: Team[]) => {
     console.log("Importing teams:", teams.length);
     // Implementation would go here
+  },
+
+  updateTeam: async (team: Team) => {
+    console.log("Updating team:", team);
+    const currentTournament = get().currentTournament;
+    if (!currentTournament) return;
+
+    const updatedTeams = currentTournament.teams.map(t => 
+      t.id === team.id ? team : t
+    );
+
+    await get().updateTournament(currentTournament.id, { 
+      teams: updatedTeams,
+      updatedAt: new Date()
+    });
+  },
+
+  // Add implementation for deleteTeam
+  deleteTeam: async (teamId: string) => {
+    console.log("Deleting team:", teamId);
+    const currentTournament = get().currentTournament;
+    if (!currentTournament) return;
+
+    const updatedTeams = currentTournament.teams.filter(t => t.id !== teamId);
+
+    await get().updateTournament(currentTournament.id, { 
+      teams: updatedTeams,
+      updatedAt: new Date()
+    });
   },
 
   generateBrackets: async () => {

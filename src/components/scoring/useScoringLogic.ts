@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Match, Court, Tournament, ScoringSettings } from "@/types/tournament";
 import { useTournament } from "@/contexts/tournament/useTournament";
@@ -229,12 +228,10 @@ export const useScoringLogic = () => {
     // Update tournament settings
     if (currentTournament) {
       console.log(`[DEBUG] Saving scoring settings to tournament ${currentTournament.id}`);
-      const updatedTournament = {
-        ...currentTournament,
+      updateTournament(currentTournament.id, {
         scoringSettings: newSettings,
         updatedAt: new Date()
-      };
-      updateTournament(updatedTournament);
+      });
     } else {
       console.warn('[WARN] Cannot save scoring settings: No current tournament.');
     }
