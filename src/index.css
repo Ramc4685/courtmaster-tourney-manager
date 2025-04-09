@@ -1,4 +1,6 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -82,7 +84,11 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+  }
+  
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
   }
 }
 
@@ -101,5 +107,21 @@
   
   .score-button {
     @apply bg-court-blue text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-court-blue/80 transition-colors;
+  }
+  
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+  
+  .form-input {
+    @apply w-full rounded-md border-gray-300 shadow-sm focus:border-court-green focus:ring focus:ring-court-green/20 transition-colors;
+  }
+  
+  .btn-primary {
+    @apply bg-court-green hover:bg-court-green/90 text-white font-medium rounded-md px-4 py-2 shadow-sm transition-colors;
+  }
+  
+  .btn-secondary {
+    @apply bg-white border border-gray-300 text-gray-700 font-medium rounded-md px-4 py-2 shadow-sm hover:bg-gray-50 transition-colors;
   }
 }
