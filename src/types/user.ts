@@ -1,72 +1,82 @@
 
-export type UserRole = 'tournament_director' | 'front_desk' | 'admin_staff' | 'scorekeeper' | 'player' | 'spectator';
+import { UserRole } from './tournament-enums';
 
 export interface User {
   id: string;
-  name: string;
   email: string;
-  createdAt: string;
-  isVerified: boolean;
+  name?: string;
   role: UserRole;
-  devicePreference?: 'mobile' | 'desktop' | 'tablet' | 'all';
+  profileId?: string;
+  isVerified?: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  metadata?: Record<string, any>;
+  preferences?: UserPreferences;
 }
 
-export interface UserPermissions {
-  canManageTournaments: boolean;
-  canCheckInPlayers: boolean;
-  canModifySchedule: boolean;
-  canEnterScores: boolean;
-  canViewResults: boolean;
-  canRegister: boolean;
+export interface UserPreferences {
+  theme?: 'light' | 'dark' | 'system';
+  notifications?: {
+    email?: boolean;
+    push?: boolean;
+    sms?: boolean;
+  };
+  display?: {
+    compactView?: boolean;
+    showCompletedMatches?: boolean;
+    refreshInterval?: number;
+  };
 }
 
-export const RolePermissions: Record<UserRole, UserPermissions> = {
+export interface UserCredentials {
+  email: string;
+  password: string;
+}
+
+export enum TournamentUserRole {
+  DIRECTOR = 'director',
+  ADMIN = 'admin',
+  SCOREKEEPER = 'scorekeeper',
+  VOLUNTEER = 'volunteer',
+  PLAYER = 'player',
+  SPECTATOR = 'spectator'
+}
+
+export interface RolePermission {
+  read: string[];
+  write: string[];
+  manage: string[];
+}
+
+export const RolePermissions: Record<string, RolePermission> = {
   tournament_director: {
-    canManageTournaments: true,
-    canCheckInPlayers: true,
-    canModifySchedule: true,
-    canEnterScores: true,
-    canViewResults: true,
-    canRegister: true
-  },
-  front_desk: {
-    canManageTournaments: false,
-    canCheckInPlayers: true,
-    canModifySchedule: false,
-    canEnterScores: false,
-    canViewResults: true,
-    canRegister: true
+    read: ['*'],
+    write: ['*'],
+    manage: ['*']
   },
   admin_staff: {
-    canManageTournaments: false,
-    canCheckInPlayers: true,
-    canModifySchedule: true,
-    canEnterScores: true,
-    canViewResults: true,
-    canRegister: true
+    read: ['*'],
+    write: ['tournaments', 'matches', 'teams', 'courts', 'categories'],
+    manage: ['tournaments', 'matches', 'teams', 'courts']
+  },
+  front_desk: {
+    read: ['*'],
+    write: ['teams', 'players', 'checkins'],
+    manage: ['checkins']
   },
   scorekeeper: {
-    canManageTournaments: false,
-    canCheckInPlayers: false,
-    canModifySchedule: false,
-    canEnterScores: true,
-    canViewResults: true,
-    canRegister: false
+    read: ['tournaments', 'matches', 'courts'],
+    write: ['matches.scores'],
+    manage: []
   },
   player: {
-    canManageTournaments: false,
-    canCheckInPlayers: false,
-    canModifySchedule: false,
-    canEnterScores: false,
-    canViewResults: true,
-    canRegister: true
+    read: ['tournaments', 'matches', 'public'],
+    write: [],
+    manage: []
   },
   spectator: {
-    canManageTournaments: false,
-    canCheckInPlayers: false,
-    canModifySchedule: false,
-    canEnterScores: false,
-    canViewResults: true,
-    canRegister: false
+    read: ['public'],
+    write: [],
+    manage: []
   }
 };

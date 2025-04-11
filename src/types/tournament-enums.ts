@@ -94,4 +94,15 @@ export enum GameType {
   CUSTOM = "CUSTOM"
 }
 
+export enum UserRole {
+  ADMIN = "admin",
+  USER = "user",
+  TOURNAMENT_DIRECTOR = "tournament_director",
+  FRONT_DESK = "front_desk",
+  ADMIN_STAFF = "admin_staff",
+  SCOREKEEPER = "scorekeeper",
+  PLAYER = "player",
+  SPECTATOR = "spectator"
+}
+
 export type StageType = keyof typeof TournamentStage;

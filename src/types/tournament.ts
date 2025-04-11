@@ -8,7 +8,8 @@ import {
   CategoryType,
   TournamentStage,
   ScorerType,
-  PlayType
+  PlayType,
+  GameType
 } from './tournament-enums';
 
 export interface Player {
@@ -38,6 +39,7 @@ export interface MatchScore {
   team2Score: number;
   setNumber: number;
   isComplete?: boolean;
+  winner?: 'team1' | 'team2' | null;
   scoredBy?: string;
   timestamp?: string;
 }
@@ -76,6 +78,7 @@ export interface Match {
   team1Name?: string;
   team2Name?: string;
   currentMatch?: Match;
+  nextMatchId?: string; // Added for tournament progression
 }
 
 export interface Court {

@@ -2,11 +2,12 @@
 import React from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth/AuthContext';
-import Layout from '@/components/layout/Layout';
+import { Layout } from '@/components/layout/Layout';
+import { UserRole } from '@/types/tournament-enums';
 
 interface ProtectedRouteProps {
   children?: React.ReactNode;
-  requiredRole?: 'admin' | 'user';
+  requiredRole?: UserRole;
   withLayout?: boolean;
 }
 

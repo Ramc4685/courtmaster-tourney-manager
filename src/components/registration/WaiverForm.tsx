@@ -1,76 +1,51 @@
 
-import React from "react";
-import { useForm } from "react-hook-form";
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface WaiverFormProps {
-  onSubmit: (data: WaiverFormData) => Promise<void>;
+  tournamentName: string;
+  onAccept: () => void;
+  onDecline: () => void;
 }
 
-interface WaiverFormData {
-  acknowledgement: boolean;
-  signature: string;
-  date: string;
-}
-
-const WaiverForm: React.FC<WaiverFormProps> = ({ onSubmit }) => {
-  const form = useForm<WaiverFormData>();
-  const [agreementDate, setAgreementDate] = useState(new Date().toISOString().split('T')[0]);
+const WaiverForm: React.FC<WaiverFormProps> = ({
+  tournamentName,
+  onAccept,
+  onDecline
+}) => {
+  const [accepted, setAccepted] = useState(false);
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl mx-auto p-6 bg-card rounded-lg border">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold mb-2">Tournament Participation Waiver</h2>
-          <p className="text-muted-foreground">Please read carefully and acknowledge below</p>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-xl">Liability Waiver for {tournamentName}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="text-sm text-gray-700 max-h-60 overflow-y-auto p-4 border rounded-md bg-gray-50">
+          <p className="mb-2">By participating in the tournament, I acknowledge the risks associated with playing badminton and related activities.</p>
+          <p className="mb-2">I, the undersigned participant, hereby release {tournamentName}, its staff, and all related parties from any claims, liability, or causes of action arising from my participation.</p>
+          <p className="mb-2">I certify that I am in good health and physically able to participate in the tournament. I agree to follow all rules and regulations established by the tournament organizers.</p>
+          <p className="mb-2">I understand that photographs and videos may be taken during the event, and I grant permission for my likeness to be used for promotional or informational purposes.</p>
+          <p>This waiver shall remain in effect for the duration of the tournament.</p>
         </div>
-        <div className="prose max-w-none">
-          <h2>Liability Waiver</h2>
-          <p>By signing this waiver, you acknowledge and agree to the following:</p>
-          {/* Add your waiver text here */}
+        <div className="flex items-center space-x-2">
+          <Checkbox id="acceptWaiver" checked={accepted} onCheckedChange={(checked) => setAccepted(checked === true)} />
+          <label htmlFor="acceptWaiver" className="text-sm font-medium">
+            I have read and agree to the liability waiver
+          </label>
         </div>
-
-        <FormField
-          control={form.control}
-          name="acknowledgement"
-          render={({ field }) => (
-            <FormItem className="flex items-center space-x-2">
-              <FormControl>
-                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-              </FormControl>
-              <FormLabel>I have read and agree to the terms above</FormLabel>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="signature"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Digital Signature</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Type your full name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <Button type="submit">Submit Waiver</Button>
-      </form>
-    </Form>
+      </CardContent>
+      <CardFooter className="flex justify-end space-x-2">
+        <Button variant="outline" onClick={onDecline}>
+          Decline
+        </Button>
+        <Button disabled={!accepted} onClick={onAccept}>
+          Accept and Continue
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 
