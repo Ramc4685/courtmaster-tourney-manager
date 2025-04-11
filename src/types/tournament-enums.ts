@@ -43,6 +43,7 @@ export enum Division {
   GROUP_DIV3 = "GROUP_DIV3"
 }
 
+// Export the Division enum values as a type
 export type DivisionType = keyof typeof Division;
 
 export enum MatchStatus {
