@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Layout } from "./components/layout/Layout";
 import TournamentCreate from "./pages/tournament/TournamentCreate";
 import { MatchStatus } from "./types/tournament-enums";
-import Home from "./pages/home"; // Fixed casing issue
+import Home from "./pages/Home"; // Fixed import casing
 
 const App: React.FC = () => {
   const sampleMatches = [

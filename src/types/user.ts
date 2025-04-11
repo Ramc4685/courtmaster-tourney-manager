@@ -6,26 +6,8 @@ export interface User {
   email: string;
   name?: string;
   role: UserRole;
-  profileId?: string;
-  isVerified?: boolean;
   createdAt: Date;
   updatedAt: Date;
-  metadata?: Record<string, any>;
-  preferences?: UserPreferences;
-}
-
-export interface UserPreferences {
-  theme?: 'light' | 'dark' | 'system';
-  notifications?: {
-    email?: boolean;
-    push?: boolean;
-    sms?: boolean;
-  };
-  display?: {
-    compactView?: boolean;
-    showCompletedMatches?: boolean;
-    refreshInterval?: number;
-  };
 }
 
 export interface UserCredentials {
@@ -33,50 +15,102 @@ export interface UserCredentials {
   password: string;
 }
 
-export enum TournamentUserRole {
-  DIRECTOR = 'director',
-  ADMIN = 'admin',
-  SCOREKEEPER = 'scorekeeper',
-  VOLUNTEER = 'volunteer',
-  PLAYER = 'player',
-  SPECTATOR = 'spectator'
+export interface TournamentUserRole {
+  userId: string;
+  tournamentId: string;
+  role: 'admin' | 'owner' | 'participant';
 }
 
-export interface RolePermission {
-  read: string[];
-  write: string[];
-  manage: string[];
-}
+export type RolePermissions = {
+  canManageTournaments: boolean;
+  canModifyMatches: boolean;
+  canAssignCourts: boolean;
+  canRegisterTeams: boolean;
+  canViewAnalytics: boolean;
+  canAccessAdmin: boolean;
+  canManageUsers: boolean;
+  canRecordScores: boolean;
+};
 
-export const RolePermissions: Record<string, RolePermission> = {
-  tournament_director: {
-    read: ['*'],
-    write: ['*'],
-    manage: ['*']
+export const RolePermissions: Record<UserRole, RolePermissions> = {
+  [UserRole.ADMIN]: {
+    canManageTournaments: true,
+    canModifyMatches: true,
+    canAssignCourts: true,
+    canRegisterTeams: true,
+    canViewAnalytics: true,
+    canAccessAdmin: true,
+    canManageUsers: true,
+    canRecordScores: true
   },
-  admin_staff: {
-    read: ['*'],
-    write: ['tournaments', 'matches', 'teams', 'courts', 'categories'],
-    manage: ['tournaments', 'matches', 'teams', 'courts']
+  [UserRole.TOURNAMENT_DIRECTOR]: {
+    canManageTournaments: true,
+    canModifyMatches: true,
+    canAssignCourts: true,
+    canRegisterTeams: true,
+    canViewAnalytics: true,
+    canAccessAdmin: true,
+    canManageUsers: false,
+    canRecordScores: true
   },
-  front_desk: {
-    read: ['*'],
-    write: ['teams', 'players', 'checkins'],
-    manage: ['checkins']
+  [UserRole.ADMIN_STAFF]: {
+    canManageTournaments: false,
+    canModifyMatches: true,
+    canAssignCourts: true,
+    canRegisterTeams: true,
+    canViewAnalytics: true,
+    canAccessAdmin: true,
+    canManageUsers: false,
+    canRecordScores: true
   },
-  scorekeeper: {
-    read: ['tournaments', 'matches', 'courts'],
-    write: ['matches.scores'],
-    manage: []
+  [UserRole.FRONT_DESK]: {
+    canManageTournaments: false,
+    canModifyMatches: false,
+    canAssignCourts: true,
+    canRegisterTeams: true,
+    canViewAnalytics: false,
+    canAccessAdmin: false,
+    canManageUsers: false,
+    canRecordScores: false
   },
-  player: {
-    read: ['tournaments', 'matches', 'public'],
-    write: [],
-    manage: []
+  [UserRole.SCOREKEEPER]: {
+    canManageTournaments: false,
+    canModifyMatches: false,
+    canAssignCourts: false,
+    canRegisterTeams: false,
+    canViewAnalytics: false,
+    canAccessAdmin: false,
+    canManageUsers: false,
+    canRecordScores: true
   },
-  spectator: {
-    read: ['public'],
-    write: [],
-    manage: []
+  [UserRole.PLAYER]: {
+    canManageTournaments: false,
+    canModifyMatches: false,
+    canAssignCourts: false,
+    canRegisterTeams: false,
+    canViewAnalytics: false,
+    canAccessAdmin: false,
+    canManageUsers: false,
+    canRecordScores: false
+  },
+  [UserRole.SPECTATOR]: {
+    canManageTournaments: false,
+    canModifyMatches: false,
+    canAssignCourts: false,
+    canRegisterTeams: false,
+    canViewAnalytics: false,
+    canAccessAdmin: false,
+    canManageUsers: false,
+    canRecordScores: false
+  },
+  [UserRole.USER]: {
+    canManageTournaments: false,
+    canModifyMatches: false,
+    canAssignCourts: false,
+    canRegisterTeams: true,
+    canViewAnalytics: false,
+    canAccessAdmin: false,
+    canManageUsers: false,
+    canRecordScores: false
   }
 };

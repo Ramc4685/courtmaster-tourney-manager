@@ -33,7 +33,7 @@ export interface Category {
   };
 }
 
-export interface Division {
+export interface DivisionInterface {
   id: string;
   name: string;
   type: Division;

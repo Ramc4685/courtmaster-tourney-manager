@@ -5,16 +5,12 @@ import { RolePermissions } from '@/types/user';
 import { UserRole } from '@/types/tournament-enums';
 
 // Import the role-specific layouts
-// Note: We're not importing these directly since they have errors, but this is the pattern
-// that should be followed once those components are fixed
-const LayoutComponents = {
-  [UserRole.TOURNAMENT_DIRECTOR]: React.lazy(() => import('./role-layouts/LayoutDirector')),
-  [UserRole.FRONT_DESK]: React.lazy(() => import('./role-layouts/LayoutFrontDesk')),
-  [UserRole.ADMIN_STAFF]: React.lazy(() => import('./role-layouts/LayoutAdminStaff')),
-  [UserRole.SCOREKEEPER]: React.lazy(() => import('./role-layouts/LayoutScorekeeper')),
-  [UserRole.PLAYER]: React.lazy(() => import('./role-layouts/LayoutPlayer')),
-  [UserRole.SPECTATOR]: React.lazy(() => import('./role-layouts/LayoutSpectator')),
-};
+import { LayoutDirector } from './role-layouts/LayoutDirector';
+import { LayoutFrontDesk } from './role-layouts/LayoutFrontDesk';
+import { LayoutAdminStaff } from './role-layouts/LayoutAdminStaff';
+import { LayoutScorekeeper } from './role-layouts/LayoutScorekeeper';
+import { LayoutPlayer } from './role-layouts/LayoutPlayer';
+import { LayoutSpectator } from './role-layouts/LayoutSpectator';
 
 // Define the layout props interface
 export interface LayoutProps {

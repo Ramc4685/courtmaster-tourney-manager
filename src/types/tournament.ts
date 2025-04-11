@@ -37,7 +37,7 @@ export interface Team {
 export interface MatchScore {
   team1Score: number;
   team2Score: number;
-  setNumber: number;
+  setNumber?: number; // Make setNumber optional to fix the errors
   isComplete?: boolean;
   winner?: 'team1' | 'team2' | null;
   scoredBy?: string;
