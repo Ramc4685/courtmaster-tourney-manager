@@ -1,10 +1,11 @@
+
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Layout } from "./components/layout/Layout";
 import TournamentCreate from "./pages/tournament/TournamentCreate";
 import TournamentView from "./pages/tournament/TournamentView";
 import { MatchStatus } from "./types/tournament-enums";
-import Home from "./pages/home"; // Fixed import casing
+import Home from "./pages/home"; // Changed to match actual file name casing
 
 const App: React.FC = () => {
   const sampleMatches = [

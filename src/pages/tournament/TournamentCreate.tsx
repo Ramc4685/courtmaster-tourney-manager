@@ -7,7 +7,7 @@ import { Tournament } from '@/types/tournament';
 import { toast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useTournament } from '@/contexts/tournament/useTournament';
+import { useTournament } from '@/contexts/tournament/TournamentContext';
 import CreateTournamentForm from '@/components/admin/TournamentCreationForm';
 import { Button } from '@/components/ui/button';
 import { PackagePlus, Loader2 } from 'lucide-react';
@@ -25,14 +25,37 @@ const TournamentCreate: React.FC<TournamentCreateComponentProps> = ({ onTourname
   const handleCreateTournament = async (data: TournamentFormValues) => {
     setIsLoading(true);
     try {
-      const tournament = await createTournament(data);
+      console.log("Creating tournament with data:", data);
+      
+      // Convert string dates to Date objects for the backend
+      const formattedData = {
+        ...data,
+        startDate: data.startDate ? new Date(data.startDate) : new Date(),
+        endDate: data.endDate ? new Date(data.endDate) : new Date(),
+        registrationDeadline: data.registrationDeadline ? new Date(data.registrationDeadline) : undefined
+      };
+      
+      const tournament = await createTournament(formattedData);
+      console.log("Tournament created successfully:", tournament);
+      
       toast({
         title: "Tournament Created",
         description: `${data.name} has been created successfully!`,
       });
       
       onTournamentCreated(tournament);
-      navigate(`/tournament/${tournament.id}`);
+      
+      // Navigate to the tournament detail page
+      if (tournament && tournament.id) {
+        navigate(`/tournament/${tournament.id}`);
+      } else {
+        console.error("Created tournament has no ID");
+        toast({
+          title: "Error",
+          description: "Created tournament is missing an ID",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error("Error creating tournament:", error);
       toast({
@@ -48,12 +71,12 @@ const TournamentCreate: React.FC<TournamentCreateComponentProps> = ({ onTourname
   const handleLoadSample = async (format: TournamentFormat) => {
     setIsLoading(true);
     try {
-      const tournament = await loadSampleData(format);
+      await loadSampleData(format);
       toast({
         title: "Sample Data Loaded",
         description: "Sample tournament has been created successfully!",
       });
-      navigate(`/tournament/${tournament.id}`);
+      // Navigate will happen automatically via the provider
     } catch (error) {
       console.error("Error loading sample data:", error);
       toast({
