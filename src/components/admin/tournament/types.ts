@@ -1,5 +1,6 @@
+
 import { z } from "zod";
-import { TournamentFormat, CategoryType, PlayType, DivisionType } from '@/types/tournament-enums';
+import { TournamentFormat, CategoryType, PlayType, Division, GameType } from '@/types/tournament-enums';
 
 export const categorySchema = z.object({
   id: z.string(),
@@ -16,7 +17,7 @@ export const categorySchema = z.object({
 export const divisionSchema = z.object({
   id: z.string(),
   name: z.string().min(1, "Division name is required"),
-  type: z.nativeEnum(DivisionType),
+  type: z.nativeEnum(Division),
   categories: z.array(categorySchema),
 });
 
@@ -35,7 +36,7 @@ export interface Category {
 export interface Division {
   id: string;
   name: string;
-  type: DivisionType;
+  type: Division;
   categories: Category[];
 }
 

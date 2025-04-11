@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Calendar, Clock, Wand2 } from "lucide-react";
 import { format } from "date-fns";
@@ -6,14 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { DialogFooter } from "@/components/ui/dialog";
-import { DivisionType, Tournament } from "@/types/tournament"; //Corrected import
+import { Division } from "@/types/tournament-enums";
+import { Tournament } from "@/types/tournament";
 import SuggestedMatchPairs from "./SuggestedMatchPairs";
 
 interface AutoScheduleTabProps {
   tournament: Tournament;
-  selectedDivision: DivisionType;
+  selectedDivision: Division;
   suggestedPairs: { team1: any; team2: any }[];
-  onDivisionChange: (value: DivisionType) => void;
+  onDivisionChange: (value: Division) => void;
   onGenerateSuggestedPairs: () => void;
   onScheduleAllMatches: () => void;
   onCancel: () => void;
@@ -47,7 +49,7 @@ const AutoScheduleTab: React.FC<AutoScheduleTabProps> = ({
         <Select 
           value={selectedDivision} 
           onValueChange={(value: string) => {
-            onDivisionChange(value as DivisionType); //Corrected type
+            onDivisionChange(value as Division);
             onGenerateSuggestedPairs();
           }}
         >

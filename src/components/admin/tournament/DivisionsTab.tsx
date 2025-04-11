@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { TournamentFormValues } from "./types";
-import { CategoryType, TournamentFormat, PlayType, DivisionType } from "@/types/tournament-enums";
+import { CategoryType, TournamentFormat, PlayType, Division, DivisionTypeValues } from "@/types/tournament-enums";
 import { v4 as uuidv4 } from "uuid";
 
 interface DivisionsTabProps {
@@ -25,7 +25,7 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
     appendDivision({
       id: uuidv4(),
       name: "",
-      type: DivisionType.MENS,
+      type: Division.MENS,
       categories: [],
     });
   };
@@ -98,7 +98,7 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {Object.values(DivisionType).map((type) => (
+                        {Object.values(Division).map((type) => (
                           <SelectItem key={type} value={type}>
                             {type.replace(/_/g, " ")}
                           </SelectItem>

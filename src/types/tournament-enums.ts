@@ -46,6 +46,9 @@ export enum Division {
 // Export the Division enum values as a type
 export type DivisionType = keyof typeof Division;
 
+// Also export DivisionType as a value so it can be used in component properties
+export const DivisionTypeValues = Object.keys(Division) as DivisionType[];
+
 export enum MatchStatus {
   SCHEDULED = "SCHEDULED",
   IN_PROGRESS = "IN_PROGRESS", 
