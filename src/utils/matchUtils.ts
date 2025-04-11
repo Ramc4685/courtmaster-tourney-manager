@@ -1,4 +1,5 @@
-import { Match, MatchScore, Team } from "@/types/tournament";
+
+import { Match, MatchScore, Team, Tournament, ScoringSettings } from "@/types/tournament";
 import { MatchStatus } from "@/types/tournament-enums";
 
 // Check if a set is complete based on scoring rules
@@ -70,6 +71,21 @@ export const isMatchComplete = (
   return team1Sets >= setsToWin || team2Sets >= setsToWin;
 };
 
+// Get default scoring settings based on sport type
+export const getDefaultScoringSettings = (): ScoringSettings => {
+  return {
+    pointsToWin: 21,
+    mustWinByTwo: true,
+    maxPoints: 30,
+    setsToWin: 2,
+    maxSets: 3,
+    requireTwoPointLead: true,
+    maxTwoPointLeadScore: 30,
+    gamesPerSet: 1,
+    pointsPerGame: 21
+  };
+};
+
 // Determine the winner and loser of a match
 export const determineMatchWinnerAndLoser = (
   match: Match,
@@ -87,7 +103,7 @@ export const determineMatchWinnerAndLoser = (
 };
 
 // Update bracket progression after a match is completed
-export const updateBracketProgression = (tournament: any, match: Match): any => {
+export const updateBracketProgression = (tournament: Tournament, match: Match): Tournament => {
   const updatedTournament = { ...tournament };
   const { matches } = updatedTournament;
 
@@ -108,7 +124,7 @@ export const updateBracketProgression = (tournament: any, match: Match): any => 
   nextMatches.forEach(nextMatch => {
     const updatedMatch = { ...nextMatch };
     
-    if (updatedMatch.bracketPosition.includes(`W${match.bracketPosition}`)) {
+    if (updatedMatch.bracketPosition?.includes(`W${match.bracketPosition}`)) {
       // Winner advances
       if (updatedMatch.bracketPosition.startsWith('W')) {
         updatedMatch.team1 = match.winner;
@@ -117,10 +133,10 @@ export const updateBracketProgression = (tournament: any, match: Match): any => 
         updatedMatch.team2 = match.winner;
         updatedMatch.team2Id = match.winner.id;
       }
-    } else if (updatedMatch.bracketPosition.includes(`L${match.bracketPosition}`)) {
+    } else if (updatedMatch.bracketPosition?.includes(`L${match.bracketPosition}`)) {
       // Loser advances to loser's bracket (double elimination)
       if (match.loser) {
-        if (updatedMatch.bracketPosition.startsWith('W')) {
+        if (updatedMatch.bracketPosition?.startsWith('W')) {
           updatedMatch.team1 = match.loser;
           updatedMatch.team1Id = match.loser.id;
         } else {

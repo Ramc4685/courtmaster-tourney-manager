@@ -79,4 +79,19 @@ export enum ScorerType {
   SYSTEM = "SYSTEM"
 }
 
+export enum PlayType {
+  SINGLES = "SINGLES",
+  DOUBLES = "DOUBLES",
+  MIXED_DOUBLES = "MIXED_DOUBLES"
+}
+
+export enum GameType {
+  BADMINTON = "BADMINTON",
+  TENNIS = "TENNIS",
+  TABLE_TENNIS = "TABLE_TENNIS",
+  VOLLEYBALL = "VOLLEYBALL",
+  BASKETBALL = "BASKETBALL",
+  CUSTOM = "CUSTOM"
+}
+
 export type StageType = keyof typeof TournamentStage;

@@ -1,8 +1,10 @@
+
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Layout } from "./components/layout/Layout";
 import TournamentCreate from "./pages/tournament/TournamentCreate";
 import { MatchStatus } from "./types/tournament-enums";
+import Home from "./pages/Home";
 
 const App: React.FC = () => {
   const sampleMatches = [

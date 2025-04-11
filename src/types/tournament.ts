@@ -7,7 +7,8 @@ import {
   CourtStatus, 
   CategoryType,
   TournamentStage,
-  ScorerType
+  ScorerType,
+  PlayType
 } from './tournament-enums';
 
 export interface Player {
@@ -26,6 +27,8 @@ export interface Team {
   division: Division;
   seed?: number;
   players: Player[];
+  category?: TournamentCategory;
+  initialRanking?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +38,8 @@ export interface MatchScore {
   team2Score: number;
   setNumber: number;
   isComplete?: boolean;
+  scoredBy?: string;
+  timestamp?: string;
 }
 
 export interface Match {
@@ -55,16 +60,22 @@ export interface Match {
   completedTime?: Date;
   status: MatchStatus;
   round?: number;
+  bracketRound?: number;
+  bracketPosition?: string;
   scores: MatchScore[];
   division: Division;
   stage: TournamentStage;
-  category?: string;
-  bracketPosition?: string;
+  category?: TournamentCategory;
   groupName?: string;
   createdAt?: Date;
   updatedAt?: Date;
   scorerName?: string;
   auditLogs?: AuditLog[];
+  team1Score?: number;
+  team2Score?: number;
+  team1Name?: string;
+  team2Name?: string;
+  currentMatch?: Match;
 }
 
 export interface Court {
@@ -74,6 +85,7 @@ export interface Court {
   status: CourtStatus;
   location?: string;
   tournamentId?: string;
+  currentMatch?: Match;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -84,6 +96,10 @@ export interface ScoringSettings {
   maxPoints?: number;
   setsToWin?: number;
   maxSets?: number;
+  requireTwoPointLead?: boolean;
+  maxTwoPointLeadScore?: number;
+  gamesPerSet?: number;
+  pointsPerGame?: number;
   tiebreakRules?: {
     pointsToWin: number;
     requireTwoPointLead: boolean;
@@ -98,6 +114,8 @@ export interface TournamentCategory {
   division: Division;
   isCustom?: boolean;
   description?: string;
+  format?: TournamentFormat;
+  scoringSettings?: ScoringSettings;
 }
 
 export interface CategoryRegistrationRule {
@@ -117,6 +135,8 @@ export interface AuditLog {
   type: string;
   details?: any;
   metadata?: any;
+  name?: string;
+  userName?: string;
 }
 
 export interface StandaloneAuditLog {
@@ -125,6 +145,7 @@ export interface StandaloneAuditLog {
   action: string;
   type: string;
   metadata?: any;
+  userName?: string;
 }
 
 export interface StandaloneMatch {
@@ -141,9 +162,17 @@ export interface StandaloneMatch {
   winner?: Team;
   loser?: Team;
   scorerName?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   auditLogs?: StandaloneAuditLog[];
+  courtName?: string;
+  courtNumber?: number;
+  tournamentName?: string;
+  categoryName?: string;
+  category?: TournamentCategory;
+  isPublic?: boolean;
+  shareCode?: string;
+  matchNumber?: string;
 }
 
 export interface Tournament {
@@ -165,6 +194,7 @@ export interface Tournament {
   courts: Court[];
   categories: TournamentCategory[];
   scoringSettings: ScoringSettings;
+  scoringRules?: string;
   categoryRegistrationRules?: CategoryRegistrationRule[];
   createdAt: Date;
   updatedAt: Date;
@@ -172,4 +202,6 @@ export interface Tournament {
   divisionProgression?: any;
   metadata?: any;
   autoAssignCourts?: boolean;
+  created_by?: string;
+  updated_by?: string;
 }
