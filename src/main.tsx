@@ -3,6 +3,7 @@ import App from './App.tsx'
 import './index.css'
 import { isSupabaseConfigured } from './services/storage/StorageService'
 import { toast } from 'sonner'
+import { TournamentProvider } from './contexts/tournament/TournamentContext'
 
 // Add more detailed debugging
 console.log('Application starting...');
@@ -34,7 +35,11 @@ if (!rootElement) {
   try {
     const root = createRoot(rootElement);
     console.log('Root created successfully');
-    root.render(<App />);
+    root.render(
+      <TournamentProvider>
+        <App />
+      </TournamentProvider>
+    );
     console.log('App rendered successfully');
   } catch (error) {
     console.error('Error rendering app:', error);

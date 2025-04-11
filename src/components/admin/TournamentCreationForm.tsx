@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -16,15 +15,25 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
-import { CalendarIcon, Trophy, Plus } from "lucide-react";
-import { TournamentFormat } from "@/types/tournament-enums";
-import { tournamentFormSchema, TournamentFormValues } from "./tournament/types";
+import { CalendarIcon, Trophy, Plus, X } from "lucide-react";
+import { TournamentFormat, GameType, Division, PlayType } from "@/types/tournament-enums";
+import { tournamentFormSchema, TournamentFormValues, DivisionInterface, Category } from "./tournament/types";
+import { v4 as uuidv4 } from 'uuid';
 
 export interface CreateTournamentFormProps {
   onSubmit: (data: TournamentFormValues) => void;
 }
 
 const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit }) => {
+  const [divisions, setDivisions] = useState<DivisionInterface[]>([]);
+  const [showDivisionForm, setShowDivisionForm] = useState(false);
+  const [newDivision, setNewDivision] = useState<DivisionInterface>({
+    id: uuidv4(),
+    name: "",
+    type: Division.MENS,
+    categories: []
+  });
+
   const form = useForm<TournamentFormValues>({
     resolver: zodResolver(tournamentFormSchema),
     defaultValues: {
@@ -35,10 +44,113 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
       maxTeams: 8,
       startDate: format(new Date(), "yyyy-MM-dd"),
       endDate: format(new Date(), "yyyy-MM-dd"),
+      gameType: GameType.BADMINTON,
+      description: "",
+      registrationDeadline: format(new Date(), "yyyy-MM-dd"),
+      scoringRules: {
+        pointsToWin: 21,
+        mustWinByTwo: true,
+        maxPoints: 30
+      },
+      divisions: [],
+      categoryRegistrationRules: [],
+      requirePlayerProfile: false
     },
   });
 
-  const watchRegEnabled = form.watch("registrationEnabled");
+  const handleAddDivision = () => {
+    if (newDivision.name.trim() === "") return;
+    setDivisions([...divisions, newDivision]);
+    setNewDivision({
+      id: uuidv4(),
+      name: "",
+      type: Division.MENS,
+      categories: []
+    });
+    setShowDivisionForm(false);
+  };
+
+  const handleAddCategory = (divisionId: string) => {
+    const updatedDivisions = divisions.map(division => {
+      if (division.id === divisionId) {
+        const newCategory: Category = {
+          id: uuidv4(),
+          name: "",
+          playType: PlayType.SINGLES,
+          format: TournamentFormat.SINGLE_ELIMINATION,
+          scoringSettings: {
+            pointsToWin: 21,
+            mustWinByTwo: true,
+            maxPoints: 30
+          }
+        };
+        return {
+          ...division,
+          categories: [...division.categories, newCategory]
+        };
+      }
+      return division;
+    });
+    setDivisions(updatedDivisions);
+  };
+
+  const handleRemoveDivision = (divisionId: string) => {
+    setDivisions(divisions.filter(division => division.id !== divisionId));
+  };
+
+  const handleRemoveCategory = (divisionId: string, categoryId: string) => {
+    const updatedDivisions = divisions.map(division => {
+      if (division.id === divisionId) {
+        return {
+          ...division,
+          categories: division.categories.filter(category => category.id !== categoryId)
+        };
+      }
+      return division;
+    });
+    setDivisions(updatedDivisions);
+  };
+
+  const handleUpdateDivision = (divisionId: string, field: keyof DivisionInterface, value: any) => {
+    const updatedDivisions = divisions.map(division => {
+      if (division.id === divisionId) {
+        return {
+          ...division,
+          [field]: value
+        };
+      }
+      return division;
+    });
+    setDivisions(updatedDivisions);
+  };
+
+  const handleUpdateCategory = (divisionId: string, categoryId: string, field: keyof Category, value: any) => {
+    const updatedDivisions = divisions.map(division => {
+      if (division.id === divisionId) {
+        return {
+          ...division,
+          categories: division.categories.map(category => {
+            if (category.id === categoryId) {
+              return {
+                ...category,
+                [field]: value
+              };
+            }
+            return category;
+          })
+        };
+      }
+      return division;
+    });
+    setDivisions(updatedDivisions);
+  };
+
+  const handleSubmit = (data: TournamentFormValues) => {
+    onSubmit({
+      ...data,
+      divisions
+    });
+  };
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-md border-0">
@@ -47,7 +159,7 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
       </CardHeader>
       <CardContent className="p-8">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-4">
                 <FormField
@@ -138,7 +250,7 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
                       <FormLabel className="text-base font-medium">Tournament Format</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="h-12 text-base rounded-md">
@@ -193,7 +305,7 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
                   )}
                 />
 
-                {watchRegEnabled && (
+                {form.watch("registrationEnabled") && (
                   <FormField
                     control={form.control}
                     name="registrationDeadline"
@@ -227,14 +339,148 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
                   type="button" 
                   variant="outline" 
                   className="h-10 border-court-green text-court-green hover:bg-court-green/10"
+                  onClick={() => setShowDivisionForm(true)}
                 >
                   <Plus className="mr-1 h-4 w-4" /> Add Division
                 </Button>
               </div>
-              
-              <div className="text-muted-foreground text-center py-6">
-                No divisions added yet. Add divisions to organize your tournament.
-              </div>
+
+              {showDivisionForm && (
+                <div className="mb-4 p-4 border rounded-lg">
+                  <div className="grid gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Division Name</label>
+                      <Input
+                        value={newDivision.name}
+                        onChange={(e) => setNewDivision({ ...newDivision, name: e.target.value })}
+                        placeholder="Enter division name"
+                        className="h-10"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Division Type</label>
+                      <Select
+                        value={newDivision.type}
+                        onValueChange={(value) => setNewDivision({ ...newDivision, type: value as Division })}
+                      >
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="Select division type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.values(Division).map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type.replace(/_/g, " ")}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowDivisionForm(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleAddDivision}
+                      >
+                        Add Division
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {divisions.length === 0 ? (
+                <div className="text-muted-foreground text-center py-6">
+                  No divisions added yet. Add divisions to organize your tournament.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {divisions.map((division) => (
+                    <div key={division.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-lg font-medium">{division.name}</h4>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveDivision(division.id)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="space-y-4">
+                        {division.categories.map((category) => (
+                          <div key={category.id} className="pl-4 border-l-2">
+                            <div className="flex justify-between items-center mb-2">
+                              <h5 className="text-base font-medium">{category.name}</h5>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveCategory(division.id, category.id)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <div className="grid gap-2">
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Play Type</label>
+                                <Select
+                                  value={category.playType}
+                                  onValueChange={(value) => handleUpdateCategory(division.id, category.id, 'playType', value)}
+                                >
+                                  <SelectTrigger className="h-10">
+                                    <SelectValue placeholder="Select play type" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {Object.values(PlayType).map((type) => (
+                                      <SelectItem key={type} value={type}>
+                                        {type.replace(/_/g, " ")}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Format</label>
+                                <Select
+                                  value={category.format}
+                                  onValueChange={(value) => handleUpdateCategory(division.id, category.id, 'format', value)}
+                                >
+                                  <SelectTrigger className="h-10">
+                                    <SelectValue placeholder="Select format" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {Object.values(TournamentFormat).map((format) => (
+                                      <SelectItem key={format} value={format}>
+                                        {format.replace(/_/g, " ")}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddCategory(division.id)}
+                          className="ml-4"
+                        >
+                          <Plus className="mr-1 h-4 w-4" /> Add Category
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end space-x-4 pt-4 border-t">

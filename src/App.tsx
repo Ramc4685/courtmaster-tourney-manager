@@ -1,10 +1,10 @@
-
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Layout } from "./components/layout/Layout";
 import TournamentCreate from "./pages/tournament/TournamentCreate";
+import TournamentView from "./pages/tournament/TournamentView";
 import { MatchStatus } from "./types/tournament-enums";
-import Home from "./pages/Home"; // Fixed import casing
+import Home from "./pages/home"; // Fixed import casing
 
 const App: React.FC = () => {
   const sampleMatches = [
@@ -23,11 +23,12 @@ const App: React.FC = () => {
   ];
 
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/tournament/create" element={<TournamentCreate onTournamentCreated={() => {}} />} />
+          <Route path="/tournament/:id" element={<TournamentView />} />
           {/* ... keep existing routes */}
         </Routes>
       </Layout>

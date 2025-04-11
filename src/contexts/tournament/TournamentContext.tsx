@@ -1,12 +1,13 @@
-
 import React, { createContext, useState, useEffect, PropsWithChildren } from 'react';
-import { Tournament, Match, Court, Team, TournamentFormat, TournamentCategory, CourtStatus, ScoringSettings, MatchStatus, TournamentStatus, TournamentStage, Division } from "@/types/tournament";
+import { Tournament, Match, Court, Team, TournamentCategory, ScoringSettings } from "@/types/tournament";
+import { TournamentFormat, TournamentStatus, TournamentStage, CategoryType, Division, CourtStatus, MatchStatus } from "@/types/tournament-enums";
 import { generateId } from '@/utils/tournamentUtils';
 import { tournamentService } from '@/services/tournament/TournamentService';
 import { matchService } from '@/services/tournament/MatchService';
 import { toast } from '@/components/ui/use-toast';
 import { TournamentContextType, SchedulingOptions, SchedulingResult } from './types';
 import { schedulingService } from '@/services/tournament/SchedulingService';
+import { format as formatDate } from 'date-fns';
 
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
@@ -27,14 +28,14 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     }
   };
 
-  const createTournament = async (data: {name: string, description?: string, format?: TournamentFormat, categories: TournamentCategory[]}): Promise<Tournament> => {
+  const createTournament = async (data: {name: string, description?: string, format?: TournamentFormat, categories: TournamentCategory[], location?: string, registrationEnabled?: boolean, requirePlayerProfile?: boolean, startDate?: string | Date, endDate?: string | Date}): Promise<Tournament> => {
     const newTournament: Tournament = {
       id: generateId(),
       name: data.name,
-      categories: data.categories, // This is now TournamentCategory[] to match the Tournament type
+      categories: data.categories,
       format: data.format || "SINGLE_ELIMINATION" as TournamentFormat,
-      startDate: new Date(),
-      endDate: new Date(),
+      startDate: data.startDate ? (typeof data.startDate === 'string' ? new Date(data.startDate) : data.startDate) : new Date(),
+      endDate: data.endDate ? (typeof data.endDate === 'string' ? new Date(data.endDate) : data.endDate) : new Date(),
       matches: [],
       teams: [],
       courts: [],
@@ -42,6 +43,9 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       currentStage: "INITIAL_ROUND" as TournamentStage,
       createdAt: new Date(),
       updatedAt: new Date(),
+      location: data.location || "Unspecified Location",
+      registrationEnabled: data.registrationEnabled || true,
+      requirePlayerProfile: data.requirePlayerProfile || false,
       scoringSettings: {
         maxPoints: 21,
         maxSets: 3,
@@ -53,6 +57,7 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     try {
       const createdTournament = await tournamentService.createTournament(newTournament);
       setTournaments(prevTournaments => [...prevTournaments, createdTournament]);
+      setCurrentTournament(createdTournament);
       return createdTournament;
     } catch (error) {
       console.error("Error creating tournament:", error);
@@ -560,17 +565,62 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
   };
 
   // Load sample data
-  const loadSampleData = async (format?: TournamentFormat) => {
-    if (!currentTournament) return;
-    
+  const loadSampleData = async (format?: TournamentFormat): Promise<void> => {
+    if (!format) return;
+
+    const category: TournamentCategory = {
+      id: generateId(),
+      name: "Men's Singles",
+      type: CategoryType.MENS_SINGLES,
+      division: Division.MENS,
+      format: format,
+    };
+
+    const sampleTournament = {
+      name: `Sample ${format.replace(/_/g, ' ')} Tournament`,
+      description: `A sample tournament using the ${format.replace(/_/g, ' ')} format`,
+      format: format,
+      location: "Sample Location",
+      startDate: formatDate(new Date(), "yyyy-MM-dd"),
+      endDate: formatDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"),
+      status: TournamentStatus.DRAFT,
+      currentStage: TournamentStage.INITIAL_ROUND,
+      registrationEnabled: true,
+      requirePlayerProfile: false,
+      teams: [],
+      matches: [],
+      courts: [],
+      categories: [category],
+      scoringSettings: {
+        pointsToWin: 21,
+        mustWinByTwo: true,
+        maxPoints: 30,
+        maxSets: 3,
+        requireTwoPointLead: true,
+        maxTwoPointLeadScore: 30
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
     try {
-      const { tournament } = await schedulingService.loadSampleData(currentTournament, format);
-      
-      if (tournament) {
-        await updateTournament(tournament);
+      const createdTournament = await createTournament(sampleTournament);
+      if (!createdTournament) {
+        throw new Error("Failed to create tournament - no tournament returned");
       }
+      await setCurrentTournamentContext(createdTournament);
+      toast({
+        title: "Sample Tournament Created",
+        description: `Created a new ${format.replace(/_/g, ' ')} tournament template.`
+      });
     } catch (error) {
-      console.error("Error loading sample data:", error);
+      console.error("Error creating sample tournament:", error);
+      toast({
+        title: "Error Creating Sample Tournament",
+        description: "Failed to create sample tournament. Please try again.",
+        variant: "destructive"
+      });
+      throw error;
     }
   };
 
@@ -633,4 +683,12 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       {children}
     </TournamentContext.Provider>
   );
+};
+
+export const useTournament = () => {
+  const context = React.useContext(TournamentContext);
+  if (context === undefined) {
+    throw new Error('useTournament must be used within a TournamentProvider');
+  }
+  return context;
 };
