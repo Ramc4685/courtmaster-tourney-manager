@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Tournament } from '@/types/tournament';
@@ -9,17 +10,37 @@ const TournamentView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { tournaments, currentTournament } = useTournament();
   const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (id) {
-      if (currentTournament?.id === id) {
+      console.log('Looking for tournament with ID:', id);
+      console.log('Current tournament:', currentTournament);
+      console.log('Available tournaments:', tournaments);
+      
+      if (currentTournament && currentTournament.id === id) {
+        console.log('Found matching current tournament');
         setTournament(currentTournament);
       } else {
         const foundTournament = tournaments.find(t => t.id === id);
+        console.log('Found tournament from list:', foundTournament);
         setTournament(foundTournament || null);
       }
+      setLoading(false);
     }
   }, [id, tournaments, currentTournament]);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-4">
+        <Card>
+          <CardContent className="p-4">
+            <p>Loading tournament...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!tournament) {
     return (
@@ -54,7 +75,7 @@ const TournamentView: React.FC = () => {
             </div>
             <div>
               <h3 className="font-semibold">Format</h3>
-              <p>{tournament.format.replace(/_/g, ' ')}</p>
+              <p>{String(tournament.format).replace(/_/g, ' ')}</p>
             </div>
             <div>
               <h3 className="font-semibold">Status</h3>
@@ -67,4 +88,4 @@ const TournamentView: React.FC = () => {
   );
 };
 
-export default TournamentView; 
+export default TournamentView;
