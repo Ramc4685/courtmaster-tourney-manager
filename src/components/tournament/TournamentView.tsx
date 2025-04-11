@@ -1,71 +1,62 @@
 
 import React from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useParams } from 'react-router-dom';
 import { useTournament } from '@/contexts/tournament/useTournament';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import TournamentHeader from './TournamentHeader';
+import OverviewTab from './tabs/OverviewTab';
+import TeamsTab from './tabs/TeamsTab';
+import MatchesTab from './tabs/MatchesTab';
+import CourtsTab from './tabs/CourtsTab';
+import BracketTab from './tabs/BracketTab';
 
-const TournamentView = () => {
-  const { id } = useParams<{ id: string }>();
-  const { currentTournament, setCurrentTournament } = useTournament();
-  
-  React.useEffect(() => {
-    if (id) {
-      // Here you would typically fetch tournament data
-      console.log(`Loading tournament with ID: ${id}`);
-    }
-  }, [id]);
+export const TournamentView = () => {
+  const { id } = useParams();
+  const { tournament, isLoading } = useTournament(id);
 
-  if (!currentTournament) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              <Skeleton className="h-8 w-1/2" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-4 w-full mb-2" />
-            <Skeleton className="h-4 w-3/4 mb-2" />
-            <Skeleton className="h-4 w-5/6" />
-          </CardContent>
-        </Card>
-      </div>
-    );
+  if (isLoading) {
+    return <div className="container p-6">Loading tournament...</div>;
+  }
+
+  if (!tournament) {
+    return <div className="container p-6">Tournament not found</div>;
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>{currentTournament.name}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-500">
-            {currentTournament.description || "No description available"}
-          </p>
-          
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div>
-              <h3 className="font-medium">Location</h3>
-              <p>{currentTournament.location || "TBD"}</p>
-            </div>
-            <div>
-              <h3 className="font-medium">Format</h3>
-              <p>{currentTournament.format}</p>
-            </div>
-            <div>
-              <h3 className="font-medium">Start Date</h3>
-              <p>{currentTournament.startDate.toLocaleDateString()}</p>
-            </div>
-            <div>
-              <h3 className="font-medium">End Date</h3>
-              <p>{currentTournament.endDate.toLocaleDateString()}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="min-h-screen bg-background">
+      <TournamentHeader tournament={tournament} />
+      
+      <div className="container px-4">
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList className="bg-card/50 backdrop-blur">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="teams">Teams</TabsTrigger>
+            <TabsTrigger value="matches">Matches</TabsTrigger>
+            <TabsTrigger value="courts">Courts</TabsTrigger>
+            <TabsTrigger value="bracket">Bracket</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4">
+            <OverviewTab tournament={tournament} />
+          </TabsContent>
+
+          <TabsContent value="teams" className="space-y-4">
+            <TeamsTab tournament={tournament} />
+          </TabsContent>
+
+          <TabsContent value="matches" className="space-y-4">
+            <MatchesTab tournament={tournament} />
+          </TabsContent>
+
+          <TabsContent value="courts" className="space-y-4">
+            <CourtsTab tournament={tournament} />
+          </TabsContent>
+
+          <TabsContent value="bracket" className="space-y-4">
+            <BracketTab tournament={tournament} />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };

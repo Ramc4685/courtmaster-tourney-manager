@@ -5,7 +5,8 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Team, Division } from "@/types/tournament";
+import { Division } from "@/types/tournament-enums";
+import { Team } from "@/types/tournament";
 import { DialogFooter } from "@/components/ui/dialog";
 
 interface FormData {

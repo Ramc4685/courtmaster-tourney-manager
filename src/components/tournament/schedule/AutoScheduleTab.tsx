@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { DialogFooter } from "@/components/ui/dialog";
-import { Division, Tournament } from "@/types/tournament";
+import { Division } from "@/types/tournament-enums";
+import { Tournament } from "@/types/tournament";
 import SuggestedMatchPairs from "./SuggestedMatchPairs";
 
 interface AutoScheduleTabProps {

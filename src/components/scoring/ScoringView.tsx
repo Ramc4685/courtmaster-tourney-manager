@@ -1,119 +1,109 @@
 
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useEffect, useState } from 'react';
+import { Match } from '@/types/tournament';
+import { realtimeTournamentService } from '@/services/realtime/RealtimeTournamentService';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Match, ScoringSettings } from '@/types/tournament';
-import { useTournament } from '@/contexts/tournament/useTournament';
+import { Badge } from '@/components/ui/badge';
 
-export interface ScoringViewProps {
-  match: Match;
-  scoringSettings: ScoringSettings;
-  onMatchComplete: (matchId: string, winnerId: string) => void;
-}
+export const ScoringView = ({ match }: { match: Match }) => {
+  const [scores, setScores] = useState({
+    team1: 0,
+    team2: 0,
+    sets: [] as {team1: number, team2: number}[]
+  });
 
-const ScoringView: React.FC<ScoringViewProps> = ({ match, scoringSettings, onMatchComplete }) => {
-  const { id } = useParams<{ id: string }>();
-  const { currentTournament } = useTournament();
-  const [team1Score, setTeam1Score] = useState(0);
-  const [team2Score, setTeam2Score] = useState(0);
-  const [currentSet, setCurrentSet] = useState(0);
+  const [currentSet, setCurrentSet] = useState(1);
 
-  // Create a placeholder for the actual match
-  const actualMatch = currentTournament?.matches.find(m => m.id === id) || match;
+  useEffect(() => {
+    const unsubscribe = realtimeTournamentService.subscribeMatch(match.id, 
+      (updatedMatch) => {
+        setScores({
+          team1: updatedMatch.team1Score || 0,
+          team2: updatedMatch.team2Score || 0,
+          sets: updatedMatch.scores || []
+        });
+      }
+    );
+    return () => unsubscribe();
+  }, [match.id]);
+
+  const updateScore = (team: 'team1' | 'team2', increment: boolean) => {
+    const newScores = {
+      ...scores,
+      [team]: increment ? scores[team] + 1 : Math.max(0, scores[team] - 1)
+    };
+    setScores(newScores);
+    realtimeTournamentService.publishMatchUpdate({
+      ...match,
+      team1Score: newScores.team1,
+      team2Score: newScores.team2
+    });
+  };
+
+  const completeSet = () => {
+    const newSets = [...scores.sets, { team1: scores.team1, team2: scores.team2 }];
+    setScores({
+      ...scores,
+      sets: newSets,
+      team1: 0,
+      team2: 0
+    });
+    setCurrentSet(currentSet + 1);
+  };
 
   return (
-    <div className="container mx-auto py-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Match Scoring</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <h3 className="text-lg font-medium">
-                {actualMatch.team1?.name || 'Team 1'}
-              </h3>
-              <div className="flex items-center mt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setTeam1Score(prev => Math.max(prev - 1, 0))}
-                >
-                  -
-                </Button>
-                <span className="mx-4 text-2xl font-bold">{team1Score}</span>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setTeam1Score(prev => prev + 1)}
-                >
-                  +
-                </Button>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-medium">
-                {actualMatch.team2?.name || 'Team 2'}
-              </h3>
-              <div className="flex items-center mt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setTeam2Score(prev => Math.max(prev - 1, 0))}
-                >
-                  -
-                </Button>
-                <span className="mx-4 text-2xl font-bold">{team2Score}</span>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setTeam2Score(prev => prev + 1)}
-                >
-                  +
-                </Button>
-              </div>
+    <div className="space-y-6">
+      <Card className="p-6 max-w-3xl mx-auto">
+        <div className="text-center mb-4">
+          <Badge variant="outline" className="text-lg">Set {currentSet}</Badge>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold">{match.team1Name}</h3>
+            <div className="text-6xl font-bold text-primary">{scores.team1}</div>
+            <div className="space-x-2">
+              <Button size="lg" onClick={() => updateScore('team1', true)}>+</Button>
+              <Button size="lg" variant="outline" onClick={() => updateScore('team1', false)}>-</Button>
             </div>
           </div>
-          
-          <div className="mt-6">
-            <h3 className="text-lg font-medium mb-2">Set {currentSet + 1}</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Points to win: {scoringSettings.pointsToWin}<br />
-              Must win by two: {scoringSettings.mustWinByTwo ? 'Yes' : 'No'}<br />
-              Max points: {scoringSettings.maxPoints}
-            </p>
-            
-            <div className="flex justify-between">
-              <Button 
-                variant="outline"
-                onClick={() => setCurrentSet(prev => Math.max(prev - 1, 0))}
-                disabled={currentSet === 0}
-              >
-                Previous Set
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={() => setCurrentSet(prev => prev + 1)}
-                disabled={currentSet >= scoringSettings.maxSets - 1}
-              >
-                Next Set
-              </Button>
-            </div>
-            
+
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="text-3xl font-bold">VS</div>
             <Button 
-              className="w-full mt-4"
-              onClick={() => onMatchComplete(actualMatch.id, team1Score > team2Score ? actualMatch.team1Id || '' : actualMatch.team2Id || '')}
+              variant="secondary" 
+              onClick={completeSet}
+              className="mt-4"
             >
-              Complete Match
+              Complete Set
             </Button>
           </div>
-        </CardContent>
+
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold">{match.team2Name}</h3>
+            <div className="text-6xl font-bold text-primary">{scores.team2}</div>
+            <div className="space-x-2">
+              <Button size="lg" onClick={() => updateScore('team2', true)}>+</Button>
+              <Button size="lg" variant="outline" onClick={() => updateScore('team2', false)}>-</Button>
+            </div>
+          </div>
+        </div>
       </Card>
+
+      {scores.sets.length > 0 && (
+        <Card className="p-4 max-w-3xl mx-auto">
+          <h4 className="font-semibold mb-2">Previous Sets</h4>
+          <div className="grid grid-cols-3 gap-2">
+            {scores.sets.map((set, idx) => (
+              <div key={idx} className="text-center p-2 bg-muted rounded">
+                <div className="font-medium">Set {idx + 1}</div>
+                <div>{set.team1} - {set.team2}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 };
-
-export default ScoringView;

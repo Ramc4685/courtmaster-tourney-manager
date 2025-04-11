@@ -1,21 +1,23 @@
-import {
-  TournamentFormat,
-  TournamentStatus,
-  TournamentStage,
-  MatchStatus,
-  CourtStatus,
-  Division,
+
+import { 
+  TournamentFormat, 
+  TournamentStatus, 
+  Division, 
+  MatchStatus, 
+  CourtStatus, 
   CategoryType,
-  ScorerType
+  TournamentStage,
+  ScorerType,
+  PlayType,
+  GameType
 } from './tournament-enums';
 
-// Core entity interfaces
 export interface Player {
   id: string;
   name: string;
   email?: string;
   phone?: string;
-  teamId?: string;
+  profileId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,11 +25,89 @@ export interface Player {
 export interface Team {
   id: string;
   name: string;
+  division: Division;
   seed?: number;
-  division?: Division;
-  players?: Player[];
+  players: Player[];
+  category?: TournamentCategory;
+  initialRanking?: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface MatchScore {
+  team1Score: number;
+  team2Score: number;
+  setNumber?: number; // Make setNumber optional to fix the errors
+  isComplete?: boolean;
+  winner?: 'team1' | 'team2' | null;
+  scoredBy?: string;
+  timestamp?: string;
+}
+
+export interface Match {
+  id: string;
+  tournamentId: string;
+  matchNumber?: string;
+  team1?: Team;
+  team2?: Team;
+  team1Id?: string;
+  team2Id?: string;
+  winner?: Team;
+  loser?: Team;
+  courtId?: string;
+  courtNumber?: number;
+  scheduledTime?: Date;
+  startTime?: Date;
+  endTime?: Date;
+  completedTime?: Date;
+  status: MatchStatus;
+  round?: number;
+  bracketRound?: number;
+  bracketPosition?: string;
+  scores: MatchScore[];
+  division: Division;
+  stage: TournamentStage;
+  category?: TournamentCategory;
+  groupName?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  scorerName?: string;
+  auditLogs?: AuditLog[];
+  team1Score?: number;
+  team2Score?: number;
+  team1Name?: string;
+  team2Name?: string;
+  currentMatch?: Match;
+  nextMatchId?: string; // Added for tournament progression
+}
+
+export interface Court {
+  id: string;
+  name: string;
+  number: number;
+  status: CourtStatus;
+  location?: string;
+  tournamentId?: string;
+  currentMatch?: Match;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ScoringSettings {
+  pointsToWin: number;
+  mustWinByTwo: boolean;
+  maxPoints?: number;
+  setsToWin?: number;
+  maxSets?: number;
+  requireTwoPointLead?: boolean;
+  maxTwoPointLeadScore?: number;
+  gamesPerSet?: number;
+  pointsPerGame?: number;
+  tiebreakRules?: {
+    pointsToWin: number;
+    requireTwoPointLead: boolean;
+    maxPoints: number;
+  };
 }
 
 export interface TournamentCategory {
@@ -37,17 +117,17 @@ export interface TournamentCategory {
   division: Division;
   isCustom?: boolean;
   description?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  format?: TournamentFormat;
+  scoringSettings?: ScoringSettings;
 }
 
-export interface Court {
-  id: string;
-  number: number;
-  status: CourtStatus;
-  matchId?: string;
-  createdAt: Date;
-  updatedAt: Date;
+export interface CategoryRegistrationRule {
+  categoryId: string;
+  maxTeams?: number;
+  requirePartner?: boolean;
+  minAge?: number;
+  maxAge?: number;
+  gender?: string;
 }
 
 export interface AuditLog {
@@ -55,101 +135,76 @@ export interface AuditLog {
   userId: string;
   timestamp: Date;
   action: string;
-  details: Record<string, any>;
+  type: string;
+  details?: any;
+  metadata?: any;
+  name?: string;
+  userName?: string;
 }
 
-export interface MatchScore {
-  setNumber: number;
-  team1Score: number;
-  team2Score: number;
-  scorerName?: string;
+export interface StandaloneAuditLog {
   timestamp: Date;
+  user_id: string;
+  action: string;
+  type: string;
+  metadata?: any;
+  userName?: string;
 }
 
-export interface Match {
+export interface StandaloneMatch {
   id: string;
-  tournamentId: string;
-  team1Id: string;
-  team2Id: string;
   team1?: Team;
   team2?: Team;
-  winnerId?: string;
-  loserId?: string;
+  team1Id?: string;
+  team2Id?: string;
+  scores: MatchScore[];
   status: MatchStatus;
-  division: Division;
-  stage: TournamentStage;
-  round: number;
-  courtId?: string;
-  court?: Court;
-  scores: {
-    team1: number[];
-    team2: number[];
-  };
-  auditLogs: {
-    timestamp: Date;
-    action: string;
-    details: string;
-  }[];
-  // Bracket progression properties
-  nextMatchId?: string;
-  nextMatchPosition?: 'team1' | 'team2';
-  bracketRound?: number;
-  bracketPosition?: number;
-  createdAt: Date;
-  updatedAt: Date;
+  scheduledTime?: Date;
+  startTime?: Date;
+  endTime?: Date;
+  winner?: Team;
+  loser?: Team;
+  scorerName?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  auditLogs?: StandaloneAuditLog[];
+  courtName?: string;
+  courtNumber?: number;
+  tournamentName?: string;
+  categoryName?: string;
+  category?: TournamentCategory;
+  isPublic?: boolean;
+  shareCode?: string;
+  matchNumber?: string;
 }
 
 export interface Tournament {
   id: string;
   name: string;
+  location: string;
+  description?: string;
+  startDate: Date;
+  endDate: Date;
+  registrationDeadline?: Date;
   format: TournamentFormat;
   status: TournamentStatus;
   currentStage: TournamentStage;
-  startDate: Date;
-  endDate: Date;
-  registrationDeadline: Date;
-  location: string;
-  description?: string;
-  divisions: Division[];
-  category: CategoryType;
-  scoringSettings: ScoringSettings;
+  registrationEnabled: boolean;
+  requirePlayerProfile: boolean;
+  maxTeams?: number;
   teams: Team[];
   matches: Match[];
   courts: Court[];
+  categories: TournamentCategory[];
+  scoringSettings: ScoringSettings;
+  scoringRules?: string;
+  categoryRegistrationRules?: CategoryRegistrationRule[];
   createdAt: Date;
   updatedAt: Date;
-}
-
-export interface ScoringSettings {
-  setsToWin: number;
-  gamesPerSet: number;
-  pointsPerGame: number;
-  tiebreakAt: number;
-  tiebreakPoints: number;
-  allowWalkover: boolean;
-  defaultScorerType: ScorerType;
-}
-
-// Type to define category registration rules
-export interface CategoryRegistrationRule {
-  categoryId: string;
-  maxTeams: number;
-  requirePlayerProfile: boolean;
-  allowExternalPlayers: boolean;
-  requireApproval: boolean;
-}
-
-// Type to define seeding rules
-export interface SeedingRule {
-  method: 'manual' | 'ranking' | 'random';
-  respectGroups: boolean;
-  protectTopSeeds: boolean;
-}
-
-// Bracket progression type
-export interface BracketProgression {
-  sourceMatchId: string;
-  targetMatchId: string;
-  position: 'team1' | 'team2';
-  condition: 'winner' | 'loser';
+  formatConfig?: any;
+  divisionProgression?: any;
+  metadata?: any;
+  autoAssignCourts?: boolean;
+  created_by?: string;
+  updated_by?: string;
 }

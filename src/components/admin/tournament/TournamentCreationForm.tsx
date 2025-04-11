@@ -12,20 +12,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import DivisionsTab from './DivisionsTab';
 
-export default function TournamentCreationForm() {
+const TournamentCreationForm = React.forwardRef<HTMLFormElement, {}>(({  }, ref) => {
   const navigate = useNavigate();
   const { createTournament } = useTournament();
   const { toast } = useToast();
-  
+
   const form = useForm<TournamentFormValues>({
     resolver: zodResolver(tournamentFormSchema),
     defaultValues: {
       name: '',
       location: '',
+      gameType: GameType.BADMINTON,
       format: TournamentFormat.SINGLE_ELIMINATION,
       registrationEnabled: false,
       divisions: [],
       requirePlayerProfile: false,
+      maxTeams: undefined,
       scoringRules: {
         pointsToWin: 21,
         mustWinByTwo: true,
@@ -61,7 +63,7 @@ export default function TournamentCreationForm() {
   };
 
   return (
-    <Card>
+    <Card className="w-full max-w-3xl mx-auto" ref={ref}>
       <CardHeader>
         <CardTitle>Create New Tournament</CardTitle>
       </CardHeader>
@@ -70,6 +72,19 @@ export default function TournamentCreationForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Game Type</label>
+                  <select 
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                    {...form.register('gameType')}
+                  >
+                    {Object.values(GameType).map(type => (
+                      <option key={type} value={type}>
+                        {type.replace(/_/g, ' ')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <FormField
                   label="Tournament Name"
                   {...form.register('name')}
@@ -135,9 +150,9 @@ export default function TournamentCreationForm() {
                 )}
               </div>
             </div>
-            
+
             <DivisionsTab form={form} />
-            
+
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={() => navigate('/tournaments')}>
                 Cancel
@@ -149,4 +164,8 @@ export default function TournamentCreationForm() {
       </CardContent>
     </Card>
   );
-} 
+});
+
+TournamentCreationForm.displayName = "TournamentCreationForm";
+
+export default TournamentCreationForm;

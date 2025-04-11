@@ -1,0 +1,27 @@
+Warning: Function components cannot be given refs. Attempts to access this ref will fail. Did you mean to use React.forwardRef()?%s%s 
+
+Check the render method of `TournamentCreationForm`. 
+    at FormField (https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/src/components/ui/form-field.tsx:14:29)
+    at div
+    at div
+    at form
+    at FormProvider (https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/node_modules/.vite/deps/chunk-HXH7K4ZI.js?v=5d67d5f6:102:11)
+    at div
+    at _c8 (https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/src/components/ui/card.tsx:84:61)
+    at div
+    at _c (https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/src/components/ui/card.tsx:12:53)
+    at https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/src/components/admin/tournament/TournamentCreationForm.tsx:24:75
+    at RenderedRoute (https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=5d67d5f6:4089:5)
+    at Routes (https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=5d67d5f6:4559:5)
+    at main
+    at div
+    at LayoutSpectator (https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/src/components/layout/role-layouts/LayoutSpectator.tsx:11:35)
+    at RoleBasedLayout (https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/src/components/layout/RoleBasedLayout.tsx:15:28)
+    at main
+    at div
+    at Layout (https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/src/components/layout/Layout.tsx:13:26)
+    at TournamentProvider (https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/src/contexts/tournament/TournamentContext.tsx:17:38)
+    at AuthProvider (https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/src/contexts/auth/AuthContext.tsx:22:32)
+    at Router (https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=5d67d5f6:4502:15)
+    at BrowserRouter (https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/node_modules/.vite/deps/react-router-dom.js?v=5d67d5f6:5248:5)
+    at App (https://acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev/src/App.tsx:32:5)

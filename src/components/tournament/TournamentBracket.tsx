@@ -1,8 +1,8 @@
 
 import React from "react";
-import { Match, Team, Tournament, Division, DivisionType } from "@/types/tournament";
+import { Match, Team, Tournament } from "@/types/tournament";
+import { DivisionType } from "@/types/tournament-enums";
 import { cn } from "@/lib/utils";
-import { DivisionEnum } from "@/types/tournament-enums";
 
 interface TournamentBracketProps {
   tournament: Tournament;
