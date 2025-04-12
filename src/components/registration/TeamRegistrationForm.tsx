@@ -1,197 +1,235 @@
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import React from "react";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Plus, Trash2 } from "lucide-react";
-import { TeamRegistration, teamRegistrationSchema } from "@/types/registration";
+import { AlertCircle, Loader2, Plus, Trash2 } from "lucide-react";
+import { teamRegistrationSchema, TeamRegistration } from "@/types/registration";
+import { useToast } from "@/components/ui/use-toast";
 
 interface TeamRegistrationFormProps {
   tournamentId: string;
-  onSubmit: (data: TeamRegistration) => void;
-  registrationDeadline?: Date;
+  divisionId: string;
+  playerId: string;
+  onSubmit: (data: TeamRegistration) => Promise<void>;
+  registrationDeadline?: string;
 }
 
-export function TeamRegistrationForm({
+const TeamRegistrationForm: React.FC<TeamRegistrationFormProps> = ({
   tournamentId,
+  divisionId,
+  playerId,
   onSubmit,
   registrationDeadline,
-}: TeamRegistrationFormProps) {
-  const [teamMembers, setTeamMembers] = useState([{ name: "", email: "" }]);
-  const isRegistrationClosed = registrationDeadline ? new Date() > new Date(registrationDeadline) : false;
+}) => {
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<TeamRegistration>({
+  const form = useForm<TeamRegistration>({
     resolver: zodResolver(teamRegistrationSchema),
     defaultValues: {
+      player_id: playerId,
+      division_id: divisionId,
       teamName: "",
       captainName: "",
       captainEmail: "",
       captainPhone: "",
-      members: [{ name: "", email: "" }],
+      members: [{ name: "", email: "", player_id: "" }],
     },
   });
 
-  const addTeamMember = () => {
-    setTeamMembers([...teamMembers, { name: "", email: "" }]);
-  };
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "members",
+  });
 
-  const removeTeamMember = (index: number) => {
-    setTeamMembers(teamMembers.filter((_, i) => i !== index));
-  };
+  const handleSubmit = async (data: TeamRegistration) => {
+    if (registrationDeadline && new Date(registrationDeadline) < new Date()) {
+      setError("Registration deadline has passed");
+      return;
+    }
 
-  const updateTeamMember = (index: number, field: keyof typeof teamMembers[0], value: string) => {
-    const updatedMembers = [...teamMembers];
-    updatedMembers[index] = { ...updatedMembers[index], [field]: value };
-    setTeamMembers(updatedMembers);
-  };
+    setIsSubmitting(true);
+    setError(null);
 
-  const onSubmitForm = (data: TeamRegistration) => {
-    if (isRegistrationClosed) return;
-    
-    const formData = {
-      ...data,
-      members: teamMembers.filter(member => member.name && member.email),
-    };
-    
-    onSubmit(formData);
-    
-    // Store registration in local storage
-    const registrations = JSON.parse(localStorage.getItem(`team-registrations-${tournamentId}`) || "[]");
-    localStorage.setItem(
-      `team-registrations-${tournamentId}`,
-      JSON.stringify([...registrations, formData])
-    );
+    try {
+      await onSubmit(data);
+      toast({
+        title: "Success",
+        description: "Your team registration has been submitted successfully.",
+      });
+      form.reset();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit team registration");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to submit team registration. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
-  if (isRegistrationClosed) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Registration is closed for this tournament.
-        </AlertDescription>
-      </Alert>
-    );
-  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Team Registration</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+    <div className="space-y-6">
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {registrationDeadline && new Date(registrationDeadline) < new Date() && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>Registration deadline has passed</AlertDescription>
+        </Alert>
+      )}
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="teamName">Team Name</Label>
-              <Input
-                id="teamName"
-                {...register("teamName")}
-                placeholder="Enter team name"
-              />
-              {errors.teamName && (
-                <p className="text-sm text-red-500">{errors.teamName.message}</p>
+            <FormField
+              control={form.control}
+              name="teamName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Team Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} disabled={isSubmitting} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
+            />
 
-            <div>
-              <Label htmlFor="captainName">Team Captain Name</Label>
-              <Input
-                id="captainName"
-                {...register("captainName")}
-                placeholder="Enter captain name"
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="captainName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Captain Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} disabled={isSubmitting} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.captainName && (
-                <p className="text-sm text-red-500">{errors.captainName.message}</p>
-              )}
-            </div>
 
-            <div>
-              <Label htmlFor="captainEmail">Team Captain Email</Label>
-              <Input
-                id="captainEmail"
-                type="email"
-                {...register("captainEmail")}
-                placeholder="Enter captain email"
+              <FormField
+                control={form.control}
+                name="captainEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Captain Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" disabled={isSubmitting} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.captainEmail && (
-                <p className="text-sm text-red-500">{errors.captainEmail.message}</p>
-              )}
-            </div>
 
-            <div>
-              <Label htmlFor="captainPhone">Team Captain Phone (Optional)</Label>
-              <Input
-                id="captainPhone"
-                {...register("captainPhone")}
-                placeholder="Enter captain phone"
+              <FormField
+                control={form.control}
+                name="captainPhone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Captain Phone (optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="tel" disabled={isSubmitting} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.captainPhone && (
-                <p className="text-sm text-red-500">{errors.captainPhone.message}</p>
-              )}
             </div>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label>Team Members</Label>
+              <h3 className="text-lg font-medium">Team Members</h3>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={addTeamMember}
+                onClick={() => append({ name: "", email: "", player_id: "" })}
+                disabled={isSubmitting}
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 Add Member
               </Button>
             </div>
 
-            {teamMembers.map((member, index) => (
-              <div key={index} className="flex gap-4 items-start">
-                <div className="flex-1">
-                  <Label htmlFor={`member-${index}-name`}>Name</Label>
-                  <Input
-                    id={`member-${index}-name`}
-                    value={member.name}
-                    onChange={(e) => updateTeamMember(index, "name", e.target.value)}
-                    placeholder="Enter member name"
+            {fields.map((field, index) => (
+              <div key={field.id} className="space-y-4 rounded-lg border p-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Member {index + 1}</h4>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => remove(index)}
+                    disabled={isSubmitting || fields.length === 1}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name={`members.${index}.name`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`members.${index}.email`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="email" disabled={isSubmitting} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
-                <div className="flex-1">
-                  <Label htmlFor={`member-${index}-email`}>Email</Label>
-                  <Input
-                    id={`member-${index}-email`}
-                    type="email"
-                    value={member.email}
-                    onChange={(e) => updateTeamMember(index, "email", e.target.value)}
-                    placeholder="Enter member email"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="mt-6"
-                  onClick={() => removeTeamMember(index)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </div>
             ))}
           </div>
 
-          <Button type="submit" className="w-full">
-            Register Team
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Submit Team Registration
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      </Form>
+    </div>
   );
-} 
+};
+
+export default TeamRegistrationForm; 

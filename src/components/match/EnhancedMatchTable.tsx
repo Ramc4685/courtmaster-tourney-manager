@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Table,
@@ -11,7 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
-import { Match, Team, Court, MatchStatus } from "@/types/tournament";
+import { Match, Team, Court } from "@/types/tournament";
+import { MatchStatus } from "@/types/tournament-enums";
 import { useTournament } from "@/contexts/tournament/useTournament";
 import { Badge } from "@/components/ui/badge";
 import { Edit, PlayCircle } from "lucide-react";
@@ -52,18 +52,18 @@ const EnhancedMatchTable: React.FC<EnhancedMatchTableProps> = ({
       return;
     }
     
-    updateMatchStatus(match.id, "IN_PROGRESS");
+    updateMatchStatus(match.id, MatchStatus.IN_PROGRESS);
   };
 
   const getStatusBadge = (status: MatchStatus) => {
     switch (status) {
-      case "SCHEDULED":
+      case MatchStatus.SCHEDULED:
         return <Badge variant="outline">Scheduled</Badge>;
-      case "IN_PROGRESS":
+      case MatchStatus.IN_PROGRESS:
         return <Badge variant="secondary">In Progress</Badge>;
-      case "COMPLETED":
+      case MatchStatus.COMPLETED:
         return <Badge variant="default">Completed</Badge>;
-      case "CANCELLED":
+      case MatchStatus.CANCELLED:
         return <Badge variant="destructive">Cancelled</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
@@ -142,7 +142,7 @@ const EnhancedMatchTable: React.FC<EnhancedMatchTableProps> = ({
                   {match.scheduledTime ? format(new Date(match.scheduledTime), "PPp") : "Not scheduled"}
                 </TableCell>
                 <TableCell>
-                  {match.status === "COMPLETED" ? 
+                  {match.status === MatchStatus.COMPLETED ? 
                     `${match.winner?.name || "Unknown"} won (${getScoreSummary(match)})` : 
                     getScoreSummary(match)
                   }
@@ -157,12 +157,12 @@ const EnhancedMatchTable: React.FC<EnhancedMatchTableProps> = ({
                     />
 
                     {/* Defer Match Button (only for IN_PROGRESS matches) */}
-                    {match.status === "IN_PROGRESS" && (
+                    {match.status === MatchStatus.IN_PROGRESS && (
                       <DeferMatch match={match} />
                     )}
 
                     {/* Start Match Button (only for SCHEDULED matches) */}
-                    {match.status === "SCHEDULED" && match.courtNumber && (
+                    {match.status === MatchStatus.SCHEDULED && match.courtNumber && (
                       <Button 
                         size="sm"
                         className="bg-blue-600 hover:bg-blue-700"
@@ -174,7 +174,7 @@ const EnhancedMatchTable: React.FC<EnhancedMatchTableProps> = ({
                     )}
 
                     {/* Court Assignment Button */}
-                    {match.status !== "COMPLETED" && !match.courtNumber && (
+                    {match.status !== MatchStatus.COMPLETED && !match.courtNumber && (
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -186,7 +186,7 @@ const EnhancedMatchTable: React.FC<EnhancedMatchTableProps> = ({
                     )}
 
                     {/* Manual Court Assignment for matches with courts */}
-                    {match.status !== "COMPLETED" && match.courtNumber && (
+                    {match.status !== MatchStatus.COMPLETED && match.courtNumber && (
                       <ManualCourtAssignment 
                         match={match}
                         courts={courts}

@@ -1,0 +1,185 @@
+<context>
+# CourtMaster - Testing PRD Overview
+
+This document outlines test cases for verifying the core functionality of the CourtMaster Tournament Manager application. Manual end-to-end testing is the primary method.
+
+**Testing Environment:** Local development server (`npm run dev`) accessed via browser.
+
+**Tools:**
+*   Multiple browser windows/incognito sessions
+*   Browser Developer Tools (Console, Network)
+*   Supabase Studio (for DB inspection)
+*   Email client (if testing email notifications)
+
+</context>
+<PRD>
+# Test Cases by Feature Area
+
+## 1. Authentication & User Roles
+**Goal:** Verify users can sign up, log in, log out, and access appropriate areas based on roles (Player, Admin/Organizer).
+
+*   **AUTH-01: Demo Player Login**
+    *   Steps: 1. Navigate to Login page. 2. Click "Demo Login".
+    *   Expected: User logged in as 'Demo User', redirected to dashboard/tournaments list. No errors in console.
+*   **AUTH-02: Demo Admin Login**
+    *   Steps: 1. Navigate to Login page. 2. Click "Demo Admin Login".
+    *   Expected: User logged in as 'Demo Admin', redirected to dashboard/tournaments list. Admin-specific UI elements visible.
+*   **AUTH-03: Logout**
+    *   Steps: 1. Log in (any user). 2. Click Logout button.
+    *   Expected: User logged out, redirected to Login page.
+*   **AUTH-04: Regular User Signup**
+    *   Steps: 1. Navigate to Sign Up page. 2. Enter valid details and sign up. 3. Check Supabase `auth.users` & `profiles`.
+    *   Expected: User account created. Profile automatically created. User potentially logged in or asked to confirm email.
+*   **AUTH-05: Regular User Login**
+    *   Steps: 1. Use credentials from AUTH-04. 2. Log in via form.
+    *   Expected: User logged in successfully, redirected to dashboard.
+*   **AUTH-06: Access Control (Admin)**
+    *   Steps: 1. Log in as Admin Demo user. 2. Navigate to admin-only areas.
+    *   Expected: Access granted. Admin features visible and usable.
+*   **AUTH-07: Access Control (Player)**
+    *   Steps: 1. Log in as Player Demo user. 2. Attempt to navigate to admin URLs. 3. Navigate to player dashboard.
+    *   Expected: Access to admin areas denied. Player dashboard accessible.
+
+## 2. Tournament Setup & Management (Core)
+**Goal:** Verify basic tournament creation and viewing.
+
+*   **TRN-01: Create Tournament**
+    *   Steps: 1. Log in as Admin. 2. Navigate to Create Tournament page. 3. Fill details (Single Elim). 4. Submit. 5. Check DB.
+    *   Expected: Tournament created successfully. Redirected. Record exists in DB.
+*   **TRN-02: View Tournament List**
+    *   Steps: 1. Log in (any user). 2. Navigate to Tournaments list.
+    *   Expected: List of tournaments displayed.
+*   **TRN-03: View Tournament Details**
+    *   Steps: 1. Log in. 2. Go to list. 3. Click a tournament.
+    *   Expected: Detail page loads. Tabs visible.
+*   **TRN-04: Navigate Admin Tabs**
+    *   Steps: 1. Log in as Admin. 2. Go to Tournament Details. 3. Click Registrations, Schedule, Courts tabs.
+    *   Expected: Relevant management components load.
+
+## 3. Registration System
+**Goal:** Verify registration, admin management, waitlisting, and notifications.
+
+*   **REG-01: Player Registration**
+    *   Steps: 1. Log in as Player. 2. Go to open tournament. 3. Register.
+    *   Expected: Success message. Registration appears as PENDING in admin view. Notifications received.
+*   **REG-02: View Registrations (Admin)**
+    *   Steps: 1. Log in as Admin. 2. Go to Tournament -> Registrations tab.
+    *   Expected: Dashboard loads. Lists populated.
+*   **REG-03: Approve Registration (Admin)**
+    *   Steps: 1. As Admin, find PENDING registration. 2. Use menu -> Approve.
+    *   Expected: Status changes to APPROVED. Optional notification sent.
+*   **REG-04: Reject Registration (Admin)**
+    *   Steps: 1. As Admin, find PENDING registration. 2. Use menu -> Reject.
+    *   Expected: Status changes to REJECTED. Optional notification sent.
+*   **REG-05: Waitlist Registration (Admin)**
+    *   Steps: 1. As Admin, find PENDING registration. 2. Use menu -> Move to Waitlist.
+    *   Expected: Status changes to WAITLIST. Appears in Waitlist tab. Optional notification sent.
+*   **REG-06: Check-In Registration (Admin)**
+    *   Steps: 1. As Admin, find APPROVED registration. 2. Use menu -> Check In.
+    *   Expected: Status changes to CHECKED_IN.
+*   **REG-07: Bulk Approve (Admin)**
+    *   Steps: 1. As Admin, select multiple PENDING. 2. Use Bulk Actions -> Approve Selected.
+    *   Expected: Selected statuses change to APPROVED.
+*   **REG-08: Waitlist Management (Move)**
+    *   Steps: 1. As Admin, go to Waitlist tab (>1 waitlisted). 2. Use ↑/↓ buttons. 3. Check DB metadata.
+    *   Expected: UI position updates. DB value updated.
+*   **REG-09: Waitlist Management (Notify)**
+    *   Steps: 1. As Admin, go to Waitlist tab. 2. Click Notify. 3. Check player notifications. 4. Check DB metadata timestamp.
+    *   Expected: Notification sent. Button maybe disabled. Timestamp updated.
+*   **REG-10: Waitlist Management (Promote)**
+    *   Steps: 1. As Admin, go to Waitlist tab. 2. Click Promote. 3. Check status (PENDING/APPROVED). 4. Check removed from Waitlist tab.
+    *   Expected: Status updated. Removed from waitlist. Metadata position cleared. Optional notification. (Shifting TODO).
+
+## 4. Court Management
+**Goal:** Verify court configuration and status monitoring.
+
+*   **CRT-01: Add Court**
+    *   Steps: 1. Log in as Admin. 2. Go to Tournament -> Courts. 3. Click Add Court. 4. Fill form & save.
+    *   Expected: Court appears in list. Record in DB.
+*   **CRT-02: Edit Court**
+    *   Steps: 1. As Admin, in Court Config. 2. Click Edit. 3. Change details. 4. Click Save.
+    *   Expected: Details update in list and DB.
+*   **CRT-03: Delete Court**
+    *   Steps: 1. As Admin, in Court Config. 2. Click Delete. 3. Confirm.
+    *   Expected: Court removed from list and DB.
+*   **CRT-04: View Status Dashboard**
+    *   Steps: 1. As Admin, go to Court Status view.
+    *   Expected: Courts shown as cards with status colors/icons.
+*   **CRT-05: Realtime Status Update**
+    *   Steps: 1. Open Status Dashboard (Window A). 2. Update court status externally (Window B/DB).
+    *   Expected: Status card updates automatically in Window A.
+
+## 5. Match Scheduling
+**Goal:** Verify manual match scheduling and notifications.
+
+*   **SCHED-01: View Scheduler**
+    *   Steps: 1. Log in as Admin. 2. Go to Tournament -> Schedule tab.
+    *   Expected: Scheduler component loads. Shows matches or empty message.
+*   **SCHED-02: Manually Schedule Match**
+    *   Steps: 1. Ensure matches exist. 2. Click Schedule button. 3. Select Date, Time, Court. 4. Save.
+    *   Expected: Dialog closes. Table updates. DB updated. Notifications sent.
+*   **SCHED-03: Manually Reschedule Match**
+    *   Steps: 1. Click Schedule for scheduled match. 2. Change Time/Court. 3. Save.
+    *   Expected: Dialog closes. Table updates. DB updated. Notifications sent.
+*   **SCHED-04: Unassign Court/Time**
+    *   Steps: 1. Click Schedule for scheduled match. 2. Clear Date/Time OR unassign Court. 3. Save.
+    *   Expected: Dialog closes. Table shows "Not Scheduled"/"Not Assigned". DB updated.
+
+## 6. Digital Scoring
+**Goal:** Verify scoring interface, updates, persistence, offline (basic).
+
+*   **SCORE-01: Access Scoring Interface**
+    *   Steps: 1. Log in (Admin/Scorekeeper). 2. Go to scheduled match. 3. Initiate scoring.
+    *   Expected: Scoring interface loads (0-0, Set 1, placeholders).
+*   **SCORE-02: Score Points**
+    *   Steps: 1. Click "+ Point" buttons multiple times.
+    *   Expected: Score display updates instantly. Check console for save messages.
+*   **SCORE-03: Score Persistence**
+    *   Steps: 1. Score points (e.g., 3-2). 2. Refresh page. 3. Re-access scoring.
+    *   Expected: Interface loads with saved score (3-2).
+*   **SCORE-04: Realtime Score Update**
+    *   Steps: 1. Open scoring (Window A). 2. Open view showing score (Window B/DB). 3. Score points in A.
+    *   Expected: Score updates automatically in B.
+*   **SCORE-05: Offline Scoring (Basic)**
+    *   Steps: 1. Open scoring. 2. Go offline (Dev Tools). 3. Score point. 4. Go online.
+    *   Expected: UI updates offline. Toasts appear. Data re-fetches. Check if save eventually happens.
+*   **SCORE-06: Completed Match Scoring**
+    *   Steps: 1. Set match status='completed' in DB. 2. Try scoring via UI.
+    *   Expected: Buttons disabled or attempts rejected via toast.
+
+## 7. Player Experience Portal
+**Goal:** Verify player dashboard features.
+
+*   **PXP-01: View Dashboard**
+    *   Steps: 1. Log in as Player. 2. Go to dashboard URL.
+    *   Expected: PlayerDashboard component loads.
+*   **PXP-02: View Upcoming Matches**
+    *   Steps: 1. Ensure player has upcoming matches. 2. View dashboard.
+    *   Expected: "Upcoming Matches" card shows correct matches, sorted, with opponent/time/court placeholders.
+*   **PXP-03: View Match History**
+    *   Steps: 1. Ensure player has completed matches. 2. View dashboard.
+    *   Expected: "Match History" card shows completed matches, sorted, with opponent, score, Win/Loss badge.
+*   **PXP-04: View Statistics**
+    *   Steps: 1. View dashboard. 2. Check "My Statistics" card.
+    *   Expected: Stats card displays values from `user.player_stats`. Verify update after PXP-03 is completed.
+*   **PXP-05: Realtime Schedule Update**
+    *   Steps: 1. Open dashboard (Window A). 2. As Admin, reschedule player's match (Window B).
+    *   Expected: Upcoming list updates automatically in Window A.
+
+## 8. Tournament Chat
+**Goal:** Verify basic real-time chat.
+
+*   **CHAT-01: View Chat**
+    *   Steps: 1. Log in. 2. Go to Tournament Details. 3. Open Chat.
+    *   Expected: Chat component loads. Input visible.
+*   **CHAT-02: Send Message**
+    *   Steps: 1. Type message. 2. Click Send.
+    *   Expected: Message appears instantly (as sender). Input clears. Message saved in DB.
+*   **CHAT-03: Receive Message Realtime**
+    *   Steps: 1. Open chat as User A (Window A). 2. Open same chat as User B (Window B). 3. User B sends message.
+    *   Expected: Message appears automatically in Window A (as receiver).
+*   **CHAT-04: Load History**
+    *   Steps: 1. Send messages. 2. Close/reopen chat or refresh page.
+    *   Expected: Previous messages load correctly.
+
+</PRD> 

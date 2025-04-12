@@ -1,4 +1,3 @@
-
 import { 
   TournamentFormat, 
   TournamentStatus, 
@@ -11,6 +10,8 @@ import {
   PlayType,
   GameType
 } from './tournament-enums';
+
+export { Division, MatchStatus } from './tournament-enums';
 
 export interface Player {
   id: string;
@@ -44,30 +45,40 @@ export interface MatchScore {
   timestamp?: string;
 }
 
+export interface MatchProgression {
+  roundNumber: number;
+  bracketPosition: number;
+  nextMatchId?: string;
+  nextMatchPosition?: 'team1' | 'team2';
+  loserMatchId?: string;
+  loserMatchPosition?: 'team1' | 'team2';
+}
+
 export interface Match {
   id: string;
   tournamentId: string;
-  matchNumber?: string;
-  team1?: Team;
-  team2?: Team;
-  team1Id?: string;
-  team2Id?: string;
+  team1: Team;
+  team2: Team;
   winner?: Team;
-  loser?: Team;
-  courtId?: string;
-  courtNumber?: number;
-  scheduledTime?: Date;
-  startTime?: Date;
-  endTime?: Date;
-  completedTime?: Date;
-  status: MatchStatus;
-  round?: number;
-  bracketRound?: number;
-  bracketPosition?: string;
-  scores: MatchScore[];
+  scores: number[][];
   division: Division;
   stage: TournamentStage;
+  bracketRound: number;
+  bracketPosition: number;
+  status: MatchStatus;
   category?: TournamentCategory;
+  progression: MatchProgression;
+  scheduledTime?: Date;
+  completedTime?: Date;
+  courtId?: string;
+  notes?: string;
+  matchNumber?: string;
+  team1Id?: string;
+  team2Id?: string;
+  loser?: Team;
+  courtNumber?: number;
+  startTime?: Date;
+  endTime?: Date;
   groupName?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -94,20 +105,14 @@ export interface Court {
 }
 
 export interface ScoringSettings {
+  matchFormat: 'TIMED' | 'STANDARD';
   pointsToWin: number;
   mustWinByTwo: boolean;
-  maxPoints?: number;
+  maxPoints: number;
+  maxSets: number;
+  requireTwoPointLead: boolean;
+  maxTwoPointLeadScore: number;
   setsToWin?: number;
-  maxSets?: number;
-  requireTwoPointLead?: boolean;
-  maxTwoPointLeadScore?: number;
-  gamesPerSet?: number;
-  pointsPerGame?: number;
-  tiebreakRules?: {
-    pointsToWin: number;
-    requireTwoPointLead: boolean;
-    maxPoints: number;
-  };
 }
 
 export interface TournamentCategory {
@@ -207,4 +212,5 @@ export interface Tournament {
   autoAssignCourts?: boolean;
   created_by?: string;
   updated_by?: string;
+  organizer_id?: string;
 }

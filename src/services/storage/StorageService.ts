@@ -1,3 +1,7 @@
+import { supabase } from '@/integrations/supabase/client';
+import type { Profile } from '@/types/entities';
+import { DemoStorageService } from './DemoStorageService';
+
 // Abstract storage interface that can be implemented for different backends
 export interface StorageService {
   getItem<T>(key: string): Promise<T | null>;
@@ -35,7 +39,6 @@ export class LocalStorageService implements StorageService {
 }
 
 // Supabase implementation
-import { supabase } from '@/integrations/supabase/client';
 
 // Helper function to check if Supabase is properly configured
 export const isSupabaseConfigured = (): boolean => {
@@ -271,32 +274,93 @@ export type StorageConfig = {
   useSupabase?: boolean;
   useRealtime?: boolean;
   useLocalStorage?: boolean;
+  isDemoMode?: boolean;
+  demoUser?: Profile;
 }
 
 // Service factory - returns the appropriate service based on config
 export const createStorageService = (config?: StorageConfig): StorageService => {
-  // Default to Supabase when integrated
-  if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
-    if (config?.useRealtime) {
-      console.log('Using RealTime Supabase storage service');
+  // If no config provided or Supabase is not configured, use demo mode
+  if (!config || !isSupabaseConfigured()) {
+    console.log('[DEBUG] Using demo storage service');
+    return new DemoStorageService({
+      isDemoMode: true,
+      demoUser: {
+        id: 'demo-user',
+        email: 'demo-admin',
+        full_name: 'Demo Admin',
+        display_name: 'Demo Admin',
+        avatar_url: null,
+        phone: null,
+        role: 'admin',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        player_stats: {
+          matches_played: 0,
+          matches_won: 0,
+          tournaments_played: 0,
+          tournaments_won: 0,
+          rating: 1500,
+          ranking: null
+        },
+        preferences: {
+          notifications: {
+            email: true,
+            push: true,
+            tournament_updates: true,
+            match_reminders: true
+          },
+          privacy: {
+            show_profile: true,
+            show_stats: true,
+            show_history: true
+          },
+          display: {
+            theme: 'light',
+            language: 'en'
+          }
+        },
+        player_details: {
+          birthdate: null,
+          gender: null,
+          skill_level: 'INTERMEDIATE',
+          dominant_hand: null,
+          location: {
+            city: null,
+            state: null,
+            country: null
+          },
+          bio: null
+        },
+        social_links: {
+          facebook: null,
+          twitter: null,
+          instagram: null,
+          website: null
+        }
+      }
+    });
+  }
+
+  // Use Supabase if configured
+  if (config.useSupabase) {
+    if (config.useRealtime) {
       return new RealTimeStorageService();
     }
-    if (config?.useSupabase !== false) {
-      console.log('Using Supabase storage service');
-      return new SupabaseStorageService();
-    }
-  } else {
-    console.log('Supabase not configured, falling back to LocalStorage');
+    return new SupabaseStorageService();
   }
-  
-  if (config?.useLocalStorage !== false) {
-    console.log('Using LocalStorage storage service');
-    return new LocalStorageService();
-  }
-  
-  console.log('Defaulting to LocalStorage storage service');
+
+  // Fallback to local storage
   return new LocalStorageService();
 };
 
 // Create a singleton instance - auto-detects Supabase
-export const storageService = createStorageService();
+let storageService: StorageService = createStorageService();
+
+// Function to reinitialize storage service with new config
+export const initializeStorageService = (config?: StorageConfig): void => {
+  console.log('Reinitializing storage service with config:', config);
+  storageService = createStorageService(config);
+};
+
+export { storageService };

@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TournamentFormat } from '@/types/tournament';
+import { TournamentFormat } from '@/types/tournament-enums';
 import { getFormatDisplayName, getFormatDescription } from '@/utils/categoryUtils';
 
 interface TournamentFormatSelectorProps {
@@ -19,12 +18,12 @@ const TournamentFormatSelector: React.FC<TournamentFormatSelectorProps> = ({
   disabled = false
 }) => {
   const formats: {id: TournamentFormat, name: string, description: string}[] = [
-    { id: "SINGLE_ELIMINATION", name: getFormatDisplayName("SINGLE_ELIMINATION"), description: getFormatDescription("SINGLE_ELIMINATION") },
-    { id: "DOUBLE_ELIMINATION", name: getFormatDisplayName("DOUBLE_ELIMINATION"), description: getFormatDescription("DOUBLE_ELIMINATION") },
-    { id: "ROUND_ROBIN", name: getFormatDisplayName("ROUND_ROBIN"), description: getFormatDescription("ROUND_ROBIN") },
-    { id: "SWISS", name: getFormatDisplayName("SWISS"), description: getFormatDescription("SWISS") },
-    { id: "GROUP_KNOCKOUT", name: getFormatDisplayName("GROUP_KNOCKOUT"), description: getFormatDescription("GROUP_KNOCKOUT") },
-    { id: "MULTI_STAGE", name: getFormatDisplayName("MULTI_STAGE"), description: getFormatDescription("MULTI_STAGE") }
+    { id: TournamentFormat.SINGLE_ELIMINATION, name: getFormatDisplayName(TournamentFormat.SINGLE_ELIMINATION), description: getFormatDescription(TournamentFormat.SINGLE_ELIMINATION) },
+    { id: TournamentFormat.DOUBLE_ELIMINATION, name: getFormatDisplayName(TournamentFormat.DOUBLE_ELIMINATION), description: getFormatDescription(TournamentFormat.DOUBLE_ELIMINATION) },
+    { id: TournamentFormat.ROUND_ROBIN, name: getFormatDisplayName(TournamentFormat.ROUND_ROBIN), description: getFormatDescription(TournamentFormat.ROUND_ROBIN) },
+    { id: TournamentFormat.SWISS, name: getFormatDisplayName(TournamentFormat.SWISS), description: getFormatDescription(TournamentFormat.SWISS) },
+    { id: TournamentFormat.GROUP_KNOCKOUT, name: getFormatDisplayName(TournamentFormat.GROUP_KNOCKOUT), description: getFormatDescription(TournamentFormat.GROUP_KNOCKOUT) },
+    { id: TournamentFormat.MULTI_STAGE, name: getFormatDisplayName(TournamentFormat.MULTI_STAGE), description: getFormatDescription(TournamentFormat.MULTI_STAGE) }
   ];
   
   const selectedFormat = formats.find(f => f.id === value) || formats[0];

@@ -1,399 +1,219 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { User, UserCredentials } from '@/types/user';
-import { supabaseAuthService } from '@/services/auth/SupabaseAuthService';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { createContext, useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { User, UserCredentials } from "@/types/user";
+import { Profile } from "@/types/entities";
+import { useStore } from "@/stores/store";
+import { useTournamentStore } from "@/stores/tournamentStore";
+import { useStandaloneMatchStore } from "@/stores/standaloneMatchStore";
+import { useScoringStore } from "@/stores/scoring/store";
+import { profileService } from "@/services/api";
+import { DemoStorageService } from "@/services/storage/DemoStorageService";
+import { storageService, createStorageService } from "@/services/storage/StorageService";
+import { TournamentStage } from "@/types/tournament-enums";
+import { getDefaultScoringSettings } from "@/utils/scoringRules";
+import { DEMO_USER, DEMO_ADMIN_USER } from "@/utils/demoData";
+import { resetAllStores } from "@/utils/storeUtils";
 
-// Check if we should use demo mode (can be set via URL or localStorage)
-const shouldUseDemoMode = () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const demoMode = urlParams.get('demoMode') === 'true' || localStorage.getItem('demoMode') === 'true';
-  return demoMode;
-};
-
-interface AuthContextProps {
-  user: User | null;
+interface AuthContextType {
+  user: Profile | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, data: { full_name: string, display_name: string, role: string }) => Promise<void>;
+  signOut: () => Promise<void>;
+  updateProfile: (data: Partial<Profile>) => Promise<void>;
   isLoading: boolean;
-  login: (credentials: UserCredentials) => Promise<boolean>;
-  register: (userData: UserCredentials & { name: string }) => Promise<boolean>;
-  logout: () => void;
-  signInWithGoogle: () => Promise<void>;
-  isAdmin: (tournamentId: string) => boolean;
-  isOwner: (tournamentId: string) => boolean;
-  isParticipant: (tournamentId: string) => boolean;
-  addTournamentRole: (userId: string, tournamentId: string, role: 'owner' | 'admin' | 'participant') => boolean;
-  removeTournamentRole: (userId: string, tournamentId: string, role: 'owner' | 'admin' | 'participant') => boolean;
-  demoMode: boolean;
-  enableDemoMode: (enable: boolean) => void;
+  isDemoMode: boolean;
+  isAuthenticated: boolean;
 }
 
-const AuthContext = createContext<AuthContextProps | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [demoMode, setDemoMode] = useState<boolean>(shouldUseDemoMode());
-  const { toast } = useToast();
-
-  // Initialize demo mode
-  useEffect(() => {
-    if (demoMode) {
-      console.log('[DEBUG] AuthContext: Initializing in demo mode');
-      supabaseAuthService.enableDemoMode(true);
-      
-      // Check for existing demo user
-      const demoUser = localStorage.getItem('demo_user');
-      if (demoUser) {
-        setUser(JSON.parse(demoUser));
-      }
-    }
-  }, [demoMode]);
-
-  // Function to enable/disable demo mode
-  const enableDemoMode = useCallback((enable: boolean) => {
-    console.log(`[DEBUG] AuthContext: ${enable ? 'Enabling' : 'Disabling'} demo mode`);
-    setDemoMode(enable);
-    supabaseAuthService.enableDemoMode(enable);
-    
-    if (enable) {
-      localStorage.setItem('demoMode', 'true');
-    } else {
-      localStorage.removeItem('demoMode');
-      localStorage.removeItem('demo_user');
-      setUser(null);
-    }
-  }, []);
-
-  // Check for existing user session on mount and set up auth state change listener
-  useEffect(() => {
-    // Skip Supabase auth if in demo mode
-    if (demoMode) {
-      console.log('[DEBUG] AuthContext: Using demo mode - skipping Supabase auth setup');
-      setIsLoading(false);
-      return;
-    }
-    
-    console.log('[DEBUG] AuthContext: Setting up auth state listener');
-    
-    // First set up the auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log(`[DEBUG] AuthContext: Auth state changed: ${event}`, session?.user?.email || 'No user');
-        
-        setIsLoading(true);
-        
-        if (session?.user) {
-          try {
-            // Instead of making a separate call, just get user data from supabaseAuthService
-            const currentUser = await supabaseAuthService.getCurrentUser();
-            console.log('[DEBUG] AuthContext: User session found', currentUser);
-            setUser(currentUser);
-          } catch (error) {
-            console.error('[ERROR] AuthContext: Error fetching user data:', error);
-            setUser(null);
-          }
-        } else {
-          console.log('[DEBUG] AuthContext: No session found, user is logged out');
-          setUser(null);
-        }
-        
-        setIsLoading(false);
-      }
-    );
-    
-    // Then check for existing session
-    const checkCurrentSession = async () => {
-      try {
-        const currentUser = await supabaseAuthService.getCurrentUser();
-        console.log('[DEBUG] AuthContext: Initial session check completed', currentUser?.email || 'No user');
-        setUser(currentUser);
-      } catch (error) {
-        console.error('[ERROR] AuthContext: Error checking current session:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    checkCurrentSession();
-    
-    // Cleanup subscription when the component unmounts
-    return () => {
-      console.log('[DEBUG] AuthContext: Cleaning up auth state listener');
-      subscription.unsubscribe();
-    };
-  }, [demoMode]);
-
-  const login = useCallback(async (credentials: UserCredentials): Promise<boolean> => {
-    console.log('[DEBUG] AuthContext: Login attempt for:', credentials.email);
-    setIsLoading(true);
-    
-    try {
-      // Special case for demo login
-      if (credentials.email === 'demo@example.com' && credentials.password === 'demo123') {
-        console.log('[DEBUG] AuthContext: Enabling demo mode for demo login');
-        enableDemoMode(true);
-      }
-      
-      // Login with the auth service (will handle demo mode internally)
-      const loggedInUser = await supabaseAuthService.login(credentials);
-      
-      if (loggedInUser) {
-        setUser(loggedInUser);
-        toast({
-          title: "Login successful",
-          description: `Welcome back, ${loggedInUser.name}!`,
-        });
-        console.log('[DEBUG] AuthContext: Login successful');
-        return true;
-      } else {
-        toast({
-          title: "Login failed",
-          description: "Invalid email or password",
-          variant: "destructive",
-        });
-        console.log('[DEBUG] AuthContext: Login failed - invalid credentials');
-        return false;
-      }
-    } catch (error: any) {
-      // Try demo login as a fallback for testing
-      if (!demoMode && (error.message === 'Invalid login credentials' || error.message?.includes('Failed to fetch'))) {
-        console.log('[DEBUG] AuthContext: Real login failed, trying demo login as fallback');
-        try {
-          // Enable demo mode and create a demo user
-          enableDemoMode(true);
-          const demoUser: User = {
-            id: 'demo-user-id',
-            email: credentials.email,
-            name: credentials.email.includes('@') ? credentials.email.split('@')[0] : 'Demo User',
-            createdAt: new Date().toISOString(),
-            isVerified: true,
-            role: credentials.email.includes('admin') ? 'admin' : 'user',
-          };
-          
-          localStorage.setItem('demo_user', JSON.stringify(demoUser));
-          setUser(demoUser);
-          
-          toast({
-            title: "Demo login successful",
-            description: `Welcome to demo mode, ${demoUser.name}!`,
-          });
-          console.log('[DEBUG] AuthContext: Demo login successful as fallback');
-          return true;
-        } catch (demoError) {
-          console.error('[ERROR] AuthContext: Demo fallback login error', demoError);
-        }
-      }
-      
-      console.error('[ERROR] AuthContext: Login error', error);
-      toast({
-        title: "Login error",
-        description: error.message || "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast, demoMode, enableDemoMode]);
-
-  const register = useCallback(async (userData: UserCredentials & { name: string }): Promise<boolean> => {
-    console.log('[DEBUG] AuthContext: Registration attempt for:', userData.email);
-    setIsLoading(true);
-    
-    // In demo mode, just create a demo user
-    if (demoMode) {
-      try {
-        const demoUser: User = {
-          id: 'demo-user-id',
-          email: userData.email,
-          name: userData.name,
-          createdAt: new Date().toISOString(),
-          isVerified: true,
-          role: 'user',
-        };
-        
-        localStorage.setItem('demo_user', JSON.stringify(demoUser));
-        setUser(demoUser);
-        
-        toast({
-          title: "Demo registration successful",
-          description: `Welcome, ${userData.name}!`,
-        });
-        console.log('[DEBUG] AuthContext: Demo registration successful');
-        setIsLoading(false);
-        return true;
-      } catch (error: any) {
-        console.error('[ERROR] AuthContext: Demo registration error', error);
-        toast({
-          title: "Registration error",
-          description: error.message || "An unexpected error occurred. Please try again.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return false;
-      }
-    }
-    
-    try {
-      const registeredUser = await supabaseAuthService.register(userData);
-      
-      if (registeredUser) {
-        setUser(registeredUser);
-        toast({
-          title: "Registration successful",
-          description: `Welcome, ${registeredUser.name}!`,
-        });
-        console.log('[DEBUG] AuthContext: Registration successful');
-        return true;
-      } else {
-        toast({
-          title: "Registration failed",
-          description: "An account with this email already exists",
-          variant: "destructive",
-        });
-        console.log('[DEBUG] AuthContext: Registration failed - email already exists');
-        return false;
-      }
-    } catch (error: any) {
-      // Try demo registration as a fallback
-      console.error('[ERROR] AuthContext: Registration error, trying demo fallback', error);
-      try {
-        enableDemoMode(true);
-        const demoUser: User = {
-          id: 'demo-user-id',
-          email: userData.email,
-          name: userData.name,
-          createdAt: new Date().toISOString(),
-          isVerified: true,
-          role: 'user',
-        };
-        
-        localStorage.setItem('demo_user', JSON.stringify(demoUser));
-        setUser(demoUser);
-        
-        toast({
-          title: "Demo registration successful",
-          description: `Welcome, ${userData.name}!`,
-        });
-        console.log('[DEBUG] AuthContext: Demo registration successful as fallback');
-        return true;
-      } catch (demoError) {
-        console.error('[ERROR] AuthContext: Demo fallback registration error', demoError);
-        toast({
-          title: "Registration error",
-          description: error.message || "An unexpected error occurred. Please try again.",
-          variant: "destructive",
-        });
-        return false;
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast, demoMode, enableDemoMode]);
-
-  const logout = useCallback(async () => {
-    console.log('[DEBUG] AuthContext: Logging out user');
-    setIsLoading(true);
-    
-    try {
-      await supabaseAuthService.logout();
-      setUser(null);
-      
-      // Disable demo mode on logout
-      if (demoMode) {
-        enableDemoMode(false);
-      }
-      
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
-      });
-    } catch (error: any) {
-      console.error('[ERROR] AuthContext: Logout error', error);
-      toast({
-        title: "Logout error",
-        description: error.message || "An error occurred during logout.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast, demoMode, enableDemoMode]);
-
-  const signInWithGoogle = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/tournaments`
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data) {
-        console.log('[DEBUG] AuthContext: Google sign-in successful');
-      }
-    } catch (error) {
-      console.error('[ERROR] AuthContext: Google sign-in error', error);
-      toast({
-        title: "Sign-in error",
-        description: "An error occurred while signing in with Google. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
-
-  // Role checking functions
-  const isAdmin = useCallback((tournamentId: string): boolean => {
-    if (!user) return false;
-    return supabaseAuthService.isTournamentAdmin(user.id, tournamentId);
-  }, [user]);
-
-  const isOwner = useCallback((tournamentId: string): boolean => {
-    if (!user) return false;
-    return supabaseAuthService.hasRole(user.id, tournamentId, 'owner');
-  }, [user]);
-
-  const isParticipant = useCallback((tournamentId: string): boolean => {
-    if (!user) return false;
-    return supabaseAuthService.hasRole(user.id, tournamentId, 'participant');
-  }, [user]);
-
-  // Role management functions
-  const addTournamentRole = useCallback((userId: string, tournamentId: string, role: 'owner' | 'admin' | 'participant'): boolean => {
-    return supabaseAuthService.addTournamentRole(userId, tournamentId, role);
-  }, []);
-
-  const removeTournamentRole = useCallback((userId: string, tournamentId: string, role: 'owner' | 'admin' | 'participant'): boolean => {
-    return supabaseAuthService.removeTournamentRole(userId, tournamentId, role);
-  }, []);
-
-  const value = {
-    user,
-    isLoading,
-    login,
-    register,
-    logout,
-    signInWithGoogle,
-    isAdmin,
-    isOwner,
-    isParticipant,
-    addTournamentRole,
-    removeTournamentRole,
-    demoMode,
-    enableDemoMode,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = (): AuthContextProps => {
+export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<Profile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const resetStore = useStore((state) => state.reset);
+
+  useEffect(() => {
+    // Check for existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        try {
+          const profile = await profileService.getProfile(session.user.id);
+          setUser(profile);
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+          await signOut();
+        }
+      }
+      setIsLoading(false);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        try {
+          const profile = await profileService.getProfile(session.user.id);
+          setUser(profile);
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+          await signOut();
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        resetStore();
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const signIn = async (email?: string, password?: string) => {
+    console.log('[DEBUG] AuthProvider: Starting sign in');
+    setIsLoading(true);
+    try {
+      // Handle demo logins first
+      if (email === 'demo' || email === 'demo-admin') {
+        console.log('[DEBUG] AuthProvider: Using demo login');
+        const demoUser = email === 'demo-admin' ? DEMO_ADMIN_USER : DEMO_USER;
+        
+        // Initialize demo storage service and assign it to be used globally
+        console.log('[DEBUG] AuthProvider: Initializing demo storage');
+        Object.assign(storageService, new DemoStorageService({
+          isDemoMode: true,
+          demoUser: demoUser
+        }));
+        console.log('[DEBUG] AuthProvider: Demo storage initialized');
+
+        // Reset all stores and set user
+        console.log('[DEBUG] AuthProvider: Resetting stores');
+        await resetAllStores();
+        
+        console.log('[DEBUG] AuthProvider: Setting user');
+        setUser(demoUser);
+        setIsDemoMode(true);
+
+        // Load tournaments into store
+        console.log('[DEBUG] AuthProvider: Loading tournaments');
+        const tournamentStore = useTournamentStore.getState();
+        await tournamentStore.loadTournaments();
+        console.log('[DEBUG] AuthProvider: Tournaments loaded');
+
+        setIsLoading(false);
+        navigate('/tournaments');
+        return;
+      }
+
+      // Regular Supabase login
+      const { data: { user: authUser }, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (authUser) {
+        const profile = await profileService.getProfile(authUser.id);
+        setUser(profile);
+        setIsLoading(false);
+        navigate('/tournaments');
+      }
+    } catch (error) {
+      console.error('Error signing in:', error);
+      setIsLoading(false);
+      throw error;
+    }
+  };
+
+  const signOut = async () => {
+    console.log('[DEBUG] AuthProvider: Signing out');
+    resetAllStores();
+    setUser(null);
+    setIsDemoMode(false);
+    // Reset storage service to default implementation
+    Object.assign(storageService, createStorageService());
+    if (!isDemoMode) {
+      await supabase.auth.signOut();
+    }
+    navigate('/login');
+  };
+
+  const updateProfile = async (data: Partial<Profile>) => {
+    if (!user) {
+      throw new Error("User not authenticated to update profile");
+    }
+    if (isDemoMode) {
+       console.log("[DEBUG] Profile update skipped in demo mode.");
+       // Optionally update local demo user state if needed
+       const updatedDemoUser = { ...user, ...data, player_details: {...user.player_details, ...data.player_details}, preferences: {...user.preferences, ...data.preferences}, social_links: {...user.social_links, ...data.social_links} };
+       setUser(updatedDemoUser);
+       return;
+    }
+    try {
+      setIsLoading(true);
+      const updated = await profileService.updateProfile(user.id, data);
+      setUser(updated); // Update context user state
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error; // Re-throw error to be caught by caller
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signUp = async (email: string, password: string, data: { full_name: string, display_name: string, role: string }) => {
+    setIsLoading(true);
+    try {
+      const { data: { user: authUser }, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: data.full_name,
+            display_name: data.display_name,
+            role: data.role
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (authUser) {
+        const profile = await profileService.getProfile(authUser.id);
+        setUser(profile);
+        setIsLoading(false);
+        navigate('/tournaments');
+      }
+    } catch (error) {
+      console.error('Error signing up:', error);
+      setIsLoading(false);
+      throw error;
+    }
+  };
+
+  const value = {
+    user,
+    signIn,
+    signUp,
+    signOut,
+    updateProfile,
+    isLoading,
+    isDemoMode,
+    isAuthenticated: !!user
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+} 

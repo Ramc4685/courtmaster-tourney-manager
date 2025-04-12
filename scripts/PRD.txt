@@ -1,0 +1,238 @@
+# Overview
+CourtMaster is a comprehensive web-based application designed to revolutionize indoor sports tournament management, particularly for badminton. The system aims to automate and streamline the most time-consuming aspects of tournament organization, from registration to scoring and results management. By providing an integrated solution, CourtMaster addresses critical pain points for both tournament organizers and players.
+
+# Development Tooling
+
+1. Task Management System
+   - AI-driven task parsing from PRD
+   - Complexity analysis and task breakdown
+   - Task status tracking and management
+   - Individual task file generation
+   - Progress monitoring and reporting
+
+Commands:
+- `task-master parse-prd`: Generate tasks from PRD
+- `task-master list`: View all tasks
+- `task-master analyze-complexity`: Analyze task complexity
+- `task-master set-status`: Update task status
+- `task-master generate`: Generate task files
+
+# Implementation Status
+
+Current Progress:
+1. Development Infrastructure
+   - ✅ Task management system
+   - ✅ Complexity analysis
+   - ⏳ Project setup (Pending)
+   - ⏳ Development environment (Pending)
+
+2. Core Features (All Pending)
+   - ⏳ Tournament Setup & Management
+   - ⏳ Automated Court Management
+   - ⏳ Digital Scoring System
+   - ⏳ Player Experience
+
+3. Technical Infrastructure (All Pending)
+   - ⏳ Frontend Setup
+   - ⏳ Backend Setup
+   - ⏳ Data Storage
+   - ⏳ Integration Points
+
+# Core Features
+
+1. Tournament Setup & Management
+   - Division management (skill, age, gender categories)
+   - Multiple tournament formats (single/double elimination, round robin)
+   - Registration system with player/team handling
+   - Custom format builder for flexibility
+   - Payment processing (Phase 2)
+
+2. Automated Court Management
+   - Intelligent court assignment with dynamic reallocation
+   - Real-time monitoring of match progress
+   - Court utilization metrics
+   - Schedule adjustment recommendations
+   - Court configuration and maintenance windows
+
+3. Digital Scoring System
+   - Touch-friendly scoring interface
+   - Real-time score updates
+   - Offline capability
+   - Score verification system
+   - Match statistics tracking
+
+4. Player Experience
+   - Digital check-in
+   - Real-time match schedule updates
+   - Court assignment notifications
+   - Tournament chat system
+   - Performance statistics
+
+# User Experience
+
+User Personas:
+
+1. Tournament Director
+   - Needs: Efficient tournament management, staff coordination
+   - Pain Points: Complex scheduling, manual tracking
+   - Solution: Automated scheduling, real-time oversight
+
+2. Front Desk Staff
+   - Needs: Quick check-in, information distribution
+   - Pain Points: Long lines, paper processes
+   - Solution: Digital check-in, automated notifications
+
+3. Players
+   - Needs: Clear schedule, timely updates
+   - Pain Points: Match timing uncertainty
+   - Solution: Real-time notifications, mobile access
+
+4. Scorekeepers
+   - Needs: Easy score entry, reliable system
+   - Pain Points: Manual scorecards, data entry
+   - Solution: Touch-friendly interface, offline support
+
+Key User Flows:
+- Tournament creation and setup
+- Player registration and check-in
+- Match scheduling and court assignment
+- Score entry and verification
+- Results and statistics access
+
+# Technical Architecture
+
+System Components:
+1. Frontend
+   - React with TypeScript
+   - Zustand for state management
+   - Progressive Web App capabilities
+   - Responsive design for all devices
+
+2. Backend
+   - Supabase for authentication and data
+   - Real-time updates via subscriptions
+   - RESTful API for data operations
+   - Offline-first architecture
+
+3. Data Storage
+   - Relational database (Supabase)
+   - Local storage for offline functionality
+   - Real-time sync capabilities
+   - Conflict resolution handling
+
+4. Integration Points
+   - Email notification system
+   - SMS alerts (optional)
+   - Payment processing (future)
+   - Public display integration
+
+# Development Roadmap
+
+Phase 0 (Development Setup):
+1. Development Infrastructure
+   - Task management system ✅
+   - Project repository setup
+   - Development environment configuration
+   - CI/CD pipeline setup
+
+Phase 1 (Core Features):
+1. Tournament Setup
+   - Basic division management
+   - Standard tournament formats
+   - Registration system
+   - Match scheduling
+
+2. Court Management
+   - Basic court assignment
+   - Match scheduling
+   - Progress tracking
+   - Real-time updates
+
+3. Digital Scoring
+   - Basic scoring interface
+   - Score verification
+   - Match history
+   - Offline capability
+
+4. Player Features
+   - Match notifications
+   - Schedule viewing
+   - Basic profiles
+   - Digital check-in
+
+Phase 2 (Enhanced Features):
+1. Advanced Features
+   - Payment processing
+   - Complex tournament formats
+   - Advanced analytics
+   - Custom scoring rules
+
+2. Enhanced Media
+   - Multi-platform streaming
+   - Advanced overlays
+   - Media management
+   - Social integration
+
+# Logical Dependency Chain
+
+Foundation Components:
+1. User authentication and roles
+2. Tournament creation and configuration
+3. Basic court management
+4. Simple scoring system
+
+Progressive Enhancement:
+1. Real-time updates and notifications
+2. Offline functionality
+3. Advanced tournament formats
+4. Analytics and reporting
+
+User Interface Priority:
+1. Tournament director dashboard
+2. Scoring interface
+3. Player portal
+4. Public tournament view
+
+# Risks and Mitigations
+
+Technical Challenges:
+1. Offline Synchronization
+   - Risk: Data conflicts during sync
+   - Mitigation: Robust conflict resolution, versioning
+
+2. Real-time Performance
+   - Risk: Updates delay during high load
+   - Mitigation: Optimized queries, caching
+
+3. Mobile Compatibility
+   - Risk: Varied device support
+   - Mitigation: Progressive enhancement, responsive design
+
+MVP Strategy:
+1. Focus on core tournament management
+2. Prioritize reliability over features
+3. Regular user feedback integration
+4. Iterative feature deployment
+
+Resource Constraints:
+1. Development team size
+   - Mitigation: Modular architecture, clear priorities
+2. Testing requirements
+   - Mitigation: Automated testing, beta program
+3. Infrastructure costs
+   - Mitigation: Scalable cloud services
+
+# Appendix
+
+Research Findings:
+- Current tournament management solutions
+- Common pain points in manual processes
+- User interface preferences
+- Performance requirements
+
+Technical Specifications:
+- Database schema
+- API endpoints
+- Authentication flow
+- Offline capabilities
+- Real-time update mechanisms 

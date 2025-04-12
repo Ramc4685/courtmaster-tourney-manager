@@ -5,25 +5,24 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TournamentCategory, Tournament, TournamentFormat } from "@/types/tournament";
-import { CategoryType } from "@/types/tournament-enums";
+import { TournamentCategory, Tournament } from "@/types/tournament";
+import { CategoryType, TournamentFormat, Division } from "@/types/tournament-enums";
 import CategoryScoringRules from "@/components/scoring/CategoryScoringRules";
 import TournamentFormatSelector from "@/components/tournament/TournamentFormatSelector";
 
 interface TournamentCategorySectionProps {
   categories: TournamentCategory[];
   onCategoriesChange: (categories: TournamentCategory[]) => void;
-  tournament?: Tournament; // Optional tournament for scoring settings
-  onUpdateTournament?: (tournament: Tournament) => void; // Optional tournament update function
+  tournament?: Tournament;
+  onUpdateTournament?: (tournament: Tournament) => void;
 }
 
-const categoryOptions: { value: CategoryType; label: string }[] = [
-  { value: CategoryType.MENS_SINGLES, label: "Men's Singles" },
-  { value: CategoryType.WOMENS_SINGLES, label: "Women's Singles" },
-  { value: CategoryType.MENS_DOUBLES, label: "Men's Doubles" },
-  { value: CategoryType.WOMENS_DOUBLES, label: "Women's Doubles" },
-  { value: CategoryType.MIXED_DOUBLES, label: "Mixed Doubles" },
-  { value: CategoryType.CUSTOM, label: "Custom Category" }
+const categoryOptions: { value: CategoryType | 'custom'; label: string; division: Division }[] = [
+  { value: CategoryType.SINGLES, label: "Singles", division: Division.INITIAL },
+  { value: CategoryType.DOUBLES, label: "Doubles", division: Division.INITIAL },
+  { value: CategoryType.MIXED, label: "Mixed Doubles", division: Division.INITIAL },
+  { value: CategoryType.TEAM, label: "Team", division: Division.INITIAL },
+  { value: 'custom', label: "Custom Category", division: Division.INITIAL }
 ];
 
 const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({ 
@@ -32,34 +31,38 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
   tournament,
   onUpdateTournament
 }) => {
-  const [newCategoryType, setNewCategoryType] = useState<CategoryType | "">("");
+  const [newCategoryType, setNewCategoryType] = useState<CategoryType | 'custom' | "">("");
   const [customCategoryName, setCustomCategoryName] = useState("");
   const [customCategoryDescription, setCustomCategoryDescription] = useState("");
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
-  const [newCategoryFormat, setNewCategoryFormat] = useState<TournamentFormat>("SINGLE_ELIMINATION");
+  const [newCategoryFormat, setNewCategoryFormat] = useState<TournamentFormat>(TournamentFormat.SINGLE_ELIMINATION);
 
   const handleAddCategory = () => {
     if (!newCategoryType) return;
     
-    const isCustom = newCategoryType === "CUSTOM";
+    const isCustom = newCategoryType === 'custom';
     
     if (isCustom && !customCategoryName.trim()) {
-      return; // Don't add empty custom categories
+      return;
     }
 
+    const categoryOption = categoryOptions.find(opt => opt.value === newCategoryType);
+    
     const newCategory: TournamentCategory = {
-      id: crypto.randomUUID(),
+      id: Math.random().toString(36).substr(2, 9),
       name: isCustom 
         ? customCategoryName 
-        : categoryOptions.find(cat => cat.value === newCategoryType)?.label || "Unknown Category",
-      type: newCategoryType,
+        : categoryOption?.label || "Unknown Category",
+      type: isCustom ? CategoryType.SINGLES : newCategoryType as CategoryType,
+      division: categoryOption?.division || Division.INITIAL,
       isCustom,
       description: isCustom ? customCategoryDescription : undefined,
-      format: newCategoryFormat // Add format to new category
     };
 
     onCategoriesChange([...categories, newCategory]);
-    resetForm();
+    setNewCategoryType("");
+    setCustomCategoryName("");
+    setCustomCategoryDescription("");
   };
 
   const handleDeleteCategory = (id: string) => {
@@ -83,17 +86,16 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
     setNewCategoryType("");
     setCustomCategoryName("");
     setCustomCategoryDescription("");
-    setNewCategoryFormat("SINGLE_ELIMINATION");
+    setNewCategoryFormat(TournamentFormat.SINGLE_ELIMINATION);
   };
 
-  const getCategoryColor = (type: CategoryType) => {
+  const getCategoryColor = (type: CategoryType | 'custom') => {
     switch(type) {
-      case "MENS_SINGLES": return "bg-blue-500";
-      case "WOMENS_SINGLES": return "bg-pink-500";
-      case "MENS_DOUBLES": return "bg-blue-700";
-      case "WOMENS_DOUBLES": return "bg-pink-700";
-      case "MIXED_DOUBLES": return "bg-purple-600";
-      case "CUSTOM": return "bg-gray-500";
+      case CategoryType.SINGLES: return "bg-blue-500";
+      case CategoryType.DOUBLES: return "bg-blue-700";
+      case CategoryType.MIXED: return "bg-purple-600";
+      case CategoryType.TEAM: return "bg-green-600";
+      case 'custom': return "bg-gray-500";
       default: return "bg-gray-500";
     }
   };
@@ -128,7 +130,7 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
 
             {newCategoryType && (
               <div className="space-y-2 pt-2">
-                {newCategoryType === "CUSTOM" && (
+                {newCategoryType === 'custom' && (
                   <>
                     <Input
                       placeholder="Custom Category Name"
@@ -168,7 +170,7 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
                     <div>
                       <div className="flex items-center space-x-2">
                         <CardTitle className="text-lg">{category.name}</CardTitle>
-                        <Badge className={`${getCategoryColor(category.type)}`}>
+                        <Badge className={`${getCategoryColor(category.type as CategoryType | 'custom')}`}>
                           {category.isCustom ? "Custom" : category.type.replace("_", " ")}
                         </Badge>
                       </div>
@@ -200,31 +202,39 @@ const TournamentCategorySection: React.FC<TournamentCategorySectionProps> = ({
                     </div>
                   </div>
                 </CardHeader>
-                
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-sm font-medium mb-1">Tournament Format</h4>
-                      <TournamentFormatSelector
-                        value={category.format || "SINGLE_ELIMINATION"}
+                <CardContent className="pt-0">
+                  {editingCategoryId === category.id ? (
+                    <div className="space-y-4">
+                      {category.isCustom && (
+                        <>
+                          <Input
+                            value={category.name}
+                            onChange={(e) => handleUpdateCategory({ ...category, name: e.target.value })}
+                            placeholder="Category Name"
+                          />
+                          <Input
+                            value={category.description || ""}
+                            onChange={(e) => handleUpdateCategory({ ...category, description: e.target.value })}
+                            placeholder="Description (optional)"
+                          />
+                        </>
+                      )}
+                      <TournamentFormatSelector 
+                        value={category.format}
                         onValueChange={(format) => handleFormatChange(category.id, format)}
                         categorySpecific={true}
                       />
                     </div>
-                  
-                    {/* Show category-specific scoring rules when editing or if tournament is provided */}
-                    {(editingCategoryId === category.id && tournament && onUpdateTournament) && (
-                      <div className="mt-2 pt-2 border-t">
-                        <h4 className="text-sm font-medium mb-1">Scoring Rules</h4>
-                        <CategoryScoringRules
-                          tournament={tournament}
-                          category={category}
-                          onUpdateCategory={handleUpdateCategory}
-                          onUpdateTournament={onUpdateTournament}
-                        />
-                      </div>
-                    )}
-                  </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <TournamentFormatSelector 
+                        value={category.format}
+                        onValueChange={(format) => handleFormatChange(category.id, format)}
+                        categorySpecific={true}
+                        disabled={true}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

@@ -1,0 +1,224 @@
+# Tournament Creation Wizard PRD
+Version: 1.0
+Status: Draft
+Focus: Core Tournament Management Integration
+
+## 1. Overview
+The Tournament Creation Wizard streamlines the process of creating and managing badminton tournaments by integrating and refactoring existing components into a step-by-step flow. This PRD focuses on leveraging existing codebase functionality while maintaining a lightweight, efficient implementation.
+
+## 2. Development Approach
+
+### 2.1 Code Reuse Strategy
+Before implementing any new feature:
+1. Audit existing codebase for similar functionality
+2. Identify reusable components and utilities
+3. Evaluate current implementation for performance
+4. Plan refactoring of existing code if needed
+
+### 2.2 Performance Guidelines
+- Lazy load components and features
+- Minimize third-party dependencies
+- Optimize component rendering
+- Implement efficient state management
+- Use code splitting for wizard steps
+
+## 3. Core Features
+
+### 3.1 Tournament Creation Flow
+Sequential wizard interface utilizing existing components:
+
+1. **Basic Tournament Information**
+   - Reuse: `TournamentCreationForm` component
+   - Refactor: Split into smaller, focused components
+   - Location: `src/components/admin/tournament/TournamentCreationForm.tsx`
+
+2. **Category and Format Selection**
+   - Reuse: Existing enums from `src/types/tournament-enums.ts`
+   - Refactor: Create dedicated category selector component
+   ```typescript
+   // Existing enums to use:
+   BadmintonCategory
+   CategoryType
+   DivisionLevel
+   ```
+
+3. **Division Setup**
+   - Reuse: `DivisionsTab` component
+   - Refactor: Extract division management logic
+   - Location: `src/components/admin/tournament/DivisionsTab.tsx`
+
+4. **Court Setup**
+   - Reuse: Existing court management system
+   - Refactor: Simplify court assignment logic
+   - Location: `src/services/tournament/CourtManagementService.ts`
+
+5. **Player Registration**
+   - Reuse: Existing player import functionality
+   - Refactor: Optimize import processing
+   - Location: `src/services/import/PlayerImportService.ts`
+
+### 3.2 Integration Points
+
+1. **Tournament Store**
+   - Location: `src/stores/tournamentStore.ts`
+   - Reuse existing state management
+   - Optimize store updates
+
+2. **Authentication Context**
+   - Location: `src/contexts/auth/AuthContext.tsx`
+   - Leverage existing auth flow
+   - Minimize auth checks
+
+3. **Form Components**
+   - Location: `src/components/ui/*`
+   - Reuse common form elements
+   - Create shared validation utilities
+
+## 4. Implementation Phases
+
+### Phase 1: Codebase Audit & Refactoring
+- Review existing tournament creation code
+- Identify performance bottlenecks
+- Extract reusable components
+- Document component dependencies
+
+### Phase 2: Core Wizard Implementation
+- Integrate existing form components
+- Implement step navigation
+- Add state persistence
+- Optimize mobile layout
+
+### Phase 3: Feature Integration
+- Connect to existing services
+- Implement data validation
+- Add error handling
+- Optimize data flow
+
+## 5. Technical Requirements
+
+### 5.1 Code Organization
+```
+src/
+  components/
+    wizard/           # New wizard components
+      steps/          # Individual step components
+      navigation/     # Wizard navigation
+    admin/           # Existing admin components
+    ui/             # Reusable UI components
+```
+
+### 5.2 Performance Targets
+- Initial load time < 2s
+- Step transition time < 200ms
+- Memory usage < 50MB
+- Bundle size increase < 50KB
+
+### 5.3 Code Quality Metrics
+- Test coverage > 80%
+- Max component complexity: 15
+- Max file size: 300 lines
+- Reuse existing tests where possible
+
+## 6. Development Guidelines
+
+### 6.1 Before Adding New Code
+1. Check `src/components/admin/tournament/` for existing implementations
+2. Review `src/services/` for related functionality
+3. Examine `src/contexts/` for relevant state management
+4. Look for similar utilities in `src/utils/`
+
+### 6.2 Refactoring Priorities
+1. Split large components into smaller, focused ones
+2. Extract common logic into hooks
+3. Optimize data fetching and caching
+4. Improve component reusability
+
+### 6.3 Code Reuse Checklist
+- [ ] Search codebase for similar functionality
+- [ ] Review existing interfaces and types
+- [ ] Check for relevant utilities
+- [ ] Evaluate existing tests
+- [ ] Assess current performance
+
+## 7. Success Metrics
+- Code reuse rate > 70%
+- New code added < 500 lines
+- Bundle size increase < 50KB
+- Reduced component complexity
+- Improved load times
+
+## 8. Limitations and Constraints
+- Must use existing state management
+- Maintain current folder structure
+- Keep existing type definitions
+- Follow established coding patterns
+
+## 9. Future Optimizations
+- Component code splitting
+- State management optimization
+- Form validation improvements
+- Import process streamlining
+
+## 10. User Experience
+
+### 10.1 Interface Requirements
+- Mobile-responsive design
+- Clear step indicators
+- Save progress between steps
+- Preview capabilities
+- Error validation per step
+
+### 10.2 Key User Flows
+1. Tournament Creation:
+   ```
+   Login → Start Wizard → Basic Info → Categories → 
+   Divisions → Courts → Player Import → Review → Create
+   ```
+
+2. Player Import:
+   ```
+   Upload File → Validate Format → Map Fields → 
+   Preview → Confirm Import
+   ```
+
+3. Court Setup:
+   ```
+   Set Count → Number Courts → Configure Assignment → 
+   Review → Save
+   ```
+
+## 11. Technical Integration
+
+### 11.1 Existing Components to Integrate
+- BadmintonCategory enum
+- CategoryType enum
+- DivisionLevel enum
+- BadmintonTournamentTemplate interface
+- Tournament creation forms
+- Court management system
+- Player import functionality
+
+### 11.2 Data Models
+Using existing interfaces with focused fields:
+```typescript
+interface TournamentCreationStep {
+  step: number;
+  completed: boolean;
+  data: any;
+  validationErrors?: string[];
+}
+
+interface PlayerImport {
+  name: string;      // required
+  email: string;     // required
+  division?: string; // optional
+  category?: string; // optional
+  partner?: string;  // for doubles
+}
+```
+
+## 12. Future Considerations
+- Additional import formats
+- Advanced scheduling
+- Custom scoring rules
+- Multi-sport support 

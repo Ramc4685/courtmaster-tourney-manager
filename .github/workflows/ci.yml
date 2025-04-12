@@ -1,0 +1,37 @@
+# .github/workflows/ci.yml
+
+name: CI Pipeline
+
+on: [push, pull_request]
+
+jobs:
+  build_and_test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Specify your project's Node.js version
+          cache: 'npm' # Or 'yarn' if you use Yarn
+
+      - name: Install dependencies
+        run: npm install # Or yarn install
+
+      # Add Linting Step (Task 2.2)
+      - name: Run Linter
+        run: npm run lint
+
+      # Add Testing Step (Task 2.2)
+      - name: Run Tests
+        run: npm test -- --run # Use --run for non-interactive mode in Vitest
+        # run: npm test -- --coverage # Uncomment if coverage is desired and configured
+
+      - name: Build project
+        run: npm run build
+
+      # Add steps for deployment, code coverage upload, etc. later 

@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { TournamentStatus } from '@/types/tournament';
+import { TournamentStatus } from '@/types/tournament-enums';
 
 interface TournamentStatusBadgeProps {
-  status: TournamentStatus | string;
+  status: TournamentStatus;
 }
 
 export const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ status }) => {
@@ -12,32 +11,34 @@ export const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ st
   let label: string;
 
   switch (status) {
-    case 'DRAFT':
+    case TournamentStatus.DRAFT:
       variant = 'outline';
       label = 'Draft';
       break;
-    case 'PUBLISHED':
+    case TournamentStatus.PUBLISHED:
       variant = 'default';
       label = 'Published';
       break;
-    case 'IN_PROGRESS':
+    case TournamentStatus.IN_PROGRESS:
       variant = 'secondary';
       label = 'In Progress';
       break;
-    case 'COMPLETED':
+    case TournamentStatus.COMPLETED:
       variant = 'default';
       label = 'Completed';
       break;
-    case 'CANCELLED':
+    case TournamentStatus.CANCELLED:
       variant = 'destructive';
       label = 'Cancelled';
       break;
     default:
       variant = 'outline';
-      label = status as string;
+      label = status;
   }
 
   return <Badge variant={variant}>{label}</Badge>;
 };
+
+export default TournamentStatusBadge;
 
 

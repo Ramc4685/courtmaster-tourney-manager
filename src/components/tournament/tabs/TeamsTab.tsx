@@ -1,27 +1,25 @@
-
 import React from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TeamTable from "@/components/team/TeamTable";
-import { Team, TournamentCategory } from "@/types/tournament";
+import { Team, Tournament, TournamentCategory } from "@/types/tournament";
+import { useTournament } from "@/contexts/tournament/useTournament";
 
 interface TeamsTabProps {
-  teams: Team[];
-  onTeamUpdate: (team: Team) => void;
-  onAddTeamClick: () => void;
+  tournament: Tournament;
   category?: TournamentCategory; // Optional category for filtered view
 }
 
 const TeamsTab: React.FC<TeamsTabProps> = ({
-  teams,
-  onTeamUpdate,
-  onAddTeamClick,
+  tournament,
   category
 }) => {
+  const { updateTeam } = useTournament();
+
   // Filter teams by category if one is provided
   const filteredTeams = category 
-    ? teams.filter(team => team.category && team.category.id === category.id)
-    : teams;
+    ? tournament.teams?.filter(team => team.category && team.category.id === category.id)
+    : tournament.teams || [];
 
   return (
     <div className="space-y-4">
@@ -29,10 +27,6 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
         <h2 className="text-lg font-semibold">
           {category ? `${category.name} Teams` : 'All Teams'}
         </h2>
-        <Button onClick={onAddTeamClick}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Team
-        </Button>
       </div>
       
       {filteredTeams.length === 0 ? (
@@ -42,7 +36,7 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
       ) : (
         <TeamTable
           teams={filteredTeams}
-          onTeamUpdate={onTeamUpdate}
+          onTeamUpdate={updateTeam}
         />
       )}
     </div>

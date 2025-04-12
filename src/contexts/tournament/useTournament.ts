@@ -1,7 +1,8 @@
 import { create } from "zustand";
-import { Tournament, TournamentCategory, TournamentStatus, Match, Team } from "@/types/tournament";
-import { TournamentFormat, CategoryType } from "@/types/tournament-enums";
+import { Tournament, TournamentCategory, Match, Team } from "@/types/tournament";
+import { TournamentFormat, CategoryType, TournamentStage, TournamentStatus } from "@/types/tournament-enums";
 import { TournamentFormValues } from "@/components/admin/tournament/types";
+import { tournamentService } from "@/services/tournament/TournamentService";
 
 interface TournamentStore {
   tournaments: Tournament[];
@@ -11,6 +12,7 @@ interface TournamentStore {
   error: string | null;
   
   // Core tournament operations
+  loadTournaments: () => Promise<void>;
   createTournament: (data: TournamentFormValues) => Promise<Tournament>;
   updateTournament: (id: string, data: Partial<Tournament>) => Promise<void>;
   deleteTournament: (id: string) => Promise<void>;
@@ -56,37 +58,35 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
   createTournament: async (data: TournamentFormValues) => {
     set({ isLoading: true, error: null });
     try {
-      // Transform the form data into the tournament format
-      const categories: TournamentCategory[] = data.divisions.flatMap(division => 
-        division.categories.map(category => ({
-          id: crypto.randomUUID(),
-          name: category.name,
-          type: category.type,
-          division: division.name,
-        }))
-      );
-
       const newTournament: Tournament = {
         id: crypto.randomUUID(),
         name: data.name,
         description: data.description || '',
         format: data.format,
-        status: "DRAFT" as TournamentStatus,
+        status: TournamentStatus.DRAFT,
         startDate: data.startDate,
         endDate: data.endDate,
-        // Don't include 'location' directly in the Tournament object
-        // since it's not part of the Tournament type
+        location: data.location,
         registrationEnabled: data.registrationEnabled,
+        requirePlayerProfile: data.requirePlayerProfile,
         registrationDeadline: data.registrationDeadline,
         maxTeams: data.maxTeams,
-        scoringRules: JSON.stringify(data.scoringRules),
-        categories,
+        scoringSettings: {
+          matchFormat: 'STANDARD',
+          pointsToWin: data.scoringRules.pointsToWin,
+          mustWinByTwo: data.scoringRules.mustWinByTwo,
+          maxPoints: data.scoringRules.maxPoints,
+          maxSets: 3,
+          requireTwoPointLead: true,
+          maxTwoPointLeadScore: 30
+        },
+        categories: [], // Categories will be added based on divisions
         teams: [],
         matches: [],
         courts: [],
         createdAt: new Date(),
         updatedAt: new Date(),
-        currentStage: "INITIAL_ROUND", 
+        currentStage: TournamentStage.REGISTRATION,
       };
 
       // TODO: Add API call to create tournament
@@ -206,7 +206,16 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
 
   addTeam: async (team: Team) => {
     console.log("Adding team:", team);
-    // Implementation would go here
+    const currentTournament = get().currentTournament;
+    if (!currentTournament) {
+      throw new Error("No tournament selected");
+    }
+
+    const updatedTeams = [...currentTournament.teams, team];
+    await get().updateTournament(currentTournament.id, { 
+      teams: updatedTeams,
+      updatedAt: new Date()
+    });
   },
 
   importTeams: async (teams: Team[]) => {
@@ -271,6 +280,21 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
   loadCategoryDemoData: async (tournamentId: string, categoryId: string, format: TournamentFormat) => {
     console.log("Loading category demo data:", tournamentId, categoryId, format);
     // Implementation would go here
+  },
+
+  loadTournaments: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      // TODO: Add API call to load tournaments
+      const loadedTournaments = await tournamentService.getTournaments();
+      set({ 
+        tournaments: loadedTournaments,
+        isLoading: false 
+      });
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : "Failed to load tournaments", isLoading: false });
+      throw error;
+    }
   }
 }));
 

@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "generatedAt": "2025-04-11T22:52:29.615Z",
+    "tasksAnalyzed": 10,
+    "thresholdScore": 5,
+    "projectName": "Your Project Name",
+    "usedResearch": true
+  },
+  "complexityAnalysis": [
+    {
+      "taskId": 1,
+      "taskTitle": "Project Repository and Development Environment Setup",
+      "complexityScore": 6,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down each configuration step such as ESLint, Prettier, Zustand, and PWA setup into individual, detailed subtasks.",
+      "reasoning": "This task involves several configuration steps that are largely independent but require attention to detail to ensure proper integration. The complexity is moderate due to the diverse tools and frameworks involved."
+    },
+    {
+      "taskId": 2,
+      "taskTitle": "CI/CD Pipeline Setup",
+      "complexityScore": 7,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Decompose the pipeline setup into workflows for CI, automated testing, build and deployment, environment configuration, and code review automation.",
+      "reasoning": "The complexity arises from the need to configure multiple workflows, integrate with hosting services, and manage environment variables for different stages."
+    },
+    {
+      "taskId": 3,
+      "taskTitle": "Supabase Integration and Authentication System",
+      "complexityScore": 8,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Segment tasks into Supabase setup, authentication provider configuration, database schema creation, and implementing React authentication flows.",
+      "reasoning": "This task is complex due to the integration of backend services, secure authentication flows, and role-based access control, requiring careful planning."
+    },
+    {
+      "taskId": 4,
+      "taskTitle": "Tournament Setup & Management Core",
+      "complexityScore": 9,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Divide into tasks for database schema design, form creation, tournament state management, and dashboard development.",
+      "reasoning": "This task is highly complex, as it encompasses extensive database schema work, dynamic forms, and state-dependent lifecycle management."
+    },
+    {
+      "taskId": 5,
+      "taskTitle": "Registration System and Player Management",
+      "complexityScore": 8,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down into schema design, form implementation, individual/team registration handling, and organizer management tools.",
+      "reasoning": "The task involves handling complex user inputs, validation, and real-time management, adding to its complexity."
+    },
+    {
+      "taskId": 6,
+      "taskTitle": "Court Management System",
+      "complexityScore": 7,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Focus on database schema for courts, configuration interface, status monitoring, and real-time updates.",
+      "reasoning": "The complexity stems from real-time updates and intelligent assignment algorithms but is manageable with a structured approach."
+    },
+    {
+      "taskId": 7,
+      "taskTitle": "Match Scheduling System",
+      "complexityScore": 9,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Divide into database schema design, scheduling algorithm creation, rescheduling tools, and conflict detection implementation.",
+      "reasoning": "Highly complex due to dependency on multiple systems, scheduling algorithms, and potential conflict resolution mechanisms."
+    },
+    {
+      "taskId": 8,
+      "taskTitle": "Digital Scoring System",
+      "complexityScore": 8,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Decompose into score database schema, interface design, offline syncing, and approval workflows.",
+      "reasoning": "This task is complex because it requires real-time updates and robust offline capabilities while maintaining usability."
+    },
+    {
+      "taskId": 9,
+      "taskTitle": "Player Experience Portal",
+      "complexityScore": 7,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Focus on dashboard creation, notification systems, real-time updates, and performance statistics.",
+      "reasoning": "Moderate complexity due to the integration of multiple user-facing features and real-time updates."
+    },
+    {
+      "taskId": 10,
+      "taskTitle": "Offline Synchronization and Data Resilience",
+      "complexityScore": 8,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Divide into service worker implementation, caching strategy, conflict resolution, and sync mechanisms.",
+      "reasoning": "This task is complex due to the need for robust offline support and intricate synchronization mechanisms to ensure data consistency."
+    }
+  ]
+}

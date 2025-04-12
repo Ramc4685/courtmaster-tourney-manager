@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,9 +5,11 @@ import { z } from "zod";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useStandaloneMatchStore } from "@/stores/standaloneMatchStore";
-import { Team, StandaloneMatch } from "@/types/tournament";
+import { Team, StandaloneMatch, Player } from "@/types/tournament";
 import { generateTeamName } from "@/utils/teamNameUtils";
-import { FormValues } from "../StandaloneMatchForm";
+import { FormValues } from "@/components/match/StandaloneMatchForm";
+import { Division } from '@/types/tournament-enums';
+import { v4 as uuidv4 } from 'uuid';
 
 export const useMatchFormLogic = () => {
   const standaloneMatchStore = useStandaloneMatchStore();
@@ -125,29 +126,38 @@ export const useMatchFormLogic = () => {
     }
   };
 
+  const createTeam = (players: Player[]): Team => {
+    return {
+      id: uuidv4(),
+      name: players.map(p => p.name).join(' / '),
+      division: Division.INITIAL, // Set a default division
+      players,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  };
+
   const onSubmit = async (data: FormValues) => {
     try {
       // Create teams from form data
       const filteredTeam1Players = team1Players.filter(p => p.trim() !== '');
       const filteredTeam2Players = team2Players.filter(p => p.trim() !== '');
       
-      const team1: Team = {
-        id: `team1-${Date.now()}`,
-        name: data.team1Name,
-        players: filteredTeam1Players.map((name, index) => ({
-          id: `player-team1-${index}-${Date.now()}`,
-          name
-        }))
-      };
+      const now = new Date();
       
-      const team2: Team = {
-        id: `team2-${Date.now()}`,
-        name: data.team2Name,
-        players: filteredTeam2Players.map((name, index) => ({
-          id: `player-team2-${index}-${Date.now()}`,
-          name
-        }))
-      };
+      const team1: Team = createTeam(filteredTeam1Players.map((name, index) => ({
+        id: `player-team1-${index}-${Date.now()}`,
+        name,
+        createdAt: now,
+        updatedAt: now
+      } as Player)));
+      
+      const team2: Team = createTeam(filteredTeam2Players.map((name, index) => ({
+        id: `player-team2-${index}-${Date.now()}`,
+        name,
+        createdAt: now,
+        updatedAt: now
+      } as Player)));
       
       // Create the match with proper type annotation
       const matchData: Partial<StandaloneMatch> = {

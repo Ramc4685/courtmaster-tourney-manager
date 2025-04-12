@@ -1,4 +1,3 @@
-
 import React from "react";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
@@ -10,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { UseFormReturn } from "react-hook-form";
-import { FormValues } from "../StandaloneMatchForm";
+import { FormValues } from "@/components/match/StandaloneMatchForm";
 
 interface MatchDetailsSectionProps {
   form: UseFormReturn<FormValues>;
