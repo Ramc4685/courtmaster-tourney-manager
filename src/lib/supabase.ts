@@ -1,13 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from './database.types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
+// Export the supabase instance that's already configured in the integrations folder
 export { supabase };
 
 export const getUser = async () => {
@@ -39,7 +33,7 @@ export const signOut = async () => {
   if (error) throw error;
 };
 
-// Real-time subscription helpers
+// Real-time subscription helpers - keeping these as they were
 export const subscribeToMatches = (tournamentId: string, callback: (payload: any) => void) => {
   return supabase
     .channel(`matches:${tournamentId}`)
@@ -70,4 +64,4 @@ export const subscribeToNotifications = (userId: string, callback: (payload: any
       callback
     )
     .subscribe();
-}; 
+};
