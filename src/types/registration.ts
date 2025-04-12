@@ -1,4 +1,7 @@
 
+import { z } from 'zod';
+import { Division } from './tournament-enums';
+
 export enum RegistrationStatus {
   PENDING = "PENDING",
   CONFIRMED = "CONFIRMED",
@@ -9,6 +12,34 @@ export enum RegistrationStatus {
   COMPLETED = "COMPLETED"
 }
 
+// Alias for backward compatibility
+export type TournamentRegistrationStatus = RegistrationStatus;
+
+export interface RegistrationMetadata {
+  checkInTime?: string;
+  playerName: string;
+  teamSize: number;
+  division: string;
+  contactEmail: string;
+  contactPhone: string;
+  paymentStatus?: string;
+  notes?: string;
+  specialRequests?: string[];
+  emergencyContact?: {
+    name: string;
+    phone: string;
+    relationship: string;
+  };
+  previousParticipation?: boolean;
+  skillLevel?: string;
+  waitlistPosition?: number;
+  waitlistPromotionHistory?: {
+    timestamp: string;
+    reason: string;
+  }[];
+  waitlistNotified?: string;
+}
+
 export interface TournamentRegistration {
   id: string;
   tournamentId: string;
@@ -16,35 +47,71 @@ export interface TournamentRegistration {
   playerId: string;
   partnerId?: string;
   status: RegistrationStatus;
-  metadata: {
-    checkInTime?: string;
-    playerName: string;
-    teamSize: number;
-    division: string;
-    contactEmail: string;
-    contactPhone: string;
-    paymentStatus?: string;
-    notes?: string;
-    specialRequests?: string[];
-    emergencyContact?: {
-      name: string;
-      phone: string;
-      relationship: string;
-    };
-    previousParticipation?: boolean;
-    skillLevel?: string;
-    waitlistPosition?: number;
-    waitlistPromotionHistory?: {
-      timestamp: string;
-      reason: string;
-    }[];
-  };
+  metadata: RegistrationMetadata;
   createdAt: Date;
   updatedAt: Date;
   category: any;
 }
 
 export interface PlayerRegistrationWithStatus extends TournamentRegistration {
-  createdAt: Date;
-  updatedAt: Date;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  player_id?: string;
+  division_id?: string;
 }
+
+export interface TeamMember {
+  id?: string;
+  player_id?: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  isTeamCaptain?: boolean;
+}
+
+export interface TeamRegistrationWithStatus extends TournamentRegistration {
+  teamName: string;
+  captainName: string;
+  captainEmail: string;
+  captainPhone?: string;
+  members: TeamMember[];
+  player_id?: string;
+  division_id?: string;
+}
+
+// Schema for player registration validation
+export const playerRegistrationSchema = z.object({
+  player_id: z.string(),
+  division_id: z.string(),
+  firstName: z.string().min(2, "First name is required"),
+  lastName: z.string().min(2, "Last name is required"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().optional(),
+});
+
+// Schema for team member validation
+export const teamMemberSchema = z.object({
+  firstName: z.string().min(2, "First name is required"),
+  lastName: z.string().min(2, "Last name is required"),
+  email: z.string().email("Invalid email address").optional(),
+  phone: z.string().optional(),
+  isTeamCaptain: z.boolean().optional(),
+});
+
+// Schema for team registration validation
+export const teamRegistrationSchema = z.object({
+  player_id: z.string(),
+  division_id: z.string(),
+  teamName: z.string().min(2, "Team name is required"),
+  captainName: z.string().min(2, "Captain name is required"),
+  captainEmail: z.string().email("Invalid email address"),
+  captainPhone: z.string().optional(),
+  members: z.array(teamMemberSchema).min(1, "At least one team member is required"),
+});
+
+// Type definitions from schemas
+export type PlayerRegistration = z.infer<typeof playerRegistrationSchema>;
+export type TeamRegistration = z.infer<typeof teamRegistrationSchema>;
