@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { WizardFormValues } from '../types';
@@ -33,11 +34,10 @@ export const BasicInfoStep = () => {
               <Input 
                 id="tournament-name"
                 placeholder="Enter tournament name" 
-                aria-describedby="tournament-name-description"
                 {...field} 
               />
             </FormControl>
-            <FormMessage id="tournament-name-description" />
+            <FormMessage />
           </FormItem>
         )}
       />
@@ -51,12 +51,11 @@ export const BasicInfoStep = () => {
             <FormControl>
               <Input 
                 id="tournament-location"
-                placeholder="Enter tournament location" 
-                aria-describedby="tournament-location-description"
+                placeholder="Enter tournament location"
                 {...field} 
               />
             </FormControl>
-            <FormMessage id="tournament-location-description" />
+            <FormMessage />
           </FormItem>
         )}
       />
@@ -71,12 +70,11 @@ export const BasicInfoStep = () => {
               <Textarea 
                 id="tournament-description"
                 placeholder="Enter tournament description" 
-                aria-describedby="tournament-description-description"
                 className="min-h-[100px]"
                 {...field} 
               />
             </FormControl>
-            <FormMessage id="tournament-description-description" />
+            <FormMessage />
           </FormItem>
         )}
       />
@@ -92,7 +90,7 @@ export const BasicInfoStep = () => {
               defaultValue={field.value}
             >
               <FormControl>
-                <SelectTrigger id="game-type" aria-describedby="game-type-description">
+                <SelectTrigger id="game-type">
                   <SelectValue placeholder="Select game type" />
                 </SelectTrigger>
               </FormControl>
@@ -104,7 +102,7 @@ export const BasicInfoStep = () => {
                 ))}
               </SelectContent>
             </Select>
-            <FormMessage id="game-type-description" />
+            <FormMessage />
           </FormItem>
         )}
       />
@@ -120,13 +118,12 @@ export const BasicInfoStep = () => {
                 <Input 
                   id="start-date"
                   type="date" 
-                  aria-describedby="start-date-description"
                   {...field}
                   value={formatDateForInput(value)}
                   onChange={(e) => onChange(new Date(e.target.value))}
                 />
               </FormControl>
-              <FormMessage id="start-date-description" />
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -141,17 +138,16 @@ export const BasicInfoStep = () => {
                 <Input 
                   id="end-date"
                   type="date" 
-                  aria-describedby="end-date-description"
                   {...field}
                   value={formatDateForInput(value)}
                   onChange={(e) => onChange(new Date(e.target.value))}
                 />
               </FormControl>
-              <FormMessage id="end-date-description" />
+              <FormMessage />
             </FormItem>
           )}
         />
       </div>
     </div>
   );
-}; 
+};

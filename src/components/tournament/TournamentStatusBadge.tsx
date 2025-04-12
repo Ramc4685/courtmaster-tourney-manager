@@ -1,36 +1,35 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { TournamentStatus } from '@/types/tournament';
+import { TournamentStatus } from '@/types/tournament-enums';
 
 interface TournamentStatusBadgeProps {
   status: TournamentStatus | string;
 }
 
-type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning';
-
 export const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ status }) => {
-  let badgeVariant: BadgeVariant = 'default';
+  // Define the badge variants that are supported by the Badge component
+  let badgeVariant: "default" | "destructive" | "outline" | "secondary" | "success" = "default";
   
   switch (status) {
     case TournamentStatus.DRAFT:
-      badgeVariant = 'secondary';
+      badgeVariant = "secondary";
       break;
     case TournamentStatus.PUBLISHED:
     case TournamentStatus.REGISTRATION:
-      badgeVariant = 'warning';
+      badgeVariant = "outline";
       break;
     case TournamentStatus.IN_PROGRESS:
-      badgeVariant = 'default';
+      badgeVariant = "default";
       break;
     case TournamentStatus.COMPLETED:
-      badgeVariant = 'success';
+      badgeVariant = "success";
       break;
     case TournamentStatus.CANCELLED:
-      badgeVariant = 'destructive';
+      badgeVariant = "destructive";
       break;
     default:
-      badgeVariant = 'outline';
+      badgeVariant = "outline";
   }
   
   return (

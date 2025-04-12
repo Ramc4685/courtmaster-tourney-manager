@@ -22,7 +22,7 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({
     defaultValues: {
       name: '',
       location: '',
-      gameType: GameType.SINGLE_ELIMINATION,
+      gameType: GameType.BADMINTON,
       description: '',
       startDate: new Date(),
       endDate: new Date(new Date().setDate(new Date().getDate() + 1)),

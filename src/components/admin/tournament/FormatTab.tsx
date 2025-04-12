@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { TournamentFormValues } from "./types";
-import { TournamentFormat, GameType } from "@/types/tournament-enums";
+import { GameType } from "@/types/tournament-enums";
 
 interface FormatTabProps {
   form: UseFormReturn<TournamentFormValues>;
@@ -48,6 +48,9 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
                 <SelectItem value={GameType.SINGLE_ELIMINATION}>Single Elimination</SelectItem>
                 <SelectItem value={GameType.DOUBLE_ELIMINATION}>Double Elimination</SelectItem>
                 <SelectItem value={GameType.ROUND_ROBIN}>Round Robin</SelectItem>
+                <SelectItem value={GameType.BADMINTON}>Badminton</SelectItem>
+                <SelectItem value={GameType.TENNIS}>Tennis</SelectItem>
+                <SelectItem value={GameType.PICKLEBALL}>Pickleball</SelectItem>
               </SelectContent>
             </Select>
             <FormDescription>
@@ -57,6 +60,12 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
                 "Teams must lose twice to be eliminated. The last team standing wins."}
               {gameType === GameType.ROUND_ROBIN && 
                 "Each team plays against every other team once. The team with the most wins is the champion."}
+              {gameType === GameType.BADMINTON &&
+                "Standard badminton tournament with customizable scoring rules."}
+              {gameType === GameType.TENNIS &&
+                "Standard tennis tournament with customizable scoring rules."}
+              {gameType === GameType.PICKLEBALL &&
+                "Standard pickleball tournament with customizable scoring rules."}
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -118,81 +127,35 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
               />
 
               {/* Format-specific registration settings */}
-              {gameType === GameType.SINGLE_ELIMINATION && (
-                <FormField
-                  control={form.control}
-                  name="maxTeams"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Maximum Teams</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={2}
-                          placeholder="Enter maximum number of teams"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        For Single Elimination, team count should ideally be a power of 2 (e.g., 8, 16, 32)
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              {gameType === GameType.DOUBLE_ELIMINATION && (
-                <FormField
-                  control={form.control}
-                  name="maxTeams"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Maximum Teams</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={2}
-                          placeholder="Enter maximum number of teams"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        For Double Elimination, recommended team count is a power of 2 for optimal bracket formation
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              {gameType === GameType.ROUND_ROBIN && (
-                <FormField
-                  control={form.control}
-                  name="maxTeams"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Maximum Teams</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={2}
-                          max={16}
-                          placeholder="Enter maximum number of teams"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        For Round Robin, recommended maximum is 16 teams to keep match count manageable
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={form.control}
+                name="maxTeams"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Maximum Teams</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={2}
+                        placeholder="Enter maximum number of teams"
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {gameType === GameType.SINGLE_ELIMINATION && 
+                        "For Single Elimination, team count should ideally be a power of 2 (e.g., 8, 16, 32)"}
+                      {gameType === GameType.DOUBLE_ELIMINATION && 
+                        "For Double Elimination, recommended team count is a power of 2 for optimal bracket formation"}
+                      {gameType === GameType.ROUND_ROBIN && 
+                        "For Round Robin, recommended maximum is 16 teams to keep match count manageable"}
+                      {(gameType === GameType.BADMINTON || gameType === GameType.TENNIS || gameType === GameType.PICKLEBALL) &&
+                        "Recommended team count for optimal scheduling"}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </>
           )}
         </div>
