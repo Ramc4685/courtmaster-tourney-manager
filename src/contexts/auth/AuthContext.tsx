@@ -1,7 +1,8 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { User, UserCredentials } from "@/types/user";
+import { UserCredentials, RegisterData, AuthContextType } from "./types";
 import { Profile } from "@/types/entities";
 import { useStore } from "@/stores/store";
 import { useTournamentStore } from "@/stores/tournamentStore";
@@ -14,17 +15,6 @@ import { TournamentStage } from "@/types/tournament-enums";
 import { getDefaultScoringSettings } from "@/utils/scoringRules";
 import { DEMO_USER, DEMO_ADMIN_USER } from "@/utils/demoData";
 import { resetAllStores } from "@/utils/storeUtils";
-
-interface AuthContextType {
-  user: Profile | null;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, data: { full_name: string, display_name: string, role: string }) => Promise<void>;
-  signOut: () => Promise<void>;
-  updateProfile: (data: Partial<Profile>) => Promise<void>;
-  isLoading: boolean;
-  isDemoMode: boolean;
-  isAuthenticated: boolean;
-}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -81,6 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Legacy method: signIn
   const signIn = async (email?: string, password?: string) => {
     console.log('[DEBUG] AuthProvider: Starting sign in');
     setIsLoading(true);
@@ -138,6 +129,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Compatibility method: login
+  const login = async (credentials: UserCredentials): Promise<boolean> => {
+    try {
+      await signIn(credentials.email, credentials.password);
+      return true;
+    } catch (error) {
+      console.error('Login failed:', error);
+      return false;
+    }
+  };
+
+  // Legacy method: signOut
   const signOut = async () => {
     console.log('[DEBUG] AuthProvider: Signing out');
     resetAllStores();
@@ -149,6 +152,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await supabase.auth.signOut();
     }
     navigate('/login');
+  };
+
+  // Compatibility method: logout
+  const logout = async (): Promise<void> => {
+    await signOut();
   };
 
   const updateProfile = async (data: Partial<Profile>) => {
@@ -204,7 +212,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const value = {
+  // Compatibility method: register
+  const register = async (data: RegisterData): Promise<boolean> => {
+    try {
+      await signUp(data.email, data.password, {
+        full_name: data.name,
+        display_name: data.name,
+        role: 'player'
+      });
+      return true;
+    } catch (error) {
+      console.error('Registration failed:', error);
+      return false;
+    }
+  };
+
+  // Method to enable/disable demo mode
+  const enableDemoMode = (enabled: boolean) => {
+    setIsDemoMode(enabled);
+  };
+
+  const value: AuthContextType = {
     user,
     signIn,
     signUp,
@@ -212,8 +240,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updateProfile,
     isLoading,
     isDemoMode,
-    isAuthenticated: !!user
+    demoMode: isDemoMode, // For compatibility
+    isAuthenticated: !!user,
+    
+    // Compatibility methods
+    login,
+    register,
+    logout,
+    enableDemoMode
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-} 
+}
