@@ -14,7 +14,7 @@ export const ScoringContainer: React.FC<ScoringContainerProps> = ({
   children,
   isLoading = false,
   errorMessage,
-  match
+  match = undefined
 }) => {
   return (
     <Layout>

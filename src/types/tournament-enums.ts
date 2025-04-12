@@ -1,96 +1,131 @@
+
+// Tournament format enums
 export enum TournamentFormat {
-  SINGLE_ELIMINATION = "SINGLE_ELIMINATION",
-  DOUBLE_ELIMINATION = "DOUBLE_ELIMINATION",
-  ROUND_ROBIN = "ROUND_ROBIN",
-  SWISS = "SWISS",
-  GROUP_KNOCKOUT = "GROUP_KNOCKOUT",
-  MULTI_STAGE = "MULTI_STAGE"
+  SINGLE_ELIMINATION = 'SINGLE_ELIMINATION',
+  DOUBLE_ELIMINATION = 'DOUBLE_ELIMINATION',
+  ROUND_ROBIN = 'ROUND_ROBIN',
+  SWISS = 'SWISS',
+  GROUP_KNOCKOUT = 'GROUP_KNOCKOUT',
+  MULTI_STAGE = 'MULTI_STAGE',
+  CUSTOM = 'CUSTOM'
 }
 
+// Tournament status enums
 export enum TournamentStatus {
-  DRAFT = "DRAFT",
-  PUBLISHED = "PUBLISHED",
-  IN_PROGRESS = "IN_PROGRESS",
-  COMPLETED = "COMPLETED",
-  CANCELLED = "CANCELLED"
+  DRAFT = 'DRAFT',
+  PUBLISHED = 'PUBLISHED',
+  REGISTRATION = 'REGISTRATION',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
 }
 
+// Tournament stage enums
 export enum TournamentStage {
-  REGISTRATION = "REGISTRATION",
-  SEEDING = "SEEDING",
-  GROUP_STAGE = "GROUP_STAGE",
-  ELIMINATION_ROUND = "ELIMINATION_ROUND",
-  THIRD_PLACE = "THIRD_PLACE",
-  FINALS = "FINALS",
-  COMPLETED = "COMPLETED"
+  REGISTRATION = 'REGISTRATION',
+  SEEDING = 'SEEDING',
+  GROUP_STAGE = 'GROUP_STAGE',
+  ELIMINATION_ROUND = 'ELIMINATION_ROUND',
+  THIRD_PLACE = 'THIRD_PLACE',
+  FINALS = 'FINALS',
+  COMPLETED = 'COMPLETED',
+  INITIAL_ROUND = 'INITIAL_ROUND',
+  DIVISION_PLACEMENT = 'DIVISION_PLACEMENT',
+  PLAYOFF_KNOCKOUT = 'PLAYOFF_KNOCKOUT'
 }
 
-export enum Division {
-  INITIAL = "INITIAL",
-  ADVANCED = "ADVANCED",
-  INTERMEDIATE = "INTERMEDIATE",
-  BEGINNER = "BEGINNER"
-}
-
-// Export the Division enum values as a type
-export type DivisionType = keyof typeof Division;
-
-// Also export DivisionType as a value so it can be used in component properties
-export const DivisionTypeValues = Object.keys(Division) as DivisionType[];
-
+// Match status enums
 export enum MatchStatus {
-  SCHEDULED = "SCHEDULED",
-  IN_PROGRESS = "IN_PROGRESS",
-  COMPLETED = "COMPLETED",
-  CANCELLED = "CANCELLED"
+  SCHEDULED = 'SCHEDULED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  POSTPONED = 'POSTPONED'
 }
 
+// Court status enums
 export enum CourtStatus {
-  AVAILABLE = "AVAILABLE",
-  IN_USE = "IN_USE",
-  MAINTENANCE = "MAINTENANCE"
+  AVAILABLE = 'AVAILABLE',
+  IN_USE = 'IN_USE',
+  MAINTENANCE = 'MAINTENANCE',
+  RESERVED = 'RESERVED'
 }
 
+// Category type enums
 export enum CategoryType {
-  SINGLES = "SINGLES",
-  DOUBLES = "DOUBLES",
-  MIXED = "MIXED",
-  TEAM = "TEAM"
+  MENS_SINGLES = 'MENS_SINGLES',
+  WOMENS_SINGLES = 'WOMENS_SINGLES',
+  MENS_DOUBLES = 'MENS_DOUBLES',
+  WOMENS_DOUBLES = 'WOMENS_DOUBLES',
+  MIXED_DOUBLES = 'MIXED_DOUBLES',
+  SINGLES = 'SINGLES',
+  DOUBLES = 'DOUBLES',
+  MIXED = 'MIXED',
+  TEAM = 'TEAM',
+  CUSTOM = 'CUSTOM'
 }
 
-export enum ScorerType {
-  MANUAL = "MANUAL",
-  AUTOMATIC = "AUTOMATIC"
+// Division enum
+export enum Division {
+  BEGINNER = 'BEGINNER',
+  INTERMEDIATE = 'INTERMEDIATE',
+  ADVANCED = 'ADVANCED',
+  ELITE = 'ELITE',
+  OPEN = 'OPEN',
+  JUNIOR = 'JUNIOR',
+  SENIOR = 'SENIOR',
+  INITIAL = 'INITIAL',
+  MENS = 'MENS',
+  WOMENS = 'WOMENS'
 }
 
-export enum PlayType {
-  SINGLES = "SINGLES",
-  DOUBLES = "DOUBLES",
-  MIXED_DOUBLES = "MIXED_DOUBLES"
-}
-
-export enum GameType {
-  BADMINTON = "BADMINTON",
-  TENNIS = "TENNIS",
-  TABLE_TENNIS = "TABLE_TENNIS",
-  VOLLEYBALL = "VOLLEYBALL",
-  BASKETBALL = "BASKETBALL",
-  CUSTOM = "CUSTOM"
-}
-
+// User role enum
 export enum UserRole {
-  ADMIN = "admin",
-  USER = "user",
-  TOURNAMENT_DIRECTOR = "tournament_director",
-  FRONT_DESK = "front_desk",
-  ADMIN_STAFF = "admin_staff",
-  SCOREKEEPER = "scorekeeper",
-  PLAYER = "player",
-  SPECTATOR = "spectator"
+  ADMIN = 'ADMIN',
+  DIRECTOR = 'DIRECTOR',
+  STAFF = 'STAFF',
+  SCOREKEEPER = 'SCOREKEEPER',
+  PLAYER = 'PLAYER',
+  SPECTATOR = 'SPECTATOR',
+  USER = 'USER'
 }
 
-export enum StageType {
-  GROUP = "GROUP",
-  KNOCKOUT = "KNOCKOUT",
-  FINAL = "FINAL"
+// Game type enum
+export enum GameType {
+  BADMINTON = 'BADMINTON',
+  TENNIS = 'TENNIS',
+  PICKLEBALL = 'PICKLEBALL',
+  TABLETENNIS = 'TABLETENNIS',
+  SQUASH = 'SQUASH',
+  RACQUETBALL = 'RACQUETBALL',
+  OTHER = 'OTHER'
 }
+
+// Scorer type enum
+export enum ScorerType {
+  PLAYER = 'PLAYER',
+  REFEREE = 'REFEREE',
+  ADMIN = 'ADMIN'
+}
+
+// Play type enum
+export enum PlayType {
+  SINGLES = 'SINGLES',
+  DOUBLES = 'DOUBLES',
+  MIXED = 'MIXED',
+  TEAM = 'TEAM'
+}
+
+// Registration status enum
+export enum RegistrationStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  WAITLIST = 'WAITLIST',
+  CHECKED_IN = 'CHECKED_IN',
+  WITHDRAWN = 'WITHDRAWN'
+}
+
+// Division type values
+export const DivisionTypeValues = ['SKILL', 'AGE', 'GENDER'] as const;
+export type DivisionType = typeof DivisionTypeValues[number];

@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from '@/contexts/auth/AuthContext';
 import { Layout } from '@/components/layout/Layout';
 import LoginPage from '@/pages/auth/LoginPage';
 import SignUpPage from '@/pages/auth/SignUpPage';
+import Home from '@/pages/Home';  // Ensure this uses the correct case
 import DashboardPage from '@/pages/DashboardPage';
 import TournamentListPage from '@/pages/tournaments/TournamentListPage';
 import TournamentDetailsPage from '@/pages/TournamentDetail';
@@ -65,6 +66,9 @@ function AppRoutes() {
         }
       />
 
+      {/* Home Route */}
+      <Route path="/" element={<Home />} />
+
       {/* Private Routes */}
       <Route
         path="/"
@@ -76,7 +80,6 @@ function AppRoutes() {
           </PrivateRoute>
         }
       >
-        <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="tournaments">
           <Route index element={<TournamentListPage />} />

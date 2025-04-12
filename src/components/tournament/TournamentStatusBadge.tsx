@@ -1,44 +1,47 @@
+
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { TournamentStatus } from '@/types/tournament-enums';
 
 interface TournamentStatusBadgeProps {
-  status: TournamentStatus;
+  status: TournamentStatus | string;
 }
 
 export const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ status }) => {
-  let variant: 'default' | 'secondary' | 'destructive' | 'outline';
-  let label: string;
-
+  let badgeVariant: 
+    | 'default'
+    | 'secondary'
+    | 'destructive'
+    | 'outline'
+    | 'success'
+    | 'warning' = 'default';
+  
   switch (status) {
     case TournamentStatus.DRAFT:
-      variant = 'outline';
-      label = 'Draft';
+      badgeVariant = 'secondary';
       break;
     case TournamentStatus.PUBLISHED:
-      variant = 'default';
-      label = 'Published';
+    case TournamentStatus.REGISTRATION:
+      badgeVariant = 'warning';
       break;
     case TournamentStatus.IN_PROGRESS:
-      variant = 'secondary';
-      label = 'In Progress';
+      badgeVariant = 'default';
       break;
     case TournamentStatus.COMPLETED:
-      variant = 'default';
-      label = 'Completed';
+      badgeVariant = 'success';
       break;
     case TournamentStatus.CANCELLED:
-      variant = 'destructive';
-      label = 'Cancelled';
+      badgeVariant = 'destructive';
       break;
     default:
-      variant = 'outline';
-      label = status;
+      badgeVariant = 'outline';
   }
-
-  return <Badge variant={variant}>{label}</Badge>;
+  
+  return (
+    <Badge variant={badgeVariant as any}>
+      {typeof status === 'string' ? status.replace('_', ' ') : String(status).replace('_', ' ')}
+    </Badge>
+  );
 };
 
 export default TournamentStatusBadge;
-
-

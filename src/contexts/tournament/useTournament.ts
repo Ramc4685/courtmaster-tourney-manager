@@ -64,12 +64,12 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
         description: data.description || '',
         format: data.format,
         status: TournamentStatus.DRAFT,
-        startDate: data.startDate,
-        endDate: data.endDate,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
         location: data.location,
         registrationEnabled: data.registrationEnabled,
         requirePlayerProfile: data.requirePlayerProfile,
-        registrationDeadline: data.registrationDeadline,
+        registrationDeadline: new Date(data.registrationDeadline),
         maxTeams: data.maxTeams,
         scoringSettings: {
           matchFormat: 'STANDARD',
@@ -78,7 +78,8 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
           maxPoints: data.scoringRules.maxPoints,
           maxSets: 3,
           requireTwoPointLead: true,
-          maxTwoPointLeadScore: 30
+          maxTwoPointLeadScore: 30,
+          setsToWin: 2
         },
         categories: [], // Categories will be added based on divisions
         teams: [],

@@ -27,14 +27,14 @@ interface FormatTabProps {
 }
 
 const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
-  // Get current format to show conditional fields
-  const currentFormat = form.watch("format");
+  // Get current format for conditional fields
+  const format = form.watch("gameType");
   
   return (
     <div className="space-y-6">
       <FormField
         control={form.control}
-        name="format"
+        name="gameType"
         render={({ field }) => (
           <FormItem>
             <FormLabel>Tournament Format</FormLabel>
@@ -51,11 +51,11 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
               </SelectContent>
             </Select>
             <FormDescription>
-              {field.value === TournamentFormat.SINGLE_ELIMINATION && 
+              {format === TournamentFormat.SINGLE_ELIMINATION && 
                 "Teams are eliminated after one loss. The last team standing wins."}
-              {field.value === TournamentFormat.DOUBLE_ELIMINATION && 
+              {format === TournamentFormat.DOUBLE_ELIMINATION && 
                 "Teams must lose twice to be eliminated. The last team standing wins."}
-              {field.value === TournamentFormat.ROUND_ROBIN && 
+              {format === TournamentFormat.ROUND_ROBIN && 
                 "Each team plays against every other team once. The team with the most wins is the champion."}
             </FormDescription>
             <FormMessage />
@@ -102,11 +102,11 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
                     <FormControl>
                       <Input
                         type="date"
+                        value={field.value ? new Date(field.value).toISOString().slice(0, 10) : ""}
                         onChange={(e) => {
                           const date = e.target.value ? new Date(e.target.value) : undefined;
                           field.onChange(date);
                         }}
-                        value={field.value ? new Date(field.value).toISOString().slice(0, 10) : ""}
                       />
                     </FormControl>
                     <FormDescription>
@@ -118,7 +118,7 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
               />
 
               {/* Format-specific registration settings */}
-              {currentFormat === TournamentFormat.SINGLE_ELIMINATION && (
+              {format === TournamentFormat.SINGLE_ELIMINATION && (
                 <FormField
                   control={form.control}
                   name="maxTeams"
@@ -143,7 +143,7 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
                 />
               )}
 
-              {currentFormat === TournamentFormat.DOUBLE_ELIMINATION && (
+              {format === TournamentFormat.DOUBLE_ELIMINATION && (
                 <FormField
                   control={form.control}
                   name="maxTeams"
@@ -168,7 +168,7 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
                 />
               )}
 
-              {currentFormat === TournamentFormat.ROUND_ROBIN && (
+              {format === TournamentFormat.ROUND_ROBIN && (
                 <FormField
                   control={form.control}
                   name="maxTeams"

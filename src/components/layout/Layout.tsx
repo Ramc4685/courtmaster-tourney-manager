@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Navigation from './Navigation';
 
@@ -5,7 +6,7 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -16,5 +17,4 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   );
 };
 
-export { Layout };
 export default Layout;

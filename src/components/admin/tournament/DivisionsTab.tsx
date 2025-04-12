@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { TournamentFormValues } from "./types";
-import { CategoryType, TournamentFormat, PlayType, Division, DivisionTypeValues } from "@/types/tournament-enums";
+import { PlayType, Division } from "@/types/tournament-enums";
 import { v4 as uuidv4 } from "uuid";
 
 interface DivisionsTabProps {
@@ -16,13 +16,13 @@ interface DivisionsTabProps {
 }
 
 const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
-  const { fields: divisionFields, append: appendDivision, remove: removeDivision } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "divisions",
+    name: "divisionDetails",
   });
 
   const handleAddDivision = () => {
-    appendDivision({
+    append({
       id: uuidv4(),
       name: "",
       type: Division.MENS,
@@ -31,15 +31,16 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
   };
 
   const handleAddCategory = (divisionIndex: number) => {
-    const divisions = form.getValues("divisions");
-    const division = divisions[divisionIndex];
-    division.categories.push({
+    const divisionDetails = form.getValues("divisionDetails");
+    const division = divisionDetails[divisionIndex];
+    
+    const updatedCategories = [...(division.categories || []), {
       id: uuidv4(),
       name: "",
       playType: PlayType.SINGLES,
-      format: TournamentFormat.SINGLE_ELIMINATION,
-    });
-    form.setValue("divisions", divisions);
+    }];
+    
+    form.setValue(`divisionDetails.${divisionIndex}.categories`, updatedCategories);
   };
 
   return (
@@ -52,7 +53,7 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
         </Button>
       </div>
 
-      {divisionFields.map((division, divisionIndex) => (
+      {fields.map((division, divisionIndex) => (
         <Card key={division.id}>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -61,7 +62,7 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => removeDivision(divisionIndex)}
+                onClick={() => remove(divisionIndex)}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -71,7 +72,7 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name={`divisions.${divisionIndex}.name`}
+                name={`divisionDetails.${divisionIndex}.name`}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Division Name</FormLabel>
@@ -84,7 +85,7 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
               />
               <FormField
                 control={form.control}
-                name={`divisions.${divisionIndex}.type`}
+                name={`divisionDetails.${divisionIndex}.type`}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Division Type</FormLabel>
@@ -125,13 +126,13 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
                 </Button>
               </div>
 
-              {division.categories?.map((category, categoryIndex) => (
+              {form.getValues(`divisionDetails.${divisionIndex}.categories`)?.map((category, categoryIndex) => (
                 <Card key={category.id}>
                   <CardContent className="pt-6">
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
-                        name={`divisions.${divisionIndex}.categories.${categoryIndex}.name`}
+                        name={`divisionDetails.${divisionIndex}.categories.${categoryIndex}.name`}
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Category Name</FormLabel>
@@ -144,7 +145,7 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
                       />
                       <FormField
                         control={form.control}
-                        name={`divisions.${divisionIndex}.categories.${categoryIndex}.playType`}
+                        name={`divisionDetails.${divisionIndex}.categories.${categoryIndex}.playType`}
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Play Type</FormLabel>
@@ -161,33 +162,6 @@ const DivisionsTab: React.FC<DivisionsTabProps> = ({ form }) => {
                                 {Object.values(PlayType).map((type) => (
                                   <SelectItem key={type} value={type}>
                                     {type.replace(/_/g, " ")}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name={`divisions.${divisionIndex}.categories.${categoryIndex}.format`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Tournament Format</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select format" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {Object.values(TournamentFormat).map((format) => (
-                                  <SelectItem key={format} value={format}>
-                                    {format.replace(/_/g, " ")}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
