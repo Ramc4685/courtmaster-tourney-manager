@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Dialog,
@@ -11,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Court, CourtStatus } from "@/types/tournament";
+import { Court } from "@/types/tournament";
+import { CourtStatus } from "@/types/tournament-enums";
 
 interface CourtCreateDialogProps {
   open: boolean;
@@ -26,7 +26,7 @@ const CourtCreateDialog: React.FC<CourtCreateDialogProps> = ({
 }) => {
   const [courtName, setCourtName] = useState("");
   const [courtNumber, setCourtNumber] = useState<number>(1);
-  const [courtStatus, setCourtStatus] = useState<CourtStatus>("AVAILABLE");
+  const [courtStatus, setCourtStatus] = useState<CourtStatus>(CourtStatus.AVAILABLE);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +35,9 @@ const CourtCreateDialog: React.FC<CourtCreateDialogProps> = ({
     const newCourt: Omit<Court, "id"> = {
       name: courtName,
       number: courtNumber,
-      status: courtStatus
+      status: courtStatus,
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
     
     onCreate(newCourt);
@@ -43,7 +45,7 @@ const CourtCreateDialog: React.FC<CourtCreateDialogProps> = ({
     // Reset form
     setCourtName("");
     setCourtNumber(1);
-    setCourtStatus("AVAILABLE");
+    setCourtStatus(CourtStatus.AVAILABLE);
   };
 
   return (
@@ -92,9 +94,9 @@ const CourtCreateDialog: React.FC<CourtCreateDialogProps> = ({
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="AVAILABLE">Available</SelectItem>
-                  <SelectItem value="IN_USE">In Use</SelectItem>
-                  <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                  <SelectItem value={CourtStatus.AVAILABLE}>Available</SelectItem>
+                  <SelectItem value={CourtStatus.IN_USE}>In Use</SelectItem>
+                  <SelectItem value={CourtStatus.MAINTENANCE}>Maintenance</SelectItem>
                 </SelectContent>
               </Select>
             </div>

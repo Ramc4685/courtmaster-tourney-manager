@@ -1,7 +1,7 @@
-
-import { StandaloneMatch, Team, MatchStatus, MatchScore, ScoringSettings, Match } from "@/types/tournament";
+import { StandaloneMatch, Team, ScoringSettings, Match } from "@/types/tournament";
+import { MatchStatus } from "@/types/tournament-enums";
 import { generateId } from "@/utils/tournamentUtils";
-import { storageService } from "../storage/StorageService";
+import { storageService } from "@/services/storage/StorageService";
 import { determineMatchWinnerAndLoser, getDefaultScoringSettings } from "@/utils/matchUtils";
 import { getCurrentUserId } from "@/utils/auditUtils";
 
@@ -44,7 +44,7 @@ export class StandaloneMatchService {
       team1,
       team2,
       scores: [],
-      status: "SCHEDULED",
+      status: MatchStatus.SCHEDULED,
       createdAt: now,
       updatedAt: now,
       created_by: userId,
@@ -168,7 +168,7 @@ export class StandaloneMatchService {
   // Complete a match
   async completeMatch(
     matchId: string,
-    scoringSettings?: ScoringSettings
+    scoringSettings: Required<ScoringSettings>
   ): Promise<StandaloneMatch | null> {
     const matches = await this.getMatches();
     const match = matches.find(m => m.id === matchId);
@@ -180,15 +180,15 @@ export class StandaloneMatchService {
     
     // Modified type assertion to handle StandaloneMatch with determineMatchWinnerAndLoser
     // This adapts StandaloneMatch to work with the function that expects Match
-    const matchAsAny = match as any; // Use any as an intermediate step
-    const result = determineMatchWinnerAndLoser(matchAsAny, settings);
+    const matchAsMatch = match as unknown as Match;
+    const result = determineMatchWinnerAndLoser(matchAsMatch, settings);
     if (!result) return null;
     
     const { winner, loser } = result;
     
     const updatedMatch = {
       ...match,
-      status: "COMPLETED" as MatchStatus,
+      status: MatchStatus.COMPLETED,
       winner,
       loser,
       updatedAt: new Date(),

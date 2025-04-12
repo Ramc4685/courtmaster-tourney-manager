@@ -1,13 +1,13 @@
-
 import { UserRole } from './tournament-enums';
 
 export interface User {
   id: string;
   email: string;
   name?: string;
-  role: UserRole;
-  createdAt: Date;
-  updatedAt: Date;
+  role: "admin" | "user";
+  createdAt: string;
+  updatedAt?: string;
+  isVerified?: boolean;
 }
 
 export interface UserCredentials {

@@ -1,5 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserCredentials, TournamentUserRole } from '@/types/user';
+import { initializeStorageService } from '@/services/storage/StorageService';
+import type { Profile, UserRole } from '@/types/entities';
+import { DEMO_USER, DEMO_ADMIN_USER } from '@/utils/demoData';
 
 export class SupabaseAuthService {
   private tournamentRoles: TournamentUserRole[] = [];
@@ -48,12 +51,12 @@ export class SupabaseAuthService {
       
       return {
         id: data.session.user.id,
-        // Use auth user's email if profile email doesn't exist
         email: data.session.user.email || '',
         name: profile.name || data.session.user.email?.split('@')[0] || '',
         createdAt: profile.created_at || data.session.user.created_at || new Date().toISOString(),
+        updatedAt: profile.updated_at,
         isVerified: data.session.user.email_confirmed_at !== null,
-        role: (profile.role as "admin" | "user") || 'user',
+        role: profile.role === 'admin' ? 'admin' : 'user'
       };
     } catch (error) {
       console.error('Error getting current user:', error);
@@ -68,15 +71,25 @@ export class SupabaseAuthService {
         console.log('[DEBUG] SupabaseAuthService: Using demo login');
         this.demoMode = true; // Automatically enable demo mode when using demo credentials
         
-        // Create a demo user
+        // Get the appropriate demo profile
+        const demoProfile = credentials.email.includes('admin') ? DEMO_ADMIN_USER : DEMO_USER;
+        
+        // Create a demo user from the profile
         const demoUser: User = {
-          id: 'demo-user-id',
-          email: credentials.email,
-          name: 'Demo User',
-          createdAt: new Date().toISOString(),
-          isVerified: true,
-          role: credentials.email.includes('admin') ? 'admin' : 'user',
+          id: demoProfile.id,
+          email: demoProfile.email,
+          name: demoProfile.full_name || 'Demo User',
+          role: demoProfile.role === 'admin' ? 'admin' : 'user',
+          createdAt: demoProfile.created_at,
+          updatedAt: demoProfile.updated_at,
+          isVerified: true
         };
+        
+        // Initialize storage service in demo mode
+        initializeStorageService({
+          isDemoMode: true,
+          demoUser: demoProfile
+        });
         
         // Store demo user in localStorage
         localStorage.setItem('demo_user', JSON.stringify(demoUser));
@@ -109,12 +122,12 @@ export class SupabaseAuthService {
       
       return {
         id: data.user.id,
-        // Use auth user's email instead of profile email
         email: data.user.email || '',
         name: profile?.name || data.user.email?.split('@')[0] || '',
         createdAt: profile?.created_at || data.user.created_at || new Date().toISOString(),
+        updatedAt: profile?.updated_at,
         isVerified: data.user.email_confirmed_at !== null,
-        role: (profile?.role as "admin" | "user") || 'user',
+        role: profile?.role === 'admin' ? 'admin' : 'user'
       };
     } catch (error) {
       console.error('[ERROR] SupabaseAuthService: Error during login:', error);
@@ -150,7 +163,7 @@ export class SupabaseAuthService {
         name: userData.name,
         createdAt: data.user.created_at || new Date().toISOString(),
         isVerified: data.session?.user.email_confirmed_at !== null,
-        role: 'user',
+        role: 'user'
       };
     } catch (error) {
       console.error('Error during registration:', error);
@@ -164,6 +177,9 @@ export class SupabaseAuthService {
       if (this.demoMode) {
         console.log('[DEBUG] SupabaseAuthService: Demo logout');
         localStorage.removeItem('demo_user');
+        // Reset storage service to default
+        initializeStorageService();
+        this.demoMode = false;
         return;
       }
       

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTournament } from '@/contexts/tournament/useTournament';
@@ -6,7 +5,7 @@ import { Tournament } from '@/types/tournament';
 import { Court } from '@/types/tournament';
 import { Match } from '@/types/tournament';
 import { TournamentCategory } from '@/types/tournament';
-import { TournamentFormat } from '@/types/tournament';
+import { TournamentFormat } from '@/types/tournament-enums';
 import {
   Card,
   CardContent,
@@ -41,6 +40,7 @@ import ScheduleMatchDialog from '@/components/tournament/ScheduleMatchDialog';
 import TeamManagementTab from '@/components/tournament/tabs/TeamManagementTab';
 import ScoreEntrySection from '@/components/tournament/score-entry/ScoreEntrySection';
 import { Team } from '@/types/tournament';
+import { format, parse } from 'date-fns';
 
 const TournamentDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -62,6 +62,7 @@ const TournamentDetail: React.FC = () => {
     scheduleMatch, 
     generateBrackets,
     autoAssignCourts,
+    generateMultiStageTournament,
   } = useTournament();
 
   useEffect(() => {
@@ -114,22 +115,12 @@ const TournamentDetail: React.FC = () => {
 
   const handleAddTeam = (team: Team) => {
     if (!tournament) return;
-
     addTeam(team);
-    toast({
-      title: 'Team Added',
-      description: `${team.name} has been added to the tournament`,
-    });
   };
 
   const handleImportTeams = (teams: Team[]) => {
     if (!tournament) return;
-
     importTeams(teams);
-    toast({
-      title: 'Teams Imported',
-      description: `${teams.length} teams have been imported`,
-    });
   };
 
   const handleCreateMatch = (
@@ -148,23 +139,9 @@ const TournamentDetail: React.FC = () => {
     });
   };
 
-  const handleGenerateBrackets = async () => {
+  const handleGenerateBrackets = () => {
     if (!tournament) return;
-
-    try {
-      const matchesGenerated = await generateBrackets();
-      toast({
-        title: 'Brackets Generated',
-        description: `${matchesGenerated} matches have been generated`,
-      });
-    } catch (error) {
-      console.error('Error generating brackets:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to generate brackets',
-        variant: 'destructive',
-      });
-    }
+    generateMultiStageTournament(tournament.format);
   };
 
   const handleAutoAssignCourts = async () => {
@@ -186,13 +163,16 @@ const TournamentDetail: React.FC = () => {
     }
   };
 
-  const handleUpdateTournament = (updatedTournament: Tournament) => {
+  const handleUpdateTournament = (data: Partial<Tournament>) => {
+    if (!tournament) return;
+    const updatedTournament = {
+      ...tournament,
+      ...data,
+      startDate: typeof data.startDate === 'string' ? new Date(data.startDate) : data.startDate || tournament.startDate,
+      endDate: typeof data.endDate === 'string' ? new Date(data.endDate) : data.endDate || tournament.endDate,
+      registrationDeadline: typeof data.registrationDeadline === 'string' ? new Date(data.registrationDeadline) : data.registrationDeadline || tournament.registrationDeadline
+    };
     updateTournament(updatedTournament);
-    setTournament(updatedTournament);
-    toast({
-      title: 'Tournament Updated',
-      description: 'Tournament settings have been updated',
-    });
   };
 
   if (loading) {
@@ -270,7 +250,21 @@ const TournamentDetail: React.FC = () => {
             </TabsList>
 
             <TabsContent value="overview">
-              <OverviewTab tournament={tournament} />
+              <OverviewTab
+                tournament={{
+                  name: tournament.name,
+                  startDate: tournament.startDate.toISOString().split('T')[0],
+                  endDate: tournament.endDate.toISOString().split('T')[0],
+                  registrationDeadline: tournament.registrationDeadline.toISOString().split('T')[0],
+                  location: tournament.location,
+                  status: tournament.status,
+                  participants: tournament.participants
+                }}
+                onUpdateTournament={handleUpdateTournament}
+                onGenerateMultiStageTournament={handleGenerateBrackets}
+                onAdvanceToNextStage={() => {}}
+                onScheduleDialogOpen={() => setScheduleMatchDialogOpen(true)}
+              />
             </TabsContent>
 
             <TabsContent value="bracket">
@@ -294,10 +288,27 @@ const TournamentDetail: React.FC = () => {
               <MatchesTab
                 matches={tournament.matches}
                 courts={tournament.courts}
+                teams={tournament.teams}
                 onCourtAssign={(matchId, courtId) => {
-                  // Implement court assignment logic
-                  console.log(`Assigning match ${matchId} to court ${courtId}`);
+                  const updatedTournament = {
+                    ...tournament,
+                    matches: tournament.matches.map(m => 
+                      m.id === matchId ? { ...m, courtId } : m
+                    )
+                  };
+                  handleUpdateTournament(updatedTournament);
                 }}
+                onMatchUpdate={(match) => {
+                  const updatedTournament = {
+                    ...tournament,
+                    matches: tournament.matches.map(m => 
+                      m.id === match.id ? match : m
+                    )
+                  };
+                  handleUpdateTournament(updatedTournament);
+                }}
+                onAddMatchClick={() => setScheduleMatchDialogOpen(true)}
+                onAutoScheduleClick={handleAutoAssignCourts}
               />
             </TabsContent>
 
@@ -312,12 +323,30 @@ const TournamentDetail: React.FC = () => {
               </div>
               <TeamsTab
                 tournament={tournament}
-                categories={tournament.categories}
+                category={tournament.categories?.find(c => c.id === categoryTab)}
               />
             </TabsContent>
 
             <TabsContent value="courts">
-              <CourtsTab courts={tournament.courts} />
+              <CourtsTab
+                courts={tournament.courts}
+                onCourtUpdate={(court) => {
+                  const updatedTournament = {
+                    ...tournament,
+                    courts: tournament.courts.map(c => 
+                      c.id === court.id ? court : c
+                    )
+                  };
+                  handleUpdateTournament(updatedTournament);
+                }}
+                onAddCourtClick={() => {
+                  const updatedTournament = {
+                    ...tournament,
+                    courts: [...tournament.courts, { id: Date.now().toString(), name: `Court ${tournament.courts.length + 1}` }]
+                  };
+                  handleUpdateTournament(updatedTournament);
+                }}
+              />
             </TabsContent>
 
             <TabsContent value="team-management">
@@ -326,22 +355,31 @@ const TournamentDetail: React.FC = () => {
 
             <TabsContent value="score-entry">
               <ScoreEntrySection
-                tournamentId={tournament.id}
+                matches={tournament.matches}
+                onMatchUpdate={(match) => {
+                  const updatedTournament = {
+                    ...tournament,
+                    matches: tournament.matches.map(m => 
+                      m.id === match.id ? match : m
+                    )
+                  };
+                  handleUpdateTournament(updatedTournament);
+                }}
               />
             </TabsContent>
           </Tabs>
 
-          <AddTeamDialog 
-            open={teamDialogOpen} 
+          <AddTeamDialog
+            open={teamDialogOpen}
             onOpenChange={setTeamDialogOpen}
-            onAddTeam={handleAddTeam}
+            onSubmit={handleAddTeam}
           />
 
           <ImportTeamsDialog
             open={importDialogOpen}
             onOpenChange={setImportDialogOpen}
-            tournamentId={tournament.id}
-            onTeamsImported={handleImportTeams}
+            onSubmit={handleImportTeams}
+            tournamentId={tournament?.id || ''}
           />
 
           <ScheduleMatchDialog

@@ -5,6 +5,7 @@ import { useTournament } from "@/contexts/tournament/useTournament";
 import RegistrationStatusList from "@/components/registration/RegistrationStatusList";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { RegistrationStatus } from "@/types/registration";
 
 const TournamentRegistrationsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,9 @@ const TournamentRegistrationsPage: React.FC = () => {
     importPlayersFromExcel,
     importTeamsFromCSV,
     importTeamsFromExcel,
+    updatePlayerStatus,
+    updateTeamStatus,
+    bulkUpdateStatus,
     error,
   } = useRegistration();
   const { selectedTournament } = useTournament();
@@ -37,6 +41,18 @@ const TournamentRegistrationsPage: React.FC = () => {
     } else if (file.name.endsWith(".xlsx")) {
       await importTeamsFromExcel(id, file);
     }
+  };
+
+  const handleUpdateStatus = async (registrationId: string, status: RegistrationStatus, type: "player" | "team") => {
+    if (type === "player") {
+      await updatePlayerStatus(registrationId, status);
+    } else {
+      await updateTeamStatus(registrationId, status);
+    }
+  };
+
+  const handleBulkUpdateStatus = async (ids: string[], status: RegistrationStatus, type: "player" | "team") => {
+    await bulkUpdateStatus(ids, status, type);
   };
 
   if (!selectedTournament) {
@@ -78,6 +94,8 @@ const TournamentRegistrationsPage: React.FC = () => {
           {...tournamentRegistrations}
           onImportPlayers={handleImportPlayers}
           onImportTeams={handleImportTeams}
+          onUpdateStatus={handleUpdateStatus}
+          onBulkUpdateStatus={handleBulkUpdateStatus}
         />
       </div>
     </div>

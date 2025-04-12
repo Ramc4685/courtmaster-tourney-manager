@@ -1,11 +1,4 @@
-export type TournamentStatus = "DRAFT" | "PUBLISHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-export type MatchStatus = "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "DEFERRED";
-export type CourtStatus = "AVAILABLE" | "IN_USE" | "MAINTENANCE";
-export type DivisionType = "MENS" | "WOMENS" | "MIXED";
-export type StageType = "GROUP" | "KNOCKOUT" | "FINAL";
-export type ScorerType = "MANUAL" | "AUTOMATIC";
-export type TournamentFormat = "SINGLE_ELIMINATION" | "DOUBLE_ELIMINATION" | "ROUND_ROBIN";
-export type CategoryType = "MENS_SINGLES" | "WOMENS_SINGLES" | "MENS_DOUBLES" | "WOMENS_DOUBLES" | "MIXED_DOUBLES";
+import { TournamentStatus, MatchStatus, CourtStatus, DivisionType, StageType, ScorerType, TournamentFormat, CategoryType, TournamentStage } from './tournament-enums';
 
 export interface AuditLog {
     id: string;
@@ -16,11 +9,11 @@ export interface AuditLog {
 }
 
 export interface StandaloneAuditLog {
-  timestamp: Date;
-  action: string;
-  details: string | Record<string, any>;
-  user_id?: string;
-  userName?: string;
+    timestamp: Date;
+    action: string;
+    details: string | Record<string, any>;
+    user_id?: string;
+    userName?: string;
 }
 
 export interface Player {
@@ -108,7 +101,10 @@ export interface TournamentCategory {
     id: string;
     name: string;
     type: CategoryType;
-    division: string;
+    division: DivisionType;
+    format?: TournamentFormat;
+    description?: string;
+    isCustom?: boolean;
 }
 
 export interface Tournament {
@@ -117,6 +113,7 @@ export interface Tournament {
     description?: string;
     format: TournamentFormat;
     status: TournamentStatus;
+    currentStage: TournamentStage;
     startDate: Date;
     endDate: Date;
     location: string;
@@ -134,8 +131,13 @@ export interface Tournament {
 
 export interface ScoringSettings {
     matchFormat: 'TIMED' | 'STANDARD';
-    pointsPerMatch: number;
+    pointsToWin: number;
+    mustWinByTwo: boolean;
     maxPoints: number;
     maxSets: number;
-    allowNegativeScores: boolean;
+    requireTwoPointLead: boolean;
+    maxTwoPointLeadScore: number;
+    setsToWin?: number;
 }
+
+export type { TournamentStatus, MatchStatus, CourtStatus, DivisionType, StageType, ScorerType, TournamentFormat, CategoryType, TournamentStage };
