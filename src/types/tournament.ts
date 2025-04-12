@@ -11,8 +11,10 @@ import {
   GameType
 } from './tournament-enums';
 
-export { Division, MatchStatus } from './tournament-enums';
+// Remove the redundant export since we're now importing these from tournament-enums
+// export { Division, MatchStatus } from './tournament-enums';
 
+// Keep the existing code for Player interface
 export interface Player {
   id: string;
   name: string;
@@ -214,3 +216,17 @@ export interface Tournament {
   updated_by?: string;
   organizer_id?: string;
 }
+
+// Export the imported enums again to make them available to consumers of this module
+export { 
+  TournamentFormat, 
+  TournamentStatus, 
+  Division, 
+  MatchStatus, 
+  CourtStatus, 
+  CategoryType,
+  TournamentStage,
+  ScorerType,
+  PlayType,
+  GameType
+};

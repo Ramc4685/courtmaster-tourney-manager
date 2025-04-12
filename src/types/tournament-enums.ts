@@ -38,8 +38,55 @@ export enum UserRole {
   ADMIN = "admin",
   ORGANIZER = "organizer",
   SCOREKEEPER = "scorekeeper",
-  PLAYER = "player"
+  PLAYER = "player",
+  SPECTATOR = "spectator"
 }
 
-// Re-export TournamentFormat from tournament.d.ts
-export { TournamentFormat } from '@/types/tournament';
+export enum TournamentFormat {
+  SINGLE_ELIMINATION = "SINGLE_ELIMINATION",
+  DOUBLE_ELIMINATION = "DOUBLE_ELIMINATION",
+  ROUND_ROBIN = "ROUND_ROBIN",
+  GROUP_KNOCKOUT = "GROUP_KNOCKOUT",
+  SWISS = "SWISS",
+  CUSTOM = "CUSTOM"
+}
+
+export enum TournamentStatus {
+  DRAFT = "DRAFT",
+  PUBLISHED = "PUBLISHED",
+  REGISTRATION = "REGISTRATION",
+  IN_PROGRESS = "IN_PROGRESS",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED"
+}
+
+export enum MatchStatus {
+  SCHEDULED = "SCHEDULED",
+  IN_PROGRESS = "IN_PROGRESS",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED",
+  DEFERRED = "DEFERRED"
+}
+
+export enum CourtStatus {
+  AVAILABLE = "AVAILABLE",
+  IN_USE = "IN_USE",
+  MAINTENANCE = "MAINTENANCE",
+  RESERVED = "RESERVED"
+}
+
+export enum CategoryType {
+  MENS_SINGLES = "MENS_SINGLES",
+  MENS_DOUBLES = "MENS_DOUBLES",
+  WOMENS_SINGLES = "WOMENS_SINGLES",
+  WOMENS_DOUBLES = "WOMENS_DOUBLES",
+  MIXED_DOUBLES = "MIXED_DOUBLES",
+  OPEN_SINGLES = "OPEN_SINGLES",
+  OPEN_DOUBLES = "OPEN_DOUBLES",
+  CUSTOM = "CUSTOM"
+}
+
+export enum ScorerType {
+  TOURNAMENT = "TOURNAMENT",
+  STANDALONE = "STANDALONE"
+}
