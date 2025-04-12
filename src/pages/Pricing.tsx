@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Layout } from '@/components/layout/Layout';
-import { PricingPlans } from '@/components/pricing/PricingPlans';
+import PricingPlans from '@/components/pricing/PricingPlans';
 
 const PricingPage: React.FC = () => {
   return (

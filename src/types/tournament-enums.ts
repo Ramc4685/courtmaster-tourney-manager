@@ -29,7 +29,9 @@ export enum TournamentStage {
   THIRD_PLACE = 'THIRD_PLACE',
   FINALS = 'FINALS',
   COMPLETED = 'COMPLETED',
-  INITIAL_ROUND = 'INITIAL_ROUND'
+  INITIAL_ROUND = 'INITIAL_ROUND',
+  DIVISION_PLACEMENT = 'DIVISION_PLACEMENT',
+  PLAYOFF_KNOCKOUT = 'PLAYOFF_KNOCKOUT'
 }
 
 // Match status enums
@@ -56,6 +58,10 @@ export enum CategoryType {
   MENS_DOUBLES = 'MENS_DOUBLES',
   WOMENS_DOUBLES = 'WOMENS_DOUBLES',
   MIXED_DOUBLES = 'MIXED_DOUBLES',
+  SINGLES = 'SINGLES',
+  DOUBLES = 'DOUBLES',
+  MIXED = 'MIXED',
+  TEAM = 'TEAM',
   CUSTOM = 'CUSTOM'
 }
 
@@ -68,7 +74,9 @@ export enum Division {
   OPEN = 'OPEN',
   JUNIOR = 'JUNIOR',
   SENIOR = 'SENIOR',
-  INITIAL = 'INITIAL'
+  INITIAL = 'INITIAL',
+  MENS = 'MENS',
+  WOMENS = 'WOMENS'
 }
 
 // User role enum
@@ -99,3 +107,25 @@ export enum ScorerType {
   REFEREE = 'REFEREE',
   ADMIN = 'ADMIN'
 }
+
+// Play type enum
+export enum PlayType {
+  SINGLES = 'SINGLES',
+  DOUBLES = 'DOUBLES',
+  MIXED = 'MIXED',
+  TEAM = 'TEAM'
+}
+
+// Registration status enum
+export enum RegistrationStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  WAITLIST = 'WAITLIST',
+  CHECKED_IN = 'CHECKED_IN',
+  WITHDRAWN = 'WITHDRAWN'
+}
+
+// Division type values
+export const DivisionTypeValues = ['SKILL', 'AGE', 'GENDER'] as const;
+export type DivisionType = typeof DivisionTypeValues[number];

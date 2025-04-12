@@ -38,8 +38,8 @@ export const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ st
   }
   
   return (
-    <Badge variant={badgeVariant}>
-      {typeof status === 'string' ? status.replace('_', ' ') : status.replace('_', ' ')}
+    <Badge variant={badgeVariant as any}>
+      {typeof status === 'string' ? status.replace('_', ' ') : String(status).replace('_', ' ')}
     </Badge>
   );
 };

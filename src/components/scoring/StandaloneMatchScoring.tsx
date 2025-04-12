@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Match } from '@/types/tournament';
-import ScoringContainer from './ScoringContainer';
+import { ScoringContainer } from './ScoringContainer';
 import ScoringMatchDetail from './ScoringMatchDetail';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
@@ -131,7 +131,7 @@ const StandaloneMatchScoring: React.FC<StandaloneMatchScoringProps> = ({
           <DialogHeader>
             <DialogTitle>Complete Match</DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to complete this match? This will finalize the scores and determine the winner.</p>
+          <p>Are you sure you want to complete this match? This action cannot be undone.</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCompleteMatchDialogOpen(false)}>Cancel</Button>
             <Button onClick={() => {
