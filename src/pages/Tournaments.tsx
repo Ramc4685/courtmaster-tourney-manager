@@ -7,7 +7,7 @@ import { useTournament } from '@/contexts/tournament/useTournament';
 import PageHeader from '@/components/shared/PageHeader';
 import { Plus, CalendarDays, Users, Medal } from 'lucide-react';
 import { format } from 'date-fns';
-import TournamentStatusBadge from '@/components/tournament/TournamentStatusBadge';
+import { TournamentStatusBadge } from '@/components/tournament/TournamentStatusBadge';
 import { useToast } from '@/hooks/use-toast';
 
 const Tournaments = () => {
