@@ -14,9 +14,10 @@ import { Badge } from '@/components/ui/badge';
 interface CourtTableProps {
   courts: Court[];
   onSelectCourt?: (court: Court) => void;
+  onCourtUpdate?: (court: Court) => void;
 }
 
-const CourtTable: React.FC<CourtTableProps> = ({ courts, onSelectCourt }) => {
+const CourtTable: React.FC<CourtTableProps> = ({ courts, onSelectCourt, onCourtUpdate }) => {
   const getStatusColor = (status: CourtStatus) => {
     switch (status) {
       case CourtStatus.AVAILABLE:
@@ -60,7 +61,7 @@ const CourtTable: React.FC<CourtTableProps> = ({ courts, onSelectCourt }) => {
                 <TableCell>{court.court_number || court.number}</TableCell>
                 <TableCell>{court.name}</TableCell>
                 <TableCell>
-                  <Badge className={getStatusColor(court.status as CourtStatus)}>
+                  <Badge className={getStatusColor(court.status)}>
                     {court.status}
                   </Badge>
                 </TableCell>

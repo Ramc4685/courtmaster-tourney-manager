@@ -1,346 +1,239 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { AuthContextType, UserCredentials, RegisterData } from './types';
-import { Profile } from '@/types/entities';
-import { toast } from '@/components/ui/use-toast';
+import { Profile, UserRole } from '@/types/entities';
+import { AuthContextType } from '@/types/user';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  signIn: async () => {},
+  signUp: async () => {},
+  signOut: async () => {},
+  resetPassword: async () => {},
+  updatePassword: async () => {},
+  isLoading: true,
+  error: null,
+  isDemo: false,
+  updateUserProfile: async () => {}
+});
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  return useContext(AuthContext);
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
-  children 
-}) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [demoMode, setDemoMode] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const getSession = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (error) {
-            console.error('Error fetching user profile:', error);
-          } else if (data) {
-            setUser({
-              id: data.id,
-              name: data.full_name || data.name || '',
-              full_name: data.full_name || data.name || '',
-              display_name: data.display_name || data.name || '',
-              email: data.email || session.user.email || '',
-              phone: data.phone || '',
-              avatar_url: data.avatar_url || '',
-              role: data.role || 'player',
-              preferences: data.preferences || {},
-              player_stats: data.player_stats || {
-                total_matches: 0,
-                wins: 0,
-                losses: 0,
-                tournaments_played: 0,
-                tournaments_won: 0,
-                average_points_per_set: 0,
-                win_percentage: 0
-              }
-            });
-          }
+
+        if (session) {
+          await fetchUser(session.user.id);
         }
-      } catch (error) {
-        console.error('Error during session check:', error);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to get session');
       } finally {
         setIsLoading(false);
       }
     };
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (error) {
-            console.error('Error fetching user profile:', error);
-          } else if (data) {
-            setUser({
-              id: data.id,
-              name: data.full_name || data.name || '',
-              full_name: data.full_name || data.name || '',
-              display_name: data.display_name || data.name || '',
-              email: data.email || session.user.email || '',
-              phone: data.phone || '',
-              avatar_url: data.avatar_url || '',
-              role: data.role || 'player',
-              preferences: data.preferences || {},
-              player_stats: data.player_stats || {
-                total_matches: 0,
-                wins: 0,
-                losses: 0,
-                tournaments_played: 0,
-                tournaments_won: 0,
-                average_points_per_set: 0,
-                win_percentage: 0
-              }
-            });
-          }
+    getSession();
+
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        if (event === 'SIGNED_IN' && session) {
+          await fetchUser(session.user.id);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
         }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to update auth state');
+      } finally {
+        setIsLoading(false);
       }
-    );
-
-    fetchUserData();
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    });
   }, []);
 
-  const signIn = async (email?: string, password?: string) => {
-    if (demoMode) {
-      // Set a demo user
-      setUser({
-        id: 'demo-user',
-        name: 'Demo User',
-        full_name: 'Demo User',
-        display_name: 'Demo User',
-        email: 'demo@example.com',
-        role: 'admin',
-        // Add other required fields
-        player_stats: {
-          total_matches: 10,
-          wins: 8,
-          losses: 2,
-          tournaments_played: 3,
-          tournaments_won: 1,
-          average_points_per_set: 15.5,
-          win_percentage: 80
-        }
-      });
-      return;
-    }
-
+  const fetchUser = async (userId: string) => {
     try {
-      setIsLoading(true);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email || '',
-        password: password || '',
-      });
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-      if (error) {
-        throw error;
-      }
-    } catch (error: any) {
-      console.error('Sign in error:', error.message);
-      toast({
-        title: "Sign in failed",
-        description: error.message,
-        variant: "destructive"
-      });
-      throw error;
+      if (profileError) throw profileError;
+
+      setUser(profile as Profile);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch user');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const signUp = async (email: string, password: string, data: { full_name: string, display_name: string, role: string }) => {
+  const signIn = async (email?: string, password?: string) => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setIsLoading(true);
-      const { error } = await supabase.auth.signUp({
+      if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true' && email === 'demo@example.com' && password === 'demodemo') {
+        setIsDemo(true);
+        const demoUser: Profile = {
+          id: 'demo-user-id',
+          full_name: 'Demo User',
+          display_name: 'Demo',
+          email: 'demo@example.com',
+          role: UserRole.PLAYER,
+        };
+        setUser(demoUser);
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email!,
+          password: password!,
+        });
+        if (error) throw error;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sign in');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signUp = async (email: string, password: string, data: any) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const { data: authResponse, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            full_name: data.full_name,
-            display_name: data.display_name,
-            role: data.role,
+            full_name: data.fullName,
+            display_name: data.displayName,
+            role: data.role || UserRole.PLAYER,
           },
         },
       });
-      
-      if (error) {
-        throw error;
-      }
-      
-    } catch (error: any) {
-      console.error('Sign up error:', error.message);
-      toast({
-        title: "Sign up failed",
-        description: error.message,
-        variant: "destructive"
-      });
-      throw error;
+
+      if (authError) throw authError;
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: authResponse.user!.id,
+          full_name: data.fullName,
+          display_name: data.displayName,
+          email: email,
+          role: data.role || UserRole.PLAYER,
+        });
+
+      if (profileError) throw profileError;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sign up');
     } finally {
       setIsLoading(false);
     }
   };
 
   const signOut = async () => {
-    if (demoMode) {
-      setUser(null);
-      return;
-    }
-
+    setIsLoading(true);
+    setError(null);
     try {
-      setIsLoading(true);
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
+      if (isDemo) {
+        setIsDemo(false);
+        setUser(null);
+      } else {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
       }
-    } catch (error: any) {
-      console.error('Sign out error:', error.message);
-      toast({
-        title: "Sign out failed",
-        description: error.message,
-        variant: "destructive"
-      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sign out');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const updateProfile = async (data: Partial<Profile>) => {
+  const resetPassword = async (email: string) => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setIsLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/update-password`,
+      });
+      if (error) throw error;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reset password');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updatePassword = async (password: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update password');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Add the updateUserProfile function
+  const updateUserProfile = async (profileData: Partial<Profile>) => {
+    try {
+      if (!user) throw new Error('No user logged in');
       
-      if (!user) {
-        throw new Error("No user logged in");
-      }
-      
+      // Update the profile in Supabase
       const { error } = await supabase
         .from('profiles')
         .update({
-          full_name: data.full_name,
-          display_name: data.display_name,
-          avatar_url: data.avatar_url,
-          phone: data.phone,
-          // Add other fields as needed
+          full_name: profileData.full_name || user.full_name,
+          display_name: profileData.display_name || user.display_name,
+          avatar_url: profileData.avatar_url || user.avatar_url,
+          phone: profileData.phone || user.phone,
+          // Include any other fields that need updating
         })
         .eq('id', user.id);
         
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       
       // Update local user state
-      setUser(prev => {
-        if (!prev) return null;
-        return { ...prev, ...data };
-      });
-      
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated",
-      });
-    } catch (error: any) {
-      console.error('Update profile error:', error.message);
-      toast({
-        title: "Profile update failed",
-        description: error.message,
-        variant: "destructive"
-      });
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Add updateUserProfile function to match AuthContextType
-  const updateUserProfile = async (data: Partial<Profile>) => {
-    return updateProfile(data);
-  };
-
-  // Legacy methods for compatibility
-  const login = async (credentials: UserCredentials): Promise<boolean> => {
-    try {
-      await signIn(credentials.email, credentials.password);
-      return true;
+      setUser(prevUser => ({
+        ...prevUser!,
+        ...profileData
+      }));
     } catch (error) {
-      return false;
-    }
-  };
-
-  const register = async (data: RegisterData): Promise<boolean> => {
-    try {
-      await signUp(data.email, data.password, {
-        full_name: data.name,
-        display_name: data.name,
-        role: 'player',
-      });
-      return true;
-    } catch (error) {
-      return false;
-    }
-  };
-
-  const logout = async (): Promise<void> => {
-    await signOut();
-  };
-
-  const enableDemoMode = (enabled: boolean) => {
-    setDemoMode(enabled);
-    if (enabled) {
-      // Set demo user
-      setUser({
-        id: 'demo-user',
-        name: 'Demo User',
-        full_name: 'Demo User',
-        display_name: 'Demo User',
-        email: 'demo@example.com',
-        role: 'admin',
-        // Add other required fields
-        player_stats: {
-          total_matches: 10,
-          wins: 8,
-          losses: 2,
-          tournaments_played: 3,
-          tournaments_won: 1,
-          average_points_per_set: 15.5,
-          win_percentage: 80
-        }
-      });
-    } else {
-      setUser(null);
+      console.error('Error updating user profile:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update profile');
     }
   };
 
   const value = {
     user,
-    isLoading,
-    isAuthenticated: !!user,
-    isDemoMode: demoMode,
-    demoMode,
     signIn,
     signUp,
     signOut,
-    updateProfile,
-    updateUserProfile,
-    login,
-    register,
-    logout,
-    enableDemoMode,
+    resetPassword,
+    updatePassword,
+    isLoading,
+    error,
+    isDemo,
+    updateUserProfile
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+export default AuthContext;

@@ -1,116 +1,41 @@
+
 import { UserRole } from './tournament-enums';
 
-export interface User {
+// Role Permissions
+export interface RolePermissions {
+  can_manage_tournaments: boolean;
+  can_manage_users: boolean;
+  can_manage_registrations: boolean;
+  can_score_matches: boolean;
+  can_view_reports: boolean;
+}
+
+// User Permissions (alias for backward compatibility)
+export type UserPermissions = RolePermissions;
+
+// Profile type definition to match the one from entities.ts
+export interface Profile {
   id: string;
-  email: string;
   name?: string;
-  role: "admin" | "user";
-  createdAt: string;
-  updatedAt?: string;
-  isVerified?: boolean;
-}
-
-export interface UserCredentials {
+  full_name: string;
+  display_name: string;
   email: string;
-  password: string;
+  phone?: string;
+  avatar_url?: string;
+  role: UserRole;
+  // Add other fields as needed for compatibility
 }
 
-export interface TournamentUserRole {
-  userId: string;
-  tournamentId: string;
-  role: 'admin' | 'owner' | 'participant';
+// Define auth context type
+export interface AuthContextType {
+  user: Profile | null;
+  signIn: (email?: string, password?: string) => Promise<void>;
+  signUp: (email: string, password: string, data: any) => Promise<void>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
+  isDemo: boolean;
+  updateUserProfile: (data: Partial<Profile>) => Promise<void>;
 }
-
-export type RolePermissions = {
-  canManageTournaments: boolean;
-  canModifyMatches: boolean;
-  canAssignCourts: boolean;
-  canRegisterTeams: boolean;
-  canViewAnalytics: boolean;
-  canAccessAdmin: boolean;
-  canManageUsers: boolean;
-  canRecordScores: boolean;
-};
-
-export const RolePermissions: Record<UserRole, RolePermissions> = {
-  [UserRole.ADMIN]: {
-    canManageTournaments: true,
-    canModifyMatches: true,
-    canAssignCourts: true,
-    canRegisterTeams: true,
-    canViewAnalytics: true,
-    canAccessAdmin: true,
-    canManageUsers: true,
-    canRecordScores: true
-  },
-  [UserRole.TOURNAMENT_DIRECTOR]: {
-    canManageTournaments: true,
-    canModifyMatches: true,
-    canAssignCourts: true,
-    canRegisterTeams: true,
-    canViewAnalytics: true,
-    canAccessAdmin: true,
-    canManageUsers: false,
-    canRecordScores: true
-  },
-  [UserRole.ADMIN_STAFF]: {
-    canManageTournaments: false,
-    canModifyMatches: true,
-    canAssignCourts: true,
-    canRegisterTeams: true,
-    canViewAnalytics: true,
-    canAccessAdmin: true,
-    canManageUsers: false,
-    canRecordScores: true
-  },
-  [UserRole.FRONT_DESK]: {
-    canManageTournaments: false,
-    canModifyMatches: false,
-    canAssignCourts: true,
-    canRegisterTeams: true,
-    canViewAnalytics: false,
-    canAccessAdmin: false,
-    canManageUsers: false,
-    canRecordScores: false
-  },
-  [UserRole.SCOREKEEPER]: {
-    canManageTournaments: false,
-    canModifyMatches: false,
-    canAssignCourts: false,
-    canRegisterTeams: false,
-    canViewAnalytics: false,
-    canAccessAdmin: false,
-    canManageUsers: false,
-    canRecordScores: true
-  },
-  [UserRole.PLAYER]: {
-    canManageTournaments: false,
-    canModifyMatches: false,
-    canAssignCourts: false,
-    canRegisterTeams: false,
-    canViewAnalytics: false,
-    canAccessAdmin: false,
-    canManageUsers: false,
-    canRecordScores: false
-  },
-  [UserRole.SPECTATOR]: {
-    canManageTournaments: false,
-    canModifyMatches: false,
-    canAssignCourts: false,
-    canRegisterTeams: false,
-    canViewAnalytics: false,
-    canAccessAdmin: false,
-    canManageUsers: false,
-    canRecordScores: false
-  },
-  [UserRole.USER]: {
-    canManageTournaments: false,
-    canModifyMatches: false,
-    canAssignCourts: false,
-    canRegisterTeams: true,
-    canViewAnalytics: false,
-    canAccessAdmin: false,
-    canManageUsers: false,
-    canRecordScores: false
-  }
-};

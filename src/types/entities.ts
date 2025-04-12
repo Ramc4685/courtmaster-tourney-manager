@@ -1,5 +1,5 @@
 
-import { UserRole, TournamentStage, MatchStatus, CourtStatus, Division } from '@/types/tournament-enums';
+import { UserRole } from './tournament-enums';
 import { 
   Tournament, 
   Match, 
@@ -7,9 +7,10 @@ import {
   TournamentCategory, 
   Player, 
   Team,
-  MatchScore
-} from '@/types/tournament';
-import { RegistrationStatus, TournamentRegistration } from '@/types/registration';
+  MatchScore,
+  ScoringSettings
+} from './tournament';
+import { RegistrationStatus, TournamentRegistration } from './registration';
 
 // Player Details
 export interface PlayerDetails {
@@ -151,9 +152,11 @@ export {
   Player,
   Team,
   MatchScore,
+  ScoringSettings,
   RegistrationStatus,
   TournamentRegistration,
   UserRole,
+  // Enums from tournament-enums.ts are imported via tournament.ts
   MatchStatus,
   CourtStatus,
   TournamentStage

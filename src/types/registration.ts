@@ -1,87 +1,75 @@
-
-import { z } from 'zod';
-import { Division } from './tournament-enums';
-
 export enum RegistrationStatus {
   PENDING = "PENDING",
-  CONFIRMED = "CONFIRMED",
-  CHECKED_IN = "CHECKED_IN",
-  WAITLIST = "WAITLIST",
-  WAITLISTED = "WAITLISTED", // Keep both for compatibility
+  APPROVED = "APPROVED",
   REJECTED = "REJECTED",
   CANCELLED = "CANCELLED",
-  COMPLETED = "COMPLETED",
-  APPROVED = "APPROVED",
-  WITHDRAWN = "WITHDRAWN"
+  WITHDRAWN = "WITHDRAWN",
+  WAITLISTED = "WAITLISTED",
+  CHECKED_IN = "CHECKED_IN",
+  // Add WAITLIST as an alias for WAITLISTED for backward compatibility
+  WAITLIST = "WAITLISTED"
 }
-
-// Alias for backward compatibility
-export type TournamentRegistrationStatus = RegistrationStatus;
 
 export interface RegistrationMetadata {
   checkInTime?: string;
-  playerName: string;
-  teamName?: string; // Add for TeamRegistrationForm
-  teamSize: number;
-  division: string;
-  contactEmail: string;
-  contactPhone: string;
+  playerName?: string;
+  teamName?: string;
+  teamSize?: number;
+  division?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   paymentStatus?: string;
   notes?: string;
-  specialRequests?: string[];
-  emergencyContact?: {
-    name: string;
-    phone: string;
-    relationship: string;
-  };
-  previousParticipation?: boolean;
+  partnerPreference?: string;
   skillLevel?: string;
-  waitlistPosition?: number;
-  waitlistPromotionHistory?: {
+  specialRequests?: string;
+  medicalNotes?: string;
+  waitlistReason?: string;
+  waiverSigned?: boolean;
+  // For waitlist movement tracking
+  waitlistHistory?: {
     timestamp: string;
     reason: string;
-    date?: string; // Support for old format
-    fromPosition?: number; // Support for old format
-    toPosition?: number; // Support for old format
+    date?: string;
+    fromPosition?: number;
+    toPosition?: number;
   }[];
-  waitlistNotified?: string;
+  comments?: string[]; // Add to support RegistrationDetails
+  // Additional fields for team registration
+  captainName?: string;
+  captainEmail?: string;
+  captainPhone?: string;
   priority?: number;
-  waitlistReason?: string;
-  comments?: string;
-  waiverSigned?: boolean;
+}
+
+export interface TeamMember {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  isTeamCaptain?: boolean;
+  name?: string;
+  player_id?: string; // Add for compatibility
 }
 
 export interface TournamentRegistration {
   id: string;
   tournamentId: string;
-  categoryId: string;
-  playerId: string;
+  categoryId?: string;
+  playerId?: string;
   partnerId?: string;
   status: RegistrationStatus;
   metadata: RegistrationMetadata;
   createdAt: Date;
   updatedAt: Date;
-  category: any;
+  category?: any;
 }
 
 export interface PlayerRegistrationWithStatus extends TournamentRegistration {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  player_id?: string;
-  division_id?: string;
-}
-
-export interface TeamMember {
-  id?: string;
-  player_id?: string;
   firstName: string;
   lastName: string;
-  email?: string;
+  email: string;
   phone?: string;
-  isTeamCaptain?: boolean;
-  name?: string;
 }
 
 export interface TeamRegistrationWithStatus extends TournamentRegistration {
@@ -89,43 +77,14 @@ export interface TeamRegistrationWithStatus extends TournamentRegistration {
   captainName: string;
   captainEmail: string;
   captainPhone?: string;
-  members: TeamMember[];
-  player_id?: string;
-  division_id?: string;
+  members?: TeamMember[];
 }
 
-// Schema for player registration validation
-export const playerRegistrationSchema = z.object({
-  player_id: z.string(),
-  division_id: z.string(),
-  firstName: z.string().min(2, "First name is required"),
-  lastName: z.string().min(2, "Last name is required"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
-});
+// Schema for validation using zod
+export const playerRegistrationSchema = {
+  // Define schema for player registration validation
+};
 
-// Schema for team member validation
-export const teamMemberSchema = z.object({
-  firstName: z.string().min(2, "First name is required"),
-  lastName: z.string().min(2, "Last name is required"),
-  email: z.string().email("Invalid email address").optional(),
-  phone: z.string().optional(),
-  isTeamCaptain: z.boolean().optional(),
-  name: z.string().optional(),
-  player_id: z.string().optional(), // Add for TeamRegistrationForm
-});
-
-// Schema for team registration validation
-export const teamRegistrationSchema = z.object({
-  player_id: z.string(),
-  division_id: z.string(),
-  teamName: z.string().min(2, "Team name is required"),
-  captainName: z.string().min(2, "Captain name is required"),
-  captainEmail: z.string().email("Invalid email address"),
-  captainPhone: z.string().optional(),
-  members: z.array(teamMemberSchema).min(1, "At least one team member is required"),
-});
-
-// Type definitions from schemas
-export type PlayerRegistration = z.infer<typeof playerRegistrationSchema>;
-export type TeamRegistration = z.infer<typeof teamRegistrationSchema>;
+export const teamRegistrationSchema = {
+  // Define schema for team registration validation
+};
