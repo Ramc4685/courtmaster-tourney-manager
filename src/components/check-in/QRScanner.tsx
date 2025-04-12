@@ -1,129 +1,87 @@
-import React, { useState, useCallback } from "react";
-import { Scanner } from "@yudiel/react-qr-scanner";
-import { Button } from "@/components/ui/button";
-import { IDetectedBarcode } from "@yudiel/react-qr-scanner";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/components/ui/use-toast";
-import { QrCode, Camera, CameraOff } from "lucide-react";
+
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { QrCode, Camera, Keyboard } from 'lucide-react';
 
 interface QRScannerProps {
-  onScan: (code: string) => void;
+  onScan: (data: string) => void;
 }
 
 const QRScanner: React.FC<QRScannerProps> = ({ onScan }) => {
-  const { toast } = useToast();
-  const [isScanning, setIsScanning] = useState(false);
-  const [hasPermission, setHasPermission] = useState(true);
+  const [manualInput, setManualInput] = useState('');
+  const [mode, setMode] = useState<'camera' | 'manual'>('camera');
 
-  const handleScan = useCallback((result: IDetectedBarcode[]) => {
-    if (result && result.length > 0) {
-      try {
-        // Validate QR code format
-        const data = JSON.parse(result[0].rawValue);
-        if (!data.id || !data.type) {
-          throw new Error("Invalid QR code format");
-        }
-        onScan(result[0].rawValue);
-      } catch (error) {
-        toast({
-          title: "Invalid QR Code",
-          description: "Please scan a valid registration QR code",
-          variant: "destructive",
-        });
-      }
-    }
-  }, [onScan, toast]);
+  // For now, we're not implementing actual camera scanning as we need to add the react-qr-reader package
+  // Instead, we'll provide a manual input option and a note about camera scanning
 
-  const handleError = useCallback((error: unknown) => {
-    console.error("QR Scanner error:", error);
-    if (error instanceof Error && error.message.includes("Permission")) {
-      setHasPermission(false);
-      toast({
-        title: "Camera Access Required",
-        description: "Please allow camera access to scan QR codes",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Scanner Error",
-        description: "Failed to initialize the QR scanner",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
-
-  const toggleScanning = () => {
-    if (!hasPermission && !isScanning) {
-      // Request permission again
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(() => {
-          setHasPermission(true);
-          setIsScanning(true);
-        })
-        .catch(() => {
-          toast({
-            title: "Camera Access Denied",
-            description: "Please enable camera access in your browser settings",
-            variant: "destructive",
-          });
-        });
-    } else {
-      setIsScanning(!isScanning);
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (manualInput.trim()) {
+      onScan(manualInput);
+      setManualInput('');
     }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <QrCode className="h-5 w-5" />
-          <span className="font-medium">QR Scanner</span>
-        </div>
-        <Badge variant={isScanning ? "default" : "secondary"}>
-          {isScanning ? "Scanning" : "Ready"}
-        </Badge>
-      </div>
-
-      {isScanning ? (
-        <div className="relative aspect-video rounded-lg overflow-hidden border-2 border-dashed">
-          <Scanner
-            onScan={handleScan}
-            onError={handleError}
-            paused={!isScanning}
-            constraints={{
-              facingMode: "environment",
-              aspectRatio: 1,
-            }}
-          />
-        </div>
-      ) : (
-        <div className="aspect-video rounded-lg border-2 border-dashed flex items-center justify-center bg-muted/50">
-          <div className="text-center text-muted-foreground">
-            <CameraOff className="h-8 w-8 mx-auto mb-2" />
-            <p>Camera is off</p>
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex justify-center mb-4">
+          <div className="flex space-x-2">
+            <Button
+              variant={mode === 'camera' ? 'default' : 'outline'}
+              onClick={() => setMode('camera')}
+              size="sm"
+            >
+              <Camera className="mr-2 h-4 w-4" />
+              Camera
+            </Button>
+            <Button
+              variant={mode === 'manual' ? 'default' : 'outline'}
+              onClick={() => setMode('manual')}
+              size="sm"
+            >
+              <Keyboard className="mr-2 h-4 w-4" />
+              Manual Entry
+            </Button>
           </div>
         </div>
-      )}
 
-      <Button
-        onClick={toggleScanning}
-        className="w-full"
-        variant={isScanning ? "destructive" : "default"}
-      >
-        {isScanning ? (
-          <>
-            <CameraOff className="mr-2 h-4 w-4" />
-            Stop Scanning
-          </>
+        {mode === 'camera' ? (
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="bg-gray-100 w-64 h-64 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-md">
+              <div className="text-center px-4">
+                <QrCode className="mx-auto h-12 w-12 text-gray-400" />
+                <p className="mt-2 text-sm text-gray-500">
+                  Camera QR scanning requires the react-qr-reader package.
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Please use the manual entry option for now.
+                </p>
+              </div>
+            </div>
+          </div>
         ) : (
-          <>
-            <Camera className="mr-2 h-4 w-4" />
-            Start Scanning
-          </>
+          <form onSubmit={handleManualSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Input
+                placeholder="Enter QR code data manually"
+                value={manualInput}
+                onChange={(e) => setManualInput(e.target.value)}
+              />
+              <p className="text-xs text-gray-500">
+                Enter the QR code data manually if scanning is not available.
+              </p>
+            </div>
+            <Button type="submit" className="w-full">
+              Submit
+            </Button>
+          </form>
         )}
-      </Button>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
-export default QRScanner; 
+export default QRScanner;

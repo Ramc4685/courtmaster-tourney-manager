@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Court } from '@/types/entities'; // Use the entity type
+import { Court, CourtStatus } from '@/types/entities'; // Use the entity type
 import { courtService } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,8 +85,11 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
         tournament_id: tournamentId,
         name,
         description: description || null,
-        status: 'AVAILABLE', // Default status
-        court_number: court_number
+        status: CourtStatus.AVAILABLE, // Use enum value
+        number: court_number, // Use 'number' instead of 'court_number'
+        court_number, // Keep for backward compatibility
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       await courtService.createCourt(newCourtData);
       toast({ title: "Success", description: "Court added successfully." });
@@ -111,11 +115,13 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
     if (!editingCourt) return;
     try {
       // Only pass fields that can be updated
-      const updateData: Partial<Omit<Court, 'id' | 'tournament_id' | 'created_at' | 'updated_at'> > = {
+      const updateData: Partial<Omit<Court, "id" | "createdAt" | "updatedAt">> = {
          name: editingCourt.name,
          description: editingCourt.description,
-         status: editingCourt.status,
-         court_number: editingCourt.court_number
+         status: editingCourt.status as CourtStatus, // Cast to CourtStatus
+         number: editingCourt.number || editingCourt.court_number, // Use number field
+         court_number: editingCourt.court_number, // Keep for compatibility
+         tournament_id: editingCourt.tournament_id
       };
       await courtService.updateCourt(editingCourt.id, updateData);
       toast({ title: "Success", description: "Court updated successfully." });
@@ -134,7 +140,7 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
     setEditingCourt({ ...editingCourt, [name]: value });
   };
 
-  const handleEditStatusChange = (newStatus: string) => {
+  const handleEditStatusChange = (newStatus: CourtStatus) => {
      if (!editingCourt) return;
      setEditingCourt({ ...editingCourt, status: newStatus });
   }
@@ -302,4 +308,4 @@ Enter the details for the new court.
       </div>
     </div>
   );
-}; 
+};

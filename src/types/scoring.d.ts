@@ -8,6 +8,8 @@ export interface ScoringSettings {
   maxTwoPointLeadScore?: number;
   setsToWin?: number;
   matchFormat?: 'TIMED' | 'STANDARD';
+  gamesPerSet?: number;
+  pointsPerGame?: number;
 }
 
 export interface MatchScore {

@@ -1,5 +1,5 @@
 
-import { UserRole } from '@/types/tournament-enums';
+import { UserRole, TournamentStage, MatchStatus, CourtStatus, Division } from '@/types/tournament-enums';
 import { 
   Tournament, 
   Match, 
@@ -26,6 +26,9 @@ export interface PlayerDetails {
     tournaments_won: number;
     average_points_per_set: number;
     win_percentage: number;
+    matches_won?: number;
+    matches_played?: number;
+    rating?: number;
   };
 }
 
@@ -39,6 +42,7 @@ export interface UserPreferences {
     match_reminders: boolean;
     tournament_updates: boolean;
     registration_notifications: boolean;
+    email?: boolean;
   };
 }
 
@@ -69,6 +73,9 @@ export interface Profile {
     tournaments_won: number;
     average_points_per_set: number;
     win_percentage: number;
+    matches_won?: number;
+    matches_played?: number;
+    rating?: number;
   };
   preferences?: UserPreferences;
   social_links?: SocialLinks;
@@ -127,6 +134,7 @@ export interface Division {
   skill_level?: string;
   created_at: Date;
   updated_at: Date;
+  capacity?: number; // Add for RegistrationAnalytics
 }
 
 // Registration interface
@@ -145,5 +153,8 @@ export {
   MatchScore,
   RegistrationStatus,
   TournamentRegistration,
-  UserRole
+  UserRole,
+  MatchStatus,
+  CourtStatus,
+  TournamentStage
 };

@@ -5,7 +5,7 @@ export enum GameType {
   TENNIS = "TENNIS",
   VOLLEYBALL = "VOLLEYBALL",
   PICKLEBALL = "PICKLEBALL",
-  // Add missing values for FormatTab
+  // Format tab values
   SINGLE_ELIMINATION = "SINGLE_ELIMINATION",
   DOUBLE_ELIMINATION = "DOUBLE_ELIMINATION",
   ROUND_ROBIN = "ROUND_ROBIN"
@@ -25,7 +25,7 @@ export enum Division {
   SENIORS = "SENIORS",
   JUNIORS = "JUNIORS",
   INITIAL = "INITIAL",
-  // Add missing advanced/beginner divisions
+  // Skill level divisions
   ADVANCED = "ADVANCED",
   INTERMEDIATE = "INTERMEDIATE",
   BEGINNER = "BEGINNER"
@@ -40,7 +40,7 @@ export enum TournamentStage {
   FINALS = "FINALS",
   DIVISION_PLACEMENT = "DIVISION_PLACEMENT",
   PLAYOFF_KNOCKOUT = "PLAYOFF_KNOCKOUT",
-  REGISTRATION = "REGISTRATION" // Added for useTournament.ts
+  REGISTRATION = "REGISTRATION"
 }
 
 // Alias for backward compatibility
@@ -61,7 +61,7 @@ export enum TournamentFormat {
   GROUP_KNOCKOUT = "GROUP_KNOCKOUT",
   SWISS = "SWISS",
   CUSTOM = "CUSTOM",
-  MULTI_STAGE = "MULTI_STAGE" // Added for TournamentFormatSelector
+  MULTI_STAGE = "MULTI_STAGE"
 }
 
 export enum TournamentStatus {
@@ -97,17 +97,20 @@ export enum CategoryType {
   OPEN_SINGLES = "OPEN_SINGLES",
   OPEN_DOUBLES = "OPEN_DOUBLES",
   CUSTOM = "CUSTOM",
-  // Add missing types for TournamentCategorySection
+  // Additional types for TournamentCategorySection
   SINGLES = "SINGLES",
   DOUBLES = "DOUBLES",
   MIXED = "MIXED",
   TEAM = "TEAM"
 }
 
+// Alias for DivisionType (referenced in PublicView.tsx)
+export type DivisionType = Division;
+
 export enum ScorerType {
   TOURNAMENT = "TOURNAMENT",
   STANDALONE = "STANDALONE"
 }
 
-// Re-export RegistrationStatus here for consistency
+// Export RegistrationStatus from registration.ts
 export { RegistrationStatus } from './registration';

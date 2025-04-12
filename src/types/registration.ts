@@ -6,12 +6,13 @@ export enum RegistrationStatus {
   PENDING = "PENDING",
   CONFIRMED = "CONFIRMED",
   CHECKED_IN = "CHECKED_IN",
-  WAITLISTED = "WAITLIST", // Changed from WAITLISTED to WAITLIST to match string comparisons
+  WAITLIST = "WAITLIST",
+  WAITLISTED = "WAITLISTED", // Keep both for compatibility
   REJECTED = "REJECTED",
   CANCELLED = "CANCELLED",
   COMPLETED = "COMPLETED",
-  APPROVED = "APPROVED", // Added for comparison
-  WITHDRAWN = "WITHDRAWN" // Added for comparison
+  APPROVED = "APPROVED",
+  WITHDRAWN = "WITHDRAWN"
 }
 
 // Alias for backward compatibility
@@ -20,6 +21,7 @@ export type TournamentRegistrationStatus = RegistrationStatus;
 export interface RegistrationMetadata {
   checkInTime?: string;
   playerName: string;
+  teamName?: string; // Add for TeamRegistrationForm
   teamSize: number;
   division: string;
   contactEmail: string;
@@ -38,9 +40,11 @@ export interface RegistrationMetadata {
   waitlistPromotionHistory?: {
     timestamp: string;
     reason: string;
+    date?: string; // Support for old format
+    fromPosition?: number; // Support for old format
+    toPosition?: number; // Support for old format
   }[];
   waitlistNotified?: string;
-  // Add missing fields
   priority?: number;
   waitlistReason?: string;
   comments?: string;
@@ -77,7 +81,7 @@ export interface TeamMember {
   email?: string;
   phone?: string;
   isTeamCaptain?: boolean;
-  name?: string; // Added for TeamRegistrationList
+  name?: string;
 }
 
 export interface TeamRegistrationWithStatus extends TournamentRegistration {
@@ -107,7 +111,8 @@ export const teamMemberSchema = z.object({
   email: z.string().email("Invalid email address").optional(),
   phone: z.string().optional(),
   isTeamCaptain: z.boolean().optional(),
-  name: z.string().optional(), // Added for TeamRegistrationForm
+  name: z.string().optional(),
+  player_id: z.string().optional(), // Add for TeamRegistrationForm
 });
 
 // Schema for team registration validation

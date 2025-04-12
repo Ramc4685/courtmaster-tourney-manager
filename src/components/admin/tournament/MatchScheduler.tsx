@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
-import { Match, Court } from '@/types/entities';
+import { Match, Court, Notification } from '@/types/entities';
 import { matchService, courtService, notificationService, emailService, profileService } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,7 +67,7 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
   // --- Edit Logic ---
   const handleEditClick = (match: Match) => {
     // Pre-populate edit fields from scheduled_time
-    const scheduled = match.scheduled_time ? parseISO(match.scheduled_time) : null;
+    const scheduled = match.scheduledTime ? (typeof match.scheduledTime === 'string' ? parseISO(match.scheduledTime) : match.scheduledTime) : null;
     setEditingMatch({
       ...match,
       editDate: scheduled ? format(scheduled, 'yyyy-MM-dd') : '',
@@ -99,13 +100,13 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
       }
     }
     
-    const oldScheduledTime = editingMatch.scheduled_time;
-    const oldCourtId = editingMatch.court_id;
+    const oldScheduledTime = editingMatch.scheduledTime;
+    const oldCourtId = editingMatch.courtId;
 
     try {
       const updatePayload: Partial<Match> = {
-        scheduled_time: newScheduledTime,
-        court_id: editingMatch.court_id || null,
+        scheduledTime: newScheduledTime ? new Date(newScheduledTime) : undefined,
+        courtId: editingMatch.courtId || null,
       };
       // Save the update
       const updatedMatch = await matchService.updateMatch(editingMatch.id, updatePayload);
@@ -115,24 +116,24 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
 
       // --- Send Notifications --- 
       const hasTimeChanged = newScheduledTime !== oldScheduledTime;
-      const hasCourtChanged = updatedMatch.court_id !== oldCourtId;
-      const courtAssigned = !!updatedMatch.court_id;
+      const hasCourtChanged = updatedMatch.courtId !== oldCourtId;
+      const courtAssigned = !!updatedMatch.courtId;
       const timeAssigned = !!newScheduledTime;
       
       // Send notification if time or court was assigned/changed
       if ((hasTimeChanged || hasCourtChanged) && courtAssigned && timeAssigned) {
          // Get participant IDs (simplified, assumes player IDs are available or teams can be resolved)
          const participantIds = [
-            updatedMatch.player1_id,
-            updatedMatch.player2_id,
+            updatedMatch.team1Id,
+            updatedMatch.team2Id,
             // TODO: Resolve team members if team IDs are present
             // updatedMatch.team1_id -> resolve members -> get user IDs
             // updatedMatch.team2_id -> resolve members -> get user IDs
          ].filter(id => !!id) as string[];
 
          if (participantIds.length > 0) {
-            const courtName = courts.find(c => c.id === updatedMatch.court_id)?.name || 'Unknown Court';
-            const scheduledTimeFormatted = format(parseISO(newScheduledTime!), 'Pp'); // Use non-null assertion as timeAssigned is true
+            const courtName = courts.find(c => c.id === updatedMatch.courtId)?.name || 'Unknown Court';
+            const scheduledTimeFormatted = format(updatedMatch.scheduledTime as Date, 'Pp');
             
             // Construct message based on what changed
             let message = `Match Update (${updatedMatch.round_number}-${updatedMatch.match_number}): Scheduled for ${scheduledTimeFormatted} on ${courtName}.`;
@@ -157,6 +158,7 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
                  message: message,
                  type: 'match_schedule_update',
                  read: false,
+                 updated_at: new Date().toISOString()
               }).catch(err => console.error(`Failed to create in-app notification for ${userId}:`, err));
 
               // 2. Email Notification (check preferences)
@@ -219,15 +221,15 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
                 <TableCell>{match.match_number}</TableCell>
                 <TableCell>
                   {/* TODO: Display player/team names based on IDs */}
-                  P1: {match.player1_id || match.team1_id || 'TBD'} <br />
-                  P2: {match.player2_id || match.team2_id || 'TBD'}
+                  P1: {match.team1Id || 'TBD'} <br />
+                  P2: {match.team2Id || 'TBD'}
                 </TableCell>
                 <TableCell>{match.status}</TableCell>
                 <TableCell>
-                  {match.scheduled_time ? format(parseISO(match.scheduled_time), 'Pp') : 'Not Scheduled'}
+                  {match.scheduledTime ? format(typeof match.scheduledTime === 'string' ? parseISO(match.scheduledTime) : match.scheduledTime, 'Pp') : 'Not Scheduled'}
                 </TableCell>
                 <TableCell>
-                   {match.court_id ? courts.find(c => c.id === match.court_id)?.name : 'Not Assigned'}
+                   {match.courtId ? courts.find(c => c.id === match.courtId)?.name : 'Not Assigned'}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button variant="outline" size="sm" onClick={() => handleEditClick(match)}>
@@ -251,7 +253,7 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
                {/* Simplified display of participants */}
                <p className="text-sm text-muted-foreground">
                  Match: {editingMatch.round_number}-{editingMatch.match_number} (ID: {editingMatch.id}) <br/>
-                 Participants: {editingMatch.player1_id || editingMatch.team1_id || 'TBD'} vs {editingMatch.player2_id || editingMatch.team2_id || 'TBD'}
+                 Participants: {editingMatch.team1Id || 'TBD'} vs {editingMatch.team2Id || 'TBD'}
                </p>
               <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-1">
@@ -276,11 +278,11 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
                  </div>
               </div>
               <div className="space-y-1">
-                <Label htmlFor="court_id">Court</Label>
+                <Label htmlFor="courtId">Court</Label>
                 <Select 
-                  name="court_id"
-                  value={editingMatch.court_id || ''} 
-                  onValueChange={(value) => handleEditInputChange({ target: { name: 'court_id', value } } as any)}
+                  name="courtId"
+                  value={editingMatch.courtId || ''} 
+                  onValueChange={(value) => handleEditInputChange({ target: { name: 'courtId', value } } as any)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Assign Court" />
@@ -303,4 +305,4 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
       </Dialog>
     </div>
   );
-}; 
+};
