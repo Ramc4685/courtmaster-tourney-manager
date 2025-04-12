@@ -25,6 +25,7 @@ export interface AuthContextType {
   signUp: (email: string, password: string, data: { full_name: string, display_name: string, role: string }) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
+  updateUserProfile: (data: Partial<Profile>) => Promise<void>; // Added for Profile.tsx
   
   // Compatibility methods (for existing components)
   login: (credentials: UserCredentials) => Promise<boolean>;

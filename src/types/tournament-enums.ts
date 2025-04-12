@@ -4,7 +4,11 @@ export enum GameType {
   TABLE_TENNIS = "TABLE_TENNIS",
   TENNIS = "TENNIS",
   VOLLEYBALL = "VOLLEYBALL",
-  PICKLEBALL = "PICKLEBALL"
+  PICKLEBALL = "PICKLEBALL",
+  // Add missing values for FormatTab
+  SINGLE_ELIMINATION = "SINGLE_ELIMINATION",
+  DOUBLE_ELIMINATION = "DOUBLE_ELIMINATION",
+  ROUND_ROBIN = "ROUND_ROBIN"
 }
 
 export enum PlayType {
@@ -20,7 +24,11 @@ export enum Division {
   MIXED = "MIXED",
   SENIORS = "SENIORS",
   JUNIORS = "JUNIORS",
-  INITIAL = "INITIAL"
+  INITIAL = "INITIAL",
+  // Add missing advanced/beginner divisions
+  ADVANCED = "ADVANCED",
+  INTERMEDIATE = "INTERMEDIATE",
+  BEGINNER = "BEGINNER"
 }
 
 export enum TournamentStage {
@@ -31,8 +39,12 @@ export enum TournamentStage {
   SEMIFINALS = "SEMIFINALS",
   FINALS = "FINALS",
   DIVISION_PLACEMENT = "DIVISION_PLACEMENT",
-  PLAYOFF_KNOCKOUT = "PLAYOFF_KNOCKOUT"
+  PLAYOFF_KNOCKOUT = "PLAYOFF_KNOCKOUT",
+  REGISTRATION = "REGISTRATION" // Added for useTournament.ts
 }
+
+// Alias for backward compatibility
+export type TournamentStageEnum = TournamentStage;
 
 export enum UserRole {
   ADMIN = "admin",
@@ -48,7 +60,8 @@ export enum TournamentFormat {
   ROUND_ROBIN = "ROUND_ROBIN",
   GROUP_KNOCKOUT = "GROUP_KNOCKOUT",
   SWISS = "SWISS",
-  CUSTOM = "CUSTOM"
+  CUSTOM = "CUSTOM",
+  MULTI_STAGE = "MULTI_STAGE" // Added for TournamentFormatSelector
 }
 
 export enum TournamentStatus {
@@ -83,10 +96,18 @@ export enum CategoryType {
   MIXED_DOUBLES = "MIXED_DOUBLES",
   OPEN_SINGLES = "OPEN_SINGLES",
   OPEN_DOUBLES = "OPEN_DOUBLES",
-  CUSTOM = "CUSTOM"
+  CUSTOM = "CUSTOM",
+  // Add missing types for TournamentCategorySection
+  SINGLES = "SINGLES",
+  DOUBLES = "DOUBLES",
+  MIXED = "MIXED",
+  TEAM = "TEAM"
 }
 
 export enum ScorerType {
   TOURNAMENT = "TOURNAMENT",
   STANDALONE = "STANDALONE"
 }
+
+// Re-export RegistrationStatus here for consistency
+export { RegistrationStatus } from './registration';

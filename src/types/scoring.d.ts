@@ -1,37 +1,70 @@
 
-import { Match, StandaloneMatch } from './tournament';
-
 export interface ScoringSettings {
+  pointsToWin: number;
+  mustWinByTwo: boolean;
   maxPoints: number;
-  winByTwo: boolean;
   maxSets: number;
-  bestOf: boolean;
+  requireTwoPointLead?: boolean;
+  maxTwoPointLeadScore?: number;
+  setsToWin?: number;
+  matchFormat?: 'TIMED' | 'STANDARD';
 }
 
-export interface StandaloneMatchScoringProps {
-  isLoading: boolean;
-  match: StandaloneMatch | Match | null;
+export interface MatchScore {
+  team1Score: number;
+  team2Score: number;
+  setNumber?: number;
+  isComplete?: boolean;
+  winner?: 'team1' | 'team2' | null;
+  duration?: number;
+  auditLogs?: ScoreAuditLog[];
+  timestamp?: string;
+}
+
+export interface ScoreAuditLog {
+  action: string;
+  timestamp: string;
+  userId: string;
+  scoreData: MatchScore;
+  previousScore?: string;
+}
+
+export interface ScoreValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface MatchScoringState {
+  scores: MatchScore[];
   currentSet: number;
-  setCurrentSet: (set: number) => void;
-  settingsOpen: boolean;
-  setSettingsOpen: (open: boolean) => void;
-  scoringSettings: ScoringSettings;
-  setNewSetDialogOpen: (open: boolean) => void;
-  newSetDialogOpen: boolean;
-  completeMatchDialogOpen: boolean;
-  setCompleteMatchDialogOpen: (open: boolean) => void;
-  onScoreChange: (team: "team1" | "team2", increment: boolean) => void;
-  onNewSet: () => void;
-  onCompleteMatch: () => void;
-  onSave: () => void;
-  isPending?: boolean;
-  scorerName?: string;
-  onScorerNameChange?: (name: string) => void;
-  onCourtChange?: (courtNumber: number) => void;
+  matchComplete: boolean;
+  winner: 'team1' | 'team2' | null;
+  completeSet: (setNumber: number, winner: 'team1' | 'team2') => void;
+  resetMatch: () => void;
 }
 
-export interface TournamentScorerOptions {
-  scorerType: "TOURNAMENT" | "STANDALONE";
-  matchId?: string;
-  scorerName?: string;
+export interface ScoringState {
+  selectMatch: (matchId: string) => void;
+  selectCourt: (courtId: string) => void;
+  scoreChange: (team: 'team1' | 'team2', increment: boolean) => void;
+  startMatch: () => void;
+  standaloneStartMatch: () => void;
+  completeMatch: () => void;
+  standaloneCompleteMatch: () => void;
+  newSet: () => void;
+  standaloneNewSet: () => void;
+  standaloneScoreChange: (team: 'team1' | 'team2', increment: boolean) => void;
+  handleSelectMatch: (matchId: string) => void;
+  handleSelectCourt: (courtId: string) => void;
+  handleScoreChange: (team: 'team1' | 'team2', increment: boolean) => void;
+  handleStartMatch: () => void;
+  handleStandaloneStartMatch: () => void;
+  handleCompleteMatch: () => void;
+  handleStandaloneCompleteMatch: () => void;
+  handleNewSet: () => void;
+  handleStandaloneNewSet: () => void;
+  handleStandaloneScoreChange: (team: 'team1' | 'team2', increment: boolean) => void;
+  handleUpdateScoringSettings: (settings: ScoringSettings) => void;
+  handleBackToCourts: () => void;
 }
