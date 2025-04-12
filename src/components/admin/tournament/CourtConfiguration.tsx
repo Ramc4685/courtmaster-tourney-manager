@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -86,7 +87,7 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
         name,
         description: description || null,
         status: CourtStatus.AVAILABLE, // Use enum value
-        number: court_number, // Use 'number' instead of 'court_number'
+        number: court_number, // Use 'number' property
         court_number, // Keep for backward compatibility
         createdAt: new Date(),
         updatedAt: new Date()
@@ -114,11 +115,14 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
   const handleSaveEdit = async () => {
     if (!editingCourt) return;
     try {
+      // Ensure status is a valid CourtStatus
+      const status = editingCourt.status as CourtStatus;
+
       // Only pass fields that can be updated
       const updateData: Partial<Omit<Court, "id" | "createdAt" | "updatedAt">> = {
          name: editingCourt.name,
          description: editingCourt.description,
-         status: editingCourt.status as CourtStatus, // Cast to CourtStatus
+         status: status,
          number: editingCourt.number || editingCourt.court_number, // Use number field
          court_number: editingCourt.court_number, // Keep for compatibility
          tournament_id: editingCourt.tournament_id
@@ -258,22 +262,20 @@ Enter the details for the new court.
                        />
                     </TableCell>
                     <TableCell>
-                       {/* TODO: Replace with Select if more statuses are needed */}
-                       <Input 
-                          name="status" 
-                          value={editingCourt.status} 
-                          onChange={handleEditInputChange} 
-                          className="h-8"
-                       />
-                       {/* <Select value={editingCourt.status} onValueChange={handleEditStatusChange}> 
-                           <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                           <SelectContent>
-                              <SelectItem value="AVAILABLE">AVAILABLE</SelectItem>
-                              <SelectItem value="IN_USE">IN_USE</SelectItem>
-                              <SelectItem value="MAINTENANCE">MAINTENANCE</SelectItem>
-                              <SelectItem value="UNAVAILABLE">UNAVAILABLE</SelectItem>
-                           </SelectContent>
-                       </Select> */}
+                       <Select 
+                         value={editingCourt.status} 
+                         onValueChange={(value) => handleEditStatusChange(value as CourtStatus)}
+                       >
+                         <SelectTrigger className="h-8">
+                           <SelectValue placeholder="Status" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value={CourtStatus.AVAILABLE}>Available</SelectItem>
+                           <SelectItem value={CourtStatus.IN_USE}>In Use</SelectItem>
+                           <SelectItem value={CourtStatus.MAINTENANCE}>Maintenance</SelectItem>
+                           <SelectItem value={CourtStatus.RESERVED}>Reserved</SelectItem>
+                         </SelectContent>
+                       </Select>
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon" onClick={handleSaveEdit} className="h-8 w-8 mr-1">

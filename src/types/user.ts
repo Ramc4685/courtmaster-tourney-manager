@@ -38,4 +38,10 @@ export interface AuthContextType {
   error: string | null;
   isDemo: boolean;
   updateUserProfile: (data: Partial<Profile>) => Promise<void>;
+  isAuthenticated: boolean; // Add for App.tsx
+  login: (email: string, password: string) => Promise<void>; // Add for compatibility
+  enableDemoMode: (enable: boolean) => void; // Add for compatibility
+  register: (email: string, password: string, data: any) => Promise<void>; // Add for RegisterForm
+  logout: () => Promise<void>; // Add for UserMenu
+  demoMode: boolean; // Add for UserMenu
 }

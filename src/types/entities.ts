@@ -8,9 +8,15 @@ import {
   Player, 
   Team,
   MatchScore,
-  ScoringSettings
+  ScoringSettings,
+  CourtStatus,
+  MatchStatus,
+  TournamentStage
 } from './tournament';
-import { RegistrationStatus, TournamentRegistration } from './registration';
+import { 
+  RegistrationStatus, 
+  TournamentRegistration 
+} from './registration';
 
 // Player Details
 export interface PlayerDetails {

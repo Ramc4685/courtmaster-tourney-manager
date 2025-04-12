@@ -1,3 +1,4 @@
+
 export enum RegistrationStatus {
   PENDING = "PENDING",
   APPROVED = "APPROVED",
@@ -40,6 +41,9 @@ export interface RegistrationMetadata {
   captainEmail?: string;
   captainPhone?: string;
   priority?: number;
+  waitlistPosition?: number; // Add for waitlist tracking
+  waitlistNotified?: string; // Add for notification tracking
+  emergencyContact?: string; // Add for emergency contact info
 }
 
 export interface TeamMember {

@@ -26,8 +26,7 @@ const QRCheckIn: React.FC<QRCheckInProps> = ({ onScan }) => {
       await onScan(data);
       setSuccess('Successfully checked in!');
       toast({
-        description: 'Successfully checked in!',
-        // Remove the invalid 'icon' property
+        description: 'Successfully checked in!'
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to process QR code';

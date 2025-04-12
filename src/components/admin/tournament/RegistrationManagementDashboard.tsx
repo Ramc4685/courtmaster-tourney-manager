@@ -37,11 +37,17 @@ export const RegistrationManagementDashboard: React.FC<RegistrationManagementDas
   }, [tournamentId, fetchRegistrations]);
 
   // Filter waitlisted registrations
-  const waitlistedPlayers = playerRegistrations.filter(reg => reg.status === RegistrationStatus.WAITLIST || reg.status === RegistrationStatus.WAITLISTED);
-  const waitlistedTeams = teamRegistrations.filter(reg => reg.status === RegistrationStatus.WAITLIST || reg.status === RegistrationStatus.WAITLISTED);
-  const combinedWaitlist = [...waitlistedPlayers, ...waitlistedTeams].sort((a, b) => 
-    (a.metadata.waitlistPosition || Infinity) - (b.metadata.waitlistPosition || Infinity)
-  );
+  const waitlistedPlayers = playerRegistrations.filter(reg => 
+    reg.status === RegistrationStatus.WAITLISTED);
+    
+  const waitlistedTeams = teamRegistrations.filter(reg => 
+    reg.status === RegistrationStatus.WAITLISTED);
+    
+  const combinedWaitlist = [...waitlistedPlayers, ...waitlistedTeams].sort((a, b) => {
+    const posA = a.metadata.waitlistPosition || Infinity;
+    const posB = b.metadata.waitlistPosition || Infinity;
+    return posA - posB;
+  });
 
   const handlePromote = async (id: string) => {
     console.log('Promote:', id);
