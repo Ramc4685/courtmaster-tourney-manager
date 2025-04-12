@@ -1,3 +1,4 @@
+
 import { TournamentStatus, MatchStatus, CourtStatus, DivisionType, StageType, ScorerType, TournamentFormat, CategoryType, TournamentStage } from './tournament-enums';
 
 export interface AuditLog {
@@ -56,6 +57,9 @@ export interface Match {
         team1: number;
         team2: number;
     };
+    bracketRound: number;
+    bracketPosition: number;
+    progression: string;
     winnerId?: string;
     createdAt: Date;
     updatedAt: Date;
@@ -91,6 +95,7 @@ export interface StandaloneMatch {
 export interface Court {
     id: string;
     name: string;
+    number: number;
     status: CourtStatus;
     currentMatchId?: string;
     createdAt: Date;
@@ -140,4 +145,8 @@ export interface ScoringSettings {
     setsToWin?: number;
 }
 
-export type { TournamentStatus, MatchStatus, CourtStatus, DivisionType, StageType, ScorerType, TournamentFormat, CategoryType, TournamentStage };
+// Add this missing export to fix a lot of the errors
+export type Category = TournamentCategory;
+
+// Export all the enum types for use throughout the application
+export { TournamentStatus, MatchStatus, CourtStatus, DivisionType, StageType, ScorerType, TournamentFormat, CategoryType, TournamentStage };

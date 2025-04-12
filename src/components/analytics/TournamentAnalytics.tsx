@@ -1,143 +1,84 @@
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import LineChart from './LineChart';
 import BarChart from './BarChart';
 
 interface TournamentAnalyticsProps {
   tournamentId: string;
+  className?: string;
 }
 
-const TournamentAnalytics: React.FC<TournamentAnalyticsProps> = ({ tournamentId }) => {
-  // Placeholder data for charts
-  const matchesByDayData = [5, 8, 12, 10, 7, 4];
-  const playerParticipationData = [20, 25, 30, 35, 40, 45];
-  const courtUtilizationData = [65, 80, 75, 90, 85, 70];
-  const durationData = [45, 50, 40, 55, 60, 50];
+const TournamentAnalytics: React.FC<TournamentAnalyticsProps> = ({ 
+  tournamentId, 
+  className = "" 
+}) => {
+  // Mock data for charts
+  const registrationsData = [12, 24, 36, 42, 48, 50];
+  const completedMatchesData = [0, 5, 15, 25, 35, 48];
+  const matchDurationData = [32, 28, 35, 30, 38, 25];
+  const playerParticipationData = [28, 32, 36, 38, 32, 34];
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-bold">Tournament Analytics</h2>
-      
-      <Tabs defaultValue="overview">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="matches">Matches</TabsTrigger>
-          <TabsTrigger value="players">Players</TabsTrigger>
-          <TabsTrigger value="courts">Courts</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="overview" className="space-y-4 pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Total Matches</CardTitle>
-                <CardDescription>Across all divisions</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">48</div>
-                <p className="text-sm text-muted-foreground">+12% from previous tournament</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Player Participation</CardTitle>
-                <CardDescription>Unique players</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">64</div>
-                <p className="text-sm text-muted-foreground">+8% from previous tournament</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Average Match Duration</CardTitle>
-                <CardDescription>In minutes</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">45</div>
-                <p className="text-sm text-muted-foreground">-5% from previous tournament</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Court Utilization</CardTitle>
-                <CardDescription>Average % used</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">78%</div>
-                <p className="text-sm text-muted-foreground">+15% from previous tournament</p>
-              </CardContent>
-            </Card>
+    <div className={`space-y-8 ${className}`}>
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Tournament Analytics</h2>
+        <p className="text-muted-foreground">
+          Key metrics and insights for tournament ID: {tournamentId}
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border bg-card text-card-foreground shadow">
+          <div className="p-6 flex flex-col space-y-2">
+            <p className="text-sm text-muted-foreground">Total Players</p>
+            <p className="text-2xl font-bold">96</p>
           </div>
-          
-          <LineChart 
-            data={matchesByDayData} 
-            className="mt-4" 
-            lines={[
-              { label: "Matches", color: "#0E76D7" }
-            ]}
-          />
-        </TabsContent>
-        
-        <TabsContent value="matches" className="pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Match Analytics</CardTitle>
-              <CardDescription>Match statistics over time</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <BarChart 
-                data={durationData} 
-                className="mt-4" 
-                bars={[
-                  { label: "Duration", color: "#22C55E" }
-                ]}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="players" className="pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Player Analytics</CardTitle>
-              <CardDescription>Participation and performance</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <LineChart 
-                data={playerParticipationData} 
-                className="mt-4" 
-                lines={[
-                  { label: "Participation", color: "#F59E0B" }
-                ]}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="courts" className="pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Court Analytics</CardTitle>
-              <CardDescription>Utilization and scheduling</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <BarChart 
-                data={courtUtilizationData} 
-                className="mt-4" 
-                bars={[
-                  { label: "Utilization", color: "#8B5CF6" }
-                ]}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+        <div className="rounded-xl border bg-card text-card-foreground shadow">
+          <div className="p-6 flex flex-col space-y-2">
+            <p className="text-sm text-muted-foreground">Total Matches</p>
+            <p className="text-2xl font-bold">64</p>
+          </div>
+        </div>
+        <div className="rounded-xl border bg-card text-card-foreground shadow">
+          <div className="p-6 flex flex-col space-y-2">
+            <p className="text-sm text-muted-foreground">Completed Matches</p>
+            <p className="text-2xl font-bold">48</p>
+          </div>
+        </div>
+        <div className="rounded-xl border bg-card text-card-foreground shadow">
+          <div className="p-6 flex flex-col space-y-2">
+            <p className="text-sm text-muted-foreground">Avg Match Time</p>
+            <p className="text-2xl font-bold">34 min</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <LineChart 
+          data={registrationsData} 
+          className="w-full" 
+          lines={[{ label: "Registrations Over Time", color: "#0ea5e9" }]}
+        />
+        <LineChart 
+          data={completedMatchesData} 
+          className="w-full" 
+          lines={[{ label: "Completed Matches", color: "#10b981" }]}
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <BarChart 
+          data={matchDurationData} 
+          className="w-full" 
+          bars={[{ label: "Average Match Durations", color: "#8b5cf6" }]}
+        />
+        <BarChart 
+          data={playerParticipationData} 
+          className="w-full" 
+          bars={[{ label: "Player Participation", color: "#f59e0b" }]}
+        />
+      </div>
     </div>
   );
 };
