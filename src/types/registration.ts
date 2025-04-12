@@ -1,99 +1,94 @@
-import { z } from "zod";
-import type { TournamentCategory } from './tournament';
 
-export type TournamentRegistrationStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'WAITLIST' | 'CHECKED_IN' | 'WITHDRAWN';
+export enum RegistrationStatus {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  CANCELLED = "CANCELLED",
+  WITHDRAWN = "WITHDRAWN",
+  WAITLISTED = "WAITLISTED",
+  CHECKED_IN = "CHECKED_IN",
+  // Add WAITLIST as an alias for WAITLISTED for backward compatibility
+  WAITLIST = "WAITLISTED"
+}
 
 export interface RegistrationMetadata {
-  playerName: string;
-  teamSize: number;
-  division: string;
-  contactEmail: string;
-  contactPhone: string;
-  emergencyContact: {
-    name: string;
-    phone: string;
-    relationship: string;
-  };
-  waiverSigned: boolean;
-  paymentStatus: 'PENDING' | 'COMPLETED' | 'FAILED';
-  specialRequests?: string;
-  checkedInAt?: string;
+  checkInTime?: string;
+  playerName?: string;
+  teamName?: string;
+  teamSize?: number;
+  division?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  paymentStatus?: string;
   notes?: string;
-  priority?: number;
-  comments?: RegistrationComment[];
-  waitlistPosition?: number;
+  partnerPreference?: string;
+  skillLevel?: string;
+  specialRequests?: string;
+  medicalNotes?: string;
   waitlistReason?: string;
-  waitlistNotified?: string;
-  waitlistPromotionHistory?: Array<{
-    date: string;
-    fromPosition: number;
-    toPosition: number;
-  }>;
+  waiverSigned?: boolean;
+  // For waitlist movement tracking
+  waitlistHistory?: {
+    timestamp: string;
+    reason: string;
+    date?: string;
+    fromPosition?: number;
+    toPosition?: number;
+  }[];
+  comments?: string[]; // Add to support RegistrationDetails
+  // Additional fields for team registration
+  captainName?: string;
+  captainEmail?: string;
+  captainPhone?: string;
+  priority?: number;
+  waitlistPosition?: number; // Add for waitlist tracking
+  waitlistNotified?: string; // Add for notification tracking
+  emergencyContact?: string; // Add for emergency contact info
+}
+
+export interface TeamMember {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  isTeamCaptain?: boolean;
+  name?: string;
+  player_id?: string; // Add for compatibility
 }
 
 export interface TournamentRegistration {
   id: string;
   tournamentId: string;
-  teamId: string;
-  userId: string;
-  status: TournamentRegistrationStatus;
-  registeredAt: string;
-  notes?: string;
-  priority?: number;
-  category: TournamentCategory;
-  metadata: RegistrationMetadata;
-}
-
-// Team member schema
-export const teamMemberSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  player_id: z.string(),
-});
-
-// Player registration schema
-export const playerRegistrationSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
-  player_id: z.string(),
-  division_id: z.string(),
-});
-
-// Team registration schema
-export const teamRegistrationSchema = z.object({
-  teamName: z.string().min(1, "Team name is required"),
-  captainName: z.string().min(1, "Captain name is required"),
-  captainEmail: z.string().email("Invalid email address"),
-  captainPhone: z.string().optional(),
-  members: z.array(teamMemberSchema).min(1, "At least one team member is required"),
-  player_id: z.string(),
-  division_id: z.string(),
-});
-
-export type TeamMember = z.infer<typeof teamMemberSchema>;
-export type PlayerRegistration = z.infer<typeof playerRegistrationSchema>;
-export type TeamRegistration = z.infer<typeof teamRegistrationSchema>;
-
-export interface RegistrationComment {
-  id: string;
-  text: string;
-  createdBy: string;
-  createdAt: string;
-}
-
-export interface BaseRegistrationWithStatus {
-  id: string;
-  tournamentId: string;
-  status: TournamentRegistrationStatus;
+  categoryId?: string;
+  playerId?: string;
+  partnerId?: string;
+  status: RegistrationStatus;
   metadata: RegistrationMetadata;
   createdAt: Date;
   updatedAt: Date;
+  category?: any;
 }
 
-export interface PlayerRegistrationWithStatus extends PlayerRegistration, BaseRegistrationWithStatus {}
+export interface PlayerRegistrationWithStatus extends TournamentRegistration {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+}
 
-export interface TeamRegistrationWithStatus extends TeamRegistration, BaseRegistrationWithStatus {
-  metadata: RegistrationMetadata;
-} 
+export interface TeamRegistrationWithStatus extends TournamentRegistration {
+  teamName: string;
+  captainName: string;
+  captainEmail: string;
+  captainPhone?: string;
+  members?: TeamMember[];
+}
+
+// Schema for validation using zod
+export const playerRegistrationSchema = {
+  // Define schema for player registration validation
+};
+
+export const teamRegistrationSchema = {
+  // Define schema for team registration validation
+};

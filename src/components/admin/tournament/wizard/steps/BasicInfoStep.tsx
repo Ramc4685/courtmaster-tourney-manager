@@ -167,4 +167,4 @@ export const BasicInfoStep = () => {
       </div>
     </div>
   );
-}; 
+};

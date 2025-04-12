@@ -1,173 +1,122 @@
-import { User as SupabaseUser } from '@supabase/supabase-js';
 
-export type UserRole = 'admin' | 'organizer' | 'player' | 'guest';
-export type TournamentStatus = 'draft' | 'registration' | 'in_progress' | 'completed' | 'cancelled';
-export type MatchStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-export type DivisionType = 'skill' | 'age' | 'gender';
+import { UserRole } from './tournament-enums';
+import { 
+  Tournament, 
+  Match, 
+  Court, 
+  TournamentCategory, 
+  Player, 
+  Team,
+  MatchScore,
+  ScoringSettings,
+  CourtStatus,
+  MatchStatus,
+  TournamentStage
+} from './tournament';
+import { 
+  RegistrationStatus, 
+  TournamentRegistration 
+} from './registration';
 
+// Player Details
+export interface PlayerDetails {
+  skill_level?: string;
+  preferred_partner?: string;
+  availability?: string[];
+  playing_history?: string;
+  ranking?: number;
+  player_stats?: {
+    total_matches: number;
+    wins: number;
+    losses: number;
+    tournaments_played: number;
+    tournaments_won: number;
+    average_points_per_set: number;
+    win_percentage: number;
+    matches_won?: number;
+    matches_played?: number;
+    rating?: number;
+  };
+}
+
+// User Preferences
+export interface UserPreferences {
+  notification_emails?: boolean;
+  notification_sms?: boolean;
+  dark_mode?: boolean;
+  language?: string;
+  notifications?: {
+    match_reminders: boolean;
+    tournament_updates: boolean;
+    registration_notifications: boolean;
+    email?: boolean;
+  };
+}
+
+// Social Links
+export interface SocialLinks {
+  facebook?: string;
+  twitter?: string;
+  instagram?: string;
+  linkedin?: string;
+}
+
+// Profile
 export interface Profile {
   id: string;
+  name: string; // Added for backward compatibility
+  full_name: string;
+  display_name: string;
   email: string;
-  full_name: string | null;
-  display_name: string | null;
-  avatar_url: string | null;
-  phone: string | null;
+  phone?: string;
+  avatar_url?: string;
   role: UserRole;
-  created_at: string;
-  updated_at: string;
-  player_stats: PlayerStats;
-  preferences: UserPreferences;
-  player_details: PlayerDetails;
-  social_links: {
-    facebook?: string;
-    twitter?: string;
-    instagram?: string;
-    website?: string;
+  player_details?: PlayerDetails;
+  player_stats?: {
+    total_matches: number;
+    wins: number;
+    losses: number;
+    tournaments_played: number;
+    tournaments_won: number;
+    average_points_per_set: number;
+    win_percentage: number;
+    matches_won?: number;
+    matches_played?: number;
+    rating?: number;
   };
+  preferences?: UserPreferences;
+  social_links?: SocialLinks;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface PlayerStats {
-  matches_played: number;
-  matches_won: number;
-  tournaments_played: number;
-  tournaments_won: number;
-  rating: number;
-  ranking: number | null;
+// Role Permissions
+export interface RolePermissions {
+  can_manage_tournaments: boolean;
+  can_manage_users: boolean;
+  can_manage_registrations: boolean;
+  can_score_matches: boolean;
+  can_view_reports: boolean;
 }
 
-export interface UserPreferences {
-  notifications: {
-    email: boolean;
-    push: boolean;
-    tournament_updates: boolean;
-    match_reminders: boolean;
-  };
-  privacy: {
-    show_profile: boolean;
-    show_stats: boolean;
-    show_history: boolean;
-  };
-  display: {
-    theme: 'light' | 'dark';
-    language: string;
-  };
-}
+// User Permissions (alias for backward compatibility)
+export type UserPermissions = RolePermissions;
 
-export interface PlayerDetails {
-  birthdate: string | null;
-  gender: string | null;
-  skill_level: string | null;
-  dominant_hand: 'left' | 'right' | 'ambidextrous' | null;
-  location: {
-    city: string | null;
-    state: string | null;
-    country: string | null;
-  };
-  bio: string | null;
-}
-
-export type NewProfile = Omit<Profile, 'id'> & {
-  id: string;
-};
-
-export type ProfileUpdate = Partial<Profile> & {
-  updated_at: string;
-};
-
-export interface Tournament {
-  id: string;
-  name: string;
-  description: string | null;
-  start_date: string;
-  end_date: string;
-  registration_deadline: string | null;
-  venue: string | null;
-  status: TournamentStatus;
-  organizer_id: string;
-  divisions: Division[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Division {
-  id: string;
-  tournament_id: string;
-  name: string;
-  type: DivisionType;
-  min_age: number | null;
-  max_age: number | null;
-  skill_level: string | null;
-  gender: string | null;
-  capacity: number | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Court {
-  id: string;
-  tournament_id: string;
-  name: string;
-  court_number: number;
-  status: string;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Registration {
-  id: string;
-  tournament_id: string;
-  division_id: string;
-  player_id: string;
-  partner_id: string | null;
-  status: string;
-  metadata: Record<string, any>;
-  notes: string | null;
-  priority: number;
-  created_at: string;
-  updated_at: string;
-}
-
+// Score Set for scoring interface
 export interface ScoreSet {
   set: number;
   team1: number;
   team2: number;
   completed: boolean;
-  // Add game scores if needed: games?: { team1: number, team2: number }[];
 }
 
+// Match Scores type for scoring interface
 export interface MatchScores {
   currentSet: number;
   sets: ScoreSet[];
-  server?: string | null; // Player or Team ID
-  currentEndTime?: 'team1_end' | 'team2_end' | null;
-  // history?: any[]; // Optional: For undo/redo stored in JSON
 }
 
-export interface Match {
-  id: string;
-  tournament_id: string;
-  division_id: string;
-  round_number: number;
-  match_number: number;
-  player1_id: string | null;
-  player2_id: string | null;
-  team1_id: string | null;
-  team2_id: string | null;
-  court_id: string | null;
-  status: MatchStatus;
-  scheduled_time: string | null;
-  start_time: string | null;
-  end_time: string | null;
-  scores: MatchScores | null;
-  winner_id: string | null;
-  winner_team_id: string | null;
-  notes: string | null;
-  verified: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
+// Notification interface
 export interface Notification {
   id: string;
   user_id: string;
@@ -176,4 +125,45 @@ export interface Notification {
   type: string;
   read: boolean;
   created_at: string;
-} 
+  updated_at: string;
+  metadata?: Record<string, any>;
+}
+
+// Division interface
+export interface Division {
+  id: string;
+  tournament_id: string;
+  name: string;
+  type: string;
+  min_age?: number;
+  max_age?: number;
+  gender?: string;
+  skill_level?: string;
+  created_at: Date;
+  updated_at: Date;
+  capacity?: number; // Add for RegistrationAnalytics
+}
+
+// Registration interface
+export interface Registration extends TournamentRegistration {
+  // Additional fields specific to the entity model
+}
+
+// Re-export all types from tournament and registration
+export {
+  Tournament,
+  Match,
+  Court,
+  TournamentCategory,
+  Player,
+  Team,
+  MatchScore,
+  ScoringSettings,
+  RegistrationStatus,
+  TournamentRegistration,
+  UserRole,
+  // Enums from tournament-enums.ts are imported via tournament.ts
+  MatchStatus,
+  CourtStatus,
+  TournamentStage
+};

@@ -1,37 +1,35 @@
 
-import { Match, StandaloneMatch } from './tournament';
+import { MatchScore } from './tournament';
+import { MatchScores, ScoreSet } from './entities';
 
 export interface ScoringSettings {
+  pointsToWin: number;
+  mustWinByTwo: boolean;
   maxPoints: number;
-  winByTwo: boolean;
   maxSets: number;
-  bestOf: boolean;
+  requireTwoPointLead: boolean;
+  maxTwoPointLeadScore: number;
+  setsToWin?: number;
+  gamesPerSet?: number;
+  pointsPerGame?: number;
+  matchFormat?: 'TIMED' | 'STANDARD';
 }
 
-export interface StandaloneMatchScoringProps {
-  isLoading: boolean;
-  match: StandaloneMatch | Match | null;
+export interface MatchScoringState {
+  scores?: MatchScore[] | MatchScores;
+  matchComplete?: boolean;
+  winner?: 'team1' | 'team2' | null;
+  completeSet?: (setNumber: number) => void;
+  resetMatch?: () => void;
+}
+
+export interface ScoringState {
+  currentMatch: any;
   currentSet: number;
-  setCurrentSet: (set: number) => void;
-  settingsOpen: boolean;
-  setSettingsOpen: (open: boolean) => void;
-  scoringSettings: ScoringSettings;
-  setNewSetDialogOpen: (open: boolean) => void;
-  newSetDialogOpen: boolean;
-  completeMatchDialogOpen: boolean;
-  setCompleteMatchDialogOpen: (open: boolean) => void;
-  onScoreChange: (team: "team1" | "team2", increment: boolean) => void;
-  onNewSet: () => void;
-  onCompleteMatch: () => void;
-  onSave: () => void;
-  isPending?: boolean;
-  scorerName?: string;
-  onScorerNameChange?: (name: string) => void;
-  onCourtChange?: (courtNumber: number) => void;
-}
-
-export interface TournamentScorerOptions {
-  scorerType: "TOURNAMENT" | "STANDALONE";
-  matchId?: string;
-  scorerName?: string;
+  isLoading: boolean;
+  error: string | null;
+  completeMatch: (matchId: string) => void;
+  updateScore: (teamIndex: 'team1' | 'team2', increment: boolean) => void;
+  startNewSet: () => void;
+  setSelectedMatch: (match: any) => void;
 }

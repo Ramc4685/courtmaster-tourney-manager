@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PlayerRegistrationList } from '@/components/registration/PlayerRegistrationList';
 import { TeamRegistrationList } from '@/components/registration/TeamRegistrationList';
 import { WaitlistManager } from '@/components/registration/WaitlistManager';
-import { PlayerRegistrationWithStatus, TeamRegistrationWithStatus, TournamentRegistrationStatus } from '@/types/registration';
+import { PlayerRegistrationWithStatus, TeamRegistrationWithStatus, RegistrationStatus } from '@/types/registration';
 import { useRegistration } from '@/contexts/registration/useRegistration';
 import { Division } from '@/types/entities';
 import { registrationService } from '@/services/api';
@@ -36,16 +37,22 @@ export const RegistrationManagementDashboard: React.FC<RegistrationManagementDas
   }, [tournamentId, fetchRegistrations]);
 
   // Filter waitlisted registrations
-  const waitlistedPlayers = playerRegistrations.filter(reg => reg.status === 'WAITLIST');
-  const waitlistedTeams = teamRegistrations.filter(reg => reg.status === 'WAITLIST');
-  const combinedWaitlist = [...waitlistedPlayers, ...waitlistedTeams].sort((a, b) => 
-    (a.metadata.waitlistPosition || Infinity) - (b.metadata.waitlistPosition || Infinity)
-  );
+  const waitlistedPlayers = playerRegistrations.filter(reg => 
+    reg.status === RegistrationStatus.WAITLISTED);
+    
+  const waitlistedTeams = teamRegistrations.filter(reg => 
+    reg.status === RegistrationStatus.WAITLISTED);
+    
+  const combinedWaitlist = [...waitlistedPlayers, ...waitlistedTeams].sort((a, b) => {
+    const posA = a.metadata.waitlistPosition || Infinity;
+    const posB = b.metadata.waitlistPosition || Infinity;
+    return posA - posB;
+  });
 
   const handlePromote = async (id: string) => {
     console.log('Promote:', id);
     try {
-      await registrationService.promoteFromWaitlist(id, 'PENDING');
+      await registrationService.promoteFromWaitlist(id, RegistrationStatus.PENDING);
       fetchRegistrations(tournamentId);
     } catch (error) {
       console.error("Failed to promote registration:", error);
@@ -72,19 +79,19 @@ export const RegistrationManagementDashboard: React.FC<RegistrationManagementDas
     }
   };
 
-  const handleUpdatePlayerStatus = async (id: string, status: TournamentRegistrationStatus) => {
+  const handleUpdatePlayerStatus = async (id: string, status: RegistrationStatus) => {
     await updatePlayerStatus(id, status);
   };
 
-  const handleUpdateTeamStatus = async (id: string, status: TournamentRegistrationStatus) => {
+  const handleUpdateTeamStatus = async (id: string, status: RegistrationStatus) => {
      await updateTeamStatus(id, status);
   };
 
-  const handleBulkUpdatePlayers = async (ids: string[], status: TournamentRegistrationStatus) => {
+  const handleBulkUpdatePlayers = async (ids: string[], status: RegistrationStatus) => {
      await bulkUpdateStatus(ids, status, 'player');
   };
 
-  const handleBulkUpdateTeams = async (ids: string[], status: TournamentRegistrationStatus) => {
+  const handleBulkUpdateTeams = async (ids: string[], status: RegistrationStatus) => {
      await bulkUpdateStatus(ids, status, 'team');
   };
 
@@ -127,4 +134,4 @@ export const RegistrationManagementDashboard: React.FC<RegistrationManagementDas
       </TabsContent>
     </Tabs>
   );
-}; 
+};

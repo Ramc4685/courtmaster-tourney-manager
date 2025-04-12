@@ -1,152 +1,163 @@
 
-import { TournamentStatus, MatchStatus, CourtStatus, DivisionType, StageType, ScorerType, TournamentFormat, CategoryType, TournamentStage } from './tournament-enums';
-
-export interface AuditLog {
-    id: string;
-    action: string;
-    timestamp: Date;
-    userId: string;
-    details: Record<string, any>;
-}
-
-export interface StandaloneAuditLog {
-    timestamp: Date;
-    action: string;
-    details: string | Record<string, any>;
-    user_id?: string;
-    userName?: string;
-}
-
-export interface Player {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    division: DivisionType;
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-export interface Team {
-    id: string;
-    name: string;
-    players: Player[];
-    division: DivisionType;
-    category: string;
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-export interface MatchScore {
-    team1Score: number;
-    team2Score: number;
-    scoredBy?: string;
-    timestamp?: string;
-}
-
-export interface Match {
-    id: string;
-    tournamentId: string;
-    stage: StageType;
-    round: number;
-    team1Id: string;
-    team2Id: string;
-    courtId?: string;
-    status: MatchStatus;
-    score?: {
-        team1: number;
-        team2: number;
-    };
-    bracketRound: number;
-    bracketPosition: number;
-    progression: string;
-    winnerId?: string;
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-export interface StandaloneMatch {
-    id: string;
-    matchNumber?: string;
-    team1: Team;
-    team2: Team;
-    scheduledTime?: Date;
-    completedTime?: Date;
-    courtNumber?: number;
-    courtName?: string;
-    status: MatchStatus;
-    scores: MatchScore[];
-    winner?: Team;
-    loser?: Team;
-    categoryName?: string;
-    tournamentName?: string;
-    category?: TournamentCategory;
-    auditLogs?: StandaloneAuditLog[];
-    createdAt?: Date;
-    updatedAt?: Date;
-    created_by?: string;
-    updated_by?: string;
-    isPublic?: boolean;
-    shareCode?: string;
-    scorerName?: string;
-    endTime?: Date;
-}
-
-export interface Court {
-    id: string;
-    name: string;
-    number: number;
-    status: CourtStatus;
-    currentMatchId?: string;
-    createdAt: Date;
-    updatedAt: Date;
+// Export tournament types
+export interface Tournament {
+  id: string;
+  name: string;
+  description?: string;
+  location: string;
+  startDate: Date;
+  endDate: Date;
+  registrationDeadline?: Date;
+  registrationEnabled: boolean;
+  requirePlayerProfile: boolean;
+  maxTeams: number;
+  format: TournamentFormat;
+  status: TournamentStatus;
+  categories: TournamentCategory[];
+  teams: Team[];
+  matches: Match[];
+  courts: Court[];
+  scoringSettings: ScoringSettings;
+  createdAt: Date;
+  updatedAt: Date;
+  organizer_id?: string;
 }
 
 export interface TournamentCategory {
-    id: string;
-    name: string;
-    type: CategoryType;
-    division: DivisionType;
-    format?: TournamentFormat;
-    description?: string;
-    isCustom?: boolean;
+  id: string;
+  name: string;
+  type: string;
+  division: Division;
 }
 
-export interface Tournament {
+export interface Team {
+  id: string;
+  name: string;
+  players: Player[];
+  createdAt: Date;
+  updatedAt: Date;
+  division: Division;
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  profileId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Court {
+  id: string;
+  name: string;
+  number: number;
+  status: CourtStatus;
+  tournament_id?: string;
+  description?: string;
+  currentMatch?: Match;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Match {
+  id: string;
+  tournamentId: string;
+  division: Division;
+  stage: TournamentStage;
+  bracketRound: number;
+  bracketPosition: number;
+  progression: {
+    winnerGoesTo?: string;
+    loserGoesTo?: string;
+  };
+  category: TournamentCategory;
+  team1: Team;
+  team2: Team;
+  team1Id?: string;
+  team2Id?: string;
+  scores: MatchScore[];
+  status: MatchStatus;
+  scheduledTime: Date;
+  startTime?: Date;
+  endTime?: Date;
+  courtId?: string;
+  courtNumber?: number;
+  winner?: number;
+  groupName?: string;
+  matchNumber?: string;
+}
+
+export interface MatchScore {
+  team1Score: number;
+  team2Score: number;
+}
+
+export interface StandaloneMatch {
+  id: string;
+  team1: Team;
+  team2: Team;
+  team1Id?: string;
+  team2Id?: string;
+  scores: MatchScore[];
+  status: MatchStatus;
+  courtName?: string;
+  tournamentName?: string;
+  categoryName?: string;
+  category?: {
     id: string;
     name: string;
-    description?: string;
-    format: TournamentFormat;
-    status: TournamentStatus;
-    currentStage: TournamentStage;
-    startDate: Date;
-    endDate: Date;
-    location: string;
-    registrationEnabled: boolean;
-    registrationDeadline?: Date;
-    maxTeams?: number;
-    scoringRules?: string;
-    categories: TournamentCategory[];
-    teams: Team[];
-    matches: Match[];
-    courts: Court[];
-    createdAt: Date;
-    updatedAt: Date;
+    type: string;
+  };
+  startTime?: Date;
+  endTime?: Date;
+  winner?: number;
 }
 
 export interface ScoringSettings {
-    matchFormat: 'TIMED' | 'STANDARD';
-    pointsToWin: number;
-    mustWinByTwo: boolean;
-    maxPoints: number;
-    maxSets: number;
-    requireTwoPointLead: boolean;
-    maxTwoPointLeadScore: number;
-    setsToWin?: number;
+  pointsToWin: number;
+  mustWinByTwo: boolean;
+  maxPoints: number;
+  matchFormat: string;
 }
 
-// Add this missing export to fix a lot of the errors
-export type Category = TournamentCategory;
+// Export enum types
+export enum TournamentStatus {
+  DRAFT = "DRAFT",
+  PUBLISHED = "PUBLISHED",
+  REGISTRATION = "REGISTRATION",
+  IN_PROGRESS = "IN_PROGRESS",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED"
+}
 
-// Export all the enum types for use throughout the application
-export { TournamentStatus, MatchStatus, CourtStatus, DivisionType, StageType, ScorerType, TournamentFormat, CategoryType, TournamentStage };
+export enum MatchStatus {
+  SCHEDULED = "SCHEDULED",
+  IN_PROGRESS = "IN_PROGRESS",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED",
+  DEFERRED = "DEFERRED"
+}
+
+export enum CourtStatus {
+  AVAILABLE = "AVAILABLE",
+  IN_USE = "IN_USE",
+  MAINTENANCE = "MAINTENANCE",
+  RESERVED = "RESERVED"
+}
+
+export enum TournamentFormat {
+  SINGLE_ELIMINATION = "SINGLE_ELIMINATION",
+  DOUBLE_ELIMINATION = "DOUBLE_ELIMINATION",
+  ROUND_ROBIN = "ROUND_ROBIN",
+  GROUP_KNOCKOUT = "GROUP_KNOCKOUT",
+  SWISS = "SWISS",
+  CUSTOM = "CUSTOM"
+}
+
+export type Division = string;
+
+export type CategoryType = string;
+
+export type ScorerType = "TOURNAMENT" | "STANDALONE";

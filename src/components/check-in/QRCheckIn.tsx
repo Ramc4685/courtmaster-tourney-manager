@@ -1,62 +1,72 @@
 
-import React, { useState } from "react";
-import { QrReader } from "react-qr-reader";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
-import { Badge } from "@/components/ui/badge";
-import { QrCode, UserCheck } from "lucide-react";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/components/ui/use-toast';
+import { AlertCircle, Check } from 'lucide-react';
+import QRScanner from './QRScanner';
 
 interface QRCheckInProps {
   onScan: (data: string) => Promise<void>;
 }
 
 const QRCheckIn: React.FC<QRCheckInProps> = ({ onScan }) => {
+  const [isScanning, setIsScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const { toast } = useToast();
-  const [scanning, setScanning] = useState(true);
-  const [lastScanned, setLastScanned] = useState<string | null>(null);
 
-  const handleScan = async (data: string | null) => {
-    if (data && data !== lastScanned) {
-      setLastScanned(data);
-      try {
-        await onScan(data);
-        setScanning(false);
-        toast({
-          title: "Check-in Successful",
-          description: "Player has been checked in.",
-          icon: <UserCheck className="h-4 w-4 text-green-500" />
-        });
-        setTimeout(() => setScanning(true), 2000);
-      } catch (error) {
-        toast({
-          title: "Check-in Failed",
-          description: error instanceof Error ? error.message : "Unknown error",
-          variant: "destructive",
-        });
-      }
+  const handleScan = async (data: string) => {
+    setIsScanning(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      await onScan(data);
+      setSuccess('Successfully checked in!');
+      toast({
+        description: 'Successfully checked in!'
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to process QR code';
+      setError(errorMessage);
+      toast({
+        description: errorMessage,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsScanning(false);
     }
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <QrCode className="h-5 w-5" />
-            QR Check-in
-          </CardTitle>
-          <Badge variant={scanning ? "default" : "secondary"}>
-            {scanning ? "Scanning" : "Processing"}
-          </Badge>
-        </div>
+        <CardTitle>Check-In Scanner</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="overflow-hidden rounded-lg border-2 border-dashed">
-          <QrReader
-            constraints={{ facingMode: "environment" }}
-            onResult={(result) => result && handleScan(result.getText())}
-            className="w-full aspect-square"
-          />
+      <CardContent className="space-y-4">
+        <QRScanner onScan={handleScan} />
+        
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {success && (
+          <Alert variant="default" className="bg-green-50 border-green-200 text-green-800">
+            <Check className="h-4 w-4" />
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription>{success}</AlertDescription>
+          </Alert>
+        )}
+        
+        <div className="text-sm text-gray-500">
+          <p>Scan a participant's QR code to check them in.</p>
+          <p>You can also manually enter the QR code data if scanning is not available.</p>
         </div>
       </CardContent>
     </Card>
