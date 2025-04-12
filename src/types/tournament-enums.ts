@@ -1,96 +1,116 @@
+
+export enum GameType {
+  BADMINTON = "BADMINTON",
+  TABLE_TENNIS = "TABLE_TENNIS",
+  TENNIS = "TENNIS",
+  VOLLEYBALL = "VOLLEYBALL",
+  PICKLEBALL = "PICKLEBALL",
+  // Format tab values
+  SINGLE_ELIMINATION = "SINGLE_ELIMINATION",
+  DOUBLE_ELIMINATION = "DOUBLE_ELIMINATION",
+  ROUND_ROBIN = "ROUND_ROBIN"
+}
+
+export enum PlayType {
+  SINGLES = "SINGLES",
+  DOUBLES = "DOUBLES",
+  MIXED = "MIXED"
+}
+
+export enum Division {
+  MENS = "MENS",
+  WOMENS = "WOMENS",
+  OPEN = "OPEN",
+  MIXED = "MIXED",
+  SENIORS = "SENIORS",
+  JUNIORS = "JUNIORS",
+  INITIAL = "INITIAL",
+  // Skill level divisions
+  ADVANCED = "ADVANCED",
+  INTERMEDIATE = "INTERMEDIATE",
+  BEGINNER = "BEGINNER"
+}
+
+export enum TournamentStage {
+  INITIAL_ROUND = "INITIAL_ROUND",
+  GROUP_STAGE = "GROUP_STAGE",
+  KNOCKOUT_STAGE = "KNOCKOUT_STAGE",
+  QUARTERFINALS = "QUARTERFINALS",
+  SEMIFINALS = "SEMIFINALS",
+  FINALS = "FINALS",
+  DIVISION_PLACEMENT = "DIVISION_PLACEMENT",
+  PLAYOFF_KNOCKOUT = "PLAYOFF_KNOCKOUT",
+  REGISTRATION = "REGISTRATION"
+}
+
+// Alias for backward compatibility
+export type TournamentStageEnum = TournamentStage;
+
+export enum UserRole {
+  ADMIN = "admin",
+  ORGANIZER = "organizer",
+  SCOREKEEPER = "scorekeeper",
+  PLAYER = "player",
+  SPECTATOR = "spectator"
+}
+
 export enum TournamentFormat {
   SINGLE_ELIMINATION = "SINGLE_ELIMINATION",
   DOUBLE_ELIMINATION = "DOUBLE_ELIMINATION",
   ROUND_ROBIN = "ROUND_ROBIN",
-  SWISS = "SWISS",
   GROUP_KNOCKOUT = "GROUP_KNOCKOUT",
+  SWISS = "SWISS",
+  CUSTOM = "CUSTOM",
   MULTI_STAGE = "MULTI_STAGE"
 }
 
 export enum TournamentStatus {
   DRAFT = "DRAFT",
   PUBLISHED = "PUBLISHED",
+  REGISTRATION = "REGISTRATION",
   IN_PROGRESS = "IN_PROGRESS",
   COMPLETED = "COMPLETED",
   CANCELLED = "CANCELLED"
 }
-
-export enum TournamentStage {
-  REGISTRATION = "REGISTRATION",
-  SEEDING = "SEEDING",
-  GROUP_STAGE = "GROUP_STAGE",
-  ELIMINATION_ROUND = "ELIMINATION_ROUND",
-  THIRD_PLACE = "THIRD_PLACE",
-  FINALS = "FINALS",
-  COMPLETED = "COMPLETED"
-}
-
-export enum Division {
-  INITIAL = "INITIAL",
-  ADVANCED = "ADVANCED",
-  INTERMEDIATE = "INTERMEDIATE",
-  BEGINNER = "BEGINNER"
-}
-
-// Export the Division enum values as a type
-export type DivisionType = keyof typeof Division;
-
-// Also export DivisionType as a value so it can be used in component properties
-export const DivisionTypeValues = Object.keys(Division) as DivisionType[];
 
 export enum MatchStatus {
   SCHEDULED = "SCHEDULED",
   IN_PROGRESS = "IN_PROGRESS",
   COMPLETED = "COMPLETED",
-  CANCELLED = "CANCELLED"
+  CANCELLED = "CANCELLED",
+  DEFERRED = "DEFERRED"
 }
 
 export enum CourtStatus {
   AVAILABLE = "AVAILABLE",
   IN_USE = "IN_USE",
-  MAINTENANCE = "MAINTENANCE"
+  MAINTENANCE = "MAINTENANCE",
+  RESERVED = "RESERVED"
 }
 
 export enum CategoryType {
+  MENS_SINGLES = "MENS_SINGLES",
+  MENS_DOUBLES = "MENS_DOUBLES",
+  WOMENS_SINGLES = "WOMENS_SINGLES",
+  WOMENS_DOUBLES = "WOMENS_DOUBLES",
+  MIXED_DOUBLES = "MIXED_DOUBLES",
+  OPEN_SINGLES = "OPEN_SINGLES",
+  OPEN_DOUBLES = "OPEN_DOUBLES",
+  CUSTOM = "CUSTOM",
+  // Additional types for TournamentCategorySection
   SINGLES = "SINGLES",
   DOUBLES = "DOUBLES",
   MIXED = "MIXED",
   TEAM = "TEAM"
 }
 
+// Alias for DivisionType (referenced in PublicView.tsx)
+export type DivisionType = Division;
+
 export enum ScorerType {
-  MANUAL = "MANUAL",
-  AUTOMATIC = "AUTOMATIC"
+  TOURNAMENT = "TOURNAMENT",
+  STANDALONE = "STANDALONE"
 }
 
-export enum PlayType {
-  SINGLES = "SINGLES",
-  DOUBLES = "DOUBLES",
-  MIXED_DOUBLES = "MIXED_DOUBLES"
-}
-
-export enum GameType {
-  BADMINTON = "BADMINTON",
-  TENNIS = "TENNIS",
-  TABLE_TENNIS = "TABLE_TENNIS",
-  VOLLEYBALL = "VOLLEYBALL",
-  BASKETBALL = "BASKETBALL",
-  CUSTOM = "CUSTOM"
-}
-
-export enum UserRole {
-  ADMIN = "admin",
-  USER = "user",
-  TOURNAMENT_DIRECTOR = "tournament_director",
-  FRONT_DESK = "front_desk",
-  ADMIN_STAFF = "admin_staff",
-  SCOREKEEPER = "scorekeeper",
-  PLAYER = "player",
-  SPECTATOR = "spectator"
-}
-
-export enum StageType {
-  GROUP = "GROUP",
-  KNOCKOUT = "KNOCKOUT",
-  FINAL = "FINAL"
-}
+// Export RegistrationStatus from registration.ts
+export { RegistrationStatus } from './registration';

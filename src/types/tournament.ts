@@ -1,3 +1,4 @@
+
 import { 
   TournamentFormat, 
   TournamentStatus, 
@@ -11,8 +12,10 @@ import {
   GameType
 } from './tournament-enums';
 
-export { Division, MatchStatus } from './tournament-enums';
+// Remove the redundant export since we're now importing these from tournament-enums
+// export { Division, MatchStatus } from './tournament-enums';
 
+// Keep the existing code for Player interface
 export interface Player {
   id: string;
   name: string;
@@ -60,7 +63,7 @@ export interface Match {
   team1: Team;
   team2: Team;
   winner?: Team;
-  scores: number[][];
+  scores: MatchScore[]; // Changed from number[][] to MatchScore[]
   division: Division;
   stage: TournamentStage;
   bracketRound: number;
@@ -90,6 +93,13 @@ export interface Match {
   team2Name?: string;
   currentMatch?: Match;
   nextMatchId?: string; // Added for tournament progression
+  // Add fields for MatchScheduler
+  court_id?: string;
+  scheduled_time?: string;
+  player1_id?: string;
+  player2_id?: string;
+  round_number?: number;
+  match_number?: number;
 }
 
 export interface Court {
@@ -99,9 +109,12 @@ export interface Court {
   status: CourtStatus;
   location?: string;
   tournamentId?: string;
+  tournament_id?: string; // For compatibility
   currentMatch?: Match;
   createdAt: Date;
   updatedAt: Date;
+  court_number?: number; // For CourtConfiguration
+  description?: string;
 }
 
 export interface ScoringSettings {
@@ -113,6 +126,9 @@ export interface ScoringSettings {
   requireTwoPointLead: boolean;
   maxTwoPointLeadScore: number;
   setsToWin?: number;
+  // Add missing fields
+  gamesPerSet?: number;
+  pointsPerGame?: number;
 }
 
 export interface TournamentCategory {
@@ -213,4 +229,26 @@ export interface Tournament {
   created_by?: string;
   updated_by?: string;
   organizer_id?: string;
+  divisions?: Division[]; // Added for RegistrationManagement
+  participants?: { length: number }; // Added for TournamentDetail
 }
+
+// For contexts/tournament/types.ts
+export interface Category extends TournamentCategory {}
+
+// Export the imported enums again to make them available to consumers of this module
+export { 
+  TournamentFormat, 
+  TournamentStatus, 
+  Division, 
+  MatchStatus, 
+  CourtStatus, 
+  CategoryType,
+  TournamentStage,
+  ScorerType,
+  PlayType,
+  GameType
+};
+
+// Define TournamentMatch alias for backward compatibility
+export type TournamentMatch = Match;

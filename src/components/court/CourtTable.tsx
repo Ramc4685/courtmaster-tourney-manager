@@ -1,47 +1,36 @@
 
-import React, { useState } from "react";
+import React from 'react';
+import { Court, CourtStatus } from '@/types/entities';
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pencil, Save, X } from "lucide-react";
-import { Court, CourtStatus } from "@/types/tournament";
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 interface CourtTableProps {
   courts: Court[];
-  onCourtUpdate: (court: Court) => void;
+  onSelectCourt?: (court: Court) => void;
+  onCourtUpdate?: (court: Court) => void;
 }
 
-const CourtTable: React.FC<CourtTableProps> = ({ courts, onCourtUpdate }) => {
-  const [editingCourtId, setEditingCourtId] = useState<string | null>(null);
-  const [editedCourtName, setEditedCourtName] = useState("");
-  const [editedCourtStatus, setEditedCourtStatus] = useState<CourtStatus>("AVAILABLE");
-
-  const handleEditClick = (court: Court) => {
-    setEditingCourtId(court.id);
-    setEditedCourtName(court.name);
-    setEditedCourtStatus(court.status);
-  };
-
-  const handleSaveClick = (court: Court) => {
-    const updatedCourt = {
-      ...court,
-      name: editedCourtName,
-      status: editedCourtStatus
-    };
-    onCourtUpdate(updatedCourt);
-    setEditingCourtId(null);
-  };
-
-  const handleCancelClick = () => {
-    setEditingCourtId(null);
+const CourtTable: React.FC<CourtTableProps> = ({ courts, onSelectCourt, onCourtUpdate }) => {
+  const getStatusColor = (status: CourtStatus) => {
+    switch (status) {
+      case CourtStatus.AVAILABLE:
+        return 'bg-green-100 text-green-800';
+      case CourtStatus.IN_USE:
+        return 'bg-blue-100 text-blue-800';
+      case CourtStatus.MAINTENANCE:
+        return 'bg-yellow-100 text-yellow-800';
+      case CourtStatus.RESERVED:
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   return (
@@ -49,74 +38,40 @@ const CourtTable: React.FC<CourtTableProps> = ({ courts, onCourtUpdate }) => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Court Number</TableHead>
+            <TableHead>Number</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Current Match</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {courts.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground">
-                No courts found. Add a court to get started.
+              <TableCell colSpan={4} className="text-center py-4">
+                No courts available
               </TableCell>
             </TableRow>
           ) : (
             courts.map((court) => (
-              <TableRow key={court.id}>
-                <TableCell>{court.number}</TableCell>
+              <TableRow 
+                key={court.id}
+                className={onSelectCourt ? 'cursor-pointer hover:bg-gray-50' : ''}
+                onClick={() => onSelectCourt && onSelectCourt(court)}
+              >
+                <TableCell>{court.court_number || court.number}</TableCell>
+                <TableCell>{court.name}</TableCell>
                 <TableCell>
-                  {editingCourtId === court.id ? (
-                    <Input
-                      value={editedCourtName}
-                      onChange={(e) => setEditedCourtName(e.target.value)}
-                    />
-                  ) : (
-                    court.name
-                  )}
-                </TableCell>
-                <TableCell>
-                  {editingCourtId === court.id ? (
-                    <Select
-                      value={editedCourtStatus}
-                      onValueChange={(value) => setEditedCourtStatus(value as CourtStatus)}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="AVAILABLE">Available</SelectItem>
-                        <SelectItem value="IN_USE">In Use</SelectItem>
-                        <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    court.status
-                  )}
+                  <Badge className={getStatusColor(court.status)}>
+                    {court.status}
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   {court.currentMatch ? (
-                    `${court.currentMatch.team1.name} vs ${court.currentMatch.team2.name}`
+                    <span className="text-sm">
+                      {court.currentMatch.team1?.name || 'Team 1'} vs {court.currentMatch.team2?.name || 'Team 2'}
+                    </span>
                   ) : (
-                    "None"
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  {editingCourtId === court.id ? (
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => handleSaveClick(court)}>
-                        <Save className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={handleCancelClick}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button variant="outline" size="sm" onClick={() => handleEditClick(court)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    <span className="text-sm text-gray-500">No match</span>
                   )}
                 </TableCell>
               </TableRow>

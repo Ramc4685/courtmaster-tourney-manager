@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,21 +40,19 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
     defaultValues: {
       name: "",
       location: "",
-      format: TournamentFormat.SINGLE_ELIMINATION,
-      registrationEnabled: false,
-      maxTeams: 8,
-      startDate: format(new Date(), "yyyy-MM-dd"),
-      endDate: format(new Date(), "yyyy-MM-dd"),
       gameType: GameType.BADMINTON,
       description: "",
-      registrationDeadline: format(new Date(), "yyyy-MM-dd"),
+      startDate: new Date(),
+      endDate: new Date(),
+      registrationEnabled: false,
+      maxTeams: 8,
+      registrationDeadline: new Date(),
       scoringRules: {
         pointsToWin: 21,
         mustWinByTwo: true,
         maxPoints: 30
       },
-      divisions: [],
-      categoryRegistrationRules: [],
+      divisionDetails: [],
       requirePlayerProfile: false
     },
   });
@@ -77,12 +76,6 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
           id: uuidv4(),
           name: "",
           playType: PlayType.SINGLES,
-          format: TournamentFormat.SINGLE_ELIMINATION,
-          scoringSettings: {
-            pointsToWin: 21,
-            mustWinByTwo: true,
-            maxPoints: 30
-          }
         };
         return {
           ...division,
@@ -148,7 +141,7 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
   const handleSubmit = (data: TournamentFormValues) => {
     onSubmit({
       ...data,
-      divisions
+      divisionDetails: divisions
     });
   };
 
@@ -209,7 +202,8 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
                           <CalendarIcon className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
                           <Input
                             type="date"
-                            {...field}
+                            value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
+                            onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
                             className="h-12 text-base pl-10 rounded-md"
                           />
                         </div>
@@ -230,7 +224,8 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
                           <CalendarIcon className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
                           <Input
                             type="date"
-                            {...field}
+                            value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
+                            onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
                             className="h-12 text-base pl-10 rounded-md"
                           />
                         </div>
@@ -244,23 +239,23 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
               <div className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="format"
+                  name="gameType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-base font-medium">Tournament Format</FormLabel>
+                      <FormLabel className="text-base font-medium">Game Type</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="h-12 text-base rounded-md">
-                            <SelectValue placeholder="Select format" />
+                            <SelectValue placeholder="Select game type" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {Object.values(TournamentFormat).map((format) => (
-                            <SelectItem key={format} value={format} className="text-base">
-                              {format.replace(/_/g, " ")}
+                          {Object.values(GameType).map((type) => (
+                            <SelectItem key={type} value={type} className="text-base">
+                              {type.replace(/_/g, " ")}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -317,7 +312,8 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
                             <CalendarIcon className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
                             <Input
                               type="date"
-                              {...field}
+                              value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
+                              onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
                               className="h-12 text-base pl-10 rounded-md"
                             />
                           </div>
@@ -441,24 +437,6 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onSubmit })
                                     {Object.values(PlayType).map((type) => (
                                       <SelectItem key={type} value={type}>
                                         {type.replace(/_/g, " ")}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-1">Format</label>
-                                <Select
-                                  value={category.format}
-                                  onValueChange={(value) => handleUpdateCategory(division.id, category.id, 'format', value)}
-                                >
-                                  <SelectTrigger className="h-10">
-                                    <SelectValue placeholder="Select format" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Object.values(TournamentFormat).map((format) => (
-                                      <SelectItem key={format} value={format}>
-                                        {format.replace(/_/g, " ")}
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
