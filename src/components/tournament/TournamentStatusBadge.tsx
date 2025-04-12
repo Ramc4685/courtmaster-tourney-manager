@@ -1,20 +1,16 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { TournamentStatus } from '@/types/tournament-enums';
+import { TournamentStatus } from '@/types/tournament';
 
 interface TournamentStatusBadgeProps {
   status: TournamentStatus | string;
 }
 
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning';
+
 export const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ status }) => {
-  let badgeVariant: 
-    | 'default'
-    | 'secondary'
-    | 'destructive'
-    | 'outline'
-    | 'success'
-    | 'warning' = 'default';
+  let badgeVariant: BadgeVariant = 'default';
   
   switch (status) {
     case TournamentStatus.DRAFT:
@@ -38,7 +34,7 @@ export const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ st
   }
   
   return (
-    <Badge variant={badgeVariant as any}>
+    <Badge variant={badgeVariant}>
       {typeof status === 'string' ? status.replace('_', ' ') : String(status).replace('_', ' ')}
     </Badge>
   );

@@ -63,6 +63,7 @@ export interface Match {
     winnerId?: string;
     createdAt: Date;
     updatedAt: Date;
+    scores: MatchScore[];
 }
 
 export interface StandaloneMatch {
@@ -98,6 +99,7 @@ export interface Court {
     number: number;
     status: CourtStatus;
     currentMatchId?: string;
+    currentMatch?: Match;
     createdAt: Date;
     updatedAt: Date;
 }

@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { TournamentFormValues } from "./types";
-import { TournamentFormat } from "@/types/tournament-enums";
+import { TournamentFormat, GameType } from "@/types/tournament-enums";
 
 interface FormatTabProps {
   form: UseFormReturn<TournamentFormValues>;
@@ -28,7 +28,7 @@ interface FormatTabProps {
 
 const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
   // Get current format for conditional fields
-  const format = form.watch("gameType");
+  const gameType = form.watch("gameType");
   
   return (
     <div className="space-y-6">
@@ -45,17 +45,17 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value={TournamentFormat.SINGLE_ELIMINATION}>Single Elimination</SelectItem>
-                <SelectItem value={TournamentFormat.DOUBLE_ELIMINATION}>Double Elimination</SelectItem>
-                <SelectItem value={TournamentFormat.ROUND_ROBIN}>Round Robin</SelectItem>
+                <SelectItem value={GameType.SINGLE_ELIMINATION}>Single Elimination</SelectItem>
+                <SelectItem value={GameType.DOUBLE_ELIMINATION}>Double Elimination</SelectItem>
+                <SelectItem value={GameType.ROUND_ROBIN}>Round Robin</SelectItem>
               </SelectContent>
             </Select>
             <FormDescription>
-              {format === TournamentFormat.SINGLE_ELIMINATION && 
+              {gameType === GameType.SINGLE_ELIMINATION && 
                 "Teams are eliminated after one loss. The last team standing wins."}
-              {format === TournamentFormat.DOUBLE_ELIMINATION && 
+              {gameType === GameType.DOUBLE_ELIMINATION && 
                 "Teams must lose twice to be eliminated. The last team standing wins."}
-              {format === TournamentFormat.ROUND_ROBIN && 
+              {gameType === GameType.ROUND_ROBIN && 
                 "Each team plays against every other team once. The team with the most wins is the champion."}
             </FormDescription>
             <FormMessage />
@@ -118,7 +118,7 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
               />
 
               {/* Format-specific registration settings */}
-              {format === TournamentFormat.SINGLE_ELIMINATION && (
+              {gameType === GameType.SINGLE_ELIMINATION && (
                 <FormField
                   control={form.control}
                   name="maxTeams"
@@ -143,7 +143,7 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
                 />
               )}
 
-              {format === TournamentFormat.DOUBLE_ELIMINATION && (
+              {gameType === GameType.DOUBLE_ELIMINATION && (
                 <FormField
                   control={form.control}
                   name="maxTeams"
@@ -168,7 +168,7 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
                 />
               )}
 
-              {format === TournamentFormat.ROUND_ROBIN && (
+              {gameType === GameType.ROUND_ROBIN && (
                 <FormField
                   control={form.control}
                   name="maxTeams"

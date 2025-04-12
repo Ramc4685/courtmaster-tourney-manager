@@ -10,6 +10,20 @@ export enum TournamentFormat {
   CUSTOM = 'CUSTOM'
 }
 
+// Game type enums - added this to match the format types needed in the forms
+export enum GameType {
+  SINGLE_ELIMINATION = 'SINGLE_ELIMINATION',
+  DOUBLE_ELIMINATION = 'DOUBLE_ELIMINATION',
+  ROUND_ROBIN = 'ROUND_ROBIN',
+  BADMINTON = 'BADMINTON',
+  TENNIS = 'TENNIS',
+  PICKLEBALL = 'PICKLEBALL',
+  TABLETENNIS = 'TABLETENNIS',
+  SQUASH = 'SQUASH',
+  RACQUETBALL = 'RACQUETBALL',
+  OTHER = 'OTHER'
+}
+
 // Tournament status enums
 export enum TournamentStatus {
   DRAFT = 'DRAFT',
@@ -90,22 +104,13 @@ export enum UserRole {
   USER = 'USER'
 }
 
-// Game type enum
-export enum GameType {
-  BADMINTON = 'BADMINTON',
-  TENNIS = 'TENNIS',
-  PICKLEBALL = 'PICKLEBALL',
-  TABLETENNIS = 'TABLETENNIS',
-  SQUASH = 'SQUASH',
-  RACQUETBALL = 'RACQUETBALL',
-  OTHER = 'OTHER'
-}
-
 // Scorer type enum
 export enum ScorerType {
   PLAYER = 'PLAYER',
   REFEREE = 'REFEREE',
-  ADMIN = 'ADMIN'
+  ADMIN = 'ADMIN',
+  TOURNAMENT = 'TOURNAMENT',
+  STANDALONE = 'STANDALONE'
 }
 
 // Play type enum
@@ -129,3 +134,6 @@ export enum RegistrationStatus {
 // Division type values
 export const DivisionTypeValues = ['SKILL', 'AGE', 'GENDER'] as const;
 export type DivisionType = typeof DivisionTypeValues[number];
+
+// Stage type for match stages
+export type StageType = TournamentStage | string;

@@ -6,6 +6,7 @@ import { tournamentFormSchema, TournamentFormValues } from './types';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import FormatTab from './FormatTab';
+import { GameType } from '@/types/tournament-enums';
 
 interface CreateTournamentFormProps {
   onSubmit: (data: TournamentFormValues) => void;
@@ -21,7 +22,7 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({
     defaultValues: {
       name: '',
       location: '',
-      gameType: 'SINGLE_ELIMINATION',
+      gameType: GameType.SINGLE_ELIMINATION,
       description: '',
       startDate: new Date(),
       endDate: new Date(new Date().setDate(new Date().getDate() + 1)),
