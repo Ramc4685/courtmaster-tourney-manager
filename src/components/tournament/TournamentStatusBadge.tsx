@@ -14,7 +14,7 @@ export const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ st
     | 'destructive'
     | 'outline'
     | 'success'
-    | 'warning';
+    | 'warning' = 'default';
   
   switch (status) {
     case TournamentStatus.DRAFT:
@@ -38,7 +38,7 @@ export const TournamentStatusBadge: React.FC<TournamentStatusBadgeProps> = ({ st
   }
   
   return (
-    <Badge variant={badgeVariant as any}>
+    <Badge variant={badgeVariant}>
       {typeof status === 'string' ? status.replace('_', ' ') : String(status).replace('_', ' ')}
     </Badge>
   );

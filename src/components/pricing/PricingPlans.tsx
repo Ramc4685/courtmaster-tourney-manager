@@ -2,120 +2,149 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check } from 'lucide-react';
+import { CheckIcon } from 'lucide-react';
 
 const PricingPlans: React.FC = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <Card className="border-border shadow-sm">
+      {/* Free Plan */}
+      <Card className="border-2 border-border">
         <CardHeader>
           <CardTitle className="text-xl">Free</CardTitle>
-          <CardDescription>For individual players</CardDescription>
-          <div className="mt-1 text-3xl font-bold">$0</div>
+          <CardDescription>Get started with basic tournament management</CardDescription>
+          <div className="mt-4">
+            <span className="text-3xl font-bold">$0</span>
+            <span className="text-muted-foreground">/month</span>
+          </div>
         </CardHeader>
         <CardContent>
           <ul className="space-y-2">
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
-              <span>3 tournaments per month</span>
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
+              <span>3 tournaments per year</span>
             </li>
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
               <span>Up to 20 players per tournament</span>
             </li>
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
               <span>Basic tournament formats</span>
             </li>
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
               <span>7-day data retention</span>
+            </li>
+            <li className="flex items-center">
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
+              <span>Community support</span>
             </li>
           </ul>
         </CardContent>
         <CardFooter>
-          <Button className="w-full" variant="outline">
-            Get Started
-          </Button>
+          <Button className="w-full">Get Started</Button>
         </CardFooter>
       </Card>
 
-      <Card className="border-primary shadow-md">
-        <CardHeader className="bg-primary/5">
-          <div className="text-sm font-medium text-primary mb-1">Most Popular</div>
-          <CardTitle className="text-xl">Pro</CardTitle>
-          <CardDescription>For clubs and organizations</CardDescription>
-          <div className="mt-1 text-3xl font-bold">$29<span className="text-sm font-normal">/month</span></div>
+      {/* Premium Plan */}
+      <Card className="border-2 border-primary">
+        <CardHeader>
+          <CardTitle className="text-xl">Premium</CardTitle>
+          <CardDescription>Perfect for clubs and frequent organizers</CardDescription>
+          <div className="mt-4">
+            <span className="text-3xl font-bold">$29</span>
+            <span className="text-muted-foreground">/month</span>
+          </div>
         </CardHeader>
         <CardContent>
           <ul className="space-y-2">
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
               <span>Unlimited tournaments</span>
             </li>
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
               <span>Up to 100 players per tournament</span>
             </li>
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
               <span>All tournament formats</span>
             </li>
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
               <span>30-day data retention</span>
             </li>
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
-              <span>Basic analytics</span>
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
+              <span>Priority email support</span>
+            </li>
+            <li className="flex items-center">
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
+              <span>Advanced tournament analytics</span>
+            </li>
+            <li className="flex items-center">
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
+              <span>Custom branding options</span>
             </li>
           </ul>
         </CardContent>
         <CardFooter>
-          <Button className="w-full">
-            Subscribe Now
-          </Button>
+          <Button className="w-full" variant="default">Subscribe Now</Button>
         </CardFooter>
       </Card>
 
-      <Card className="border-border shadow-sm">
+      {/* Pro Plan */}
+      <Card className="border-2 border-border">
         <CardHeader>
-          <CardTitle className="text-xl">Enterprise</CardTitle>
-          <CardDescription>For large organizations</CardDescription>
-          <div className="mt-1 text-3xl font-bold">$99<span className="text-sm font-normal">/month</span></div>
+          <CardTitle className="text-xl">Professional</CardTitle>
+          <CardDescription>For professional tournament organizers</CardDescription>
+          <div className="mt-4">
+            <span className="text-3xl font-bold">$79</span>
+            <span className="text-muted-foreground">/month</span>
+          </div>
         </CardHeader>
         <CardContent>
           <ul className="space-y-2">
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
               <span>Unlimited tournaments</span>
             </li>
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
               <span>Unlimited players</span>
             </li>
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
-              <span>Custom tournament formats</span>
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
+              <span>All tournament formats</span>
             </li>
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
-              <span>90-day data retention</span>
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
+              <span>365-day data retention</span>
             </li>
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
-              <span>Advanced analytics</span>
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
+              <span>Dedicated support</span>
             </li>
             <li className="flex items-center">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
-              <span>Custom branding</span>
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
+              <span>Premium analytics</span>
+            </li>
+            <li className="flex items-center">
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
+              <span>White-label branding</span>
+            </li>
+            <li className="flex items-center">
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
+              <span>API access</span>
+            </li>
+            <li className="flex items-center">
+              <CheckIcon className="mr-2 h-4 w-4 text-primary" />
+              <span>Multi-staff access</span>
             </li>
           </ul>
         </CardContent>
         <CardFooter>
-          <Button className="w-full" variant="outline">
-            Contact Sales
-          </Button>
+          <Button className="w-full">Contact Sales</Button>
         </CardFooter>
       </Card>
     </div>
