@@ -32,8 +32,10 @@ export const BasicInfoStep = () => {
             <FormControl>
               <Input 
                 id="tournament-name"
+                name="tournament-name"
                 placeholder="Enter tournament name" 
                 aria-describedby="tournament-name-description"
+                autoComplete="off"
                 {...field} 
               />
             </FormControl>
@@ -51,8 +53,10 @@ export const BasicInfoStep = () => {
             <FormControl>
               <Input 
                 id="tournament-location"
+                name="tournament-location"
                 placeholder="Enter tournament location" 
                 aria-describedby="tournament-location-description"
+                autoComplete="address-level1"
                 {...field} 
               />
             </FormControl>
@@ -70,6 +74,7 @@ export const BasicInfoStep = () => {
             <FormControl>
               <Textarea 
                 id="tournament-description"
+                name="tournament-description"
                 placeholder="Enter tournament description" 
                 aria-describedby="tournament-description-description"
                 className="min-h-[100px]"
@@ -92,7 +97,11 @@ export const BasicInfoStep = () => {
               defaultValue={field.value}
             >
               <FormControl>
-                <SelectTrigger id="game-type" aria-describedby="game-type-description">
+                <SelectTrigger 
+                  id="game-type" 
+                  name="game-type"
+                  aria-describedby="game-type-description"
+                >
                   <SelectValue placeholder="Select game type" />
                 </SelectTrigger>
               </FormControl>
@@ -119,8 +128,10 @@ export const BasicInfoStep = () => {
               <FormControl>
                 <Input 
                   id="start-date"
+                  name="start-date"
                   type="date" 
                   aria-describedby="start-date-description"
+                  autoComplete="off"
                   {...field}
                   value={formatDateForInput(value)}
                   onChange={(e) => onChange(new Date(e.target.value))}
@@ -140,8 +151,10 @@ export const BasicInfoStep = () => {
               <FormControl>
                 <Input 
                   id="end-date"
+                  name="end-date"
                   type="date" 
                   aria-describedby="end-date-description"
+                  autoComplete="off"
                   {...field}
                   value={formatDateForInput(value)}
                   onChange={(e) => onChange(new Date(e.target.value))}
