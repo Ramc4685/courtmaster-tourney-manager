@@ -4,8 +4,16 @@ import { useAuth } from '@/contexts/auth/AuthContext';
 import { RolePermissions } from '@/types/user';
 import { UserRole } from '@/types/tournament-enums';
 
-// Define role permissions object
-const rolePermissionsMap = {
+// Import the role-specific layouts
+import { LayoutDirector } from './role-layouts/LayoutDirector';
+import { LayoutFrontDesk } from './role-layouts/LayoutFrontDesk';
+import { LayoutAdminStaff } from './role-layouts/LayoutAdminStaff';
+import { LayoutScorekeeper } from './role-layouts/LayoutScorekeeper';
+import { LayoutPlayer } from './role-layouts/LayoutPlayer';
+import { LayoutSpectator } from './role-layouts/LayoutSpectator';
+
+// Define the role permissions object
+const rolePermissionsMap: Record<UserRole, RolePermissions> = {
   [UserRole.ADMIN]: {
     can_manage_tournaments: true,
     can_manage_users: true,
@@ -43,14 +51,6 @@ const rolePermissionsMap = {
   }
 };
 
-// Import the role-specific layouts
-import { LayoutDirector } from './role-layouts/LayoutDirector';
-import { LayoutFrontDesk } from './role-layouts/LayoutFrontDesk';
-import { LayoutAdminStaff } from './role-layouts/LayoutAdminStaff';
-import { LayoutScorekeeper } from './role-layouts/LayoutScorekeeper';
-import { LayoutPlayer } from './role-layouts/LayoutPlayer';
-import { LayoutSpectator } from './role-layouts/LayoutSpectator';
-
 // Define the layout props interface
 export interface LayoutProps {
   children: React.ReactNode;
@@ -67,20 +67,31 @@ const LoadingLayout: React.FC<{children: React.ReactNode}> = ({ children }) => (
 );
 
 const RoleBasedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   
+  if (isLoading) {
+    return <LoadingLayout>{children}</LoadingLayout>;
+  }
+
   // Default to spectator for unauthenticated users
   const role = user?.role || UserRole.SPECTATOR;
   const permissions = rolePermissionsMap[role] || rolePermissionsMap[UserRole.SPECTATOR];
 
-  // For now, use a simplified layout until we fix the role-specific layouts
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        {children}
-      </div>
-    </div>
-  );
+  // Return the appropriate layout based on the user role
+  switch (role) {
+    case UserRole.ADMIN:
+      return <LayoutDirector permissions={permissions}>{children}</LayoutDirector>;
+    case UserRole.ORGANIZER:
+      return <LayoutDirector permissions={permissions}>{children}</LayoutDirector>;
+    case UserRole.SCOREKEEPER:
+      return <LayoutScorekeeper permissions={permissions}>{children}</LayoutScorekeeper>;
+    case UserRole.PLAYER:
+      return <LayoutPlayer permissions={permissions}>{children}</LayoutPlayer>;
+    case UserRole.SPECTATOR:
+      return <LayoutSpectator permissions={permissions}>{children}</LayoutSpectator>;
+    default:
+      return <LayoutSpectator permissions={permissions}>{children}</LayoutSpectator>;
+  }
 };
 
 export default RoleBasedLayout;
