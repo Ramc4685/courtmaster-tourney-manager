@@ -1,10 +1,12 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from '@/contexts/auth/AuthContext';
 import { Layout } from '@/components/layout/Layout';
 import LoginPage from '@/pages/auth/LoginPage';
 import SignUpPage from '@/pages/auth/SignUpPage';
-import Home from '@/pages/Home';  // Ensure this uses the correct case
+import Home from '@/pages/Home';
+import LandingPage from '@/pages/LandingPage'; // Import new landing page
 import DashboardPage from '@/pages/DashboardPage';
 import TournamentListPage from '@/pages/tournaments/TournamentListPage';
 import TournamentDetailsPage from '@/pages/TournamentDetail';
@@ -66,8 +68,11 @@ function AppRoutes() {
         }
       />
 
+      {/* Landing Page Route - public access */}
+      <Route path="/" element={<LandingPage />} />
+
       {/* Home Route */}
-      <Route path="/" element={<Home />} />
+      <Route path="/home" element={<Home />} />
 
       {/* Private Routes */}
       <Route

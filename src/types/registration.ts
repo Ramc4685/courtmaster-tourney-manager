@@ -1,4 +1,6 @@
 
+import { z } from 'zod';
+
 export enum RegistrationStatus {
   PENDING = "PENDING",
   APPROVED = "APPROVED",
@@ -8,7 +10,7 @@ export enum RegistrationStatus {
   WAITLISTED = "WAITLISTED",
   CHECKED_IN = "CHECKED_IN",
   // Add WAITLIST as an alias for WAITLISTED for backward compatibility
-  WAITLIST = "WAITLISTED"
+  WAITLIST = "WAITLIST"
 }
 
 export interface RegistrationMetadata {
@@ -36,6 +38,7 @@ export interface RegistrationMetadata {
     toPosition?: number;
   }[];
   comments?: string[]; // Add to support RegistrationDetails
+  waitlistPromotionHistory?: any[]; // Add for compatibility
   // Additional fields for team registration
   captainName?: string;
   captainEmail?: string;
@@ -67,6 +70,9 @@ export interface TournamentRegistration {
   createdAt: Date;
   updatedAt: Date;
   category?: any;
+  division_id?: string; // Add for compatibility
+  notes?: string; // Add for compatibility
+  priority?: number; // Add for compatibility
 }
 
 export interface PlayerRegistrationWithStatus extends TournamentRegistration {
@@ -74,6 +80,9 @@ export interface PlayerRegistrationWithStatus extends TournamentRegistration {
   lastName: string;
   email: string;
   phone?: string;
+  playerId?: string; // Add for compatibility
+  player_id?: string; // Add for compatibility
+  division_id?: string; // Add for compatibility
 }
 
 export interface TeamRegistrationWithStatus extends TournamentRegistration {
@@ -82,13 +91,38 @@ export interface TeamRegistrationWithStatus extends TournamentRegistration {
   captainEmail: string;
   captainPhone?: string;
   members?: TeamMember[];
+  playerId?: string; // Add for compatibility
+  player_id?: string; // Add for compatibility
+  division_id?: string; // Add for compatibility
 }
 
-// Schema for validation using zod
-export const playerRegistrationSchema = {
-  // Define schema for player registration validation
-};
+// Define aliases for backward compatibility
+export type PlayerRegistration = PlayerRegistrationWithStatus;
+export type TeamRegistration = TeamRegistrationWithStatus;
+export type TournamentRegistrationStatus = RegistrationStatus;
 
-export const teamRegistrationSchema = {
-  // Define schema for team registration validation
-};
+// Schema for validation using zod
+export const playerRegistrationSchema = z.object({
+  player_id: z.string(),
+  division_id: z.string(),
+  firstName: z.string().min(2, { message: "First name must be at least 2 characters" }),
+  lastName: z.string().min(2, { message: "Last name must be at least 2 characters" }),
+  email: z.string().email({ message: "Invalid email address" }),
+  phone: z.string().optional()
+});
+
+export const teamRegistrationSchema = z.object({
+  teamName: z.string().min(2, { message: "Team name must be at least 2 characters" }),
+  captainName: z.string().min(2, { message: "Captain name must be at least 2 characters" }),
+  captainEmail: z.string().email({ message: "Invalid email address" }),
+  captainPhone: z.string().optional(),
+  members: z.array(
+    z.object({
+      firstName: z.string().min(2, { message: "First name must be at least 2 characters" }),
+      lastName: z.string().min(2, { message: "Last name must be at least 2 characters" }),
+      email: z.string().email({ message: "Invalid email address" }),
+      phone: z.string().optional(),
+      isTeamCaptain: z.boolean().default(false)
+    })
+  ).min(1, { message: "At least one team member is required" })
+});
