@@ -1,11 +1,11 @@
 
 import React from 'react';
-import { UserPermissions } from '@/types/user';
+import { RolePermissions } from '@/types/user';
 import { Sidebar } from '@/components/ui/sidebar';
 
 interface LayoutProps {
   children: React.ReactNode;
-  permissions: UserPermissions;
+  permissions: RolePermissions;
 }
 
 export const LayoutAdminStaff: React.FC<LayoutProps> = ({ children, permissions }) => {
@@ -18,7 +18,7 @@ export const LayoutAdminStaff: React.FC<LayoutProps> = ({ children, permissions 
 
   return (
     <div className="flex h-screen">
-      <Sidebar items={menuItems} />
+      <Sidebar items={menuItems} title="Admin Staff" />
       <main className="flex-1 overflow-auto p-6">{children}</main>
     </div>
   );

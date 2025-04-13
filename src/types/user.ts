@@ -1,47 +1,71 @@
 
 import { UserRole } from './tournament-enums';
 
-// Role Permissions
-export interface RolePermissions {
-  can_manage_tournaments: boolean;
-  can_manage_users: boolean;
-  can_manage_registrations: boolean;
-  can_score_matches: boolean;
-  can_view_reports: boolean;
-}
-
-// User Permissions (alias for backward compatibility)
-export type UserPermissions = RolePermissions;
-
-// Profile type definition to match the one from entities.ts
 export interface Profile {
   id: string;
-  name?: string;
+  name: string;
   full_name: string;
   display_name: string;
   email: string;
   phone?: string;
-  avatar_url?: string;
+  avatar_url?: string | null;
   role: UserRole;
-  // Add other fields as needed for compatibility
+  player_details: {
+    birthdate?: string;
+    gender?: string;
+    skill_level?: string;
+    achievements?: string[];
+    [key: string]: any;
+  };
+  player_stats: {
+    tournaments_played: number;
+    tournaments_won: number;
+    matches_played: number;
+    matches_won: number;
+    rating: number;
+    ranking?: number;
+  };
+  preferences: {
+    notifications: {
+      email: boolean;
+      push: boolean;
+      tournament_updates: boolean;
+      match_reminders: boolean;
+      [key: string]: boolean;
+    };
+    privacy: {
+      show_profile: boolean;
+      show_stats: boolean;
+      show_history: boolean;
+      [key: string]: boolean;
+    };
+    [key: string]: any;
+  };
+  social_links: {
+    facebook?: string;
+    twitter?: string;
+    instagram?: string;
+    website?: string;
+    [key: string]: string | undefined;
+  };
 }
 
-// Define auth context type
 export interface AuthContextType {
   user: Profile | null;
-  signIn: (email?: string, password?: string) => Promise<void>;
-  signUp: (email: string, password: string, data: any) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<boolean>;
+  signUp: (email: string, password: string, userData: any) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
+  updateUserProfile: (data: Partial<Profile>) => Promise<void>;
+  updateProfile: (data: Partial<Profile>) => Promise<void>;  // Alias for updateUserProfile
   isLoading: boolean;
   error: string | null;
+  isAuthenticated: boolean;
   isDemo: boolean;
-  updateUserProfile: (data: Partial<Profile>) => Promise<void>;
-  isAuthenticated: boolean; // Add for App.tsx
-  login: (email: string, password: string) => Promise<void>; // Add for compatibility
-  enableDemoMode: (enable: boolean) => void; // Add for compatibility
-  register: (email: string, password: string, data: any) => Promise<void>; // Add for RegisterForm
-  logout: () => Promise<void>; // Add for UserMenu
-  demoMode: boolean; // Add for UserMenu
+  enableDemoMode: (enable: boolean) => void;
+  login: (email: string, password: string) => Promise<boolean>;  // Alias for signIn
+  logout: () => Promise<void>;  // Alias for signOut
+  register: (email: string, password: string, userData: any) => Promise<void>;  // Alias for signUp
+  demoMode: boolean;  // Alias for isDemo
 }

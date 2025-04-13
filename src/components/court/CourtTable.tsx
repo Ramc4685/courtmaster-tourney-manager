@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Court, CourtStatus } from '@/types/entities';
+import { Court, CourtStatus } from '@/types/tournament';
 import {
   Table,
   TableBody,
