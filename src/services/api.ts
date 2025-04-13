@@ -1,5 +1,5 @@
-import { supabase } from '../lib/supabase';
-import { storageService } from './storage/StorageService';
+import { supabase } from '@/integrations/supabase/client';
+import { transformers } from '@/utils/dataTransform';
 import type {
   Profile,
   Tournament as EntityTournament,
@@ -8,9 +8,26 @@ import type {
   Registration,
   Match,
   Notification,
-} from '../types/entities';
+  Team,
+  Player,
+  TournamentCategory,
+} from '@/types/entities';
+import { RegistrationStatus } from '@/types/entities';
 import type { Tournament as DemoTournament } from '../types/tournament';
 import type { RegistrationMetadata, TournamentRegistrationStatus } from '../types/registration';
+import { storageService } from './storage';
+import { TournamentStage, TournamentStatus } from '../types/tournament';
+import type { Json } from '@/types/supabase';
+
+// Helper function to convert metadata to Json type
+function toJson<T>(data: T): Json {
+  return data as unknown as Json;
+}
+
+// Helper function to convert Json to specific type
+function fromJson<T>(json: Json): T {
+  return json as unknown as T;
+}
 
 // Helper function to convert demo tournament to entity tournament
 function convertDemoTournamentToEntity(demo: DemoTournament): EntityTournament {
@@ -18,20 +35,56 @@ function convertDemoTournamentToEntity(demo: DemoTournament): EntityTournament {
     id: demo.id,
     name: demo.name,
     description: demo.description || null,
-    start_date: demo.startDate.toISOString(),
-    end_date: demo.endDate.toISOString(),
-    registration_deadline: demo.registrationDeadline?.toISOString() || null,
-    venue: demo.location || null,
+    startDate: new Date(demo.startDate),
+    endDate: new Date(demo.endDate),
+    registrationDeadline: demo.registrationDeadline ? new Date(demo.registrationDeadline) : null,
+    location: demo.location || null,
     status: demo.status.toLowerCase() as EntityTournament['status'],
-    organizer_id: demo.created_by || 'demo-user',
-    divisions: [],
-    created_at: demo.createdAt.toISOString(),
-    updated_at: demo.updatedAt.toISOString()
+    organizerId: demo.created_by || 'demo-user',
+    createdAt: new Date(demo.createdAt),
+    updatedAt: new Date(demo.updatedAt),
+    format: {
+      type: "ROUND_ROBIN",
+      stages: [TournamentStage.GROUP_STAGE, TournamentStage.FINALS],
+      scoring: {
+        matchFormat: 'STANDARD',
+        pointsPerSet: 21,
+        setsToWin: 2,
+        pointsToWinSet: 21,
+        tiebreakPoints: 15,
+        finalSetTiebreak: true
+      },
+      divisions: []
+    },
+    currentStage: TournamentStage.REGISTRATION,
+    registrationEnabled: true,
+    requirePlayerProfile: false,
+    teams: [],
+    matches: [],
+    courts: [],
+    categories: [],
+    scoringSettings: {
+      matchFormat: 'STANDARD',
+      pointsPerSet: 21,
+      setsToWin: 2,
+      pointsToWinSet: 21,
+      tiebreakPoints: 15,
+      finalSetTiebreak: true
+    }
   };
 }
 
-// Profile Services
-export const profileService = {
+// Define TournamentMessage interface
+export interface TournamentMessage {
+  id: string;
+  tournamentId: string;
+  senderId: string;
+  content: string;
+  createdAt: Date;
+}
+
+export class APIService {
+  // Profile Services
   async getProfile(userId: string): Promise<Profile> {
     const { data, error } = await supabase
       .from('profiles')
@@ -39,32 +92,30 @@ export const profileService = {
       .eq('id', userId)
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.profile.fromAPI(data);
+  }
 
   async updateProfile(userId: string, profile: Partial<Profile>): Promise<Profile> {
     const { data, error } = await supabase
       .from('profiles')
-      .update(profile)
+      .update(transformers.profile.toAPI(profile))
       .eq('id', userId)
       .select()
       .single();
     if (error) throw error;
-    return data;
-  },
-};
+    return transformers.profile.fromAPI(data);
+  }
 
-// Tournament Services
-export const tournamentService = {
-  async createTournament(tournament: Omit<EntityTournament, 'id' | 'created_at' | 'updated_at'>): Promise<EntityTournament> {
+  // Tournament Services
+  async createTournament(tournament: Omit<EntityTournament, 'id' | 'createdAt' | 'updatedAt'>): Promise<EntityTournament> {
     const { data, error } = await supabase
       .from('tournaments')
-      .insert(tournament)
+      .insert(transformers.tournament.toAPI(tournament))
       .select()
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.tournament.fromAPI(data);
+  }
 
   async getTournament(id: string): Promise<EntityTournament> {
     const data = await storageService.getItem<DemoTournament>(`tournaments/${id}`);
@@ -78,93 +129,72 @@ export const tournamentService = {
       .eq('id', id)
       .single();
     if (error) throw error;
-    return supabaseData;
-  },
+    return transformers.tournament.fromAPI(supabaseData);
+  }
 
-  async listTournaments(filters?: { status?: string; organizer_id?: string }): Promise<EntityTournament[]> {
+  async listTournaments(filters?: { status?: string; organizerId?: string }): Promise<EntityTournament[]> {
     const data = await storageService.getItem<DemoTournament[]>('tournaments');
     if (data) {
       console.log('[DEBUG] Using demo tournaments:', data);
       return data
         .filter(t => {
           if (filters?.status && t.status.toLowerCase() !== filters.status) return false;
-          if (filters?.organizer_id && (t.created_by || 'demo-user') !== filters.organizer_id) return false;
+          if (filters?.organizerId && (t.created_by || 'demo-user') !== filters.organizerId) return false;
           return true;
         })
         .map(convertDemoTournamentToEntity);
     }
 
-    let query = supabase.from('tournaments').select('*');
+    let query = supabase
+      .from('tournaments')
+      .select('*') as any;
     if (filters?.status) query = query.eq('status', filters.status);
-    if (filters?.organizer_id) query = query.eq('organizer_id', filters.organizer_id);
+    if (filters?.organizerId) query = query.eq('organizerId', filters.organizerId);
     const { data: supabaseData, error } = await query;
     if (error) throw error;
-    return supabaseData;
-  },
+    return supabaseData.map(transformers.tournament.fromAPI);
+  }
 
   async updateTournament(id: string, tournament: Partial<EntityTournament>): Promise<EntityTournament> {
     const { data, error } = await supabase
       .from('tournaments')
-      .update(tournament)
+      .update(transformers.tournament.toAPI(tournament))
       .eq('id', id)
       .select()
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.tournament.fromAPI(data);
+  }
 
   async generateMatches(tournamentId: string): Promise<{ success: boolean; message: string; matchCount?: number }> {
     console.log(`[API STUB] generateMatches called for tournamentId: ${tournamentId}`);
     // TODO: Implement actual match generation logic based on tournament format
-    // 1. Fetch tournament details (format, divisions, etc.)
-    // 2. Fetch approved registrations (players/teams) for each division
-    // 3. Based on format (Single Elim, RR, etc.), generate the first round of matches
-    //    - Assign players/teams to matches
-    //    - Set round_number, match_number
-    //    - Potentially handle seeding/byes
-    // 4. Insert generated matches into the 'matches' table (use matchService.createMatch in bulk?)
-    // 5. Update tournament status (e.g., to 'IN_PROGRESS' or 'SCHEDULED')?
-    
-    // Placeholder response
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate async work
     const mockMatchCount = Math.floor(Math.random() * 10) + 4; // Simulate generating matches
     console.log(`[API STUB] Simulated generating ${mockMatchCount} matches.`);
     return { success: true, message: `Match generation initiated (stub). ${mockMatchCount} matches simulated.`, matchCount: mockMatchCount };
-  },
+  }
 
   // ADDED: scheduleMatches (Stub)
   async scheduleMatches(tournamentId: string): Promise<{ success: boolean; message: string; scheduledCount?: number }> {
     console.log(`[API STUB] scheduleMatches called for tournamentId: ${tournamentId}`);
     // TODO: Implement actual match scheduling logic
-    // 1. Fetch unscheduled matches for the tournament (status = 'SCHEDULED', scheduled_time = NULL, court_id = NULL)
-    // 2. Fetch available courts and their potential time slots/availability windows
-    // 3. Fetch tournament settings (e.g., match duration, time between matches)
-    // 4. Implement scheduling algorithm:
-    //    - Iterate through matches.
-    //    - Find available court/time slot based on constraints.
-    //    - Avoid conflicts (player playing two matches at once, court double-booked).
-    //    - Consider round priority, player rest time, etc.
-    // 5. Update matches with scheduled_time and court_id (use matchService.updateMatch in bulk?)
-
-    // Placeholder response
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate async work
     const mockScheduledCount = Math.floor(Math.random() * 8) + 2; // Simulate scheduling
     console.log(`[API STUB] Simulated scheduling ${mockScheduledCount} matches.`);
     return { success: true, message: `Scheduling complete (stub). ${mockScheduledCount} matches scheduled.`, scheduledCount: mockScheduledCount };
   }
-};
 
-// Division Services
-export const divisionService = {
-  async createDivision(division: Omit<Division, 'id' | 'created_at' | 'updated_at'>): Promise<Division> {
+  // Division Services
+  async createDivision(division: Omit<Division, 'id' | 'createdAt' | 'updatedAt'>): Promise<Division> {
     const { data, error } = await supabase
       .from('divisions')
-      .insert(division)
+      .insert(transformers.division.toAPI(division))
       .select()
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.division.fromAPI(data);
+  }
 
   async getDivision(id: string): Promise<Division> {
     const { data, error } = await supabase
@@ -173,8 +203,8 @@ export const divisionService = {
       .eq('id', id)
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.division.fromAPI(data);
+  }
 
   async listDivisions(tournamentId: string): Promise<Division[]> {
     const { data, error } = await supabase
@@ -182,21 +212,19 @@ export const divisionService = {
       .select('*')
       .eq('tournament_id', tournamentId);
     if (error) throw error;
-    return data;
-  },
-};
+    return data.map(transformers.division.fromAPI);
+  }
 
-// Court Services
-export const courtService = {
-  async createCourt(court: Omit<Court, 'id' | 'created_at' | 'updated_at'>): Promise<Court> {
+  // Court Services
+  async createCourt(court: Omit<Court, 'id' | 'createdAt' | 'updatedAt'>): Promise<Court> {
     const { data, error } = await supabase
       .from('courts')
-      .insert(court)
+      .insert(transformers.court.toAPI(court))
       .select()
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.court.fromAPI(data);
+  }
 
   async updateCourtStatus(id: string, status: string): Promise<Court> {
     const { data, error } = await supabase
@@ -206,8 +234,8 @@ export const courtService = {
       .select()
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.court.fromAPI(data);
+  }
 
   async listCourts(tournamentId: string): Promise<Court[]> {
     const { data, error } = await supabase
@@ -215,31 +243,30 @@ export const courtService = {
       .select('*')
       .eq('tournament_id', tournamentId);
     if (error) throw error;
-    return data;
-  },
+    return data.map(transformers.court.fromAPI);
+  }
 
-  async updateCourt(id: string, courtData: Partial<Omit<Court, 'id' | 'tournament_id' | 'created_at' | 'updated_at'> >): Promise<Court> {
+  async updateCourt(id: string, courtData: Partial<Omit<Court, 'id' | 'tournamentId' | 'createdAt' | 'updatedAt'>>): Promise<Court> {
     const updatePayload: Partial<Court> = {};
     if (courtData.name !== undefined) updatePayload.name = courtData.name;
     if (courtData.description !== undefined) updatePayload.description = courtData.description;
     if (courtData.status !== undefined) updatePayload.status = courtData.status;
-    if (courtData.court_number !== undefined) updatePayload.court_number = courtData.court_number;
     
     if (Object.keys(updatePayload).length === 0) {
       const { data, error } = await supabase.from('courts').select('*').eq('id', id).single();
       if (error) throw error;
-      return data;
+      return transformers.court.fromAPI(data);
     }
 
     const { data, error } = await supabase
       .from('courts')
-      .update(updatePayload)
+      .update(transformers.court.toAPI(updatePayload))
       .eq('id', id)
       .select()
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.court.fromAPI(data);
+  }
 
   async deleteCourt(id: string): Promise<void> {
     const { error } = await supabase
@@ -251,24 +278,34 @@ export const courtService = {
       throw error; 
     }
   }
-};
 
-// Registration Services
-export const registrationService = {
-  async register(registration: Omit<Registration, 'id' | 'created_at' | 'updated_at'>): Promise<Registration> {
+  // Registration Services
+  async register(registration: Omit<Registration, 'id' | 'createdAt' | 'updatedAt'>): Promise<Registration> {
+    const payload = {
+      tournament_id: registration.tournamentId,
+      division_id: registration.divisionId,
+      player_id: registration.playerId,
+      partner_id: registration.partnerId,
+      status: registration.status as string,
+      metadata: toJson(registration.metadata),
+      notes: registration.notes,
+      priority: registration.priority,
+      type: registration.type
+    };
+
     const { data, error } = await supabase
       .from('registrations')
-      .insert({
-        ...registration,
-        metadata: registration.metadata || {},
-        notes: registration.notes || null,
-        priority: registration.priority || 0,
-      })
+      .insert(payload)
       .select()
       .single();
-    if (error) throw error;
-    return data;
-  },
+
+    if (error) {
+      console.error("Error creating registration:", error);
+      throw error;
+    }
+
+    return transformers.registration.fromAPI(data);
+  }
 
   async getRegistration(id: string): Promise<Registration> {
     const { data, error } = await supabase
@@ -277,37 +314,59 @@ export const registrationService = {
       .eq('id', id)
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.registration.fromAPI(data);
+  }
 
   async listRegistrations(filters: { 
-    tournament_id?: string; 
-    division_id?: string; 
-    player_id?: string; 
-    partner_id?: string;
+    tournamentId?: string; 
+    divisionId?: string; 
+    playerId?: string; 
+    partnerId?: string;
     status?: string;
   }): Promise<Registration[]> {
-    let query = supabase.from('registrations').select('*');
-    if (filters.tournament_id) query = query.eq('tournament_id', filters.tournament_id);
-    if (filters.division_id) query = query.eq('division_id', filters.division_id);
-    if (filters.player_id) query = query.eq('player_id', filters.player_id);
-    if (filters.partner_id) query = query.eq('partner_id', filters.partner_id);
-    if (filters.status) query = query.eq('status', filters.status);
-    const { data, error } = await query.order('priority', { ascending: false });
-    if (error) throw error;
-    return data;
-  },
-
-  async updateRegistration(id: string, registration: Partial<Registration>): Promise<Registration> {
     const { data, error } = await supabase
       .from('registrations')
-      .update(registration)
+      .select('*')
+      .eq('tournament_id', filters.tournamentId)
+      .eq('division_id', filters.divisionId)
+      .eq('player_id', filters.playerId)
+      .eq('partner_id', filters.partnerId)
+      .eq('status', filters.status);
+
+    if (error) {
+      console.error("Error fetching registrations:", error);
+      throw error;
+    }
+
+    return data.map(transformers.registration.fromAPI);
+  }
+
+  async updateRegistration(id: string, registration: Partial<Registration>): Promise<Registration> {
+    const payload: any = {};
+    if (registration.tournamentId) payload.tournament_id = registration.tournamentId;
+    if (registration.divisionId) payload.division_id = registration.divisionId;
+    if (registration.playerId) payload.player_id = registration.playerId;
+    if (registration.partnerId) payload.partner_id = registration.partnerId;
+    if (registration.status) payload.status = registration.status;
+    if (registration.metadata) payload.metadata = registration.metadata;
+    if (registration.notes) payload.notes = registration.notes;
+    if (registration.priority) payload.priority = registration.priority;
+    if (registration.type) payload.type = registration.type;
+
+    const { data, error } = await supabase
+      .from('registrations')
+      .update(payload)
       .eq('id', id)
       .select()
       .single();
-    if (error) throw error;
-    return data;
-  },
+
+    if (error) {
+      console.error("Error updating registration:", error);
+      throw error;
+    }
+
+    return transformers.registration.fromAPI(data);
+  }
 
   async addComment(id: string, comment: { text: string; createdBy: string }): Promise<Registration> {
     const { data: registration, error: getError } = await supabase
@@ -318,10 +377,11 @@ export const registrationService = {
     
     if (getError) throw getError;
 
-    const metadata = {
-      ...registration.metadata,
+    const currentMetadata = fromJson<RegistrationMetadata>(registration.metadata || {});
+    const metadata = toJson({
+      ...currentMetadata,
       comments: [
-        ...(registration.metadata?.comments || []),
+        ...(currentMetadata.comments || []),
         {
           id: crypto.randomUUID(),
           text: comment.text,
@@ -329,7 +389,7 @@ export const registrationService = {
           createdBy: comment.createdBy,
         },
       ],
-    };
+    });
 
     const { data, error } = await supabase
       .from('registrations')
@@ -339,8 +399,8 @@ export const registrationService = {
       .single();
     
     if (error) throw error;
-    return data;
-  },
+    return transformers.registration.fromAPI(data);
+  }
 
   async updatePriority(id: string, priority: number): Promise<Registration> {
     const { data, error } = await supabase
@@ -350,8 +410,8 @@ export const registrationService = {
       .select()
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.registration.fromAPI(data);
+  }
 
   async updateNotes(id: string, notes: string): Promise<Registration> {
     const { data, error } = await supabase
@@ -361,8 +421,8 @@ export const registrationService = {
       .select()
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.registration.fromAPI(data);
+  }
 
   // --- New Waitlist Management Functions ---
   async updateWaitlistPosition(id: string, newPosition: number): Promise<Registration> {
@@ -374,10 +434,10 @@ export const registrationService = {
 
     if (getError) throw getError;
 
-    const currentMetadata = (currentRegistration?.metadata || {}) as RegistrationMetadata;
+    const currentMetadata = fromJson<RegistrationMetadata>(currentRegistration?.metadata || {});
     const oldPosition = currentMetadata.waitlistPosition;
 
-    const updatedMetadata = {
+    const updatedMetadata = toJson({
       ...currentMetadata,
       waitlistPosition: newPosition,
       waitlistPromotionHistory: [
@@ -388,10 +448,7 @@ export const registrationService = {
           toPosition: newPosition,
         },
       ],
-    };
-
-    // TODO: Add logic here to shift other waitlist positions if necessary
-    // This might involve fetching other waitlisted items and updating them in a transaction
+    });
 
     const { data, error } = await supabase
       .from('registrations')
@@ -400,10 +457,10 @@ export const registrationService = {
       .select()
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.registration.fromAPI(data);
+  }
 
-  async promoteFromWaitlist(id: string, newStatus: TournamentRegistrationStatus = 'PENDING'): Promise<Registration> {
+  async promoteFromWaitlist(id: string, newStatus: RegistrationStatus = RegistrationStatus.PENDING): Promise<Registration> {
     const { data: currentRegistration, error: getError } = await supabase
       .from('registrations')
       .select('metadata, tournament_id')
@@ -412,23 +469,19 @@ export const registrationService = {
 
     if (getError) throw getError;
 
-    const currentMetadata = (currentRegistration?.metadata || {}) as RegistrationMetadata;
+    const currentMetadata = fromJson<RegistrationMetadata>(currentRegistration?.metadata || {});
     const oldPosition = currentMetadata.waitlistPosition;
 
     // Update the promoted registration: change status, remove waitlist position
     const updatedMetadata = { ...currentMetadata };
     delete updatedMetadata.waitlistPosition; // Remove position
-    // Optionally clear reason/notified/history or keep for record
-    // delete updatedMetadata.waitlistReason;
-    // delete updatedMetadata.waitlistNotified;
-    // updatedMetadata.waitlistPromotionHistory = [...]; // Add promotion event
 
     const { data: promotedReg, error: promoteError } = await supabase
       .from('registrations')
       .update({ 
-          status: newStatus, 
-          metadata: updatedMetadata,
-          priority: 0 // Reset priority? Or keep?
+        status: newStatus as string, 
+        metadata: toJson(updatedMetadata),
+        priority: 0 // Reset priority? Or keep?
       })
       .eq('id', id)
       .select()
@@ -436,41 +489,35 @@ export const registrationService = {
       
     if (promoteError) throw promoteError;
 
-    // TODO: Shift subsequent waitlisted items up by one position
     if (oldPosition && currentRegistration.tournament_id) {
-      // Fetch registrations on waitlist for the same tournament with position > oldPosition
-      // Update their waitlistPosition -= 1
-      // This should ideally be done in a transaction or a database function for atomicity
       console.warn(`TODO: Implement shifting of waitlist positions after promoting ID: ${id} from position ${oldPosition}`);
     }
 
-    return promotedReg;
+    return transformers.registration.fromAPI(promotedReg);
   }
   // --- End Waitlist Management Functions ---
-};
 
-// Match Services
-export const matchService = {
-  async createMatch(match: Omit<Match, 'id' | 'created_at' | 'updated_at'>): Promise<Match> {
+  // Match Services
+  async createMatch(match: Omit<Match, 'id' | 'createdAt' | 'updatedAt'>): Promise<Match> {
     const { data, error } = await supabase
       .from('matches')
-      .insert(match)
+      .insert(transformers.match.toAPI(match))
       .select()
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.match.fromAPI(data);
+  }
 
   async updateMatch(id: string, match: Partial<Match>): Promise<Match> {
     const { data, error } = await supabase
       .from('matches')
-      .update(match)
+      .update(transformers.match.toAPI(match))
       .eq('id', id)
       .select()
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.match.fromAPI(data);
+  }
 
   async getMatch(id: string): Promise<Match> {
     const { data, error } = await supabase
@@ -479,32 +526,30 @@ export const matchService = {
       .eq('id', id)
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.match.fromAPI(data);
+  }
 
-  async listMatches(filters: { tournament_id?: string; division_id?: string; court_id?: string; status?: string }): Promise<Match[]> {
+  async listMatches(filters: { tournamentId?: string; divisionId?: string; courtId?: string; status?: string }): Promise<Match[]> {
     let query = supabase.from('matches').select('*');
-    if (filters.tournament_id) query = query.eq('tournament_id', filters.tournament_id);
-    if (filters.division_id) query = query.eq('division_id', filters.division_id);
-    if (filters.court_id) query = query.eq('court_id', filters.court_id);
+    if (filters.tournamentId) query = query.eq('tournament_id', filters.tournamentId);
+    if (filters.divisionId) query = query.eq('division_id', filters.divisionId);
+    if (filters.courtId) query = query.eq('court_id', filters.courtId);
     if (filters.status) query = query.eq('status', filters.status);
     const { data, error } = await query;
     if (error) throw error;
-    return data;
-  },
-};
+    return data.map(transformers.match.fromAPI);
+  }
 
-// Notification Services
-export const notificationService = {
-  async createNotification(notification: Omit<Notification, 'id' | 'created_at'>): Promise<Notification> {
+  // Notification Services
+  async createNotification(notification: Omit<Notification, 'id' | 'createdAt'>): Promise<Notification> {
     const { data, error } = await supabase
       .from('notifications')
-      .insert(notification)
+      .insert(transformers.notification.toAPI(notification))
       .select()
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.notification.fromAPI(data);
+  }
 
   async markAsRead(id: string): Promise<Notification> {
     const { data, error } = await supabase
@@ -514,8 +559,8 @@ export const notificationService = {
       .select()
       .single();
     if (error) throw error;
-    return data;
-  },
+    return transformers.notification.fromAPI(data);
+  }
 
   async listNotifications(userId: string, unreadOnly = false): Promise<Notification[]> {
     let query = supabase
@@ -526,12 +571,10 @@ export const notificationService = {
     if (unreadOnly) query = query.eq('read', false);
     const { data, error } = await query;
     if (error) throw error;
-    return data;
-  },
-};
+    return data.map(transformers.notification.fromAPI);
+  }
 
-// Email Service
-export const emailService = {
+  // Email Service
   async sendEmail(params: { to: string; subject: string; html: string }): Promise<{ data: any; error: any }> {
     const { data, error } = await supabase.functions.invoke('send-email', {
       body: params,
@@ -545,26 +588,12 @@ export const emailService = {
     console.log('Successfully invoked send-email function:', data);
     return { data, error: null };
   }
-};
 
-// Define TournamentMessage type based on schema
-interface TournamentMessage {
-  id: string;
-  tournament_id: string;
-  sender_id: string;
-  content: string;
-  created_at: string;
-  // Optionally join sender profile info here if needed frequently
-  // sender?: { display_name: string | null, avatar_url: string | null };
-}
-
-// Message Service (NEW)
-export const messageService = {
+  // Message Service (NEW)
   async listMessages(tournamentId: string, limit = 50): Promise<TournamentMessage[]> {
     const { data, error } = await supabase
       .from('tournament_messages')
-      .select('*') 
-      // TODO: Select sender profile info if needed: '*, sender:profiles(display_name, avatar_url)'
+      .select('*')
       .eq('tournament_id', tournamentId)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -573,15 +602,15 @@ export const messageService = {
       console.error("Error listing messages:", error);
       throw error;
     }
-    // Messages are fetched newest first, reverse for display
-    return (data as TournamentMessage[]).reverse() || [];
-  },
+    
+    return (data as unknown as TournamentMessage[]).reverse();
+  }
 
   async sendMessage(tournamentId: string, senderId: string, content: string): Promise<TournamentMessage> {
-     if (!content.trim()) {
+    if (!content.trim()) {
       throw new Error("Message content cannot be empty.");
     }
-     if (content.length > 500) { // Match schema constraint
+    if (content.length > 500) {
       throw new Error("Message content exceeds maximum length (500 characters).");
     }
 
@@ -590,16 +619,22 @@ export const messageService = {
       .insert({
         tournament_id: tournamentId,
         sender_id: senderId,
-        content: content,
+        content
       })
       .select()
-      // TODO: Select sender profile info if needed
       .single();
 
     if (error) {
       console.error("Error sending message:", error);
       throw error;
     }
-    return data as TournamentMessage;
-  },
-}; 
+
+    return data as unknown as TournamentMessage;
+  }
+}
+
+// Create service instances from APIService
+export const registrationService = new APIService();
+export const profileService = new APIService();
+export const notificationService = new APIService();
+export const emailService = new APIService(); 

@@ -8,11 +8,14 @@ import {
   TeamRegistrationWithStatus,
   RegistrationMetadata,
   TournamentRegistrationStatus,
-  TeamMember
+  TeamMember,
+  RegistrationStatus,
+  TournamentRegistration
 } from "@/types/registration";
 import { registrationService, profileService, notificationService, emailService } from "@/services/api";
-import { Profile, Notification, Registration } from "@/types/entities";
+import { Profile, Notification } from "@/types/entities";
 import { useStore } from '@/stores/store';
+import { APIService } from '@/services/api';
 
 interface RegistrationStore {
   playerRegistrations: PlayerRegistrationWithStatus[];
@@ -42,41 +45,43 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
   fetchRegistrations: async (tournamentId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const registrations = await registrationService.listRegistrations({ tournament_id: tournamentId });
+      const registrations = await registrationService.listRegistrations({ tournamentId });
       
       const playerRegs = registrations
-        .filter((reg) => !reg.partner_id)
+        .filter((reg) => !reg.partnerId)
         .map((reg): PlayerRegistrationWithStatus => ({
           id: reg.id,
-          tournamentId: reg.tournament_id,
+          tournamentId: reg.tournamentId,
           status: reg.status as TournamentRegistrationStatus,
           metadata: reg.metadata as RegistrationMetadata,
-          createdAt: new Date(reg.created_at),
-          updatedAt: new Date(reg.updated_at),
+          createdAt: new Date(reg.createdAt),
+          updatedAt: new Date(reg.updatedAt),
           firstName: (reg.metadata as RegistrationMetadata)?.playerName?.split(' ')[0] || '',
           lastName: (reg.metadata as RegistrationMetadata)?.playerName?.split(' ')[1] || '',
           email: (reg.metadata as RegistrationMetadata)?.contactEmail || '',
           phone: (reg.metadata as RegistrationMetadata)?.contactPhone || '',
-          player_id: reg.player_id,
-          division_id: reg.division_id,
+          playerId: reg.playerId,
+          divisionId: reg.divisionId,
+          type: "player"
         }));
 
       const teamRegs = registrations
-        .filter((reg) => !!reg.partner_id || (reg.metadata as any)?.teamName)
+        .filter((reg) => !!reg.partnerId || (reg.metadata as any)?.teamName)
         .map((reg): TeamRegistrationWithStatus => ({
           id: reg.id,
-          tournamentId: reg.tournament_id,
+          tournamentId: reg.tournamentId,
           status: reg.status as TournamentRegistrationStatus,
           metadata: reg.metadata as RegistrationMetadata,
-          createdAt: new Date(reg.created_at),
-          updatedAt: new Date(reg.updated_at),
-          teamName: (reg.metadata as RegistrationMetadata & { teamName?: string })?.teamName || '',
-          captainName: (reg.metadata as RegistrationMetadata & { captainName?: string })?.captainName || '',
+          createdAt: new Date(reg.createdAt),
+          updatedAt: new Date(reg.updatedAt),
+          teamName: (reg.metadata as RegistrationMetadata)?.teamName || '',
+          captainName: (reg.metadata as RegistrationMetadata)?.captainName || '',
           captainEmail: (reg.metadata as RegistrationMetadata)?.contactEmail || '',
           captainPhone: (reg.metadata as RegistrationMetadata)?.contactPhone || '',
-          members: (reg.metadata as RegistrationMetadata & { members?: TeamMember[] })?.members || [],
-          player_id: reg.player_id,
-          division_id: reg.division_id,
+          members: (reg.metadata as RegistrationMetadata)?.members || [],
+          playerId: reg.playerId,
+          divisionId: reg.divisionId,
+          type: "team"
         }));
 
       set({
@@ -96,38 +101,43 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
   registerPlayer: async (tournamentId: string, data: PlayerRegistration) => {
     set({ isLoading: true, error: null });
     try {
-      const registrationPayload: Omit<Registration, 'id' | 'created_at' | 'updated_at'> = {
-        tournament_id: tournamentId,
-        player_id: data.player_id,
-        division_id: data.division_id,
-        partner_id: null,
-        status: 'PENDING',
+      const registrationPayload: Omit<TournamentRegistration, 'id'> = {
+        tournamentId,
+        playerId: data.playerId,
+        divisionId: data.divisionId,
+        partnerId: null,
+        status: RegistrationStatus.PENDING,
         metadata: {
           playerName: `${data.firstName} ${data.lastName}`,
           contactEmail: data.email,
           contactPhone: data.phone || '',
           teamSize: 1,
           division: '',
-          emergencyContact: { name: '', phone: '', relationship: '' },
+          emergencyContact: '',
           waiverSigned: false,
           paymentStatus: 'PENDING',
         },
         notes: null,
         priority: 0,
+        type: 'player',
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
 
       const registration = await registrationService.register(registrationPayload);
 
+      // Create notification for player
       await notificationService.createNotification({
-        user_id: data.player_id,
+        userId: data.playerId,
         title: 'Registration Successful',
         message: `You have successfully registered for the tournament (Player: ${data.firstName} ${data.lastName}).`,
         type: 'registration_confirmation',
         read: false,
+        updatedAt: new Date()
       });
 
       try {
-        const userProfile = await profileService.getProfile(data.player_id);
+        const userProfile = await profileService.getProfile(data.playerId);
         if (userProfile?.preferences?.notifications?.email) {
            const emailHtml = `
             <h1>Registration Confirmed!</h1>
@@ -143,7 +153,7 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
           });
           console.log(`Sent registration confirmation email to ${data.email}`);
         } else {
-           console.log(`Email notifications disabled for user ${data.player_id}`);
+           console.log(`Email notifications disabled for user ${data.playerId}`);
         }
       } catch (emailError) {
          console.error("Failed to send registration confirmation email:", emailError);
@@ -155,8 +165,9 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
         tournamentId,
         status: registration.status as TournamentRegistrationStatus,
         metadata: registration.metadata as RegistrationMetadata,
-        createdAt: new Date(registration.created_at),
-        updatedAt: new Date(registration.updated_at),
+        createdAt: registration.createdAt,
+        updatedAt: registration.updatedAt,
+        type: "player"
       };
 
       set((state) => ({
@@ -175,62 +186,78 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
   registerTeam: async (tournamentId: string, data: TeamRegistration) => {
     set({ isLoading: true, error: null });
     try {
-      const primaryMember = data.members[0];
+      const primaryMember = data.members?.[0];
       if (!primaryMember) {
         throw new Error("Team must have at least one member.");
       }
 
-      const registrationPayload: Omit<Registration, 'id' | 'created_at' | 'updated_at'> = {
-        tournament_id: tournamentId,
-        player_id: primaryMember.player_id,
-        division_id: data.division_id,
-        partner_id: null,
-        status: 'PENDING',
+      const registrationPayload: Omit<TournamentRegistration, 'id'> = {
+        tournamentId,
+        playerId: primaryMember.playerId || null,
+        divisionId: data.divisionId || null,
+        partnerId: null,
+        status: RegistrationStatus.PENDING,
         metadata: {
           teamName: data.teamName,
           teamSize: data.members.length,
-          captainName: data.captainName,
-          contactEmail: data.captainEmail,
-          contactPhone: data.captainPhone || '',
-          members: data.members,
           division: '',
-          emergencyContact: { name: '', phone: '', relationship: '' },
+          emergencyContact: '',
           waiverSigned: false,
           paymentStatus: 'PENDING',
+          captainName: data.captainName,
+          captainEmail: data.captainEmail,
+          captainPhone: data.captainPhone,
+          members: data.members.map(member => ({
+            firstName: member.firstName || '',
+            lastName: member.lastName || '',
+            name: `${member.firstName || ''} ${member.lastName || ''}`.trim(),
+            email: member.email || '',
+            phone: member.phone || '',
+            isTeamCaptain: member.isTeamCaptain || false,
+            playerId: member.playerId || null
+          }))
         },
         notes: null,
         priority: 0,
+        type: 'team',
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
 
       const registration = await registrationService.register(registrationPayload);
 
+      // Create notification for team captain
       await notificationService.createNotification({
-        user_id: primaryMember.player_id,
+        userId: primaryMember.playerId || '',
         title: 'Team Registration Successful',
-        message: `Your team "${data.teamName}" has successfully registered for the tournament.`,
+        message: `Your team "${data.teamName}" has been successfully registered for the tournament.`,
         type: 'registration_confirmation',
         read: false,
+        updatedAt: new Date()
       });
 
+      // Send email confirmation if enabled
       try {
-        const captainEmail = data.captainEmail;
-        const captainProfile = await profileService.getProfile(primaryMember.player_id);
-        if (captainProfile?.preferences?.notifications?.email) {
-           const emailHtml = `
-            <h1>Team Registration Confirmed!</h1>
-            <p>Hi ${data.captainName},</p>
-            <p>Your team "${data.teamName}" has successfully registered for the tournament.</p>
-            <p>Tournament ID: ${tournamentId}</p>
-            <p>We look forward to seeing your team there!</p>
-          `;
-          await emailService.sendEmail({
-            to: captainEmail,
-            subject: 'Tournament Team Registration Confirmation',
-            html: emailHtml,
-          });
-           console.log(`Sent team registration confirmation email to ${captainEmail}`);
-        } else {
-          console.log(`Email notifications disabled for captain ${primaryMember.player_id}`);
+        if (primaryMember.playerId) {
+          const captainProfile = await profileService.getProfile(primaryMember.playerId);
+          if (captainProfile?.preferences?.notifications?.email) {
+            const emailHtml = `
+              <h1>Team Registration Confirmed!</h1>
+              <p>Hi ${data.captainName},</p>
+              <p>Your team "${data.teamName}" has been successfully registered for the tournament.</p>
+              <p>Tournament ID: ${tournamentId}</p>
+              <p>Team Members:</p>
+              <ul>
+                ${data.members.map(m => `<li>${m.firstName} ${m.lastName}</li>`).join('')}
+              </ul>
+              <p>We look forward to seeing your team there!</p>
+            `;
+            await emailService.sendEmail({
+              to: data.captainEmail,
+              subject: 'Tournament Team Registration Confirmation',
+              html: emailHtml,
+            });
+          }
         }
       } catch (emailError) {
         console.error("Failed to send team registration confirmation email:", emailError);
@@ -242,8 +269,9 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
         tournamentId,
         status: registration.status as TournamentRegistrationStatus,
         metadata: registration.metadata as RegistrationMetadata,
-        createdAt: new Date(registration.created_at),
-        updatedAt: new Date(registration.updated_at),
+        createdAt: registration.createdAt,
+        updatedAt: registration.updatedAt,
+        type: "team"
       };
 
       set((state) => ({
@@ -265,17 +293,22 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
       const text = await file.text();
       Papa.parse(text, {
         header: true,
-        complete: (results) => {
+        complete: async (results) => {
           const players = results.data.map((row: any) => ({
             firstName: row["First Name"],
             lastName: row["Last Name"],
             email: row["Email"],
             phone: row["Phone"] || "",
+            playerId: "",
+            divisionId: "",
+            status: RegistrationStatus.PENDING,
+            metadata: {},
+            type: "player" as const
           }));
 
-          players.forEach((player: PlayerRegistration) => {
-            get().registerPlayer(tournamentId, player);
-          });
+          for (const player of players) {
+            await get().registerPlayer(tournamentId, player as PlayerRegistration);
+          }
         },
         error: (error) => {
           set({ error: error.message, isLoading: false });
@@ -302,11 +335,16 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
         lastName: row["Last Name"],
         email: row["Email"],
         phone: row["Phone"] || "",
+        playerId: "",
+        divisionId: "",
+        status: RegistrationStatus.PENDING,
+        metadata: {},
+        type: "player" as const
       }));
 
-      players.forEach((player: PlayerRegistration) => {
-        get().registerPlayer(tournamentId, player);
-      });
+      for (const player of players) {
+        await get().registerPlayer(tournamentId, player as PlayerRegistration);
+      }
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "Failed to import players from Excel",
@@ -321,9 +359,12 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
       const text = await file.text();
       Papa.parse(text, {
         header: true,
-        complete: (results) => {
+        complete: async (results) => {
           const teams = results.data.map((row: any) => ({
             teamName: row["Team Name"],
+            captainName: row["Captain Name"] || "",
+            captainEmail: row["Captain Email"] || "",
+            captainPhone: row["Captain Phone"] || "",
             members: row["Member Names"]
               .split(",")
               .map((name: string) => {
@@ -336,11 +377,16 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
                   isTeamCaptain: false,
                 };
               }),
+            playerId: "",
+            divisionId: "",
+            status: RegistrationStatus.PENDING,
+            metadata: {},
+            type: "team" as const
           }));
 
-          teams.forEach((team: TeamRegistration) => {
-            get().registerTeam(tournamentId, team);
-          });
+          for (const team of teams) {
+            await get().registerTeam(tournamentId, team as TeamRegistration);
+          }
         },
         error: (error) => {
           set({ error: error.message, isLoading: false });
@@ -364,6 +410,9 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
 
       const teams = data.map((row: any) => ({
         teamName: row["Team Name"],
+        captainName: row["Captain Name"] || "",
+        captainEmail: row["Captain Email"] || "",
+        captainPhone: row["Captain Phone"] || "",
         members: row["Member Names"]
           .split(",")
           .map((name: string) => {
@@ -376,11 +425,16 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
               isTeamCaptain: false,
             };
           }),
+        playerId: "",
+        divisionId: "",
+        status: RegistrationStatus.PENDING,
+        metadata: {},
+        type: "team" as const
       }));
 
-      teams.forEach((team: TeamRegistration) => {
-        get().registerTeam(tournamentId, team);
-      });
+      for (const team of teams) {
+        await get().registerTeam(tournamentId, team as TeamRegistration);
+      }
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "Failed to import teams from Excel",
@@ -466,10 +520,11 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
         metadata: {
           ...currentMetadata,
           waitlistPosition: newPosition,
-          waitlistPromotionHistory: [
-            ...(currentMetadata.waitlistPromotionHistory || []),
+          waitlistHistory: [
+            ...(currentMetadata.waitlistHistory || []),
             {
-              date: new Date().toISOString(),
+              timestamp: new Date().toISOString(),
+              reason: 'Position updated',
               fromPosition: currentMetadata.waitlistPosition || 0,
               toPosition: newPosition,
             },
@@ -526,23 +581,24 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
 
       // Send in-app notification
       await notificationService.createNotification({
-        user_id: currentRegistration.player_id,
+        userId: currentRegistration.playerId || '',
         title: 'Waitlist Update',
         message: `An update regarding your waitlist status for the tournament is available.`,
         type: 'waitlist_notification',
         read: false,
+        updatedAt: new Date()
       });
 
       // Send email notification if enabled
       try {
-        const userProfile = await profileService.getProfile(currentRegistration.player_id);
-        const recipientEmail = userProfile?.email; // Get email from profile
+        const userProfile = await profileService.getProfile(currentRegistration.playerId);
+        const recipientEmail = userProfile?.email;
 
         if (recipientEmail && userProfile?.preferences?.notifications?.email) {
            const emailHtml = `
             <h1>Waitlist Update</h1>
             <p>Hi ${currentMetadata.playerName || 'Player'},</p>
-            <p>There's an update regarding your waitlist status for the tournament (ID: ${currentRegistration.tournament_id}).</p>
+            <p>There's an update regarding your waitlist status for the tournament (ID: ${currentRegistration.tournamentId}).</p>
             <p>Please check the tournament page for more details.</p>
           `;
           await emailService.sendEmail({
@@ -550,9 +606,6 @@ const useRegistrationStore = create<RegistrationStore>((set, get) => ({
             subject: 'Tournament Waitlist Update',
             html: emailHtml,
           });
-          console.log(`Sent waitlist notification email to ${recipientEmail}`);
-        } else {
-          console.log(`Email notifications disabled or email not found for user ${currentRegistration.player_id}`);
         }
       } catch (emailError) {
         console.error("Failed to send waitlist notification email:", emailError);
