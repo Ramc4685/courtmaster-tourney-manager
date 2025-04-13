@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -48,16 +49,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw profileError;
         }
 
-        // Convert profile data to our Profile type
+        // Convert profile data to our Profile type with proper defaults
         setUser({
           id: profile.id,
           name: profile.name,
-          full_name: profile.full_name || profile.name,
-          display_name: profile.display_name || profile.name,
+          full_name: profile.full_name || profile.name || '',
+          display_name: profile.display_name || profile.name || '',
           email: profile.email || '',
           phone: profile.phone,
-          avatar_url: profile.avatar_url,
+          avatar_url: profile.avatar_url || null,
           role: profile.role as UserRole,
+          player_details: profile.player_details || {},
+          player_stats: profile.player_stats || {
+            tournaments_played: 0,
+            tournaments_won: 0,
+            matches_played: 0,
+            matches_won: 0,
+            rating: 0
+          },
+          preferences: profile.preferences || {
+            notifications: {
+              email: true,
+              push: true,
+              tournament_updates: true,
+              match_reminders: true
+            },
+            privacy: {
+              show_profile: true,
+              show_stats: true,
+              show_history: true
+            }
+          },
+          social_links: profile.social_links || {}
         });
       } catch (error) {
         console.error('Error loading auth session:', error);
@@ -88,13 +111,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!profileError) {
           setUser({
             id: profile.id,
-            full_name: profile.full_name || profile.name,
-            display_name: profile.display_name || profile.name,
+            full_name: profile.full_name || profile.name || '',
+            display_name: profile.display_name || profile.name || '',
             name: profile.name,
             email: profile.email || '',
             phone: profile.phone,
-            avatar_url: profile.avatar_url,
+            avatar_url: profile.avatar_url || null,
             role: profile.role as UserRole,
+            player_details: profile.player_details || {},
+            player_stats: profile.player_stats || {
+              tournaments_played: 0,
+              tournaments_won: 0,
+              matches_played: 0,
+              matches_won: 0,
+              rating: 0
+            },
+            preferences: profile.preferences || {
+              notifications: {
+                email: true,
+                push: true,
+                tournament_updates: true,
+                match_reminders: true
+              },
+              privacy: {
+                show_profile: true,
+                show_stats: true,
+                show_history: true
+              }
+            },
+            social_links: profile.social_links || {}
           });
         }
       } else if (event === 'SIGNED_OUT') {
@@ -125,14 +170,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Create profile for new user
       if (authData.user) {
+        // Need to update this to match the schema
         await supabase
           .from('profiles')
-          .insert({
+          .upsert({
             id: authData.user.id,
+            name: data.fullName,
             full_name: data.fullName,
-            display_name: data.displayName,
+            display_name: data.displayName || data.fullName,
             email: email,
             role: UserRole.PLAYER,  // Default role for new users
+            player_details: {},
+            player_stats: {
+              tournaments_played: 0,
+              tournaments_won: 0,
+              matches_played: 0,
+              matches_won: 0,
+              rating: 0
+            }
           });
 
         toast({
@@ -154,7 +209,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Sign in function
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<boolean> => {
     if (isDemo) return true;
     
     setIsLoading(true);
@@ -309,10 +364,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase
         .from('profiles')
         .update({
+          name: data.name,
           full_name: data.full_name,
           display_name: data.display_name,
           phone: data.phone,
           avatar_url: data.avatar_url,
+          player_details: data.player_details,
+          player_stats: data.player_stats,
+          preferences: data.preferences,
+          social_links: data.social_links
         })
         .eq('id', user.id);
       
@@ -353,6 +413,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         display_name: 'Demo User',
         email: 'demo@example.com',
         role: UserRole.ORGANIZER,
+        player_details: {},
+        player_stats: {
+          tournaments_played: 0,
+          tournaments_won: 0,
+          matches_played: 0,
+          matches_won: 0,
+          rating: 0
+        },
+        preferences: {
+          notifications: {
+            email: true,
+            push: true,
+            tournament_updates: true,
+            match_reminders: true
+          },
+          privacy: {
+            show_profile: true,
+            show_stats: true,
+            show_history: true
+          }
+        },
+        social_links: {}
       });
       
       navigate('/dashboard');
@@ -371,8 +453,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = signOut;
   const register = signUp;
   const demoMode = isDemo;
+  const updateProfile = updateUserProfile;
 
-  const value = {
+  const value: AuthContextType = {
     user,
     signIn,
     signUp,
@@ -388,7 +471,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     enableDemoMode,
     register,
     logout,
-    demoMode
+    demoMode,
+    updateProfile
   };
 
   return (

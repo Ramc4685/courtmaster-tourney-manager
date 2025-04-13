@@ -52,13 +52,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       };
       
       console.log('[DEBUG] LoginForm: Calling login function with credentials');
-      const success = await login(data.email, data.password);
-      console.log('[DEBUG] LoginForm: Login result', success);
+      const result = await login(data.email, data.password);
+      console.log('[DEBUG] LoginForm: Login result', result);
       
-      if (success && onSuccess) {
+      if (result && onSuccess) {
         console.log('[DEBUG] LoginForm: Login successful, calling onSuccess');
         onSuccess();
-      } else if (!success) {
+      } else if (!result) {
         console.log('[DEBUG] LoginForm: Login failed');
         setLoginError('Invalid email or password. Please try again.');
       }
@@ -74,9 +74,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     
     try {
       // Use the demo credentials
-      const success = await login('demo@example.com', 'demo123');
+      const result = await login('demo@example.com', 'demo123');
       
-      if (success && onSuccess) {
+      if (result && onSuccess) {
         onSuccess();
       }
     } catch (error) {
@@ -91,9 +91,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     
     try {
       // Use the admin demo credentials
-      const success = await login('admin@example.com', 'demo123');
+      const result = await login('admin@example.com', 'demo123');
       
-      if (success && onSuccess) {
+      if (result && onSuccess) {
         onSuccess();
       }
     } catch (error) {
