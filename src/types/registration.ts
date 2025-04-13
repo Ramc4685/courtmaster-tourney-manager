@@ -36,6 +36,7 @@ export interface RegistrationMetadata {
     toPosition?: number;
   }[];
   comments?: string[]; // Add to support RegistrationDetails
+  waitlistPromotionHistory?: any[]; // Add for compatibility
   // Additional fields for team registration
   captainName?: string;
   captainEmail?: string;
@@ -67,6 +68,9 @@ export interface TournamentRegistration {
   createdAt: Date;
   updatedAt: Date;
   category?: any;
+  division_id?: string; // Add for compatibility
+  notes?: string; // Add for compatibility
+  priority?: number; // Add for compatibility
 }
 
 export interface PlayerRegistrationWithStatus extends TournamentRegistration {
@@ -74,6 +78,9 @@ export interface PlayerRegistrationWithStatus extends TournamentRegistration {
   lastName: string;
   email: string;
   phone?: string;
+  playerId?: string; // Add for compatibility
+  player_id?: string; // Add for compatibility
+  division_id?: string; // Add for compatibility
 }
 
 export interface TeamRegistrationWithStatus extends TournamentRegistration {
@@ -82,7 +89,15 @@ export interface TeamRegistrationWithStatus extends TournamentRegistration {
   captainEmail: string;
   captainPhone?: string;
   members?: TeamMember[];
+  playerId?: string; // Add for compatibility
+  player_id?: string; // Add for compatibility
+  division_id?: string; // Add for compatibility
 }
+
+// Define aliases for backward compatibility
+export type PlayerRegistration = PlayerRegistrationWithStatus;
+export type TeamRegistration = TeamRegistrationWithStatus;
+export type TournamentRegistrationStatus = RegistrationStatus;
 
 // Schema for validation using zod
 export const playerRegistrationSchema = {

@@ -4,7 +4,7 @@ import { RolePermissions } from '@/types/user';
 
 interface LayoutProps {
   children: React.ReactNode;
-  permissions: typeof RolePermissions[keyof typeof RolePermissions];
+  permissions: RolePermissions;
 }
 
 export const LayoutScorekeeper: React.FC<LayoutProps> = ({ children, permissions }) => {

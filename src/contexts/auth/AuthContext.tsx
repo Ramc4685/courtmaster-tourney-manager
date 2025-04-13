@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -55,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: profile.name,
           full_name: profile.full_name || profile.name,
           display_name: profile.display_name || profile.name,
-          email: profile.email,
+          email: profile.email || '',
           phone: profile.phone,
           avatar_url: profile.avatar_url,
           role: profile.role as UserRole,
@@ -92,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             full_name: profile.full_name || profile.name,
             display_name: profile.display_name || profile.name,
             name: profile.name,
-            email: profile.email,
+            email: profile.email || '',
             phone: profile.phone,
             avatar_url: profile.avatar_url,
             role: profile.role as UserRole,
@@ -155,8 +154,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Sign in function
-  const signIn = async (email?: string, password?: string) => {
-    if (isDemo) return;
+  const signIn = async (email: string, password: string) => {
+    if (isDemo) return true;
     
     setIsLoading(true);
     setError(null);
@@ -182,6 +181,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: 'Logged in successfully',
         description: 'Welcome back!',
       });
+      
+      return true;
     } catch (error) {
       console.error('Sign in error:', error);
       setError(error instanceof Error ? error.message : 'Failed to sign in');
@@ -190,6 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: 'Login failed',
         description: error instanceof Error ? error.message : 'Failed to sign in',
       });
+      return false;
     } finally {
       setIsLoading(false);
     }

@@ -12,7 +12,7 @@ export interface ScoringSettings {
   setsToWin?: number;
   gamesPerSet?: number;
   pointsPerGame?: number;
-  matchFormat?: 'TIMED' | 'STANDARD';
+  matchFormat?: 'TIMED' | 'STANDARD'; // Add for compatibility with tournament.ScoringSettings
 }
 
 export interface MatchScoringState {
@@ -32,4 +32,26 @@ export interface ScoringState {
   updateScore: (teamIndex: 'team1' | 'team2', increment: boolean) => void;
   startNewSet: () => void;
   setSelectedMatch: (match: any) => void;
+  handleSelectMatch?: (match: any) => void; // Add missing method
+  handleStandaloneScoreChange?: (score: any) => void; // Add missing method
+  handleStartMatch?: () => void; // Add missing method
+  handleStandaloneStartMatch?: () => void; // Add missing method
+  handleStandaloneCompleteMatch?: () => void; // Add missing method
+  handleCompleteMatch?: () => void; // Add missing method
+  handleStandaloneNewSet?: () => void; // Add missing method
+  handleNewSet?: () => void; // Add missing method
+}
+
+// Add missing types for ScoreEntry
+export interface ScoreValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface ScoreAuditLog {
+  action: string;
+  timestamp: string;
+  scorer: string;
+  details: any;
 }

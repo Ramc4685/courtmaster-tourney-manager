@@ -21,18 +21,13 @@ const Login: React.FC = () => {
     try {
       setIsLoading(true);
       enableDemoMode(true);
-      const success = await login({
-        email: 'demo@example.com',
-        password: 'demo123'
-      });
+      await login('demo@example.com', 'demo123');
       
-      if (success) {
-        toast({
-          title: "Demo Login Successful",
-          description: "You are now logged in as a demo user."
-        });
-        navigate('/tournaments');
-      }
+      toast({
+        title: "Demo Login Successful",
+        description: "You are now logged in as a demo user."
+      });
+      navigate('/tournaments');
     } catch (error) {
       console.error('Error with demo login:', error);
     } finally {
@@ -44,18 +39,13 @@ const Login: React.FC = () => {
     try {
       setIsLoading(true);
       enableDemoMode(true);
-      const success = await login({
-        email: 'admin@example.com',
-        password: 'demo123'
-      });
+      await login('admin@example.com', 'demo123');
       
-      if (success) {
-        toast({
-          title: "Admin Demo Login Successful",
-          description: "You are now logged in as an admin demo user."
-        });
-        navigate('/tournaments');
-      }
+      toast({
+        title: "Admin Demo Login Successful",
+        description: "You are now logged in as an admin demo user."
+      });
+      navigate('/tournaments');
     } catch (error) {
       console.error('Error with admin demo login:', error);
     } finally {

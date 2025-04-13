@@ -29,7 +29,7 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
-  const { login, isLoading, enableDemoMode } = useAuth();
+  const { login, isLoading } = useAuth();
   const [loginError, setLoginError] = useState<string | null>(null);
 
   const form = useForm<LoginFormValues>({
@@ -52,7 +52,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       };
       
       console.log('[DEBUG] LoginForm: Calling login function with credentials');
-      const success = await login(credentials);
+      const success = await login(data.email, data.password);
       console.log('[DEBUG] LoginForm: Login result', success);
       
       if (success && onSuccess) {
@@ -74,10 +74,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     
     try {
       // Use the demo credentials
-      const success = await login({
-        email: 'demo@example.com',
-        password: 'demo123'
-      });
+      const success = await login('demo@example.com', 'demo123');
       
       if (success && onSuccess) {
         onSuccess();
@@ -94,10 +91,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     
     try {
       // Use the admin demo credentials
-      const success = await login({
-        email: 'admin@example.com',
-        password: 'demo123'
-      });
+      const success = await login('admin@example.com', 'demo123');
       
       if (success && onSuccess) {
         onSuccess();

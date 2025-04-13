@@ -54,8 +54,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
       email: userData.email,
       password: userData.password
     };
-    const success = await register(registerData);
-    if (success && onSuccess) {
+    await register(registerData.email, registerData.password, { fullName: registerData.name });
+    if (onSuccess) {
       onSuccess();
     }
   };

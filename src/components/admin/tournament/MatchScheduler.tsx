@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Match, Court, Notification } from '@/types/entities';
 import { matchService, courtService, notificationService, emailService, profileService } from '@/services/api';
@@ -100,7 +99,10 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
       }
     }
     
-    const oldScheduledTime = editingMatch.scheduledTime;
+    const oldScheduledTime = editingMatch.scheduledTime ? 
+      (typeof editingMatch.scheduledTime === 'string' ? 
+        editingMatch.scheduledTime : 
+        editingMatch.scheduledTime.toISOString()) : null;
     const oldCourtId = editingMatch.courtId;
 
     try {

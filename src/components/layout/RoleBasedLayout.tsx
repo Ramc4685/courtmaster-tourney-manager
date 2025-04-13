@@ -4,6 +4,45 @@ import { useAuth } from '@/contexts/auth/AuthContext';
 import { RolePermissions } from '@/types/user';
 import { UserRole } from '@/types/tournament-enums';
 
+// Define role permissions object
+const rolePermissionsMap = {
+  [UserRole.ADMIN]: {
+    can_manage_tournaments: true,
+    can_manage_users: true,
+    can_manage_registrations: true,
+    can_score_matches: true,
+    can_view_reports: true,
+  },
+  [UserRole.ORGANIZER]: {
+    can_manage_tournaments: true,
+    can_manage_users: false,
+    can_manage_registrations: true,
+    can_score_matches: true,
+    can_view_reports: true,
+  },
+  [UserRole.SCOREKEEPER]: {
+    can_manage_tournaments: false,
+    can_manage_users: false,
+    can_manage_registrations: false,
+    can_score_matches: true,
+    can_view_reports: false,
+  },
+  [UserRole.PLAYER]: {
+    can_manage_tournaments: false,
+    can_manage_users: false,
+    can_manage_registrations: false,
+    can_score_matches: false,
+    can_view_reports: false,
+  },
+  [UserRole.SPECTATOR]: {
+    can_manage_tournaments: false,
+    can_manage_users: false,
+    can_manage_registrations: false,
+    can_score_matches: false,
+    can_view_reports: false,
+  }
+};
+
 // Import the role-specific layouts
 import { LayoutDirector } from './role-layouts/LayoutDirector';
 import { LayoutFrontDesk } from './role-layouts/LayoutFrontDesk';
@@ -15,7 +54,7 @@ import { LayoutSpectator } from './role-layouts/LayoutSpectator';
 // Define the layout props interface
 export interface LayoutProps {
   children: React.ReactNode;
-  permissions: typeof RolePermissions[keyof typeof RolePermissions];
+  permissions: RolePermissions;
 }
 
 // Fallback component while loading the role-specific layout
@@ -32,7 +71,7 @@ const RoleBasedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
   
   // Default to spectator for unauthenticated users
   const role = user?.role || UserRole.SPECTATOR;
-  const permissions = RolePermissions[role] || RolePermissions[UserRole.SPECTATOR];
+  const permissions = rolePermissionsMap[role] || rolePermissionsMap[UserRole.SPECTATOR];
 
   // For now, use a simplified layout until we fix the role-specific layouts
   return (
