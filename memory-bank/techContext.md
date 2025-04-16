@@ -1,5 +1,43 @@
 # Technical Context
 
+## Authentication System
+- **Primary Auth Provider**: Supabase Authentication
+- **Session Management**: Supabase session persistence
+- **Token Handling**: Managed by Supabase client
+- **User Profiles**: Stored in Supabase `profiles` table
+
+### Authentication Flow
+1. User signs in via Supabase auth
+2. Session is maintained by Supabase client
+3. Profile data is fetched from profiles table
+4. AuthContext maintains user state
+5. Session recovery on page reload
+
+### Storage Architecture
+- **Primary Storage**: Supabase Database
+- **Real-time Updates**: Supabase real-time subscriptions
+- **Local Storage**: Fallback for non-critical data
+- **Cache Strategy**: Local storage with Supabase sync
+
+### Storage Services
+1. **SupabaseStorageService**
+   - Primary storage implementation
+   - Handles tournament data
+   - Manages user-tournament relationships
+   - Provides real-time capabilities
+
+2. **RealTimeStorageService**
+   - Extends Supabase functionality
+   - Provides real-time updates
+   - Handles tournament subscriptions
+   - Manages data synchronization
+
+3. **LocalStorageService**
+   - Fallback storage mechanism
+   - Caches frequently accessed data
+   - Provides offline capabilities
+   - Used for non-critical data
+
 ## Technology Stack
 
 ### Frontend

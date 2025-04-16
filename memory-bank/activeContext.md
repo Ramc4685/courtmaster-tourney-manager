@@ -1,9 +1,40 @@
 # Active Development Context
 
 ## Current Focus
-Resolving critical functionality issues, starting with authentication state persistence.
+Transitioning to Supabase-only authentication and storage system.
 
-### Priority 1: Authentication State Loss (Issue #1)
+### Priority 1: Authentication and Storage Cleanup
+Recent changes:
+- Removed demo mode completely from AuthContext
+- Removed DemoStorageService and related configurations
+- Updated StorageConfig to remove demo-related fields
+- Simplified storage service creation with Supabase as default
+- Fixed Profile type to include preferences and social_links
+
+Implementation details:
+```typescript
+// Updated StorageConfig
+export type StorageConfig = {
+  useSupabase?: boolean;
+  useRealtime?: boolean;
+  useLocalStorage?: boolean;
+}
+
+// Default configuration
+const defaultConfig = {
+  useSupabase: true,
+  useRealtime: false,
+  useLocalStorage: false,
+};
+```
+
+Next implementation steps:
+1. Verify all components are using Supabase authentication
+2. Clean up any remaining demo mode references
+3. Update tests to reflect Supabase-only auth
+4. Document new authentication flow
+
+### Priority 2: Authentication State Loss (Previous Issue #1)
 Current implementation:
 ```typescript
 // TournamentDetail.tsx

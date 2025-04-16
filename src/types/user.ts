@@ -75,6 +75,20 @@ export interface Profile {
     pointsScored: number;
     pointsConceded: number;
   };
+  preferences?: {
+    notifications: {
+      email: boolean;
+      push: boolean;
+      tournament_updates: boolean;
+      match_reminders: boolean;
+    };
+    privacy: {
+      show_profile: boolean;
+      show_stats: boolean;
+      show_history: boolean;
+    };
+  };
+  social_links?: Record<string, string>;
 }
 
 export interface AuthContextType {
