@@ -7,14 +7,14 @@ export const matchService = {
     const { data, error } = await supabase
       .from('matches')
       .insert({
-        tournament_id: match.tournamentId,
+        tournament_id: match.tournamentId || match.tournament_id,
         team1_id: match.team1Id,
         team2_id: match.team2Id,
         status: match.status || MatchStatus.SCHEDULED,
-        round_number: match.round_number,
-        match_number: match.match_number,
+        round_number: match.round_number || match.bracketRound,
+        match_number: match.match_number || match.matchNumber,
         scheduled_time: match.scheduledTime?.toISOString(),
-        court_id: match.courtId,
+        court_id: match.courtId || match.court_id,
         notes: match.notes
       })
       .select()
@@ -25,22 +25,27 @@ export const matchService = {
     return {
       id: data.id,
       tournamentId: data.tournament_id,
+      tournament_id: data.tournament_id,
       team1Id: data.team1_id,
       team2Id: data.team2_id,
       status: data.status as MatchStatus,
       bracketRound: data.round_number || 0,
+      round_number: data.round_number || 0,
       bracketPosition: 0,
       progression: {},
       scheduledTime: data.scheduled_time ? new Date(data.scheduled_time) : undefined,
       startTime: data.start_time ? new Date(data.start_time) : undefined,
       endTime: data.end_time ? new Date(data.end_time) : undefined,
       courtId: data.court_id,
+      court_id: data.court_id,
       notes: data.notes,
       scores: data.scores || [],
       stage: 'GROUP_STAGE',
       division: 'OPEN',
-      round_number: data.round_number,
-      match_number: data.match_number
+      match_number: data.match_number,
+      matchNumber: data.match_number,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at)
     };
   },
   
@@ -65,22 +70,27 @@ export const matchService = {
     return data.map(match => ({
       id: match.id,
       tournamentId: match.tournament_id,
+      tournament_id: match.tournament_id,
       team1Id: match.team1_id,
       team2Id: match.team2_id,
       status: match.status as MatchStatus,
       bracketRound: match.round_number || 0,
+      round_number: match.round_number || 0,
       bracketPosition: 0,
       progression: {},
       scheduledTime: match.scheduled_time ? new Date(match.scheduled_time) : undefined,
       startTime: match.start_time ? new Date(match.start_time) : undefined,
       endTime: match.end_time ? new Date(match.end_time) : undefined,
       courtId: match.court_id,
+      court_id: match.court_id,
       notes: match.notes,
       scores: match.scores || [],
       stage: 'GROUP_STAGE',
       division: 'OPEN',
-      round_number: match.round_number,
-      match_number: match.match_number
+      match_number: match.match_number,
+      matchNumber: match.match_number,
+      createdAt: new Date(match.created_at),
+      updatedAt: new Date(match.updated_at)
     }));
   },
   
@@ -92,6 +102,7 @@ export const matchService = {
     if (match.endTime !== undefined) payload.end_time = match.endTime?.toISOString();
     if (match.status !== undefined) payload.status = match.status;
     if (match.courtId !== undefined) payload.court_id = match.courtId;
+    if (match.court_id !== undefined) payload.court_id = match.court_id;
     if (match.scores !== undefined) payload.scores = match.scores;
     if (match.notes !== undefined) payload.notes = match.notes;
     
@@ -107,22 +118,27 @@ export const matchService = {
     return {
       id: data.id,
       tournamentId: data.tournament_id,
+      tournament_id: data.tournament_id,
       team1Id: data.team1_id,
       team2Id: data.team2_id,
       status: data.status as MatchStatus,
       bracketRound: data.round_number || 0,
+      round_number: data.round_number || 0,
       bracketPosition: 0,
       progression: {},
       scheduledTime: data.scheduled_time ? new Date(data.scheduled_time) : undefined,
       startTime: data.start_time ? new Date(data.start_time) : undefined,
       endTime: data.end_time ? new Date(data.end_time) : undefined,
       courtId: data.court_id,
+      court_id: data.court_id,
       notes: data.notes,
       scores: data.scores || [],
       stage: 'GROUP_STAGE',
       division: 'OPEN',
-      round_number: data.round_number,
-      match_number: data.match_number
+      match_number: data.match_number,
+      matchNumber: data.match_number,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at)
     };
   }
 };

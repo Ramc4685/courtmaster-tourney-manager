@@ -2,36 +2,8 @@
 import { supabase } from '@/lib/supabase';
 import { Notification } from '@/types/entities';
 
-export const notificationService = {
-  async createNotification(notification: Omit<Notification, 'id' | 'created_at'>): Promise<Notification> {
-    const { data, error } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: notification.user_id,
-        title: notification.title,
-        message: notification.message,
-        type: notification.type,
-        read: notification.read || false,
-        updated_at: notification.updated_at
-      })
-      .select()
-      .single();
-      
-    if (error) throw error;
-    
-    return {
-      id: data.id,
-      user_id: data.user_id,
-      title: data.title,
-      message: data.message,
-      type: data.type,
-      read: data.read,
-      created_at: data.created_at,
-      updated_at: data.updated_at
-    };
-  },
-  
-  async getUserNotifications(userId: string): Promise<Notification[]> {
+export class NotificationService {
+  async getNotifications(userId: string): Promise<Notification[]> {
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
@@ -39,9 +11,27 @@ export const notificationService = {
       .order('created_at', { ascending: false });
       
     if (error) throw error;
-    
-    return data;
-  },
+    return data as Notification[];
+  }
+  
+  async createNotification(notification: Omit<Notification, 'id' | 'createdAt'>): Promise<Notification> {
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: notification.user_id,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        read: notification.read,
+        updated_at: notification.updated_at,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data as Notification;
+  }
   
   async markAsRead(notificationId: string): Promise<void> {
     const { error } = await supabase
@@ -50,15 +40,23 @@ export const notificationService = {
       .eq('id', notificationId);
       
     if (error) throw error;
-  },
+  }
   
   async markAllAsRead(userId: string): Promise<void> {
     const { error } = await supabase
       .from('notifications')
       .update({ read: true })
-      .eq('user_id', userId)
-      .eq('read', false);
+      .eq('user_id', userId);
       
     if (error) throw error;
   }
-};
+  
+  async deleteNotification(notificationId: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId);
+      
+    if (error) throw error;
+  }
+}

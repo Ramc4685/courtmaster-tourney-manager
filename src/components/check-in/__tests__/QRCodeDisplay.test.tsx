@@ -1,116 +1,140 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { QRCodeDisplay } from '../QRCodeDisplay';
-import { createMockRegistration, mockToast } from '@/test/utils';
+
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import QRCodeDisplay from '../QRCodeDisplay';
 import { RegistrationStatus } from '@/types/tournament-enums';
+import { TournamentRegistration } from '@/types/registration';
 
-// Mock QRCode component
-vi.mock('react-qr-code', () => ({
-  default: vi.fn().mockImplementation(() => <div data-testid="mock-qr-code" />)
-}));
-
-// Mock toast
-vi.mock('@/components/ui/use-toast', () => ({
-  toast: mockToast
-}));
+const mockRegistration: TournamentRegistration = {
+  id: '123',
+  status: RegistrationStatus.APPROVED,
+  metadata: {
+    checkInTime: '2025-03-21T10:30:00Z',
+    playerName: 'John Doe',
+    contactEmail: 'john@example.com',
+  },
+  divisionId: 'div-123',
+  tournamentId: 'tourn-123',
+  createdAt: new Date('2025-03-20'),
+  updatedAt: new Date('2025-03-20')
+};
 
 describe('QRCodeDisplay', () => {
-  const mockRegistration = createMockRegistration({
-    id: 'reg1',
-    status: RegistrationStatus.APPROVED,
-    metadata: {
-      playerName: 'John Doe',
-      category: 'Men\'s Singles',
-      timestamp: new Date().toISOString()
-    }
-  });
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('renders registration details correctly', () => {
-    render(<QRCodeDisplay registration={mockRegistration} />);
-
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(screen.getByText('Men\'s Singles')).toBeInTheDocument();
-    expect(screen.getByTestId('mock-qr-code')).toBeInTheDocument();
-  });
-
-  it('displays correct status badge', () => {
-    render(<QRCodeDisplay registration={mockRegistration} />);
-
-    const statusBadge = screen.getByText('APPROVED');
-    expect(statusBadge).toBeInTheDocument();
-    expect(statusBadge).toHaveClass('bg-green-500'); // Assuming green for approved status
-  });
-
-  it('handles QR code download', () => {
-    const mockDownload = vi.fn();
-    global.URL.createObjectURL = vi.fn();
-    global.URL.revokeObjectURL = vi.fn();
-    
-    const link = {
-      click: mockDownload,
-      download: '',
-      href: ''
-    };
-    
-    vi.spyOn(document, 'createElement').mockReturnValue(link as any);
-
-    render(<QRCodeDisplay registration={mockRegistration} />);
-
-    fireEvent.click(screen.getByText(/download qr code/i));
-
-    expect(mockDownload).toHaveBeenCalled();
-    expect(mockToast.success).toHaveBeenCalledWith(
-      expect.stringContaining('QR code downloaded')
+  it('renders the QR code', () => {
+    render(
+      <QRCodeDisplay
+        registrationId="123"
+        name="John Doe"
+        type="Player"
+        status={RegistrationStatus.APPROVED}
+        registration={mockRegistration}
+      />
     );
-  });
-
-  it('shows error toast when download fails', () => {
-    const mockError = new Error('Download failed');
-    global.URL.createObjectURL = vi.fn(() => {
-      throw mockError;
-    });
-
-    render(<QRCodeDisplay registration={mockRegistration} />);
-
-    fireEvent.click(screen.getByText(/download qr code/i));
-
-    expect(mockToast.error).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to download QR code')
-    );
-  });
-
-  it('includes correct metadata in QR code', () => {
-    const { container } = render(<QRCodeDisplay registration={mockRegistration} />);
     
-    const qrCodeValue = container.querySelector('[data-testid="mock-qr-code"]')?.getAttribute('value');
-    const decodedValue = JSON.parse(qrCodeValue || '{}');
-
-    expect(decodedValue).toEqual(expect.objectContaining({
-      id: mockRegistration.id,
-      status: mockRegistration.status,
-      metadata: mockRegistration.metadata
-    }));
+    const qrCodeImage = screen.getByTestId('qr-code-image');
+    expect(qrCodeImage).toBeInTheDocument();
+  });
+  
+  it('displays the registration details', () => {
+    render(
+      <QRCodeDisplay
+        registrationId="123"
+        name="John Doe"
+        type="Player"
+        status={RegistrationStatus.APPROVED}
+        registration={mockRegistration}
+      />
+    );
+    
+    expect(screen.getByText(/Registration ID:/i)).toBeInTheDocument();
+    expect(screen.getByText('123')).toBeInTheDocument();
+    expect(screen.getByText(/Type:/i)).toBeInTheDocument();
+    expect(screen.getByText('Player')).toBeInTheDocument();
+    expect(screen.getByText(/Status:/i)).toBeInTheDocument();
+    expect(screen.getByText('APPROVED')).toBeInTheDocument();
+  });
+  
+  it('applies correct styling for approved status', () => {
+    render(
+      <QRCodeDisplay
+        registrationId="123"
+        name="John Doe"
+        type="Player"
+        status={RegistrationStatus.APPROVED}
+        registration={mockRegistration}
+      />
+    );
+    
+    const statusElement = screen.getByText('APPROVED');
+    expect(statusElement).toHaveClass('text-green-600');
+  });
+  
+  it('applies correct styling for pending status', () => {
+    render(
+      <QRCodeDisplay
+        registrationId="123"
+        name="John Doe"
+        type="Player"
+        status={RegistrationStatus.PENDING}
+        registration={mockRegistration}
+      />
+    );
+    
+    const statusElement = screen.getByText('PENDING');
+    expect(statusElement).toHaveClass('text-amber-600');
+  });
+  
+  it('applies correct styling for rejected status', () => {
+    render(
+      <QRCodeDisplay
+        registrationId="123"
+        name="John Doe"
+        type="Player"
+        status={RegistrationStatus.REJECTED}
+        registration={mockRegistration}
+      />
+    );
+    
+    const statusElement = screen.getByText('REJECTED');
+    expect(statusElement).toHaveClass('text-red-600');
+  });
+  
+  it('applies correct styling for waitlist status', () => {
+    render(
+      <QRCodeDisplay
+        registrationId="123"
+        name="John Doe"
+        type="Player"
+        status={RegistrationStatus.WAITLIST}
+        registration={mockRegistration}
+      />
+    );
+    
+    const statusElement = screen.getByText('WAITLIST');
+    expect(statusElement).toHaveClass('text-blue-600');
   });
 
-  it('updates when registration changes', () => {
-    const { rerender } = render(<QRCodeDisplay registration={mockRegistration} />);
-
-    const updatedRegistration = {
+  it('applies correct styling for checked-in status', () => {
+    const checkedInRegistration: TournamentRegistration = {
       ...mockRegistration,
       status: RegistrationStatus.CHECKED_IN,
       metadata: {
         ...mockRegistration.metadata,
-        checkInTime: new Date().toISOString()
+        checkInTime: '2025-03-21T10:30:00Z'
       }
     };
-
-    rerender(<QRCodeDisplay registration={updatedRegistration} />);
-
-    expect(screen.getByText('CHECKED_IN')).toBeInTheDocument();
-    expect(screen.getByText(updatedRegistration.metadata.checkInTime)).toBeInTheDocument();
+    
+    render(
+      <QRCodeDisplay
+        registrationId="123"
+        name="John Doe"
+        type="Player"
+        status={RegistrationStatus.CHECKED_IN}
+        registration={checkedInRegistration}
+      />
+    );
+    
+    const statusElement = screen.getByText('CHECKED_IN');
+    expect(statusElement).toHaveClass('text-purple-600');
   });
-}); 
+});

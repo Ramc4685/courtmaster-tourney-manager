@@ -22,9 +22,11 @@ export const courtService = {
       id: data.id,
       name: data.name,
       number: data.court_number,
+      court_number: data.court_number,
       status: data.status as CourtStatus,
       description: data.description,
       tournament_id: data.tournament_id,
+      tournamentId: data.tournament_id,
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at)
     };
@@ -46,6 +48,7 @@ export const courtService = {
       status: court.status as CourtStatus,
       description: court.description,
       tournament_id: court.tournament_id,
+      tournamentId: court.tournament_id,
       createdAt: new Date(court.created_at),
       updatedAt: new Date(court.updated_at)
     }));
@@ -76,6 +79,7 @@ export const courtService = {
       status: data.status as CourtStatus,
       description: data.description,
       tournament_id: data.tournament_id,
+      tournamentId: data.tournament_id,
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at)
     };
