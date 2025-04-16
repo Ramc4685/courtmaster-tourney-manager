@@ -1,123 +1,132 @@
 
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Trophy, Clipboard, Users } from "lucide-react";
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { 
+  Calendar, 
+  Trophy, 
+  Users, 
+  Clock, 
+  Activity, 
+  ChevronRight 
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useAuth } from '@/contexts/auth/AuthContext';
 
-const Home = () => {
-  const navigate = useNavigate();
-
+const Home: React.FC = () => {
+  const { user, isAuthenticated } = useAuth();
+  
   return (
-    <div className="container py-12">
-      <div className="text-center mb-12 max-w-3xl mx-auto">
-        <Trophy className="h-16 w-16 mx-auto mb-4 text-primary" />
-        <h1 className="text-4xl font-bold tracking-tight mb-4">CourtMaster</h1>
-        <p className="text-xl text-muted-foreground">
-          All-in-one Tournament Management & Scoring System for Badminton Events
+    <div className="container mx-auto px-4 py-8">
+      {/* Hero Section */}
+      <section className="py-12 md:py-20 text-center">
+        <h1 className="text-4xl md:text-6xl font-bold mb-6">Welcome to CourtMaster</h1>
+        <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
+          Simplify tournament management with our comprehensive solution for indoor sports facilities.
         </p>
-        <div className="flex flex-wrap justify-center gap-4 mt-8">
-          <Button 
-            size="lg"
-            onClick={() => navigate('/tournaments')}
-            className="px-6"
-          >
-            Browse Tournaments
-          </Button>
-          <Button 
-            size="lg" 
-            variant="outline"
-            onClick={() => navigate('/login')}
-            className="px-6"
-          >
-            Sign In
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-16">
-        <div className="text-center p-4">
-          <div className="rounded-full bg-primary/10 w-14 h-14 flex items-center justify-center mx-auto mb-4">
-            <Trophy className="h-7 w-7 text-primary" />
-          </div>
-          <h3 className="text-lg font-medium mb-2">Tournament Management</h3>
-          <p className="text-muted-foreground">Create and manage full tournaments with customizable formats</p>
-        </div>
         
-        <div className="text-center p-4">
-          <div className="rounded-full bg-primary/10 w-14 h-14 flex items-center justify-center mx-auto mb-4">
-            <Clipboard className="h-7 w-7 text-primary" />
+        {!isAuthenticated ? (
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button asChild size="lg" className="px-8">
+              <Link to="/login">Get Started</Link>
+            </Button>
+            <Button variant="outline" size="lg" className="px-8" asChild>
+              <Link to="/about">Learn More</Link>
+            </Button>
           </div>
-          <h3 className="text-lg font-medium mb-2">Real-time Scoring</h3>
-          <p className="text-muted-foreground">Score matches in real-time with our intuitive interface</p>
-        </div>
+        ) : (
+          <Button asChild size="lg" className="px-8">
+            <Link to="/tournaments">View My Tournaments</Link>
+          </Button>
+        )}
+      </section>
+      
+      {/* Features Section */}
+      <section className="py-12">
+        <h2 className="text-3xl font-bold text-center mb-12">Key Features</h2>
         
-        <div className="text-center p-4">
-          <div className="rounded-full bg-primary/10 w-14 h-14 flex items-center justify-center mx-auto mb-4">
-            <Users className="h-7 w-7 text-primary" />
-          </div>
-          <h3 className="text-lg font-medium mb-2">Player Registration</h3>
-          <p className="text-muted-foreground">Streamlined registration process for participants</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <Card>
+            <CardHeader className="pb-3">
+              <Calendar className="h-8 w-8 mb-2 text-primary" />
+              <CardTitle>Tournament Management</CardTitle>
+              <CardDescription>Create and manage tournaments with ease</CardDescription>
+            </CardHeader>
+            <CardContent>
+              Configure multiple tournament formats, customize scoring systems, and template-based tournament setup.
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <Users className="h-8 w-8 mb-2 text-primary" />
+              <CardTitle>Registration System</CardTitle>
+              <CardDescription>Streamline participant registration</CardDescription>
+            </CardHeader>
+            <CardContent>
+              Self-service and administrative registration, digital waiver collection, and participant verification.
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <Trophy className="h-8 w-8 mb-2 text-primary" />
+              <CardTitle>Real-time Scoring</CardTitle>
+              <CardDescription>Keep scores updated instantly</CardDescription>
+            </CardHeader>
+            <CardContent>
+              Real-time score entry, support for different scoring systems, and match history and statistics.
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <Clock className="h-8 w-8 mb-2 text-primary" />
+              <CardTitle>Check-in & Front Desk</CardTitle>
+              <CardDescription>Efficient participant processing</CardDescription>
+            </CardHeader>
+            <CardContent>
+              Digital check-in, player verification, and tournament information distribution.
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <Activity className="h-8 w-8 mb-2 text-primary" />
+              <CardTitle>Analytics & Reporting</CardTitle>
+              <CardDescription>Gain valuable insights</CardDescription>
+            </CardHeader>
+            <CardContent>
+              Tournament performance metrics, player statistics, and court utilization analysis.
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <Users className="h-8 w-8 mb-2 text-primary" />
+              <CardTitle>Multi-Role System</CardTitle>
+              <CardDescription>Different views for different roles</CardDescription>
+            </CardHeader>
+            <CardContent>
+              Specialized interfaces for directors, front desk staff, scorekeepers, players, and spectators.
+            </CardContent>
+          </Card>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-        <Card className="shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-2">
-            <div className="rounded-full bg-primary/10 w-12 h-12 flex items-center justify-center mb-2">
-              <Trophy className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle>Tournament Management</CardTitle>
-            <CardDescription>
-              Create and manage full badminton tournaments with brackets, scheduling and more
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0 pb-2">
-            <ul className="list-disc list-inside text-sm space-y-1">
-              <li>Create tournaments with multiple categories</li>
-              <li>Manage teams, courts and schedules</li>
-              <li>Track scores and generate brackets</li>
-              <li>View comprehensive tournament statistics</li>
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <Button 
-              className="w-full" 
-              onClick={() => navigate('/tournaments')}
-            >
-              Explore Tournaments
-            </Button>
-          </CardFooter>
-        </Card>
-
-        <Card className="shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-2">
-            <div className="rounded-full bg-green-500/10 w-12 h-12 flex items-center justify-center mb-2">
-              <Clipboard className="h-6 w-6 text-green-500" />
-            </div>
-            <CardTitle>Quick Match Scoring</CardTitle>
-            <CardDescription>
-              Create standalone matches for immediate scoring without tournament context
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0 pb-2">
-            <ul className="list-disc list-inside text-sm space-y-1">
-              <li>Create matches with simple team/player entry</li>
-              <li>Score matches in real-time</li>
-              <li>Share match scores via public links</li>
-              <li>No tournament setup required</li>
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <Button 
-              className="w-full bg-green-500 hover:bg-green-600" 
-              onClick={() => navigate('/quick-match')}
-            >
-              Create Quick Match
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+      </section>
+      
+      {/* Get Started Section */}
+      <section className="py-12 text-center">
+        <h2 className="text-3xl font-bold mb-6">Ready to Simplify Your Tournament Management?</h2>
+        <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+          Join CourtMaster today and experience seamless tournament operations from creation to completion.
+        </p>
+        
+        <Button asChild size="lg" className="px-8">
+          <Link to={isAuthenticated ? "/tournaments" : "/login"}>
+            {isAuthenticated ? "Go to Dashboard" : "Get Started Now"} <ChevronRight className="ml-2 h-4 w-4" />
+          </Link>
+        </Button>
+      </section>
     </div>
   );
 };

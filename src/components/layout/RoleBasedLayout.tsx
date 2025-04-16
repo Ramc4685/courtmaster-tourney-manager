@@ -1,315 +1,342 @@
 
 import React from 'react';
-import { useAuth } from '@/contexts/auth/AuthContext';
-import { RolePermissions } from '@/types/user';
 import { UserRole } from '@/types/tournament-enums';
+import { RolePermissions } from '@/types/entities';
+import LayoutDirector from './role-layouts/LayoutDirector';
+import LayoutFrontDesk from './role-layouts/LayoutFrontDesk';
+import LayoutAdminStaff from './role-layouts/LayoutAdminStaff';
+import LayoutPlayer from './role-layouts/LayoutPlayer';
+import LayoutScorekeeper from './role-layouts/LayoutScorekeeper';
+import LayoutSpectator from './role-layouts/LayoutSpectator';
 
-// Import the role-specific layouts
-import { LayoutDirector } from './role-layouts/LayoutDirector';
-import { LayoutFrontDesk } from './role-layouts/LayoutFrontDesk';
-import { LayoutAdminStaff } from './role-layouts/LayoutAdminStaff';
-import { LayoutScorekeeper } from './role-layouts/LayoutScorekeeper';
-import { LayoutPlayer } from './role-layouts/LayoutPlayer';
-import { LayoutSpectator } from './role-layouts/LayoutSpectator';
-
-// Define the role permissions object
-const rolePermissionsMap: Record<UserRole, RolePermissions> = {
+// Role permissions configuration
+const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   [UserRole.ADMIN]: {
     viewTournament: true,
     editTournament: true,
     createTournament: true,
     deleteTournament: true,
-    viewMatch: true,
-    editMatch: true,
+    viewMatches: true,
+    updateMatchStatus: true,
+    updateMatchScore: true,
     createMatch: true,
-    deleteMatch: true,
-    viewRegistration: true,
-    editRegistration: true,
-    createRegistration: true,
-    deleteRegistration: true,
-    viewCourt: true,
-    editCourt: true,
+    viewCourts: true,
+    updateCourtStatus: true,
     createCourt: true,
-    deleteCourt: true,
-    viewTeam: true,
-    editTeam: true,
-    createTeam: true,
-    deleteTeam: true,
-    viewPlayer: true,
-    editPlayer: true,
-    createPlayer: true,
-    deletePlayer: true,
-    viewScoring: true,
-    editScoring: true,
-    manageCheckIn: true,
-    manageSchedule: true,
-    viewDashboard: true
+    viewRegistrations: true,
+    updateRegistrationStatus: true,
+    viewParticipants: true,
+    addParticipant: true,
+    viewSchedule: true,
+    modifySchedule: true,
+    viewResults: true,
+    generateBrackets: true,
+    advanceTournament: true,
+    manageSystemSettings: true,
+    viewAnalytics: true,
+    exportData: true,
+    viewAdminDashboard: true,
+    accessCheckIn: true,
+    manageBulkOperations: true,
+    viewAuditLog: true,
+    sendAnnouncements: true,
+    moderateMessages: true,
+    canManageTournaments: true,
+    canManageUsers: true,
+    canManageRegistrations: true,
+    canScoreMatches: true,
+    canViewReports: true
   },
   [UserRole.ORGANIZER]: {
     viewTournament: true,
     editTournament: true,
     createTournament: true,
     deleteTournament: false,
-    viewMatch: true,
-    editMatch: true,
+    viewMatches: true,
+    updateMatchStatus: true,
+    updateMatchScore: true,
     createMatch: true,
-    deleteMatch: true,
-    viewRegistration: true,
-    editRegistration: true,
-    createRegistration: true,
-    deleteRegistration: true,
-    viewCourt: true,
-    editCourt: true,
+    viewCourts: true,
+    updateCourtStatus: true,
     createCourt: true,
-    deleteCourt: true,
-    viewTeam: true,
-    editTeam: true,
-    createTeam: true,
-    deleteTeam: true,
-    viewPlayer: true,
-    editPlayer: true,
-    createPlayer: true,
-    deletePlayer: true,
-    viewScoring: true,
-    editScoring: true,
-    manageCheckIn: true,
-    manageSchedule: true,
-    viewDashboard: true
+    viewRegistrations: true,
+    updateRegistrationStatus: true,
+    viewParticipants: true,
+    addParticipant: true,
+    viewSchedule: true,
+    modifySchedule: true,
+    viewResults: true,
+    generateBrackets: true,
+    advanceTournament: true,
+    manageSystemSettings: false,
+    viewAnalytics: true,
+    exportData: true,
+    viewAdminDashboard: true,
+    accessCheckIn: true,
+    manageBulkOperations: true,
+    viewAuditLog: true,
+    sendAnnouncements: true,
+    moderateMessages: true,
+    canManageTournaments: true,
+    canManageUsers: false,
+    canManageRegistrations: true,
+    canScoreMatches: true,
+    canViewReports: true
   },
   [UserRole.SCOREKEEPER]: {
     viewTournament: true,
     editTournament: false,
     createTournament: false,
     deleteTournament: false,
-    viewMatch: true,
-    editMatch: true,
+    viewMatches: true,
+    updateMatchStatus: true,
+    updateMatchScore: true,
     createMatch: false,
-    deleteMatch: false,
-    viewRegistration: true,
-    editRegistration: false,
-    createRegistration: false,
-    deleteRegistration: false,
-    viewCourt: true,
-    editCourt: false,
+    viewCourts: true,
+    updateCourtStatus: false,
     createCourt: false,
-    deleteCourt: false,
-    viewTeam: true,
-    editTeam: false,
-    createTeam: false,
-    deleteTeam: false,
-    viewPlayer: true,
-    editPlayer: false,
-    createPlayer: false,
-    deletePlayer: false,
-    viewScoring: true,
-    editScoring: true,
-    manageCheckIn: false,
-    manageSchedule: false,
-    viewDashboard: true
+    viewRegistrations: true,
+    updateRegistrationStatus: false,
+    viewParticipants: true,
+    addParticipant: false,
+    viewSchedule: true,
+    modifySchedule: false,
+    viewResults: true,
+    generateBrackets: false,
+    advanceTournament: false,
+    manageSystemSettings: false,
+    viewAnalytics: false,
+    exportData: false,
+    viewAdminDashboard: false,
+    accessCheckIn: false,
+    manageBulkOperations: false,
+    viewAuditLog: false,
+    sendAnnouncements: false,
+    moderateMessages: false,
+    canManageTournaments: false,
+    canManageUsers: false,
+    canManageRegistrations: false,
+    canScoreMatches: true,
+    canViewReports: false
   },
   [UserRole.PLAYER]: {
     viewTournament: true,
     editTournament: false,
     createTournament: false,
     deleteTournament: false,
-    viewMatch: true,
-    editMatch: false,
+    viewMatches: true,
+    updateMatchStatus: false,
+    updateMatchScore: false,
     createMatch: false,
-    deleteMatch: false,
-    viewRegistration: true,
-    editRegistration: false,
-    createRegistration: true,
-    deleteRegistration: false,
-    viewCourt: true,
-    editCourt: false,
+    viewCourts: true,
+    updateCourtStatus: false,
     createCourt: false,
-    deleteCourt: false,
-    viewTeam: true,
-    editTeam: false,
-    createTeam: false,
-    deleteTeam: false,
-    viewPlayer: true,
-    editPlayer: false,
-    createPlayer: false,
-    deletePlayer: false,
-    viewScoring: true,
-    editScoring: false,
-    manageCheckIn: false,
-    manageSchedule: false,
-    viewDashboard: true
+    viewRegistrations: false,
+    updateRegistrationStatus: false,
+    viewParticipants: true,
+    addParticipant: false,
+    viewSchedule: true,
+    modifySchedule: false,
+    viewResults: true,
+    generateBrackets: false,
+    advanceTournament: false,
+    manageSystemSettings: false,
+    viewAnalytics: false,
+    exportData: false,
+    viewAdminDashboard: false,
+    accessCheckIn: false,
+    manageBulkOperations: false,
+    viewAuditLog: false,
+    sendAnnouncements: false,
+    moderateMessages: false,
+    canManageTournaments: false,
+    canManageUsers: false,
+    canManageRegistrations: false,
+    canScoreMatches: false,
+    canViewReports: false
   },
   [UserRole.SPECTATOR]: {
     viewTournament: true,
     editTournament: false,
     createTournament: false,
     deleteTournament: false,
-    viewMatch: true,
-    editMatch: false,
+    viewMatches: true,
+    updateMatchStatus: false,
+    updateMatchScore: false,
     createMatch: false,
-    deleteMatch: false,
-    viewRegistration: false,
-    editRegistration: false,
-    createRegistration: false,
-    deleteRegistration: false,
-    viewCourt: true,
-    editCourt: false,
+    viewCourts: true,
+    updateCourtStatus: false,
     createCourt: false,
-    deleteCourt: false,
-    viewTeam: true,
-    editTeam: false,
-    createTeam: false,
-    deleteTeam: false,
-    viewPlayer: true,
-    editPlayer: false,
-    createPlayer: false,
-    deletePlayer: false,
-    viewScoring: true,
-    editScoring: false,
-    manageCheckIn: false,
-    manageSchedule: false,
-    viewDashboard: false
-  },
-  [UserRole.FRONT_DESK]: {
-    viewTournament: true,
-    editTournament: false,
-    createTournament: false,
-    deleteTournament: false,
-    viewMatch: true,
-    editMatch: false,
-    createMatch: false,
-    deleteMatch: false,
-    viewRegistration: true,
-    editRegistration: true,
-    createRegistration: true,
-    deleteRegistration: false,
-    viewCourt: true,
-    editCourt: false,
-    createCourt: false,
-    deleteCourt: false,
-    viewTeam: true,
-    editTeam: false,
-    createTeam: false,
-    deleteTeam: false,
-    viewPlayer: true,
-    editPlayer: true,
-    createPlayer: true,
-    deletePlayer: false,
-    viewScoring: true,
-    editScoring: false,
-    manageCheckIn: true,
-    manageSchedule: false,
-    viewDashboard: true
-  },
-  [UserRole.ADMIN_STAFF]: {
-    viewTournament: true,
-    editTournament: true,
-    createTournament: false,
-    deleteTournament: false,
-    viewMatch: true,
-    editMatch: true,
-    createMatch: false,
-    deleteMatch: false,
-    viewRegistration: true,
-    editRegistration: true,
-    createRegistration: true,
-    deleteRegistration: false,
-    viewCourt: true,
-    editCourt: true,
-    createCourt: true,
-    deleteCourt: false,
-    viewTeam: true,
-    editTeam: true,
-    createTeam: true,
-    deleteTeam: false,
-    viewPlayer: true,
-    editPlayer: true,
-    createPlayer: true,
-    deletePlayer: false,
-    viewScoring: true,
-    editScoring: true,
-    manageCheckIn: true,
-    manageSchedule: true,
-    viewDashboard: true
+    viewRegistrations: false,
+    updateRegistrationStatus: false,
+    viewParticipants: true,
+    addParticipant: false,
+    viewSchedule: true,
+    modifySchedule: false,
+    viewResults: true,
+    generateBrackets: false,
+    advanceTournament: false,
+    manageSystemSettings: false,
+    viewAnalytics: false,
+    exportData: false,
+    viewAdminDashboard: false,
+    accessCheckIn: false,
+    manageBulkOperations: false,
+    viewAuditLog: false,
+    sendAnnouncements: false,
+    moderateMessages: false,
+    canManageTournaments: false,
+    canManageUsers: false,
+    canManageRegistrations: false,
+    canScoreMatches: false,
+    canViewReports: false
   },
   [UserRole.DIRECTOR]: {
     viewTournament: true,
     editTournament: true,
     createTournament: true,
     deleteTournament: true,
-    viewMatch: true,
-    editMatch: true,
+    viewMatches: true,
+    updateMatchStatus: true,
+    updateMatchScore: true,
     createMatch: true,
-    deleteMatch: true,
-    viewRegistration: true,
-    editRegistration: true,
-    createRegistration: true,
-    deleteRegistration: true,
-    viewCourt: true,
-    editCourt: true,
+    viewCourts: true,
+    updateCourtStatus: true,
     createCourt: true,
-    deleteCourt: true,
-    viewTeam: true,
-    editTeam: true,
-    createTeam: true,
-    deleteTeam: true,
-    viewPlayer: true,
-    editPlayer: true,
-    createPlayer: true,
-    deletePlayer: true,
-    viewScoring: true,
-    editScoring: true,
-    manageCheckIn: true,
-    manageSchedule: true,
-    viewDashboard: true
+    viewRegistrations: true,
+    updateRegistrationStatus: true,
+    viewParticipants: true,
+    addParticipant: true,
+    viewSchedule: true,
+    modifySchedule: true,
+    viewResults: true,
+    generateBrackets: true,
+    advanceTournament: true,
+    manageSystemSettings: true,
+    viewAnalytics: true,
+    exportData: true,
+    viewAdminDashboard: true,
+    accessCheckIn: true,
+    manageBulkOperations: true,
+    viewAuditLog: true,
+    sendAnnouncements: true,
+    moderateMessages: true,
+    canManageTournaments: true,
+    canManageUsers: true,
+    canManageRegistrations: true,
+    canScoreMatches: true,
+    canViewReports: true
+  },
+  [UserRole.FRONT_DESK]: {
+    viewTournament: true,
+    editTournament: false,
+    createTournament: false,
+    deleteTournament: false,
+    viewMatches: true,
+    updateMatchStatus: false,
+    updateMatchScore: false,
+    createMatch: false,
+    viewCourts: true,
+    updateCourtStatus: false,
+    createCourt: false,
+    viewRegistrations: true,
+    updateRegistrationStatus: true,
+    viewParticipants: true,
+    addParticipant: true,
+    viewSchedule: true,
+    modifySchedule: false,
+    viewResults: true,
+    generateBrackets: false,
+    advanceTournament: false,
+    manageSystemSettings: false,
+    viewAnalytics: false,
+    exportData: false,
+    viewAdminDashboard: false,
+    accessCheckIn: true,
+    manageBulkOperations: false,
+    viewAuditLog: false,
+    sendAnnouncements: true,
+    moderateMessages: false,
+    canManageTournaments: false,
+    canManageUsers: false,
+    canManageRegistrations: true,
+    canScoreMatches: false,
+    canViewReports: false
+  },
+  [UserRole.ADMIN_STAFF]: {
+    viewTournament: true,
+    editTournament: true,
+    createTournament: false,
+    deleteTournament: false,
+    viewMatches: true,
+    updateMatchStatus: true,
+    updateMatchScore: true,
+    createMatch: true,
+    viewCourts: true,
+    updateCourtStatus: true,
+    createCourt: true,
+    viewRegistrations: true,
+    updateRegistrationStatus: true,
+    viewParticipants: true,
+    addParticipant: true,
+    viewSchedule: true,
+    modifySchedule: true,
+    viewResults: true,
+    generateBrackets: false,
+    advanceTournament: false,
+    manageSystemSettings: false,
+    viewAnalytics: true,
+    exportData: true,
+    viewAdminDashboard: true,
+    accessCheckIn: true,
+    manageBulkOperations: true,
+    viewAuditLog: true,
+    sendAnnouncements: true,
+    moderateMessages: true,
+    canManageTournaments: true,
+    canManageUsers: false,
+    canManageRegistrations: true,
+    canScoreMatches: true,
+    canViewReports: true
   }
 };
 
-// Define the layout props interface
-export interface LayoutProps {
+interface RoleBasedLayoutProps {
+  userRole: UserRole;
   children: React.ReactNode;
-  permissions: RolePermissions;
 }
 
-// Fallback component while loading the role-specific layout
-const LoadingLayout: React.FC<{children: React.ReactNode}> = ({ children }) => (
-  <div className="min-h-screen bg-background">
-    <div className="container mx-auto px-4 py-8">
-      {children}
-    </div>
-  </div>
-);
-
-const RoleBasedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return <LoadingLayout>{children}</LoadingLayout>;
-  }
-
-  // Default to spectator for unauthenticated users
-  const role = user?.role || UserRole.SPECTATOR;
-  const permissions = rolePermissionsMap[role] || rolePermissionsMap[UserRole.SPECTATOR];
-
-  // Return the appropriate layout based on the user role
-  switch (role) {
-    case UserRole.ADMIN:
+const RoleBasedLayout: React.FC<RoleBasedLayoutProps> = ({ userRole, children }) => {
+  // Choose a layout based on the user role
+  switch (userRole) {
     case UserRole.DIRECTOR:
-      return <LayoutDirector permissions={permissions}>{children}</LayoutDirector>;
-    case UserRole.ORGANIZER:
-      return <LayoutDirector permissions={permissions}>{children}</LayoutDirector>;
-    case UserRole.SCOREKEEPER:
-      return <LayoutScorekeeper permissions={permissions}>{children}</LayoutScorekeeper>;
+      return <LayoutDirector>{children}</LayoutDirector>;
+      
     case UserRole.FRONT_DESK:
-      return <LayoutFrontDesk permissions={permissions}>{children}</LayoutFrontDesk>;
+      return <LayoutFrontDesk>{children}</LayoutFrontDesk>;
+      
     case UserRole.ADMIN_STAFF:
-      return <LayoutAdminStaff permissions={permissions}>{children}</LayoutAdminStaff>;
+      return <LayoutAdminStaff>{children}</LayoutAdminStaff>;
+      
+    case UserRole.ADMIN:
+      return <LayoutDirector>{children}</LayoutDirector>; // Admin gets director layout
+      
+    case UserRole.ORGANIZER:
+      return <LayoutDirector>{children}</LayoutDirector>; // Organizer gets director layout
+      
+    case UserRole.SCOREKEEPER:
+      return <LayoutScorekeeper>{children}</LayoutScorekeeper>;
+      
     case UserRole.PLAYER:
-      return <LayoutPlayer permissions={permissions}>{children}</LayoutPlayer>;
+      return <LayoutPlayer>{children}</LayoutPlayer>;
+      
     case UserRole.SPECTATOR:
-      return <LayoutSpectator permissions={permissions}>{children}</LayoutSpectator>;
+      return <LayoutSpectator>{children}</LayoutSpectator>;
+      
     default:
-      return <LayoutSpectator permissions={permissions}>{children}</LayoutSpectator>;
+      return <LayoutPlayer>{children}</LayoutPlayer>; // Default to player layout
   }
 };
 
 export default RoleBasedLayout;
+export { ROLE_PERMISSIONS };

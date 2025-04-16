@@ -1,71 +1,70 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { RegistrationStatus, TournamentRegistration } from '@/types/registration';
+import { TournamentRegistration } from '@/types/registration';
+import { RegistrationStatus } from '@/types/tournament-enums';
 
-// We'll use a simple QR code representation for now
-// In a real app, you would use a library like qrcode.react
-
-interface QRCodeDisplayProps {
+export interface QRCodeDisplayProps {
   registrationId: string;
   name: string;
-  type: 'player' | 'team';
+  type: string;
   status: RegistrationStatus;
-  registration?: TournamentRegistration; // Add this for backward compatibility with tests
+  registration: TournamentRegistration;
 }
 
-export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
-  registrationId,
-  name,
-  type,
-  status,
-  registration
+const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ 
+  registrationId, 
+  name, 
+  type, 
+  status, 
+  registration 
 }) => {
-  // If registration is provided, use its values (for backward compatibility with tests)
-  const id = registration?.id || registrationId;
-  const displayName = registration?.metadata?.playerName || registration?.metadata?.teamName || name;
-  const displayStatus = registration?.status || status;
-
-  // Generate QR code data
-  const qrData = JSON.stringify({
-    id: id,
-    type,
-    timestamp: Date.now(),
-  });
-
-  // Determine badge color based on status
-  const getBadgeColor = () => {
-    if (displayStatus === RegistrationStatus.APPROVED) return 'bg-green-100 text-green-800';
-    if (displayStatus === RegistrationStatus.CHECKED_IN) return 'bg-blue-100 text-blue-800';
-    if (displayStatus === RegistrationStatus.WAITLISTED) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-gray-100 text-gray-800';
+  // Generate a QR code data URL (simplified for this example)
+  const generateQRCode = () => {
+    return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="white"/><text x="50" y="100" font-family="Arial" font-size="14" fill="black">${registrationId}</text></svg>`;
   };
-
+  
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-md">{displayName}</CardTitle>
-          <Badge className={getBadgeColor()}>
-            {displayStatus === RegistrationStatus.CHECKED_IN ? 'Checked In' : displayStatus}
-          </Badge>
-        </div>
+    <Card className="w-full max-w-sm mx-auto">
+      <CardHeader>
+        <CardTitle className="text-xl">{name} Check-In QR Code</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between">
-          <div className="w-24 h-24 bg-gray-100 border border-gray-300 flex items-center justify-center text-xs text-gray-500 overflow-hidden">
-            {/* This is a placeholder for a real QR code */}
-            QR Code<br/>ID: {id.substring(0, 8)}...
+      <CardContent className="flex flex-col items-center">
+        <div className="border rounded-md p-4 mb-4">
+          <img 
+            src={generateQRCode()} 
+            alt="Check-in QR Code" 
+            className="w-48 h-48"
+            data-testid="qr-code-image" 
+          />
+        </div>
+        
+        <div className="w-full space-y-2">
+          <div className="flex justify-between">
+            <span className="font-semibold">Registration ID:</span>
+            <span>{registrationId}</span>
           </div>
-          <div className="ml-4 flex-1">
-            <p className="text-sm font-medium">Registration ID</p>
-            <p className="text-xs text-gray-500">{id}</p>
-            <p className="text-sm font-medium mt-2">Type</p>
-            <p className="text-xs text-gray-500 capitalize">{type}</p>
+          <div className="flex justify-between">
+            <span className="font-semibold">Type:</span>
+            <span>{type}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="font-semibold">Status:</span>
+            <span className={`font-medium ${
+              status === RegistrationStatus.APPROVED ? 'text-green-600' :
+              status === RegistrationStatus.PENDING ? 'text-amber-600' :
+              status === RegistrationStatus.REJECTED ? 'text-red-600' :
+              status === RegistrationStatus.WAITLIST ? 'text-blue-600' :
+              status === RegistrationStatus.CHECKED_IN ? 'text-purple-600' :
+              ''
+            }`}>
+              {status}
+            </span>
           </div>
         </div>
       </CardContent>
     </Card>
   );
 };
+
+export default QRCodeDisplay;
