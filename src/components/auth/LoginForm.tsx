@@ -2,19 +2,10 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth } from '@/contexts/auth/AuthContext';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { LogIn } from 'lucide-react';
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAuth } from '@/contexts/auth/AuthContext';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
@@ -28,8 +19,9 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
-  const { login, isLoading } = useAuth();
-  const [loginError, setLoginError] = useState<string | null>(null);
+  const { signIn } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -40,60 +32,21 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   });
 
   const onSubmit = async (data: LoginFormValues) => {
-    setLoginError(null);
-    
+    setIsLoading(true);
+    setError(null);
     try {
-      const result = await login(data.email, data.password);
-      
-      if (result && onSuccess) {
-        onSuccess();
-      } else if (!result) {
-        setLoginError('Invalid email or password. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error during login:', error);
-      setLoginError(error instanceof Error ? error.message : 'An error occurred during login');
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    setLoginError(null);
-    
-    try {
-      const result = await login('demo@example.com', 'demo123');
-      
-      if (result && onSuccess) {
-        onSuccess();
-      }
-    } catch (error) {
-      console.error('Error during demo login:', error);
-      setLoginError(error instanceof Error ? error.message : 'An error occurred during demo login');
-    }
-  };
-
-  const handleAdminDemoLogin = async () => {
-    setLoginError(null);
-    
-    try {
-      const result = await login('demo-admin@example.com', 'admin123');
-      
-      if (result && onSuccess) {
-        onSuccess();
-      }
-    } catch (error) {
-      console.error('Error during admin demo login:', error);
-      setLoginError(error instanceof Error ? error.message : 'An error occurred during admin demo login');
+      await signIn(data.email, data.password);
+      onSuccess?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to log in');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {loginError && (
-          <Alert variant="destructive">
-            <AlertDescription>{loginError}</AlertDescription>
-          </Alert>
-        )}
         <FormField
           control={form.control}
           name="email"
@@ -101,12 +54,18 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="you@example.com" {...field} />
+                <Input 
+                  type="email" 
+                  placeholder="Enter your email" 
+                  {...field} 
+                  disabled={isLoading}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="password"
@@ -114,44 +73,25 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="******" {...field} />
+                <Input 
+                  type="password" 
+                  placeholder="Enter your password" 
+                  {...field} 
+                  disabled={isLoading}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {error && (
+          <div className="text-red-500 text-sm">{error}</div>
+        )}
+
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? (
-            <span className="flex items-center">
-              <span className="animate-spin mr-2">⏳</span> Logging in...
-            </span>
-          ) : (
-            <span className="flex items-center">
-              <LogIn className="mr-2 h-4 w-4" /> Log In
-            </span>
-          )}
+          {isLoading ? "Logging in..." : "Sign in"}
         </Button>
-        
-        <div className="flex gap-2 mt-4">
-          <Button 
-            type="button" 
-            variant="outline" 
-            className="flex-1" 
-            onClick={handleDemoLogin}
-            disabled={isLoading}
-          >
-            Demo Login
-          </Button>
-          <Button 
-            type="button" 
-            variant="outline" 
-            className="flex-1" 
-            onClick={handleAdminDemoLogin}
-            disabled={isLoading}
-          >
-            Admin Demo
-          </Button>
-        </div>
       </form>
     </Form>
   );

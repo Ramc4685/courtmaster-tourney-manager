@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Profile } from '@/types/entities';
+import type { Tournament } from '@/types/tournament';
 
 // Abstract storage interface that can be implemented for different backends
 export interface StorageService {
@@ -175,7 +176,7 @@ export class SupabaseStorageService implements StorageService {
       
       // For tournaments list - not directly supported, we save individual tournaments
       if (key === 'tournaments') {
-        const tournaments = value as any[];
+        const tournaments = value as Tournament[];
         console.log('[Supabase] Saving tournament list:', { count: tournaments.length });
         // We don't save the full list, but ensure each tournament is saved individually
         for (const tournament of tournaments) {
@@ -186,7 +187,7 @@ export class SupabaseStorageService implements StorageService {
       
       // For a specific tournament
       else if (key === 'currentTournament') {
-        const tournament = value as any;
+        const tournament = value as Tournament;
         console.log('[Supabase] Setting current tournament:', { id: tournament.id });
         localStorage.setItem('currentTournamentId', tournament.id);
         await this.setItem(`tournament_${tournament.id}`, value);

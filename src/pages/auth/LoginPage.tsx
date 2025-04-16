@@ -18,10 +18,8 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const success = await signIn(email, password);
-      if (success) {
-        toast.success('Welcome back!');
-      }
+      await signIn(email, password);
+      toast.success('Welcome back!');
     } catch (error) {
       console.error('Login error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to sign in. Please check your credentials.');
@@ -31,7 +29,7 @@ export default function LoginPage() {
   };
 
   const handleQuickLogin = () => {
-    setEmail('admin@courtmaster.com');
+    setEmail('demoadmin@example.com');
     setPassword('demo123');
   };
 

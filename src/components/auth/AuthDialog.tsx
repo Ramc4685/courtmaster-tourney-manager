@@ -28,7 +28,7 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
   onAuthSuccess,
 }) => {
   const [open, setOpen] = useState(false);
-  const { user, login, enableDemoMode } = useAuth();
+  const { user, signIn } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
@@ -40,10 +40,11 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
   };
   
   const handleDemoLogin = async () => {
+    if (user) return;
+
     try {
       setIsLoading(true);
-      enableDemoMode(true);
-      await login('demo', 'demo123');
+      await signIn('demo@example.com', 'demo123');
       
       toast({
         title: "Demo Login Successful",
@@ -53,9 +54,9 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
     } catch (error) {
       console.error('Error with demo login:', error);
       toast({
-        title: "Demo Login Failed",
-        description: "Could not log in with demo account.",
-        variant: "destructive"
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to log in with demo account."
       });
     } finally {
       setIsLoading(false);
@@ -63,10 +64,11 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
   };
 
   const handleAdminDemoLogin = async () => {
+    if (user) return;
+
     try {
       setIsLoading(true);
-      enableDemoMode(true);
-      await login('demo-admin', 'demo123');
+      await signIn('admin@example.com', 'demo123');
       
       toast({
         title: "Admin Demo Login Successful",
@@ -76,9 +78,9 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
     } catch (error) {
       console.error('Error with admin demo login:', error);
       toast({
-        title: "Admin Demo Login Failed",
-        description: "Could not log in with admin demo account.",
-        variant: "destructive"
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to log in with admin demo account."
       });
     } finally {
       setIsLoading(false);

@@ -5,16 +5,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import LoginForm from './LoginForm';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/auth/AuthContext';
+import * as z from 'zod';
 
-const Login = () => {
-  const { login } = useAuth();
+const loginSchema = z.object({
+  email: z.string().email({ message: 'Please enter a valid email address' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+
+interface LoginProps {
+  onSuccess?: () => void;
+}
+
+const Login: React.FC<LoginProps> = ({ onSuccess }) => {
+  const { signIn } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const handleDemoLogin = async () => {
     try {
       setIsLoading(true);
-      await login('demo@example.com', 'demo123');
+      await signIn('demo@example.com', 'demo123');
       
       toast({
         title: "Demo Login Successful",
@@ -32,24 +45,13 @@ const Login = () => {
     }
   };
 
-  const handleAdminDemoLogin = async () => {
+  const handleSubmit = async (data: LoginFormValues) => {
+    setError(null);
     try {
-      setIsLoading(true);
-      await login('demo-admin@example.com', 'admin123');
-      
-      toast({
-        title: "Admin Demo Login Successful",
-        description: "You are now logged in as an admin demo user."
-      });
-    } catch (error) {
-      console.error('Error with admin demo login:', error);
-      toast({
-        title: "Admin Demo Login Failed",
-        description: "Could not log in with admin demo account.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+      await signIn(data.email, data.password);
+      onSuccess?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to log in');
     }
   };
 
@@ -76,20 +78,11 @@ const Login = () => {
                 >
                   {isLoading ? "Loading..." : "User Demo Login"}
                 </Button>
-                
-                <Button 
-                  onClick={handleAdminDemoLogin}
-                  className="w-full"
-                  variant="secondary"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Loading..." : "Admin Demo Login"}
-                </Button>
               </div>
             </TabsContent>
             
             <TabsContent value="login">
-              <LoginForm />
+              <LoginForm onSuccess={onSuccess} />
             </TabsContent>
             
             <TabsContent value="google">

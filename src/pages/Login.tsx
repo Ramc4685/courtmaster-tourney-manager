@@ -7,29 +7,31 @@ import LoginForm from '@/components/auth/LoginForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import RegisterForm from '@/components/auth/RegisterForm';
 import { useToast } from '@/hooks/use-toast';
+import * as z from 'zod';
+
+const loginSchema = z.object({
+  email: z.string().email({ message: 'Please enter a valid email address' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login: React.FC = () => {
-  const { login, enableDemoMode } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-
-  // Removed Google sign-in due to provider not being enabled
+  const [error, setError] = useState<string | null>(null);
   
   const handleDemoLogin = async () => {
     try {
       setIsLoading(true);
-      enableDemoMode(true);
-      const result = await login('demo', 'demo123');
-      
+      await signIn('demo@example.com', 'demo123');
       toast({
         title: "Demo Login Successful",
         description: "You are now logged in as a demo user."
       });
-      
-      if (result) {
-        navigate('/tournaments');
-      }
+      navigate('/tournaments');
     } catch (error) {
       console.error('Error with demo login:', error);
     } finally {
@@ -40,22 +42,21 @@ const Login: React.FC = () => {
   const handleAdminDemoLogin = async () => {
     try {
       setIsLoading(true);
-      enableDemoMode(true);
-      const result = await login('demo-admin', 'demo123');
-      
+      await signIn('admin@example.com', 'demo123');
       toast({
         title: "Admin Demo Login Successful",
         description: "You are now logged in as an admin demo user."
       });
-      
-      if (result) {
-        navigate('/tournaments');
-      }
+      navigate('/tournaments');
     } catch (error) {
       console.error('Error with admin demo login:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSuccess = () => {
+    navigate('/dashboard');
   };
 
   return (
@@ -97,8 +98,7 @@ const Login: React.FC = () => {
             </TabsContent>
             
             <TabsContent value="login" className="pt-4">
-              <LoginForm />
-              {/* Removed Google sign-in button since the provider is not enabled */}
+              <LoginForm onSuccess={handleSuccess} />
             </TabsContent>
             
             <TabsContent value="register" className="pt-4">

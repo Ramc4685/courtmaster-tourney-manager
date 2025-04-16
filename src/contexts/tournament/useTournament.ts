@@ -3,6 +3,7 @@ import { Tournament, TournamentCategory, Match, Team } from "@/types/tournament"
 import { TournamentFormat, CategoryType, TournamentStage, TournamentStatus, GameType, Division, PlayType } from "@/types/tournament-enums";
 import { TournamentFormValues } from "@/components/admin/tournament/types";
 import { tournamentService } from "@/services/tournament/TournamentService";
+import { useAuth } from '@/contexts/auth/AuthContext';
 
 interface TournamentStore {
   tournaments: Tournament[];
@@ -59,7 +60,11 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
   createTournament: async (data: TournamentFormValues) => {
     set({ isLoading: true, error: null });
     try {
-      // Convert division details to categories
+      const { user } = useAuth();
+      if (!user) {
+        throw new Error('User must be logged in to create a tournament');
+      }
+
       const categories: TournamentCategory[] = data.divisionDetails.flatMap(division => 
         division.categories.map(category => ({
           id: category.id,
@@ -113,7 +118,7 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
           seedingEnabled: true
         },
         status: TournamentStatus.REGISTRATION,
-        organizer_id: 'demo-admin',
+        organizer_id: user?.id,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
         location: data.location,

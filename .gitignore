@@ -27,6 +27,9 @@ yarn-error.log*
 # IDE
 .idea/
 .vscode/
+.cursor/
+memory-bank/
+scripts/    
 *.swp
 *.swo
 .DS_Store

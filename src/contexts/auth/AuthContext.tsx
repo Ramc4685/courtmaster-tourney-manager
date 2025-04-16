@@ -2,43 +2,51 @@ import { useNavigate } from 'react-router-dom';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
-import { UserRole } from '@/types/tournament-enums';
-import type { Profile } from '@/types/user';
+import { Database } from '@/lib/database.types';
+import { User } from '@supabase/supabase-js';
 
-// Types
+type DbProfile = Database['public']['Tables']['profiles']['Row'];
+type DbProfileInsert = Database['public']['Tables']['profiles']['Insert'];
+
 interface AuthContextType {
-  user: Profile | null;
-  signIn: (email: string, password: string) => Promise<boolean>;
-  signOut: () => Promise<void>;
+  user: DbProfile | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, data: any) => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  updatePassword: (password: string) => Promise<void>;
+  error: string | null;
   isAuthenticated: boolean;
-  updateUserProfile: (data: Partial<Profile>) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  updateUserProfile: (profile: Partial<DbProfile>) => Promise<void>;
   refreshSession: () => Promise<void>;
 }
 
-// Create auth context
 export const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
-// Auth provider component
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<Profile | null>(null);
+  const [user, setUser] = useState<DbProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
   const navigate = useNavigate();
 
   const isAuthenticated = !!user;
 
-  // Initialize auth state
-  useEffect(() => {
-    let mounted = true;
+  const fetchProfile = async (userId: string) => {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
 
+    if (profileError) {
+      throw profileError;
+    }
+
+    return profile;
+  };
+
+  useEffect(() => {
     const loadSession = async () => {
       try {
-        // Check for session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -46,239 +54,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (!session) {
-          if (mounted) {
-            setUser(null);
-            setIsLoading(false);
-          }
+          setUser(null);
+          setIsLoading(false);
           return;
         }
 
-        // Get user profile from database
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (profileError) {
-          throw profileError;
-        }
-
-        if (mounted) {
-          // Convert profile data to our Profile type with proper defaults
-          setUser({
-            id: profile.id,
-            name: profile.name,
-            full_name: profile.full_name || profile.name || '',
-            display_name: profile.display_name || profile.name || '',
-            email: profile.email || '',
-            phone: profile.phone,
-            avatar_url: profile.avatar_url || null,
-            role: profile.role as UserRole,
-            player_details: profile.player_details || {},
-            player_stats: profile.player_stats || {
-              tournaments_played: 0,
-              tournaments_won: 0,
-              matches_played: 0,
-              matches_won: 0,
-              rating: 0
-            },
-            preferences: profile.preferences || {
-              notifications: {
-                email: true,
-                push: true,
-                tournament_updates: true,
-                match_reminders: true
-              },
-              privacy: {
-                show_profile: true,
-                show_stats: true,
-                show_history: true
-              }
-            },
-            social_links: profile.social_links || {}
-          });
-        }
+        const profile = await fetchProfile(session.user.id);
+        setUser(profile);
       } catch (error) {
-        console.error('Error loading auth session:', error);
-        if (mounted) {
-          setError(error instanceof Error ? error.message : 'Failed to load session');
-          setUser(null);
-          toast({
-            variant: 'destructive',
-            title: 'Authentication error',
-            description: 'Failed to load your session. Please try logging in again.',
-          });
-        }
+        console.error('Error loading session:', error);
+        setError(error instanceof Error ? error.message : 'An error occurred');
       } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
 
     loadSession();
 
-    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-
-      console.log('[DEBUG] AuthContext: Auth state change event:', event);
-      console.log('[DEBUG] AuthContext: Session state:', session ? 'exists' : 'null', session?.user?.id);
-
-      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-        if (!session) {
-          console.log('[DEBUG] AuthContext: No session found for', event);
-          setUser(null);
-          return;
-        }
-
-        setIsLoading(true);
-        try {
-          console.log('[DEBUG] AuthContext: Fetching user profile for', session.user.id);
-          // Fetch profile for initial session
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          if (profileError) {
-            console.error('[DEBUG] AuthContext: Profile fetch error:', profileError);
-            throw profileError;
-          }
-
-          if (mounted) {
-            const userData = {
-              id: session.user.id,
-              full_name: profile?.full_name || profile?.name || '',
-              display_name: profile?.display_name || profile?.name || '',
-              name: profile?.name,
-              email: session.user.email || '',
-              phone: profile?.phone,
-              avatar_url: profile?.avatar_url || null,
-              role: (profile?.role || 'PLAYER') as UserRole,
-              player_details: profile?.player_details || {},
-              player_stats: profile?.player_stats || {
-                tournaments_played: 0,
-                tournaments_won: 0,
-                matches_played: 0,
-                matches_won: 0,
-                rating: 0
-              },
-              preferences: profile?.preferences || {
-                notifications: {
-                  email: true,
-                  push: true,
-                  tournament_updates: true,
-                  match_reminders: true
-                },
-                privacy: {
-                  show_profile: true,
-                  show_stats: true,
-                  show_history: true
-                }
-              },
-              social_links: profile?.social_links || {}
-            };
-
-            console.log('[DEBUG] AuthContext: Setting user data:', userData.id);
-            setUser(userData);
-            navigate('/dashboard');
-          }
-        } catch (error) {
-          console.error('[DEBUG] AuthContext: Error in auth flow:', error);
-          if (mounted) {
-            toast({
-              variant: 'destructive',
-              title: 'Error',
-              description: 'Failed to load user profile.',
-            });
-          }
-        } finally {
-          if (mounted) setIsLoading(false);
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session?.user) {
+          const profile = await fetchProfile(session.user.id);
+          setUser(profile);
         }
       } else if (event === 'SIGNED_OUT') {
-        console.log('[DEBUG] AuthContext: User signed out');
         setUser(null);
-        navigate('/login');
       }
     });
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []);
 
-  // Sign up function
-  const signUp = async (email: string, password: string, data: any) => {
-    setIsLoading(true);
-    setError(null);
-    
+  const signIn = async (email: string, password: string) => {
     try {
-      // Register with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (authError) {
-        throw authError;
-      }
-
-      // Create profile for new user
-      if (authData.user) {
-        // Need to update this to match the schema
-        await supabase
-          .from('profiles')
-          .upsert({
-            id: authData.user.id,
-            name: data.fullName,
-            full_name: data.fullName,
-            display_name: data.displayName || data.fullName,
-            email: email,
-            role: UserRole.PLAYER,  // Default role for new users
-            player_details: {},
-            player_stats: {
-              tournaments_played: 0,
-              tournaments_won: 0,
-              matches_played: 0,
-              matches_won: 0,
-              rating: 0
-            }
-          });
-
-        toast({
-          title: 'Account created',
-          description: 'Your account has been created successfully! Please check your email for verification.',
-        });
-      }
-    } catch (error) {
-      console.error('Sign up error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to create account');
-      toast({
-        variant: 'destructive',
-        title: 'Registration failed',
-        description: error instanceof Error ? error.message : 'Failed to create account',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Sign in function
-  const signIn = async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Regular Supabase authentication
-      if (!email || !password) {
-        throw new Error('Email and password are required');
-      }
-      
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: { user: authUser }, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -287,222 +98,170 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw signInError;
       }
 
-      // Don't navigate here - let the auth state change handler do it
-      // The navigation will happen in the INITIAL_SESSION or SIGNED_IN event
+      if (!authUser) {
+        throw new Error('No user returned after sign in');
+      }
+
+      const profile = await fetchProfile(authUser.id);
+      setUser(profile);
       
       toast({
-        title: 'Logged in successfully',
-        description: 'Welcome back!',
+        title: 'Welcome back!',
+        description: 'You have successfully signed in.',
       });
-      
-      return true;
+      navigate('/dashboard');
     } catch (error) {
       console.error('Sign in error:', error);
       setError(error instanceof Error ? error.message : 'Failed to sign in');
       toast({
-        variant: 'destructive',
-        title: 'Login failed',
+        title: 'Sign in failed',
         description: error instanceof Error ? error.message : 'Failed to sign in',
+        variant: 'destructive',
       });
-      return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  // Sign out function
+  const signUp = async (email: string, password: string, fullName: string) => {
+    try {
+      const { data: { user: authUser }, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (signUpError) {
+        throw signUpError;
+      }
+
+      if (!authUser) {
+        throw new Error('No user returned after sign up');
+      }
+
+      const newProfile: DbProfileInsert = {
+        id: authUser.id,
+        full_name: fullName,
+        display_name: fullName.split(' ')[0],
+        role: 'player',
+      };
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .insert([newProfile])
+        .select()
+        .single();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      setUser(profile);
+      toast({
+        title: 'Welcome to CourtMaster!',
+        description: 'Your account has been created successfully.',
+      });
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Sign up error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to sign up');
+      toast({
+        title: 'Sign up failed',
+        description: error instanceof Error ? error.message : 'Failed to sign up',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const signOut = async () => {
-    setIsLoading(true);
-    setError(null);
-    
     try {
       const { error } = await supabase.auth.signOut();
-      
       if (error) {
         throw error;
       }
-      
       setUser(null);
-      navigate('/login');
-      
+      navigate('/');
       toast({
-        title: 'Logged out',
-        description: 'You have been logged out successfully.',
+        title: 'Signed out',
+        description: 'You have been signed out successfully.',
       });
     } catch (error) {
       console.error('Sign out error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to sign out');
       toast({
+        title: 'Sign out failed',
+        description: error instanceof Error ? error.message : 'Failed to sign out',
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to log out. Please try again.',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  // Reset password function
-  const resetPassword = async (email: string) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
-      
-      if (error) {
-        throw error;
-      }
-      
-      toast({
-        title: 'Password reset email sent',
-        description: 'Check your email for a link to reset your password.',
-      });
-    } catch (error) {
-      console.error('Reset password error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to reset password');
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to send reset email. Please try again.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Update password function
-  const updatePassword = async (password: string) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password,
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      toast({
-        title: 'Password updated',
-        description: 'Your password has been updated successfully.',
-      });
-    } catch (error) {
-      console.error('Update password error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to update password');
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to update password. Please try again.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Update user profile function
-  const updateUserProfile = async (data: Partial<Profile>) => {
-    setIsLoading(true);
-    setError(null);
-    
+  const updateUserProfile = async (profile: Partial<DbProfile>) => {
     try {
       if (!user) {
         throw new Error('No user logged in');
       }
-      
-      const { error } = await supabase
+
+      const { data, error } = await supabase
         .from('profiles')
-        .update({
-          name: data.name,
-          full_name: data.full_name,
-          display_name: data.display_name,
-          phone: data.phone,
-          avatar_url: data.avatar_url,
-          player_details: data.player_details,
-          player_stats: data.player_stats,
-          preferences: data.preferences,
-          social_links: data.social_links
-        })
-        .eq('id', user.id);
-      
+        .update(profile)
+        .eq('id', user.id)
+        .select()
+        .single();
+
       if (error) {
         throw error;
       }
-      
-      // Update local user state
-      setUser(prev => prev ? { ...prev, ...data } : null);
-      
+
+      setUser(data);
       toast({
         title: 'Profile updated',
         description: 'Your profile has been updated successfully.',
       });
     } catch (error) {
-      console.error('Update profile error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to update profile');
+      console.error('Profile update error:', error);
       toast({
+        title: 'Profile update failed',
+        description: error instanceof Error ? error.message : 'Failed to update profile',
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to update profile. Please try again.',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const value: AuthContextType = {
-    user,
-    signIn,
-    signOut,
-    isLoading,
-    signUp,
-    resetPassword,
-    updatePassword,
-    isAuthenticated,
-    updateUserProfile,
-    refreshSession: async () => {
-      setIsLoading(true);
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        if (!session) {
-          setUser(null);
-          return;
-        }
-        // Refresh profile
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (profileError) throw profileError;
-        setUser(profile);
-      } catch (error) {
-        console.error('Error refreshing session:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Session Error',
-          description: 'Failed to refresh your session.',
-        });
-      } finally {
-        setIsLoading(false);
+  const refreshSession = async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        throw error;
       }
+
+      if (!session) {
+        setUser(null);
+        return;
+      }
+
+      const profile = await fetchProfile(session.user.id);
+      setUser(profile);
+    } catch (error) {
+      console.error('Session refresh error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to refresh session');
     }
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    user,
+    isLoading,
+    error,
+    isAuthenticated,
+    signIn,
+    signUp,
+    signOut,
+    updateUserProfile,
+    refreshSession,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// Hook for using auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
