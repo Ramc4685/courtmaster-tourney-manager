@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { Tournament, TournamentCategory, Match, Team } from "@/types/tournament";
-import { TournamentFormat, CategoryType, TournamentStage, TournamentStatus } from "@/types/tournament-enums";
+import { TournamentFormat, CategoryType, TournamentStage, TournamentStatus, GameType, Division, PlayType } from "@/types/tournament-enums";
 import { TournamentFormValues } from "@/components/admin/tournament/types";
 import { tournamentService } from "@/services/tournament/TournamentService";
 
@@ -13,8 +13,9 @@ interface TournamentStore {
   
   // Core tournament operations
   loadTournaments: () => Promise<void>;
+  refreshTournament: (id: string) => Promise<void>;
   createTournament: (data: TournamentFormValues) => Promise<Tournament>;
-  updateTournament: (id: string, data: Partial<Tournament>) => Promise<void>;
+  updateTournament: (tournament: Tournament) => Promise<void>;
   deleteTournament: (id: string) => Promise<void>;
   selectTournament: (id: string) => void;
   clearSelectedTournament: () => void;
@@ -58,18 +59,67 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
   createTournament: async (data: TournamentFormValues) => {
     set({ isLoading: true, error: null });
     try {
+      // Convert division details to categories
+      const categories: TournamentCategory[] = data.divisionDetails.flatMap(division => 
+        division.categories.map(category => ({
+          id: category.id,
+          name: category.name,
+          type: CategoryType.CUSTOM,
+          division: division.type as Division
+        }))
+      );
+
       const newTournament: Tournament = {
         id: crypto.randomUUID(),
         name: data.name,
         description: data.description || '',
-        format: data.format,
-        status: TournamentStatus.DRAFT,
+        format: {
+          type: TournamentFormat.SINGLE_ELIMINATION,
+          stages: [TournamentStage.REGISTRATION, TournamentStage.SEEDING, TournamentStage.ELIMINATION_ROUND, TournamentStage.FINALS],
+          scoring: {
+            matchFormat: 'STANDARD',
+            setsToWin: 2,
+            pointsToWinSet: data.scoringRules.pointsToWin,
+            tiebreakPoints: data.scoringRules.maxPoints,
+            finalSetTiebreak: true,
+            pointsToWin: data.scoringRules.pointsToWin,
+            mustWinByTwo: data.scoringRules.mustWinByTwo,
+            maxPoints: data.scoringRules.maxPoints,
+            maxSets: 3,
+            requireTwoPointLead: true,
+            maxTwoPointLeadScore: 30
+          },
+          divisions: data.divisionDetails.map(division => division.type as Division),
+          seedingEnabled: true
+        },
+        formatConfig: {
+          type: TournamentFormat.SINGLE_ELIMINATION,
+          stages: [TournamentStage.REGISTRATION, TournamentStage.SEEDING, TournamentStage.ELIMINATION_ROUND, TournamentStage.FINALS],
+          scoring: {
+            matchFormat: 'STANDARD',
+            setsToWin: 2,
+            pointsToWinSet: data.scoringRules.pointsToWin,
+            tiebreakPoints: data.scoringRules.maxPoints,
+            finalSetTiebreak: true,
+            pointsToWin: data.scoringRules.pointsToWin,
+            mustWinByTwo: data.scoringRules.mustWinByTwo,
+            maxPoints: data.scoringRules.maxPoints,
+            maxSets: 3,
+            requireTwoPointLead: true,
+            maxTwoPointLeadScore: 30
+          },
+          divisions: data.divisionDetails.map(division => division.type as Division),
+          thirdPlaceMatch: false,
+          seedingEnabled: true
+        },
+        status: TournamentStatus.REGISTRATION,
+        organizer_id: 'demo-admin',
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
         location: data.location,
         registrationEnabled: data.registrationEnabled,
         requirePlayerProfile: data.requirePlayerProfile,
-        registrationDeadline: new Date(data.registrationDeadline),
+        registrationDeadline: data.registrationDeadline ? new Date(data.registrationDeadline) : undefined,
         maxTeams: data.maxTeams,
         scoringSettings: {
           matchFormat: 'STANDARD',
@@ -81,42 +131,52 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
           maxTwoPointLeadScore: 30,
           setsToWin: 2
         },
-        categories: [], // Categories will be added based on divisions
+        categories,
         teams: [],
         matches: [],
         courts: [],
         createdAt: new Date(),
         updatedAt: new Date(),
         currentStage: TournamentStage.REGISTRATION,
+        divisions: data.divisionDetails.map(division => division.type as Division),
+        metadata: {
+          gameType: data.gameType || GameType.BADMINTON
+        }
       };
 
-      // TODO: Add API call to create tournament
+      // Save to storage service
+      const savedTournament = await tournamentService.createTournament(newTournament);
+
       set(state => ({
-        tournaments: [...state.tournaments, newTournament],
-        currentTournament: newTournament,
+        tournaments: [...state.tournaments, savedTournament],
+        currentTournament: savedTournament,
         isLoading: false,
       }));
 
-      return newTournament;
+      return savedTournament;
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : "Failed to create tournament", isLoading: false });
+      console.error('Error creating tournament:', error);
+      set({ 
+        error: error instanceof Error ? error.message : "Failed to create tournament", 
+        isLoading: false 
+      });
       throw error;
     }
   },
 
-  updateTournament: async (id: string, data: Partial<Tournament>) => {
+  updateTournament: async (tournament: Tournament) => {
     set({ isLoading: true, error: null });
     try {
       // TODO: Add API call to update tournament
       set(state => ({
-        tournaments: state.tournaments.map(tournament =>
-          tournament.id === id ? { ...tournament, ...data, updatedAt: new Date() } : tournament
+        tournaments: state.tournaments.map(t =>
+          t.id === tournament.id ? { ...t, ...tournament, updatedAt: new Date() } : t
         ),
-        selectedTournament: state.selectedTournament?.id === id
-          ? { ...state.selectedTournament, ...data, updatedAt: new Date() }
+        selectedTournament: state.selectedTournament?.id === tournament.id
+          ? { ...state.selectedTournament, ...tournament, updatedAt: new Date() }
           : state.selectedTournament,
-        currentTournament: state.currentTournament?.id === id
-          ? { ...state.currentTournament, ...data, updatedAt: new Date() }
+        currentTournament: state.currentTournament?.id === tournament.id
+          ? { ...state.currentTournament, ...tournament, updatedAt: new Date() }
           : state.currentTournament,
         isLoading: false,
       }));
@@ -213,7 +273,8 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
     }
 
     const updatedTeams = [...currentTournament.teams, team];
-    await get().updateTournament(currentTournament.id, { 
+    await get().updateTournament({ 
+      ...currentTournament,
       teams: updatedTeams,
       updatedAt: new Date()
     });
@@ -233,7 +294,8 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
       t.id === team.id ? team : t
     );
 
-    await get().updateTournament(currentTournament.id, { 
+    await get().updateTournament({ 
+      ...currentTournament,
       teams: updatedTeams,
       updatedAt: new Date()
     });
@@ -247,7 +309,8 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
 
     const updatedTeams = currentTournament.teams.filter(t => t.id !== teamId);
 
-    await get().updateTournament(currentTournament.id, { 
+    await get().updateTournament({ 
+      ...currentTournament,
       teams: updatedTeams,
       updatedAt: new Date()
     });
@@ -295,6 +358,32 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
     } catch (error) {
       set({ error: error instanceof Error ? error.message : "Failed to load tournaments", isLoading: false });
       throw error;
+    }
+  },
+
+  refreshTournament: async (id: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const tournament = await tournamentService.getTournament(id);
+      if (tournament) {
+        set(state => ({
+          tournaments: state.tournaments.map(t => 
+            t.id === id ? tournament : t
+          ),
+          selectedTournament: state.selectedTournament?.id === id 
+            ? tournament 
+            : state.selectedTournament,
+          currentTournament: state.currentTournament?.id === id
+            ? tournament
+            : state.currentTournament,
+          isLoading: false
+        }));
+      }
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : "Failed to refresh tournament", 
+        isLoading: false 
+      });
     }
   }
 }));

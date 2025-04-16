@@ -566,7 +566,20 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
 
   // Load sample data
   const loadSampleData = async (format?: TournamentFormat): Promise<void> => {
-    if (!format) return;
+    if (!format) {
+      throw new Error("Tournament format is required for sample data");
+    }
+
+    // Check if demo mode is enabled
+    const isDemoMode = localStorage.getItem('demo_mode') === 'true';
+    if (!isDemoMode) {
+      toast({
+        title: "Demo Mode Required",
+        description: "Please enable demo mode to load sample data.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const category: TournamentCategory = {
       id: generateId(),
@@ -576,7 +589,8 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       format: format,
     };
 
-    const sampleTournament = {
+    const sampleTournament: Tournament = {
+      id: generateId(),
       name: `Sample ${format.replace(/_/g, ' ')} Tournament`,
       description: `A sample tournament using the ${format.replace(/_/g, ' ')} format`,
       format: format,
@@ -626,6 +640,17 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
 
   // Load category demo data
   const loadCategoryDemoData = async (tournamentId: string, categoryId: string, format: TournamentFormat) => {
+    // Check if demo mode is enabled
+    const isDemoMode = localStorage.getItem('demo_mode') === 'true';
+    if (!isDemoMode) {
+      toast({
+        title: "Demo Mode Required",
+        description: "Please enable demo mode to load demo data.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!currentTournament || currentTournament.id !== tournamentId) return;
     
     try {
@@ -640,6 +665,11 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       }
     } catch (error) {
       console.error("Error loading category demo data:", error);
+      toast({
+        title: "Error Loading Demo Data",
+        description: "Failed to load category demo data. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 

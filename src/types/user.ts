@@ -1,4 +1,3 @@
-
 import { UserRole } from './tournament-enums';
 
 export interface Profile {
@@ -68,4 +67,5 @@ export interface AuthContextType {
   logout: () => Promise<void>;  // Alias for signOut
   register: (email: string, password: string, userData: any) => Promise<void>;  // Alias for signUp
   demoMode: boolean;  // Alias for isDemo
+  refreshSession: () => Promise<void>;  // Added for session refresh support
 }

@@ -18,6 +18,8 @@ import type { RegistrationMetadata, TournamentRegistrationStatus } from '../type
 import { storageService } from './storage';
 import { TournamentStage, TournamentStatus } from '../types/tournament';
 import type { Json } from '@/types/supabase';
+import { TournamentFormat } from '../types/tournament-enums';
+import { tournamentService as demoTournamentService } from './tournament/TournamentService';
 
 // Helper function to convert metadata to Json type
 function toJson<T>(data: T): Json {
@@ -40,19 +42,26 @@ function convertDemoTournamentToEntity(demo: DemoTournament): EntityTournament {
     registrationDeadline: demo.registrationDeadline ? new Date(demo.registrationDeadline) : null,
     location: demo.location || null,
     status: demo.status.toLowerCase() as EntityTournament['status'],
-    organizerId: demo.created_by || 'demo-user',
+    organizer_id: demo.created_by || 'demo-user',
     createdAt: new Date(demo.createdAt),
     updatedAt: new Date(demo.updatedAt),
     format: {
-      type: "ROUND_ROBIN",
+      type: TournamentFormat.ROUND_ROBIN,
       stages: [TournamentStage.GROUP_STAGE, TournamentStage.FINALS],
       scoring: {
         matchFormat: 'STANDARD',
-        pointsPerSet: 21,
+        pointsToWin: 21,
         setsToWin: 2,
         pointsToWinSet: 21,
         tiebreakPoints: 15,
-        finalSetTiebreak: true
+        finalSetTiebreak: true,
+        mustWinByTwo: true,
+        maxPoints: 30,
+        maxSets: 3,
+        requireTwoPointLead: true,
+        maxTwoPointLeadScore: 30,
+        gamesPerSet: undefined,
+        pointsPerGame: undefined
       },
       divisions: []
     },
@@ -65,11 +74,15 @@ function convertDemoTournamentToEntity(demo: DemoTournament): EntityTournament {
     categories: [],
     scoringSettings: {
       matchFormat: 'STANDARD',
-      pointsPerSet: 21,
+      pointsToWin: 21,
+      mustWinByTwo: true,
+      maxPoints: 30,
+      maxSets: 3,
+      requireTwoPointLead: true,
+      maxTwoPointLeadScore: 30,
       setsToWin: 2,
-      pointsToWinSet: 21,
-      tiebreakPoints: 15,
-      finalSetTiebreak: true
+      gamesPerSet: undefined,
+      pointsPerGame: undefined
     }
   };
 }
@@ -132,27 +145,49 @@ export class APIService {
     return transformers.tournament.fromAPI(supabaseData);
   }
 
-  async listTournaments(filters?: { status?: string; organizerId?: string }): Promise<EntityTournament[]> {
-    const data = await storageService.getItem<DemoTournament[]>('tournaments');
-    if (data) {
-      console.log('[DEBUG] Using demo tournaments:', data);
-      return data
-        .filter(t => {
-          if (filters?.status && t.status.toLowerCase() !== filters.status) return false;
-          if (filters?.organizerId && (t.created_by || 'demo-user') !== filters.organizerId) return false;
-          return true;
-        })
-        .map(convertDemoTournamentToEntity);
-    }
+  async listTournaments(filters?: { status?: string; organizer_id?: string }): Promise<EntityTournament[]> {
+    try {
+      const data = await storageService.getItem<DemoTournament[]>('tournaments');
+      if (data) {
+        console.log('[DEBUG] Using demo tournaments:', data);
+        return data
+          .filter(t => {
+            if (filters?.status && t.status !== filters.status) return false;
+            if (filters?.organizer_id && (t.created_by || 'demo-user') !== filters.organizer_id) return false;
+            return true;
+          })
+          .map(convertDemoTournamentToEntity);
+      }
 
-    let query = supabase
-      .from('tournaments')
-      .select('*') as any;
-    if (filters?.status) query = query.eq('status', filters.status);
-    if (filters?.organizerId) query = query.eq('organizerId', filters.organizerId);
-    const { data: supabaseData, error } = await query;
-    if (error) throw error;
-    return supabaseData.map(transformers.tournament.fromAPI);
+      let query = supabase.from('tournaments').select('*');
+      
+      if (filters?.status) {
+        query = query.eq('status', filters.status.toLowerCase());
+      }
+      if (filters?.organizer_id) {
+        query = query.eq('organizer_id', filters.organizer_id);
+      }
+      
+      const { data: supabaseData, error } = await query;
+      if (error) {
+        console.error('[API] Supabase error listing tournaments:', error);
+        throw error;
+      }
+      
+      const tournaments = (supabaseData || []).map(transformers.tournament.fromAPI);
+      console.log('[DEBUG] Loaded tournaments from Supabase:', tournaments.length);
+      return tournaments;
+    } catch (error) {
+      console.error('[API] Error listing tournaments:', error);
+      // Initialize demo tournaments as fallback
+      const demoTournaments = await demoTournamentService.getTournaments();
+      console.log('[DEBUG] Falling back to demo tournaments:', demoTournaments.length);
+      return demoTournaments.filter(t => {
+        if (filters?.status && t.status !== filters.status) return false;
+        if (filters?.organizer_id && (t.created_by || 'demo-user') !== filters.organizer_id) return false;
+        return true;
+      });
+    }
   }
 
   async updateTournament(id: string, tournament: Partial<EntityTournament>): Promise<EntityTournament> {
@@ -280,30 +315,19 @@ export class APIService {
   }
 
   // Registration Services
-  async register(registration: Omit<Registration, 'id' | 'createdAt' | 'updatedAt'>): Promise<Registration> {
-    const payload = {
-      tournament_id: registration.tournamentId,
-      division_id: registration.divisionId,
-      player_id: registration.playerId,
-      partner_id: registration.partnerId,
-      status: registration.status as string,
-      metadata: toJson(registration.metadata),
-      notes: registration.notes,
-      priority: registration.priority,
-      type: registration.type
+  async createRegistration(registration: Omit<Registration, 'id' | 'createdAt' | 'updatedAt'>): Promise<Registration> {
+    const apiRegistration = {
+      ...registration,
+      tournamentId: registration.tournamentId,
+      playerId: registration.playerId,
+      partnerId: registration.partnerId
     };
-
     const { data, error } = await supabase
       .from('registrations')
-      .insert(payload)
+      .insert(transformers.registration.toAPI(apiRegistration))
       .select()
       .single();
-
-    if (error) {
-      console.error("Error creating registration:", error);
-      throw error;
-    }
-
+    if (error) throw error;
     return transformers.registration.fromAPI(data);
   }
 
@@ -342,29 +366,18 @@ export class APIService {
   }
 
   async updateRegistration(id: string, registration: Partial<Registration>): Promise<Registration> {
-    const payload: any = {};
-    if (registration.tournamentId) payload.tournament_id = registration.tournamentId;
-    if (registration.divisionId) payload.division_id = registration.divisionId;
-    if (registration.playerId) payload.player_id = registration.playerId;
-    if (registration.partnerId) payload.partner_id = registration.partnerId;
-    if (registration.status) payload.status = registration.status;
-    if (registration.metadata) payload.metadata = registration.metadata;
-    if (registration.notes) payload.notes = registration.notes;
-    if (registration.priority) payload.priority = registration.priority;
-    if (registration.type) payload.type = registration.type;
-
+    const apiRegistration = {
+      ...registration,
+      tournamentId: registration.tournamentId,
+      playerId: registration.playerId
+    };
     const { data, error } = await supabase
       .from('registrations')
-      .update(payload)
+      .update(transformers.registration.toAPI(apiRegistration))
       .eq('id', id)
       .select()
       .single();
-
-    if (error) {
-      console.error("Error updating registration:", error);
-      throw error;
-    }
-
+    if (error) throw error;
     return transformers.registration.fromAPI(data);
   }
 
@@ -637,4 +650,24 @@ export class APIService {
 export const registrationService = new APIService();
 export const profileService = new APIService();
 export const notificationService = new APIService();
-export const emailService = new APIService(); 
+export const emailService = new APIService();
+
+export const api = new APIService();
+
+export const courtService = {
+  create: (court: Omit<Court, 'id' | 'createdAt' | 'updatedAt'>) => api.createCourt(court),
+  updateStatus: (id: string, status: string) => api.updateCourtStatus(id, status),
+  list: (tournamentId: string) => api.listCourts(tournamentId),
+  update: (id: string, courtData: Partial<Omit<Court, 'id' | 'tournamentId' | 'createdAt' | 'updatedAt'>>) => api.updateCourt(id, courtData),
+  delete: (id: string) => api.deleteCourt(id)
+};
+
+export const matchService = {
+  create: (match: Omit<Match, 'id' | 'createdAt' | 'updatedAt'>) => api.createMatch(match),
+  update: (id: string, match: Partial<Match>) => api.updateMatch(id, match),
+  get: (id: string) => api.getMatch(id),
+  list: (filters: { tournamentId?: string; divisionId?: string; courtId?: string; status?: string }) => api.listMatches(filters)
+};
+
+// Export an instance of APIService as tournamentService
+export const tournamentService = new APIService(); 

@@ -1,29 +1,38 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate } from 'react-router-dom';
-import { tournamentFormSchema } from '../types';
-import { WizardFormValues } from './types';
+import { Box, Paper } from '@mui/material';
+import { BasicInfoStep } from './steps/BasicInfoStep';
+import { CategoriesStep } from './steps/CategoriesStep';
+import { GameSettingsStep } from './steps/GameSettingsStep';
+import { RegistrationStep } from './steps/RegistrationStep';
+import { ReviewStep } from './steps/ReviewStep';
 import { useTournament } from '@/contexts/tournament/useTournament';
 import { useToast } from '@/hooks/use-toast';
 import { GameType } from '@/types/tournament-enums';
-import { WizardProvider } from './WizardContext';
+import { WizardFormValues } from './types';
+import { tournamentFormSchema } from '../types';
 import { WizardNavigation } from './WizardNavigation';
-import { BasicInfoStep } from './steps/BasicInfoStep';
-import { GameSettingsStep } from './steps/GameSettingsStep';
-import { DivisionsStep } from './steps/DivisionsStep';
-import { CategoriesStep } from './steps/CategoriesStep';
-import { RegistrationStep } from './steps/RegistrationStep';
-import { ReviewStep } from './steps/ReviewStep';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { v4 as uuidv4 } from 'uuid';
+import { WizardProvider } from './WizardContext';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-export const TournamentWizard = () => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const navigate = useNavigate();
+const steps = [
+  { id: 'basic-info', title: 'Basic Details' },
+  { id: 'categories', title: 'Categories' },
+  { id: 'scoring', title: 'Scoring Rules' },
+  { id: 'registration', title: 'Registration' },
+  { id: 'review', title: 'Review & Create' }
+];
+
+export const TournamentWizard: React.FC = () => {
+  const [currentStep, setCurrentStep] = React.useState(0);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [validationErrors, setValidationErrors] = React.useState<string[]>([]);
   const { createTournament } = useTournament();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const form = useForm<WizardFormValues>({
     resolver: zodResolver(tournamentFormSchema),
@@ -33,118 +42,179 @@ export const TournamentWizard = () => {
       gameType: GameType.BADMINTON,
       description: '',
       startDate: new Date(),
-      endDate: new Date(),
+      endDate: new Date(new Date().setDate(new Date().getDate() + 1)),
       divisionDetails: [],
-      registrationEnabled: false,
+      registrationEnabled: true,
       registrationDeadline: new Date(),
       requirePlayerProfile: false,
-      maxTeams: 0,
+      maxTeams: 16,
       scoringRules: {
         pointsToWin: 21,
         mustWinByTwo: true,
         maxPoints: 30,
       },
     },
+    mode: 'onChange',
   });
 
-  const steps = [
-    {
-      id: uuidv4(),
-      title: 'Basic Info',
-      component: <BasicInfoStep />,
-    },
-    {
-      id: uuidv4(),
-      title: 'Game Settings',
-      component: <GameSettingsStep />,
-    },
-    {
-      id: uuidv4(),
-      title: 'Divisions',
-      component: <DivisionsStep />,
-    },
-    {
-      id: uuidv4(),
-      title: 'Categories',
-      component: <CategoriesStep />,
-    },
-    {
-      id: uuidv4(),
-      title: 'Registration',
-      component: <RegistrationStep />,
-    },
-    {
-      id: uuidv4(),
-      title: 'Review',
-      component: <ReviewStep />,
-    },
-  ];
-
-  const onSubmit = async (values: WizardFormValues) => {
-    try {
-      await createTournament(values);
+  const handleNext = async () => {
+    const fields = getFieldsToValidate(currentStep);
+    const isValid = await form.trigger(fields);
+    
+    if (isValid) {
+      setValidationErrors([]);
+      setCurrentStep((prevStep) => prevStep + 1);
+    } else {
+      const errors = fields.map(field => {
+        const error = form.formState.errors[field];
+        return error ? `${field}: ${error.message}` : null;
+      }).filter((error): error is string => error !== null);
+      
+      setValidationErrors(errors);
+      
       toast({
-        title: "Success",
-        description: "Tournament created successfully",
-      });
-      navigate('/admin/tournaments');
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create tournament",
+        title: "Validation Error",
+        description: "Please fix the errors before proceeding",
         variant: "destructive",
       });
     }
   };
 
-  const handleNext = () => {
-    if (currentStep === steps.length - 1) {
-      form.handleSubmit(onSubmit)();
-    } else {
-      setCurrentStep(Math.min(currentStep + 1, steps.length - 1));
+  const handleBack = () => {
+    setValidationErrors([]);
+    setCurrentStep((prevStep) => prevStep - 1);
+  };
+
+  const getFieldsToValidate = (step: number): (keyof WizardFormValues)[] => {
+    switch (step) {
+      case 0: // Basic Info
+        return ['name', 'location', 'gameType', 'startDate', 'endDate'];
+      case 1: // Categories
+        return ['divisionDetails'];
+      case 2: // Game Settings
+        return ['scoringRules'];
+      case 3: // Registration
+        return ['registrationEnabled', 'registrationDeadline', 'maxTeams'];
+      default:
+        return [];
     }
   };
 
-  const handlePrevious = () => {
-    setCurrentStep(Math.max(currentStep - 1, 0));
+  const handleCreateTournament = async (data: WizardFormValues) => {
+    try {
+      console.log('Starting tournament creation with data:', data);
+      setIsSubmitting(true);
+      
+      const tournament = await createTournament(data);
+      console.log('Tournament created successfully:', tournament);
+      
+      toast({
+        title: "Success",
+        description: "Tournament created successfully",
+      });
+      
+      // Navigate to the tournament details page
+      navigate(`/tournaments/${tournament.id}`);
+    } catch (error) {
+      console.error('Error creating tournament:', error);
+      
+      // More detailed error logging
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+      }
+      
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create tournament",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 0:
+        return <BasicInfoStep />;
+      case 1:
+        return <CategoriesStep />;
+      case 2:
+        return <GameSettingsStep />;
+      case 3:
+        return <RegistrationStep />;
+      case 4:
+        return <ReviewStep />;
+      default:
+        return null;
+    }
+  };
+
+  const wizardContextValue = {
+    currentStep,
+    steps,
+    form,
   };
 
   return (
-    <FormProvider {...form}>
-      <WizardProvider value={{ currentStep, steps, form }}>
-        <Card className="w-full max-w-4xl mx-auto">
-          <CardHeader>
-            <CardTitle>Create New Tournament</CardTitle>
+    <WizardProvider value={wizardContextValue}>
+      <FormProvider {...form}>
+        <Box sx={{ width: '100%', p: 3 }}>
+          <Paper sx={{ p: 3 }}>
             <WizardNavigation steps={steps} />
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {steps.map((step, index) => (
-                <div key={step.id} className={index === currentStep ? 'block' : 'hidden'}>
-                  {step.component}
-                </div>
-              ))}
-              <div className="flex justify-between pt-6">
-                <Button
+
+            {validationErrors.length > 0 && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <ul className="list-disc pl-4">
+                    {validationErrors.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <Box sx={{ mt: 2, mb: 2 }}>
+              {renderStep()}
+            </Box>
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt: 4, borderTop: '1px solid', borderColor: 'divider' }}>
+              <button
+                type="button"
+                disabled={currentStep === 0}
+                onClick={handleBack}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Back
+              </button>
+              {currentStep === steps.length - 1 ? (
+                <button
                   type="button"
-                  variant="outline"
-                  onClick={handlePrevious}
-                  disabled={currentStep === 0}
+                  disabled={isSubmitting}
+                  onClick={form.handleSubmit(handleCreateTournament)}
+                  className="px-6 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-md shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Previous
-                </Button>
-                <Button
+                  {isSubmitting ? 'Creating...' : 'Create Tournament'}
+                </button>
+              ) : (
+                <button
                   type="button"
                   onClick={handleNext}
+                  className="px-6 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-md shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                 >
-                  {currentStep === steps.length - 1 ? 'Create Tournament' : 'Next'}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </WizardProvider>
-    </FormProvider>
+                  Next
+                </button>
+              )}
+            </Box>
+          </Paper>
+        </Box>
+      </FormProvider>
+    </WizardProvider>
   );
-}; 
+};

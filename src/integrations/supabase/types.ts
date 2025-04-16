@@ -1,3 +1,32 @@
+import { Database as GeneratedDatabase } from '@/types/supabase';
+import { RegistrationPersistenceDTO } from '@/infrastructure/persistence/registration.persistence';
+
+export interface Database extends GeneratedDatabase {
+  public: {
+    Tables: {
+      registrations: {
+        Row: RegistrationPersistenceDTO;
+        Insert: Omit<RegistrationPersistenceDTO, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<RegistrationPersistenceDTO>;
+        Relationships: [
+          {
+            foreignKeyName: 'registrations_tournament_id_fkey';
+            columns: ['tournament_id'];
+            referencedRelation: 'tournaments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'registrations_player_id_fkey';
+            columns: ['player_id'];
+            referencedRelation: 'players';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+    };
+  };
+}
+
 export type Json =
   | string
   | number

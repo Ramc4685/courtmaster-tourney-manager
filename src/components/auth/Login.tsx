@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,14 +7,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/auth/AuthContext';
 
 const Login = () => {
-  const { login, enableDemoMode } = useAuth();
+  const { login } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
   const handleDemoLogin = async () => {
     try {
       setIsLoading(true);
-      enableDemoMode(true);
       await login('demo@example.com', 'demo123');
       
       toast({
@@ -37,8 +35,7 @@ const Login = () => {
   const handleAdminDemoLogin = async () => {
     try {
       setIsLoading(true);
-      enableDemoMode(true);
-      await login('admin@example.com', 'demo123');
+      await login('demo-admin@example.com', 'admin123');
       
       toast({
         title: "Admin Demo Login Successful",
@@ -96,7 +93,7 @@ const Login = () => {
             </TabsContent>
             
             <TabsContent value="google">
-              <Button className="w-full">Sign in with Google</Button>
+              <Button className="w-full" disabled>Sign in with Google (Coming Soon)</Button>
             </TabsContent>
           </Tabs>
         </CardContent>

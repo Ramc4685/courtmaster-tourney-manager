@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Match, Court, Notification } from '@/types/entities';
+import { Match, Court } from '@/types/tournament';
+import { Notification } from '@/types/entities';
 import { matchService, courtService, notificationService, emailService, profileService } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

@@ -4,6 +4,8 @@ import './index.css'
 import { isSupabaseConfigured } from './services/storage/StorageService'
 import { toast } from 'sonner'
 import { TournamentProvider } from './contexts/tournament/TournamentContext'
+import { LocalizationProvider } from '@mui/x-date-pickers'
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 
 // Add more detailed debugging
 console.log('Application starting...');
@@ -37,7 +39,9 @@ if (!rootElement) {
     console.log('Root created successfully');
     root.render(
       <TournamentProvider>
-        <App />
+        <LocalizationProvider dateAdapter={AdapterDateFns}>
+          <App />
+        </LocalizationProvider>
       </TournamentProvider>
     );
     console.log('App rendered successfully');

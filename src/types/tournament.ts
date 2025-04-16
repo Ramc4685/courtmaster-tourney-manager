@@ -1,6 +1,4 @@
-
 import { 
-  TournamentFormat, 
   TournamentStatus, 
   Division, 
   MatchStatus, 
@@ -9,11 +7,22 @@ import {
   TournamentStage,
   ScorerType,
   PlayType,
-  GameType
+  GameType,
+  TournamentFormat as TournamentFormatEnum
 } from './tournament-enums';
 
-// Remove the redundant export since we're now importing these from tournament-enums
-// export { Division, MatchStatus } from './tournament-enums';
+export {
+  TournamentStatus,
+  Division,
+  MatchStatus,
+  CourtStatus,
+  CategoryType,
+  TournamentStage,
+  ScorerType,
+  PlayType,
+  GameType,
+  TournamentFormatEnum
+};
 
 // Keep the existing code for Player interface
 export interface Player {
@@ -33,6 +42,7 @@ export interface Team {
   seed?: number;
   players: Player[];
   category?: TournamentCategory;
+  categories?: string[];  // Array of category IDs
   initialRanking?: number;
   createdAt: Date;
   updatedAt: Date;
@@ -48,13 +58,20 @@ export interface MatchScore {
   timestamp?: string;
 }
 
+export interface FormatConfig {
+  rounds?: number;
+  thirdPlaceMatch?: boolean;
+  seedingEnabled?: boolean;
+  customRules?: Record<string, any>;
+}
+
 export interface MatchProgression {
   roundNumber: number;
   bracketPosition: number;
+  bracketRound: number;
+  path?: 'WINNERS' | 'LOSERS' | 'CONSOLATION';
   nextMatchId?: string;
   nextMatchPosition?: 'team1' | 'team2';
-  loserMatchId?: string;
-  loserMatchPosition?: 'team1' | 'team2';
 }
 
 export interface Match {
@@ -62,44 +79,35 @@ export interface Match {
   tournamentId: string;
   team1: Team;
   team2: Team;
-  winner?: Team;
-  scores: MatchScore[]; // Changed from number[][] to MatchScore[]
+  scores: MatchScore[];
   division: Division;
   stage: TournamentStage;
+  status: MatchStatus;
+  category: TournamentCategory;
+  progression: MatchProgression;
+  winner?: Team;
+  loser?: Team;
   bracketRound: number;
   bracketPosition: number;
-  status: MatchStatus;
-  category?: TournamentCategory;
-  progression: MatchProgression;
   scheduledTime?: Date;
   completedTime?: Date;
   courtId?: string;
   notes?: string;
-  matchNumber?: string;
+  matchNumber: string;
   team1Id?: string;
   team2Id?: string;
-  loser?: Team;
   courtNumber?: number;
   startTime?: Date;
   endTime?: Date;
   groupName?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
   scorerName?: string;
   auditLogs?: AuditLog[];
   team1Score?: number;
   team2Score?: number;
   team1Name?: string;
   team2Name?: string;
-  currentMatch?: Match;
-  nextMatchId?: string; // Added for tournament progression
-  // Add fields for MatchScheduler
-  court_id?: string;
-  scheduled_time?: string;
-  player1_id?: string;
-  player2_id?: string;
-  round_number?: number;
-  match_number?: number;
 }
 
 export interface Court {
@@ -236,19 +244,32 @@ export interface Tournament {
 // For contexts/tournament/types.ts
 export interface Category extends TournamentCategory {}
 
-// Export the imported enums again to make them available to consumers of this module
-export { 
-  TournamentFormat, 
-  TournamentStatus, 
-  Division, 
-  MatchStatus, 
-  CourtStatus, 
-  CategoryType,
-  TournamentStage,
-  ScorerType,
-  PlayType,
-  GameType
-};
-
 // Define TournamentMatch alias for backward compatibility
 export type TournamentMatch = Match;
+
+export interface TournamentFormat {
+  type: TournamentFormatEnum;
+  stages: TournamentStage[];
+  scoring: {
+    matchFormat: string;
+    setsToWin: number;
+    pointsToWinSet: number;
+    tiebreakPoints: number;
+    finalSetTiebreak: boolean;
+    pointsToWin: number;
+    mustWinByTwo: boolean;
+    maxPoints: number;
+    maxSets: number;
+    requireTwoPointLead: boolean;
+    maxTwoPointLeadScore: number;
+    gamesPerSet?: number;
+    pointsPerGame?: number;
+  };
+  divisions: Division[];
+  thirdPlaceMatch?: boolean;
+  groupSize?: number;
+  advancingTeams?: number;
+  seedingEnabled?: boolean;
+  consolationRounds?: boolean;
+  metadata?: Record<string, any>;
+}

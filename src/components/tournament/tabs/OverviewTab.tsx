@@ -10,7 +10,7 @@ import TournamentSettings from '@/components/tournament/TournamentSettings';
 
 export interface OverviewTabProps {
   tournament: Tournament;
-  onUpdateTournament: (tournament: Tournament) => void;
+  onUpdateTournament: (tournament: Tournament) => Promise<void>;
   onGenerateMultiStageTournament: () => void;
   onAdvanceToNextStage: () => void;
   onScheduleDialogOpen: () => void;
@@ -38,16 +38,23 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     }
   };
 
-  const getFormatLabel = (format: string) => {
-    switch (format) {
-      case 'SINGLE_ELIMINATION': return 'Single Elimination';
-      case 'DOUBLE_ELIMINATION': return 'Double Elimination';
-      case 'ROUND_ROBIN': return 'Round Robin';
-      case 'SWISS': return 'Swiss System';
-      case 'GROUP_KNOCKOUT': return 'Group + Knockout';
-      case 'MULTI_STAGE': return 'Multi-Stage';
-      default: return format;
+  const getFormatLabel = (format: any) => {
+    if (typeof format === 'string') {
+      switch (format) {
+        case 'SINGLE_ELIMINATION': return 'Single Elimination';
+        case 'DOUBLE_ELIMINATION': return 'Double Elimination';
+        case 'ROUND_ROBIN': return 'Round Robin';
+        case 'SWISS': return 'Swiss System';
+        case 'GROUP_KNOCKOUT': return 'Group + Knockout';
+        case 'MULTI_STAGE': return 'Multi-Stage';
+        default: return format;
+      }
     }
+    // Handle the new format object structure
+    if (format?.type) {
+      return getFormatLabel(format.type);
+    }
+    return 'Unknown Format';
   };
 
   return (
@@ -80,7 +87,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{tournament.teams.length}</div>
+            <div className="text-2xl font-bold">{tournament.teams?.length || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {tournament.maxTeams ? `Maximum: ${tournament.maxTeams}` : 'No team limit set'}
             </p>
@@ -124,18 +131,18 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span>Total Matches:</span>
-                <span className="font-medium">{tournament.matches.length}</span>
+                <span className="font-medium">{tournament.matches?.length || 0}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Completed Matches:</span>
                 <span className="font-medium">
-                  {tournament.matches.filter(m => m.status === 'COMPLETED').length}
+                  {tournament.matches?.filter(m => m.status === 'COMPLETED').length || 0}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span>In Progress:</span>
                 <span className="font-medium">
-                  {tournament.matches.filter(m => m.status === 'IN_PROGRESS').length}
+                  {tournament.matches?.filter(m => m.status === 'IN_PROGRESS').length || 0}
                 </span>
               </div>
             </div>
@@ -175,7 +182,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
         
         <TournamentSettings 
           tournament={tournament} 
-          onUpdateTournament={onUpdateTournament} 
+          onUpdate={onUpdateTournament} 
         />
       </div>
     </div>

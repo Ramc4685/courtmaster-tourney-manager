@@ -1,4 +1,3 @@
-
 import { UserRole } from './tournament-enums';
 import { 
   Tournament, 
@@ -12,7 +11,7 @@ import {
   CourtStatus,
   MatchStatus,
   TournamentStage
-} from './tournament';
+} from './tournament.ts';
 import { 
   RegistrationStatus, 
   TournamentRegistration 
@@ -150,7 +149,7 @@ export interface Registration extends TournamentRegistration {
 }
 
 // Re-export all types from tournament and registration
-export {
+export type {
   Tournament,
   Match,
   Court,
@@ -159,11 +158,14 @@ export {
   Team,
   MatchScore,
   ScoringSettings,
-  RegistrationStatus,
-  TournamentRegistration,
+  TournamentRegistration
+};
+
+// Re-export enums and other values (not types)
+export {
   UserRole,
-  // Enums from tournament-enums.ts are imported via tournament.ts
   MatchStatus,
   CourtStatus,
-  TournamentStage
+  TournamentStage,
+  RegistrationStatus
 };

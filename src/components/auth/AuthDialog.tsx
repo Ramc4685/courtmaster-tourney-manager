@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -44,7 +43,7 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
     try {
       setIsLoading(true);
       enableDemoMode(true);
-      await login('demo@example.com', 'demo123');
+      await login('demo', 'demo123');
       
       toast({
         title: "Demo Login Successful",
@@ -67,7 +66,7 @@ const AuthDialog: React.FC<AuthDialogProps> = ({
     try {
       setIsLoading(true);
       enableDemoMode(true);
-      await login('admin@example.com', 'demo123');
+      await login('demo-admin', 'demo123');
       
       toast({
         title: "Admin Demo Login Successful",

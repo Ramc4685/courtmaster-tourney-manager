@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -38,7 +37,7 @@ const Tournaments = () => {
         {tournaments && tournaments.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {tournaments.map((tournament) => (
-              <Link to={`/tournament/${tournament.id}`} key={tournament.id}>
+              <Link to={`/tournaments/${tournament.id}`} key={tournament.id}>
                 <Card className="overflow-hidden h-full hover:shadow-md transition-shadow duration-200 cursor-pointer">
                   <div className="h-2 bg-primary w-full"></div>
                   <CardContent className="pt-6">

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,62 +41,47 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
   const onSubmit = async (data: LoginFormValues) => {
     setLoginError(null);
-    console.log('[DEBUG] LoginForm: Submitting login form', data.email);
     
     try {
-      // Ensure data has required properties by explicitly creating a UserCredentials object
-      const credentials = {
-        email: data.email,
-        password: data.password
-      };
-      
-      console.log('[DEBUG] LoginForm: Calling login function with credentials');
       const result = await login(data.email, data.password);
-      console.log('[DEBUG] LoginForm: Login result', result);
       
       if (result && onSuccess) {
-        console.log('[DEBUG] LoginForm: Login successful, calling onSuccess');
         onSuccess();
       } else if (!result) {
-        console.log('[DEBUG] LoginForm: Login failed');
         setLoginError('Invalid email or password. Please try again.');
       }
     } catch (error) {
-      console.error('[ERROR] LoginForm: Error during login', error);
+      console.error('Error during login:', error);
       setLoginError(error instanceof Error ? error.message : 'An error occurred during login');
     }
   };
 
   const handleDemoLogin = async () => {
     setLoginError(null);
-    console.log('[DEBUG] LoginForm: Using demo login');
     
     try {
-      // Use the demo credentials
       const result = await login('demo@example.com', 'demo123');
       
       if (result && onSuccess) {
         onSuccess();
       }
     } catch (error) {
-      console.error('[ERROR] LoginForm: Error during demo login', error);
+      console.error('Error during demo login:', error);
       setLoginError(error instanceof Error ? error.message : 'An error occurred during demo login');
     }
   };
 
   const handleAdminDemoLogin = async () => {
     setLoginError(null);
-    console.log('[DEBUG] LoginForm: Using admin demo login');
     
     try {
-      // Use the admin demo credentials
-      const result = await login('admin@example.com', 'demo123');
+      const result = await login('demo-admin@example.com', 'admin123');
       
       if (result && onSuccess) {
         onSuccess();
       }
     } catch (error) {
-      console.error('[ERROR] LoginForm: Error during admin demo login', error);
+      console.error('Error during admin demo login:', error);
       setLoginError(error instanceof Error ? error.message : 'An error occurred during admin demo login');
     }
   };

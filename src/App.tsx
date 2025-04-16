@@ -1,12 +1,10 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from '@/contexts/auth/AuthContext';
 import { Layout } from '@/components/layout/Layout';
 import LoginPage from '@/pages/auth/LoginPage';
 import SignUpPage from '@/pages/auth/SignUpPage';
-import Home from '@/pages/Home';
-import LandingPage from '@/pages/LandingPage'; // Import new landing page
+import LandingPage from '@/pages/LandingPage';
 import DashboardPage from '@/pages/DashboardPage';
 import TournamentListPage from '@/pages/tournaments/TournamentListPage';
 import TournamentDetailsPage from '@/pages/TournamentDetail';
@@ -19,7 +17,6 @@ import { CheckInPage } from '@/pages/tournament/CheckInPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
-  console.log('[DEBUG] PrivateRoute:', { isAuthenticated, isLoading });
 
   if (isLoading) {
     return (
@@ -34,7 +31,6 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
-  console.log('[DEBUG] PublicRoute:', { isAuthenticated, isLoading });
 
   if (isLoading) {
     return (
@@ -44,10 +40,12 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return !isAuthenticated ? <>{children}</> : <Navigate to="/tournaments" replace />;
+  return !isAuthenticated ? <>{children}</> : <Navigate to="/dashboard" replace />;
 }
 
 function AppRoutes() {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <Routes>
       {/* Public Routes */}
@@ -68,15 +66,20 @@ function AppRoutes() {
         }
       />
 
-      {/* Landing Page Route - public access */}
-      <Route path="/" element={<LandingPage />} />
-
-      {/* Home Route */}
-      <Route path="/home" element={<Home />} />
+      {/* Landing Page - Redirect to dashboard if authenticated */}
+      <Route
+        path="/"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <LandingPage />
+          )
+        }
+      />
 
       {/* Private Routes */}
       <Route
-        path="/"
         element={
           <PrivateRoute>
             <Layout>
@@ -85,8 +88,8 @@ function AppRoutes() {
           </PrivateRoute>
         }
       >
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="tournaments">
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/tournaments">
           <Route index element={<TournamentListPage />} />
           <Route path="new" element={<CreateTournamentPage />} />
           <Route path=":id" element={<TournamentDetailsPage />} />
@@ -94,7 +97,7 @@ function AppRoutes() {
           <Route path=":id/registrations" element={<RegistrationManagementPage />} />
           <Route path=":id/check-in" element={<CheckInPage />} />
         </Route>
-        <Route path="profile" element={<ProfilePage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Route>
 
       {/* 404 Route */}
@@ -108,7 +111,7 @@ export default function App() {
     <Router>
       <AuthProvider>
         <AppRoutes />
-        <Toaster position="top-right" />
+        <Toaster richColors position="top-right" />
       </AuthProvider>
     </Router>
   );

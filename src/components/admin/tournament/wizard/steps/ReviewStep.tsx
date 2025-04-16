@@ -6,7 +6,16 @@ import { format } from 'date-fns';
 
 export const ReviewStep = () => {
   const form = useFormContext<WizardFormValues>();
+  
+  if (!form) {
+    return <div>Loading form data...</div>;
+  }
+
   const values = form.getValues();
+  if (!values) {
+    return <div>Loading form values...</div>;
+  }
+
   const divisionDetails = values.divisionDetails || [];
 
   const formatDate = (date: Date | undefined) => {
@@ -32,7 +41,7 @@ export const ReviewStep = () => {
             </div>
             <div>
               <h4 className="font-medium">Game Type</h4>
-              <p className="text-muted-foreground">{values.gameType.replace(/_/g, ' ')}</p>
+              <p className="text-muted-foreground">{values.gameType?.replace(/_/g, ' ') || 'Not set'}</p>
             </div>
             <div>
               <h4 className="font-medium">Start Date</h4>
@@ -54,15 +63,15 @@ export const ReviewStep = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h4 className="font-medium">Points to Win</h4>
-              <p className="text-muted-foreground">{values.scoringRules.pointsToWin}</p>
+              <p className="text-muted-foreground">{values.scoringRules?.pointsToWin || 'Not set'}</p>
             </div>
             <div>
               <h4 className="font-medium">Must Win By Two</h4>
-              <p className="text-muted-foreground">{values.scoringRules.mustWinByTwo ? 'Yes' : 'No'}</p>
+              <p className="text-muted-foreground">{values.scoringRules?.mustWinByTwo ? 'Yes' : 'No'}</p>
             </div>
             <div>
               <h4 className="font-medium">Maximum Points</h4>
-              <p className="text-muted-foreground">{values.scoringRules.maxPoints}</p>
+              <p className="text-muted-foreground">{values.scoringRules?.maxPoints || 'Not set'}</p>
             </div>
           </div>
         </CardContent>
@@ -73,28 +82,32 @@ export const ReviewStep = () => {
           <CardTitle>Divisions & Categories</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {divisionDetails.map((division, index) => (
-            <div key={division.id} className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">{division.name || `Division ${index + 1}`}</h3>
-                <span className="text-sm text-muted-foreground">{division.type.replace(/_/g, ' ')}</span>
-              </div>
-              {division.categories?.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4 pl-4">
-                  {division.categories.map((category) => (
-                    <div key={category.id} className="space-y-1">
-                      <h4 className="font-medium">{category.name}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {category.playType.replace(/_/g, ' ')}
-                      </p>
-                    </div>
-                  ))}
+          {divisionDetails.length > 0 ? (
+            divisionDetails.map((division, index) => (
+              <div key={division.id || index} className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">{division.name || `Division ${index + 1}`}</h3>
+                  <span className="text-sm text-muted-foreground">{division.type?.replace(/_/g, ' ') || 'Not set'}</span>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground pl-4">No categories added</p>
-              )}
-            </div>
-          ))}
+                {division.categories?.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-4 pl-4">
+                    {division.categories.map((category, catIndex) => (
+                      <div key={category.id || catIndex} className="space-y-1">
+                        <h4 className="font-medium">{category.name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {category.playType?.replace(/_/g, ' ') || 'Not set'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground pl-4">No categories added</p>
+                )}
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">No divisions added</p>
+          )}
         </CardContent>
       </Card>
 

@@ -1,224 +1,191 @@
-# Tournament Creation Wizard PRD
-Version: 1.0
-Status: Draft
-Focus: Core Tournament Management Integration
 
-## 1. Overview
-The Tournament Creation Wizard streamlines the process of creating and managing badminton tournaments by integrating and refactoring existing components into a step-by-step flow. This PRD focuses on leveraging existing codebase functionality while maintaining a lightweight, efficient implementation.
+# Tournament Manager Refactoring PRD (Revised)
 
-## 2. Development Approach
+## 1. Background
 
-### 2.1 Code Reuse Strategy
-Before implementing any new feature:
-1. Audit existing codebase for similar functionality
-2. Identify reusable components and utilities
-3. Evaluate current implementation for performance
-4. Plan refactoring of existing code if needed
+The Tournament Manager is a React/TypeScript application built with domain-driven design principles, managing tournaments, matches, teams, and player data. The application handles tournament creation, bracket generation, and match scoring.
 
-### 2.2 Performance Guidelines
-- Lazy load components and features
-- Minimize third-party dependencies
-- Optimize component rendering
-- Implement efficient state management
-- Use code splitting for wizard steps
+### Current Technical Debt
+1. **Bundle Size Issues:**
+   - Main bundle (`index-DfCgw4lJ.js`) is 1.38MB minified (396.90KB gzipped)
+   - Vendor chunk is 164.09KB minified (53.62KB gzipped)
+   - Multiple chunks exceed recommended size limits
 
-## 3. Core Features
+2. **Code Complexity:**
+   - Large components (>300 lines): `UnifiedScheduleDialog.tsx` (411 lines), `ImportTeamsDialog.tsx` (332 lines)
+   - Monolithic API service (`api.ts` - 649 lines)
+   - Complex tournament management logic spread across multiple files
 
-### 3.1 Tournament Creation Flow
-Sequential wizard interface utilizing existing components:
+### Business Impact
+1. **Performance:**
+   - Large bundle sizes impact initial load time
+   - Complex components cause rendering performance issues
+   - Lack of code splitting affects page load times
 
-1. **Basic Tournament Information**
-   - Reuse: `TournamentCreationForm` component
-   - Refactor: Split into smaller, focused components
-   - Location: `src/components/admin/tournament/TournamentCreationForm.tsx`
+2. **Development Velocity:**
+   - Technical debt slows feature development
+   - Complex components increase bug fix time
+   - Lack of documentation increases onboarding time
 
-2. **Category and Format Selection**
-   - Reuse: Existing enums from `src/types/tournament-enums.ts`
-   - Refactor: Create dedicated category selector component
-   ```typescript
-   // Existing enums to use:
-   BadmintonCategory
-   CategoryType
-   DivisionLevel
+## 2. Objectives
+
+### Quantifiable Goals
+1. **Bundle Size Reduction:**
+   - Reduce main bundle size by 40% through code splitting
+   - Keep individual chunks under 250KB
+   - Implement dynamic imports for large components
+
+2. **Code Quality:**
+   - Reduce maximum component size to 200 lines
+   - Achieve 80% test coverage (currently estimated <50%)
+   - Reduce average cyclomatic complexity by 30%
+
+3. **Developer Experience:**
+   - Reduce new feature development time by 25%
+   - Cut bug fix time by 40%
+   - Decrease onboarding time by 50%
+
+## 3. Proposed Changes
+
+### A. Bundle Optimization
+1. **Code Splitting:**
+   ```javascript
+   // Current:
+   import { UnifiedScheduleDialog } from './UnifiedScheduleDialog';
+   
+   // Proposed:
+   const UnifiedScheduleDialog = lazy(() => import('./UnifiedScheduleDialog'));
    ```
 
-3. **Division Setup**
-   - Reuse: `DivisionsTab` component
-   - Refactor: Extract division management logic
-   - Location: `src/components/admin/tournament/DivisionsTab.tsx`
+2. **Chunk Strategy:**
+   - Implement route-based code splitting
+   - Create feature-based chunks
+   - Optimize vendor chunk splitting
 
-4. **Court Setup**
-   - Reuse: Existing court management system
-   - Refactor: Simplify court assignment logic
-   - Location: `src/services/tournament/CourtManagementService.ts`
+### B. Component Refactoring
 
-5. **Player Registration**
-   - Reuse: Existing player import functionality
-   - Refactor: Optimize import processing
-   - Location: `src/services/import/PlayerImportService.ts`
+1. **UnifiedScheduleDialog.tsx** (411 lines):
+   - Split into subcomponents:
+     - `ScheduleHeader` (estimated 50 lines)
+     - `MatchGrid` (estimated 100 lines)
+     - `TimeSlotSelector` (estimated 80 lines)
+     - `ValidationSection` (estimated 60 lines)
 
-### 3.2 Integration Points
+2. **ImportTeamsDialog.tsx** (332 lines):
+   - Extract into:
+     - `FileUploader` (estimated 70 lines)
+     - `TeamDataValidator` (estimated 80 lines)
+     - `ImportPreview` (estimated 100 lines)
 
-1. **Tournament Store**
-   - Location: `src/stores/tournamentStore.ts`
-   - Reuse existing state management
-   - Optimize store updates
+### C. Service Layer Optimization
 
-2. **Authentication Context**
-   - Location: `src/contexts/auth/AuthContext.tsx`
-   - Leverage existing auth flow
-   - Minimize auth checks
+1. **API Service** (`api.ts` - 649 lines):
+   - Split into domain-specific services:
+     - `TournamentAPI` (estimated 200 lines)
+     - `MatchAPI` (estimated 150 lines)
+     - `TeamAPI` (estimated 150 lines)
+     - `UserAPI` (estimated 100 lines)
 
-3. **Form Components**
-   - Location: `src/components/ui/*`
-   - Reuse common form elements
-   - Create shared validation utilities
+2. **State Management:**
+   - Implement centralized state management
+   - Add state persistence layer
+   - Implement optimistic updates
 
-## 4. Implementation Phases
+## 4. Impact Analysis
 
-### Phase 1: Codebase Audit & Refactoring
-- Review existing tournament creation code
-- Identify performance bottlenecks
-- Extract reusable components
-- Document component dependencies
+### Quantifiable Benefits
 
-### Phase 2: Core Wizard Implementation
-- Integrate existing form components
-- Implement step navigation
-- Add state persistence
-- Optimize mobile layout
+1. **Performance:**
+   - Initial load time reduction: 40-50%
+   - Time to interactive improvement: 30-40%
+   - Memory usage reduction: 25-30%
 
-### Phase 3: Feature Integration
-- Connect to existing services
-- Implement data validation
-- Add error handling
-- Optimize data flow
+2. **Development:**
+   - Code review time reduction: 30%
+   - Bug identification speed increase: 40%
+   - Documentation coverage increase: 60%
 
-## 5. Technical Requirements
+### Long-term Benefits
+1. **Maintainability Score Improvement:**
+   - Current average: 65/100
+   - Target: 85/100
+   - Measured using SonarQube metrics
 
-### 5.1 Code Organization
-```
-src/
-  components/
-    wizard/           # New wizard components
-      steps/          # Individual step components
-      navigation/     # Wizard navigation
-    admin/           # Existing admin components
-    ui/             # Reusable UI components
-```
+2. **Technical Debt Reduction:**
+   - Current debt ratio: ~25%
+   - Target ratio: <10%
+   - Based on static analysis metrics
 
-### 5.2 Performance Targets
-- Initial load time < 2s
-- Step transition time < 200ms
-- Memory usage < 50MB
-- Bundle size increase < 50KB
+## 5. Risks & Mitigation
 
-### 5.3 Code Quality Metrics
-- Test coverage > 80%
-- Max component complexity: 15
-- Max file size: 300 lines
-- Reuse existing tests where possible
+### Risk Assessment Matrix
 
-## 6. Development Guidelines
+| Risk | Impact | Probability | Mitigation |
+|------|---------|------------|------------|
+| Breaking Changes | High | Medium | Feature flags, A/B testing |
+| Performance Regression | High | Low | Performance monitoring, automated tests |
+| Data Loss | Critical | Very Low | Backup strategy, migration scripts |
 
-### 6.1 Before Adding New Code
-1. Check `src/components/admin/tournament/` for existing implementations
-2. Review `src/services/` for related functionality
-3. Examine `src/contexts/` for relevant state management
-4. Look for similar utilities in `src/utils/`
+### Rollout Strategy
 
-### 6.2 Refactoring Priorities
-1. Split large components into smaller, focused ones
-2. Extract common logic into hooks
-3. Optimize data fetching and caching
-4. Improve component reusability
+1. **Phase 1: Infrastructure (Week 1-2)**
+   - Set up monitoring
+   - Implement feature flags
+   - Create staging environment
 
-### 6.3 Code Reuse Checklist
-- [ ] Search codebase for similar functionality
-- [ ] Review existing interfaces and types
-- [ ] Check for relevant utilities
-- [ ] Evaluate existing tests
-- [ ] Assess current performance
+2. **Phase 2: Core Refactoring (Week 3-4)**
+   - Bundle optimization
+   - Component splitting
+   - Service layer restructuring
 
-## 7. Success Metrics
-- Code reuse rate > 70%
-- New code added < 500 lines
-- Bundle size increase < 50KB
-- Reduced component complexity
-- Improved load times
+3. **Phase 3: Testing (Week 5)**
+   - Performance testing
+   - Integration testing
+   - User acceptance testing
 
-## 8. Limitations and Constraints
-- Must use existing state management
-- Maintain current folder structure
-- Keep existing type definitions
-- Follow established coding patterns
+## 6. Testing & Verification
 
-## 9. Future Optimizations
-- Component code splitting
-- State management optimization
-- Form validation improvements
-- Import process streamlining
+### Test Coverage Goals
+1. **Unit Tests:**
+   - Current coverage: ~40%
+   - Target coverage: 80%
+   - Focus areas: business logic, utilities
 
-## 10. User Experience
+2. **Integration Tests:**
+   - Current coverage: ~30%
+   - Target coverage: 70%
+   - Priority: API integration, state management
 
-### 10.1 Interface Requirements
-- Mobile-responsive design
-- Clear step indicators
-- Save progress between steps
-- Preview capabilities
-- Error validation per step
+3. **End-to-End Tests:**
+   - Current coverage: ~20%
+   - Target coverage: 50%
+   - Critical flows: tournament creation, scoring
 
-### 10.2 Key User Flows
-1. Tournament Creation:
-   ```
-   Login → Start Wizard → Basic Info → Categories → 
-   Divisions → Courts → Player Import → Review → Create
-   ```
+### Verification Process
+1. **Automated Testing:**
+   - Jest unit tests
+   - React Testing Library integration tests
+   - Cypress E2E tests
 
-2. Player Import:
-   ```
-   Upload File → Validate Format → Map Fields → 
-   Preview → Confirm Import
-   ```
+2. **Manual Testing:**
+   - UX testing checklist
+   - Cross-browser compatibility
+   - Mobile responsiveness
 
-3. Court Setup:
-   ```
-   Set Count → Number Courts → Configure Assignment → 
-   Review → Save
-   ```
+3. **Performance Testing:**
+   - Lighthouse scores
+   - Bundle size monitoring
+   - Runtime performance metrics
 
-## 11. Technical Integration
+### Regression Prevention
+1. **Continuous Integration:**
+   - Automated test suite
+   - Performance benchmarks
+   - Bundle size limits
 
-### 11.1 Existing Components to Integrate
-- BadmintonCategory enum
-- CategoryType enum
-- DivisionLevel enum
-- BadmintonTournamentTemplate interface
-- Tournament creation forms
-- Court management system
-- Player import functionality
+2. **Monitoring:**
+   - Error tracking
+   - Performance metrics
+   - User feedback collection
 
-### 11.2 Data Models
-Using existing interfaces with focused fields:
-```typescript
-interface TournamentCreationStep {
-  step: number;
-  completed: boolean;
-  data: any;
-  validationErrors?: string[];
-}
-
-interface PlayerImport {
-  name: string;      // required
-  email: string;     // required
-  division?: string; // optional
-  category?: string; // optional
-  partner?: string;  // for doubles
-}
-```
-
-## 12. Future Considerations
-- Additional import formats
-- Advanced scheduling
-- Custom scoring rules
-- Multi-sport support 
+This revised PRD provides concrete metrics, phased implementation plans, and clear success criteria while maintaining the original scope of improvements. The addition of quantifiable goals and detailed rollout strategies will help track progress and ensure successful implementation.

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Layout } from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/auth/AuthContext';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const ProfilePage: React.FC = () => {
   const { user, updateUserProfile } = useAuth();

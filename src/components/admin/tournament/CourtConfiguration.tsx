@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Court, CourtStatus } from '@/types/entities'; // Use the entity type
+import { Court, CourtStatus } from '@/types/tournament';
 import { courtService } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

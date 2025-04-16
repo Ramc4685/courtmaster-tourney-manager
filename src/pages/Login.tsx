@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,7 @@ const Login: React.FC = () => {
     try {
       setIsLoading(true);
       enableDemoMode(true);
-      const result = await login('demo@example.com', 'demo123');
+      const result = await login('demo', 'demo123');
       
       toast({
         title: "Demo Login Successful",
@@ -42,7 +41,7 @@ const Login: React.FC = () => {
     try {
       setIsLoading(true);
       enableDemoMode(true);
-      const result = await login('admin@example.com', 'demo123');
+      const result = await login('demo-admin', 'demo123');
       
       toast({
         title: "Admin Demo Login Successful",

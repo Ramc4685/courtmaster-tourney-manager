@@ -1,37 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth/AuthContext';
-import { tournamentService } from '@/services/tournament/TournamentService';
+import { useTournament } from '@/contexts/tournament/useTournament';
 import { Tournament } from "@/types/tournament";
 import { TournamentStatus } from "@/types/tournament-enums";
 import { Plus, Search } from 'lucide-react';
 
 export default function TournamentListPage() {
   const { user } = useAuth();
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { tournaments, loadTournaments, selectTournament, isLoading, error } = useTournament();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
-    const loadTournaments = async () => {
-      try {
-        console.log('[DEBUG] Loading tournaments...');
-        const data = await tournamentService.getTournaments();
-        console.log('[DEBUG] Loaded tournaments:', data);
-        setTournaments(data);
-        setError(null);
-      } catch (error) {
-        console.error('Error loading tournaments:', error);
-        setError('Failed to load tournaments. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadTournaments();
-  }, []);
+  }, [loadTournaments]);
+
+  const handleTournamentClick = (tournament: Tournament) => {
+    selectTournament(tournament.id);
+  };
 
   const filteredTournaments = tournaments.filter((tournament) => {
     const matchesSearch = tournament.name
@@ -210,8 +197,12 @@ export default function TournamentListPage() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredTournaments.map((tournament) => (
-                        <tr key={tournament.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <tr 
+                          key={tournament.id}
+                          onClick={() => handleTournamentClick(tournament)}
+                          className="cursor-pointer hover:bg-gray-50"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
                             <Link
                               to={`/tournaments/${tournament.id}`}
                               className="text-indigo-600 hover:text-indigo-900"

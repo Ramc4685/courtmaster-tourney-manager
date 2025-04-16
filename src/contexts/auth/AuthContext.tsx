@@ -1,10 +1,23 @@
-
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { AuthContextType, Profile } from '@/types/user';
-import { useToast } from '@/components/ui/use-toast';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { toast } from '@/components/ui/use-toast';
 import { UserRole } from '@/types/tournament-enums';
+import type { Profile } from '@/types/user';
+
+// Types
+interface AuthContextType {
+  user: Profile | null;
+  signIn: (email: string, password: string) => Promise<boolean>;
+  signOut: () => Promise<void>;
+  isLoading: boolean;
+  signUp: (email: string, password: string, data: any) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
+  isAuthenticated: boolean;
+  updateUserProfile: (data: Partial<Profile>) => Promise<void>;
+  refreshSession: () => Promise<void>;
+}
 
 // Create auth context
 export const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -14,16 +27,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDemo, setIsDemo] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const isAuthenticated = !!user;
 
   // Initialize auth state
   useEffect(() => {
+    let mounted = true;
+
     const loadSession = async () => {
-      setIsLoading(true);
       try {
         // Check for session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -33,8 +46,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (!session) {
-          setUser(null);
-          setIsLoading(false);
+          if (mounted) {
+            setUser(null);
+            setIsLoading(false);
+          }
           return;
         }
 
@@ -49,71 +64,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw profileError;
         }
 
-        // Convert profile data to our Profile type with proper defaults
-        setUser({
-          id: profile.id,
-          name: profile.name,
-          full_name: profile.full_name || profile.name || '',
-          display_name: profile.display_name || profile.name || '',
-          email: profile.email || '',
-          phone: profile.phone,
-          avatar_url: profile.avatar_url || null,
-          role: profile.role as UserRole,
-          player_details: profile.player_details || {},
-          player_stats: profile.player_stats || {
-            tournaments_played: 0,
-            tournaments_won: 0,
-            matches_played: 0,
-            matches_won: 0,
-            rating: 0
-          },
-          preferences: profile.preferences || {
-            notifications: {
-              email: true,
-              push: true,
-              tournament_updates: true,
-              match_reminders: true
-            },
-            privacy: {
-              show_profile: true,
-              show_stats: true,
-              show_history: true
-            }
-          },
-          social_links: profile.social_links || {}
-        });
-      } catch (error) {
-        console.error('Error loading auth session:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load session');
-        setUser(null);
-        toast({
-          variant: 'destructive',
-          title: 'Authentication error',
-          description: 'Failed to load your session. Please try logging in again.',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadSession();
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        // Fetch profile after sign-in
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (!profileError) {
+        if (mounted) {
+          // Convert profile data to our Profile type with proper defaults
           setUser({
             id: profile.id,
+            name: profile.name,
             full_name: profile.full_name || profile.name || '',
             display_name: profile.display_name || profile.name || '',
-            name: profile.name,
             email: profile.email || '',
             phone: profile.phone,
             avatar_url: profile.avatar_url || null,
@@ -142,15 +99,117 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             social_links: profile.social_links || {}
           });
         }
+      } catch (error) {
+        console.error('Error loading auth session:', error);
+        if (mounted) {
+          setError(error instanceof Error ? error.message : 'Failed to load session');
+          setUser(null);
+          toast({
+            variant: 'destructive',
+            title: 'Authentication error',
+            description: 'Failed to load your session. Please try logging in again.',
+          });
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadSession();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+
+      console.log('[DEBUG] AuthContext: Auth state change event:', event);
+      console.log('[DEBUG] AuthContext: Session state:', session ? 'exists' : 'null', session?.user?.id);
+
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        if (!session) {
+          console.log('[DEBUG] AuthContext: No session found for', event);
+          setUser(null);
+          return;
+        }
+
+        setIsLoading(true);
+        try {
+          console.log('[DEBUG] AuthContext: Fetching user profile for', session.user.id);
+          // Fetch profile for initial session
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profileError) {
+            console.error('[DEBUG] AuthContext: Profile fetch error:', profileError);
+            throw profileError;
+          }
+
+          if (mounted) {
+            const userData = {
+              id: session.user.id,
+              full_name: profile?.full_name || profile?.name || '',
+              display_name: profile?.display_name || profile?.name || '',
+              name: profile?.name,
+              email: session.user.email || '',
+              phone: profile?.phone,
+              avatar_url: profile?.avatar_url || null,
+              role: (profile?.role || 'PLAYER') as UserRole,
+              player_details: profile?.player_details || {},
+              player_stats: profile?.player_stats || {
+                tournaments_played: 0,
+                tournaments_won: 0,
+                matches_played: 0,
+                matches_won: 0,
+                rating: 0
+              },
+              preferences: profile?.preferences || {
+                notifications: {
+                  email: true,
+                  push: true,
+                  tournament_updates: true,
+                  match_reminders: true
+                },
+                privacy: {
+                  show_profile: true,
+                  show_stats: true,
+                  show_history: true
+                }
+              },
+              social_links: profile?.social_links || {}
+            };
+
+            console.log('[DEBUG] AuthContext: Setting user data:', userData.id);
+            setUser(userData);
+            navigate('/dashboard');
+          }
+        } catch (error) {
+          console.error('[DEBUG] AuthContext: Error in auth flow:', error);
+          if (mounted) {
+            toast({
+              variant: 'destructive',
+              title: 'Error',
+              description: 'Failed to load user profile.',
+            });
+          }
+        } finally {
+          if (mounted) setIsLoading(false);
+        }
       } else if (event === 'SIGNED_OUT') {
+        console.log('[DEBUG] AuthContext: User signed out');
         setUser(null);
+        navigate('/login');
       }
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   // Sign up function
   const signUp = async (email: string, password: string, data: any) => {
@@ -210,12 +269,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Sign in function
   const signIn = async (email: string, password: string): Promise<boolean> => {
-    if (isDemo) return true;
-    
     setIsLoading(true);
     setError(null);
     
     try {
+      // Regular Supabase authentication
       if (!email || !password) {
         throw new Error('Email and password are required');
       }
@@ -229,8 +287,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw signInError;
       }
 
-      // Navigate to dashboard after successful login
-      navigate('/dashboard');
+      // Don't navigate here - let the auth state change handler do it
+      // The navigation will happen in the INITIAL_SESSION or SIGNED_IN event
       
       toast({
         title: 'Logged in successfully',
@@ -254,13 +312,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Sign out function
   const signOut = async () => {
-    if (isDemo) {
-      setIsDemo(false);
-      setUser(null);
-      navigate('/login');
-      return;
-    }
-    
     setIsLoading(true);
     setError(null);
     
@@ -400,79 +451,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Enable demo mode function
-  const enableDemoMode = (enable: boolean) => {
-    setIsDemo(enable);
-    
-    if (enable) {
-      // Set a demo user
-      setUser({
-        id: 'demo-user',
-        name: 'Demo User',
-        full_name: 'Demo User',
-        display_name: 'Demo User',
-        email: 'demo@example.com',
-        role: UserRole.ORGANIZER,
-        player_details: {},
-        player_stats: {
-          tournaments_played: 0,
-          tournaments_won: 0,
-          matches_played: 0,
-          matches_won: 0,
-          rating: 0
-        },
-        preferences: {
-          notifications: {
-            email: true,
-            push: true,
-            tournament_updates: true,
-            match_reminders: true
-          },
-          privacy: {
-            show_profile: true,
-            show_stats: true,
-            show_history: true
-          }
-        },
-        social_links: {}
-      });
-      
-      navigate('/dashboard');
-      
-      toast({
-        title: 'Demo mode activated',
-        description: 'You are now using the application in demo mode.',
-      });
-    } else {
-      setUser(null);
-    }
-  };
-
-  // Add alias functions for compatibility
-  const login = signIn;
-  const logout = signOut;
-  const register = signUp;
-  const demoMode = isDemo;
-  const updateProfile = updateUserProfile;
-
   const value: AuthContextType = {
     user,
     signIn,
-    signUp,
     signOut,
+    isLoading,
+    signUp,
     resetPassword,
     updatePassword,
-    isLoading,
-    error,
-    isDemo,
-    updateUserProfile,
     isAuthenticated,
-    login,
-    enableDemoMode,
-    register,
-    logout,
-    demoMode,
-    updateProfile
+    updateUserProfile,
+    refreshSession: async () => {
+      setIsLoading(true);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        if (!session) {
+          setUser(null);
+          return;
+        }
+        // Refresh profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profileError) throw profileError;
+        setUser(profile);
+      } catch (error) {
+        console.error('Error refreshing session:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Session Error',
+          description: 'Failed to refresh your session.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   return (

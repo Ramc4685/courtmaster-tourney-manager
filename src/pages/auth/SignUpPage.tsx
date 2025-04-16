@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth/AuthContext';
-import toast from 'react-hot-toast';
-import type { UserRole } from '@/types/entities';
+import { toast } from 'sonner';
+import { UserRole } from '@/types/tournament-enums';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState<UserRole>('player');
+  const [role, setRole] = useState<UserRole>(UserRole.PLAYER);
   const [isLoading, setIsLoading] = useState(false);
   const { signUp } = useAuth();
 
@@ -129,9 +129,9 @@ export default function SignUpPage() {
                   onChange={(e) => setRole(e.target.value as UserRole)}
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                 >
-                  <option value="player">Player</option>
-                  <option value="organizer">Tournament Organizer</option>
-                  <option value="scorekeeper">Scorekeeper</option>
+                  <option value={UserRole.PLAYER}>Player</option>
+                  <option value={UserRole.ORGANIZER}>Tournament Organizer</option>
+                  <option value={UserRole.SCOREKEEPER}>Scorekeeper</option>
                 </select>
               </div>
             </div>
