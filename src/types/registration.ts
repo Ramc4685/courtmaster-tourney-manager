@@ -5,25 +5,24 @@ export interface TournamentRegistration {
   id: string;
   status: RegistrationStatus;
   metadata: {
-    checkInTime?: string;
     playerName?: string;
     teamName?: string;
-    teamSize?: number;
-    division?: string;
+    captainName?: string;
+    checkInTime?: string;
     contactEmail?: string;
-    contactPhone?: string;
-    emergencyContact?: string;
+    waitlistPosition?: number;
+    waitlistHistory?: {
+      timestamp: string;
+      reason: string;
+      fromPosition: number;
+      toPosition: number;
+    }[];
     [key: string]: any;
   };
   divisionId: string;
   tournamentId: string;
-  playerId?: string;
-  partnerId?: string;
-  teamId?: string;
-  notes?: string;
   createdAt: Date;
   updatedAt: Date;
-  priority?: number;
 }
 
 export interface PlayerRegistrationWithStatus {
@@ -49,26 +48,15 @@ export interface TeamRegistrationWithStatus {
   metadata: Record<string, any>;
 }
 
-export interface RegistrationFormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  division: string;
-  agreeToTerms: boolean;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
-}
-
-export interface TeamRegistrationFormData {
-  teamName: string;
-  division: string;
-  captainName: string;
-  captainEmail: string;
-  captainPhone?: string;
-  players: Array<{
-    name: string;
-    email?: string;
-  }>;
-  agreeToTerms: boolean;
+export interface RegistrationRecord {
+  id: string;
+  tournament_id: string;
+  division_id: string;
+  player_id: string | null;
+  team_id: string | null;
+  status: RegistrationStatus;
+  metadata: any;
+  priority: number;
+  created_at: string;
+  updated_at: string;
 }

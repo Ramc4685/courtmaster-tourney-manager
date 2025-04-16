@@ -11,7 +11,16 @@ export class NotificationService {
       .order('created_at', { ascending: false });
       
     if (error) throw error;
-    return data as Notification[];
+    return data.map(notification => ({
+      id: notification.id,
+      user_id: notification.user_id,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      read: notification.read,
+      created_at: notification.created_at,
+      updated_at: notification.updated_at
+    })) as Notification[];
   }
   
   async createNotification(notification: Omit<Notification, 'id' | 'created_at'>): Promise<Notification> {
@@ -60,3 +69,5 @@ export class NotificationService {
     if (error) throw error;
   }
 }
+
+export const notificationService = new NotificationService();
