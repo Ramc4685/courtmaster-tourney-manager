@@ -670,4 +670,4 @@ export const matchService = {
 };
 
 // Export an instance of APIService as tournamentService
-export const tournamentService = new APIService(); 
+export const tournamentService = new APIService();
