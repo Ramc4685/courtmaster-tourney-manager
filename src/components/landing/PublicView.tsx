@@ -1,92 +1,128 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Trophy, Calendar, MapPin, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const PublicView: React.FC = () => {
+  // Mock data for demonstration
+  const upcomingMatches = [
+    { id: 1, team1: 'Smith/Lee', team2: 'Johnson/Brown', court: 'Court 1', time: '10:30 AM' },
+    { id: 2, team1: 'Davis/Wilson', team2: 'Taylor/Harris', court: 'Court 2', time: '11:00 AM' },
+  ];
+  
+  const recentResults = [
+    { id: 1, team1: 'Adams/Morris', team2: 'Clark/Lewis', score: '21-18, 21-15', winner: 'Adams/Morris' },
+    { id: 2, team1: 'Young/Walker', team2: 'Hall/Wright', score: '19-21, 21-17, 21-18', winner: 'Young/Walker' },
+  ];
+  
   return (
-    <Card className="border shadow-md">
-      <CardHeader className="border-b flex justify-between items-center">
-        <CardTitle className="text-xl">KourtMaster</CardTitle>
-        <Button variant="ghost" size="icon">
-          <Search className="h-5 w-5" />
-        </Button>
-      </CardHeader>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center">
+              <Calendar className="h-5 w-5 mr-2 text-primary" />
+              Upcoming Matches
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {upcomingMatches.length > 0 ? (
+              <div className="space-y-4">
+                {upcomingMatches.map(match => (
+                  <div key={match.id} className="border-b pb-3 last:border-0 last:pb-0">
+                    <div className="flex justify-between mb-1">
+                      <div>
+                        <span className="font-medium">{match.team1}</span>
+                        <span className="text-muted-foreground mx-2">vs</span>
+                        <span className="font-medium">{match.team2}</span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">{match.time}</div>
+                    </div>
+                    <div className="text-xs text-muted-foreground flex items-center">
+                      <MapPin className="h-3 w-3 mr-1" /> 
+                      {match.court}
+                    </div>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" className="w-full mt-2">
+                  View All Matches <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No upcoming matches</p>
+            )}
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center">
+              <Trophy className="h-5 w-5 mr-2 text-primary" />
+              Recent Results
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentResults.length > 0 ? (
+              <div className="space-y-4">
+                {recentResults.map(result => (
+                  <div key={result.id} className="border-b pb-3 last:border-0 last:pb-0">
+                    <div className="flex justify-between mb-1">
+                      <div>
+                        <span className={result.winner === result.team1 ? "font-medium" : ""}>
+                          {result.team1}
+                        </span>
+                        <span className="text-muted-foreground mx-2">vs</span>
+                        <span className={result.winner === result.team2 ? "font-medium" : ""}>
+                          {result.team2}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-sm">{result.score}</div>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" className="w-full mt-2">
+                  View All Results <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No recent results</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
       
-      <CardContent className="p-0">
-        <div className="p-4 border-b">
-          <h2 className="text-2xl font-bold">Indoor Tournament</h2>
-        </div>
-
-        <Tabs defaultValue="bracket" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-0">
-            <TabsTrigger value="bracket">Bracket</TabsTrigger>
-            <TabsTrigger value="announcements">Announcements</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="bracket" className="py-4 px-4">
-            <div className="flex flex-col space-y-4">
-              <div className="flex items-center">
-                <div className="border p-2 w-24 text-center">Jones</div>
-                <div className="border-t-2 border-r-2 h-8 w-4"></div>
-                <div className="border-b-2 h-20 w-4"></div>
-                <div className="border p-2 w-24 text-center">Davis Adams</div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Tournament Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground">Current Tournament</h3>
+              <p className="text-lg font-medium">Spring Badminton Championship 2025</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground">Dates</h3>
+                <p>Apr 15 - Apr 18, 2025</p>
               </div>
-              <div className="flex items-center mt-8">
-                <div className="border p-2 w-24 text-center">Davis</div>
-                <div className="border-t-2 border-r-2 h-8 w-4"></div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground">Location</h3>
+                <p>City Sports Center</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground">Categories</h3>
+                <p>Singles, Doubles, Mixed</p>
               </div>
             </div>
-          </TabsContent>
-          
-          <TabsContent value="announcements" className="py-4 px-4">
-            <div className="bg-gray-50 p-3 rounded mb-2">
-              <p className="text-sm">Match between <span className="font-medium">Whitde Lances</span> and <span className="font-medium">Taytemfram</span>: whitde begin sean.</p>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        <div className="p-4 border-t">
-          <h3 className="font-medium mb-3">Upcoming Matches</h3>
-          <div className="mb-3">
-            <div className="flex justify-between items-center mb-1">
-              <div>Jones vs. Smith/Lee</div>
-              <div>12:07 PM</div>
-            </div>
-            <div className="flex justify-between items-center">
-              <div>Smith/Lee vs. Davis Ada</div>
-              <div>12:30 PM</div>
-            </div>
+            <Button variant="default" size="sm" className="mt-2">
+              Tournament Details <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
           </div>
-
-          <h3 className="font-medium mb-3">Live Scores</h3>
-          <div className="mb-3">
-            <div className="flex justify-between items-center mb-1">
-              <div>Smith/Lee vs. Jones</div>
-              <div className="font-medium">2-1</div>
-            </div>
-            <div className="flex justify-between items-center">
-              <div>Jones vs. Davis Adams</div>
-              <div className="font-medium">1-2</div>
-            </div>
-          </div>
-
-          <h3 className="font-medium mb-3">Live Scores</h3>
-          <div className="mb-3">
-            <div className="flex justify-between items-center mb-1">
-              <div>Court 1</div>
-              <div className="font-medium">2-1</div>
-            </div>
-            <div className="flex justify-between items-center">
-              <div>Court 2</div>
-              <div className="font-medium">1-2</div>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

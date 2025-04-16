@@ -3,18 +3,63 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Trophy, Clipboard, ArrowRight } from "lucide-react";
+import { Trophy, Clipboard, CalendarCheck, ChevronRight, Users, Award } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
 
   return (
     <div className="container py-12">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold tracking-tight">CourtMaster</h1>
-        <p className="mt-3 text-xl text-muted-foreground">
-          Badminton Tournament Management & Scoring
+      <div className="text-center mb-12 max-w-3xl mx-auto">
+        <Trophy className="h-16 w-16 mx-auto mb-4 text-primary" />
+        <h1 className="text-4xl font-bold tracking-tight mb-4">CourtMaster</h1>
+        <p className="text-xl text-muted-foreground">
+          All-in-one Tournament Management & Scoring System for Badminton Events
         </p>
+        <div className="flex flex-wrap justify-center gap-4 mt-8">
+          <Button 
+            size="lg"
+            onClick={() => navigate('/tournaments')}
+            className="px-6"
+          >
+            Browse Tournaments
+          </Button>
+          <Button 
+            size="lg" 
+            variant="outline"
+            onClick={() => navigate('/login')}
+            className="px-6"
+          >
+            Sign In
+          </Button>
+        </div>
+      </div>
+
+      {/* Features section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-16">
+        <div className="text-center p-4">
+          <div className="rounded-full bg-primary/10 w-14 h-14 flex items-center justify-center mx-auto mb-4">
+            <Trophy className="h-7 w-7 text-primary" />
+          </div>
+          <h3 className="text-lg font-medium mb-2">Tournament Management</h3>
+          <p className="text-muted-foreground">Create and manage full tournaments with customizable formats</p>
+        </div>
+        
+        <div className="text-center p-4">
+          <div className="rounded-full bg-primary/10 w-14 h-14 flex items-center justify-center mx-auto mb-4">
+            <Clipboard className="h-7 w-7 text-primary" />
+          </div>
+          <h3 className="text-lg font-medium mb-2">Real-time Scoring</h3>
+          <p className="text-muted-foreground">Score matches in real-time with our intuitive interface</p>
+        </div>
+        
+        <div className="text-center p-4">
+          <div className="rounded-full bg-primary/10 w-14 h-14 flex items-center justify-center mx-auto mb-4">
+            <Users className="h-7 w-7 text-primary" />
+          </div>
+          <h3 className="text-lg font-medium mb-2">Player Registration</h3>
+          <p className="text-muted-foreground">Streamlined registration process for participants</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
@@ -42,7 +87,7 @@ const Index = () => {
               className="w-full" 
               onClick={() => navigate('/tournaments')}
             >
-              Go to Tournaments <ArrowRight className="ml-2 h-4 w-4" />
+              Go to Tournaments <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           </CardFooter>
         </Card>
@@ -71,7 +116,7 @@ const Index = () => {
               className="w-full bg-court-green hover:bg-court-green/90" 
               onClick={() => navigate('/quick-match')}
             >
-              Create Quick Match <ArrowRight className="ml-2 h-4 w-4" />
+              Create Quick Match <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           </CardFooter>
         </Card>
