@@ -1,110 +1,59 @@
-
 import { supabase } from '@/lib/supabase';
 import { Match, MatchStatus } from '@/types/entities';
 
-export const matchService = {
-  async createMatch(match: Omit<Match, 'id' | 'createdAt' | 'updatedAt'>): Promise<Match> {
+export class MatchService {
+  async getMatch(id: string): Promise<Match> {
     const { data, error } = await supabase
       .from('matches')
-      .insert({
-        tournament_id: match.tournamentId || match.tournament_id,
-        team1_id: match.team1Id,
-        team2_id: match.team2Id,
-        status: match.status || MatchStatus.SCHEDULED,
-        round_number: match.round_number || match.bracketRound,
-        match_number: match.match_number || match.matchNumber,
-        scheduled_time: match.scheduledTime?.toISOString(),
-        court_id: match.courtId || match.court_id,
-        notes: match.notes
-      })
-      .select()
+      .select('*')
+      .eq('id', id)
       .single();
       
     if (error) throw error;
     
-    return {
-      id: data.id,
-      tournamentId: data.tournament_id,
-      tournament_id: data.tournament_id,
-      team1Id: data.team1_id,
-      team2Id: data.team2_id,
-      status: data.status as MatchStatus,
-      bracketRound: data.round_number || 0,
-      round_number: data.round_number || 0,
-      bracketPosition: 0,
-      progression: {},
-      scheduledTime: data.scheduled_time ? new Date(data.scheduled_time) : undefined,
-      startTime: data.start_time ? new Date(data.start_time) : undefined,
-      endTime: data.end_time ? new Date(data.end_time) : undefined,
-      courtId: data.court_id,
-      court_id: data.court_id,
-      notes: data.notes,
-      scores: data.scores || [],
-      stage: 'GROUP_STAGE',
-      division: 'OPEN',
-      match_number: data.match_number,
-      matchNumber: data.match_number,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at)
-    };
-  },
+    // Transform snake_case to camelCase while keeping originals for compatibility
+    return this.formatMatchData(data);
+  }
   
-  async listMatches(filter: { tournament_id: string, court_id?: string, status?: MatchStatus }): Promise<Match[]> {
-    let query = supabase
-      .from('matches')
-      .select('*')
-      .eq('tournament_id', filter.tournament_id);
-      
-    if (filter.court_id) {
-      query = query.eq('court_id', filter.court_id);
+  async listMatches(filters: { tournament_id?: string, status?: MatchStatus, court_id?: string } = {}): Promise<Match[]> {
+    let query = supabase.from('matches').select('*');
+    
+    // Apply filters
+    if (filters.tournament_id) {
+      query = query.eq('tournament_id', filters.tournament_id);
     }
     
-    if (filter.status) {
-      query = query.eq('status', filter.status);
+    if (filters.status) {
+      query = query.eq('status', filters.status);
+    }
+    
+    if (filters.court_id) {
+      query = query.eq('court_id', filters.court_id);
     }
     
     const { data, error } = await query;
     
     if (error) throw error;
     
-    return data.map(match => ({
-      id: match.id,
-      tournamentId: match.tournament_id,
-      tournament_id: match.tournament_id,
-      team1Id: match.team1_id,
-      team2Id: match.team2_id,
-      status: match.status as MatchStatus,
-      bracketRound: match.round_number || 0,
-      round_number: match.round_number || 0,
-      bracketPosition: 0,
-      progression: {},
-      scheduledTime: match.scheduled_time ? new Date(match.scheduled_time) : undefined,
-      startTime: match.start_time ? new Date(match.start_time) : undefined,
-      endTime: match.end_time ? new Date(match.end_time) : undefined,
-      courtId: match.court_id,
-      court_id: match.court_id,
-      notes: match.notes,
-      scores: match.scores || [],
-      stage: 'GROUP_STAGE',
-      division: 'OPEN',
-      match_number: match.match_number,
-      matchNumber: match.match_number,
-      createdAt: new Date(match.created_at),
-      updatedAt: new Date(match.updated_at)
-    }));
-  },
+    // Transform data
+    return data.map(match => this.formatMatchData(match));
+  }
   
-  async updateMatch(id: string, match: Partial<Match>): Promise<Match> {
+  async updateMatch(id: string, matchData: Partial<Match>): Promise<Match> {
+    // Convert camelCase to snake_case for database
     const payload: any = {};
     
-    if (match.scheduledTime !== undefined) payload.scheduled_time = match.scheduledTime?.toISOString();
-    if (match.startTime !== undefined) payload.start_time = match.startTime?.toISOString();
-    if (match.endTime !== undefined) payload.end_time = match.endTime?.toISOString();
-    if (match.status !== undefined) payload.status = match.status;
-    if (match.courtId !== undefined) payload.court_id = match.courtId;
-    if (match.court_id !== undefined) payload.court_id = match.court_id;
-    if (match.scores !== undefined) payload.scores = match.scores;
-    if (match.notes !== undefined) payload.notes = match.notes;
+    if (matchData.status !== undefined) payload.status = matchData.status;
+    if (matchData.scores !== undefined) payload.scores = matchData.scores;
+    if (matchData.courtId !== undefined) payload.court_id = matchData.courtId;
+    if (matchData.scheduledTime !== undefined) payload.scheduled_time = matchData.scheduledTime;
+    if (matchData.startTime !== undefined) payload.start_time = matchData.startTime;
+    if (matchData.endTime !== undefined) payload.end_time = matchData.endTime;
+    if (matchData.winner !== undefined) payload.winner = matchData.winner;
+    if (matchData.notes !== undefined) payload.notes = matchData.notes;
+    
+    // Include snake_case properties directly if provided
+    if (matchData.court_id !== undefined) payload.court_id = matchData.court_id;
     
     const { data, error } = await supabase
       .from('matches')
@@ -115,30 +64,76 @@ export const matchService = {
       
     if (error) throw error;
     
+    return this.formatMatchData(data);
+  }
+  
+  async createMatch(matchData: Omit<Match, 'id' | 'createdAt' | 'updatedAt'>): Promise<Match> {
+    const payload: any = {
+      tournament_id: matchData.tournamentId || matchData.tournament_id,
+      division: matchData.division,
+      status: matchData.status || MatchStatus.SCHEDULED,
+      round_number: matchData.round_number || matchData.bracketRound,
+      match_number: matchData.match_number || matchData.matchNumber
+    };
+    
+    if (matchData.courtId) payload.court_id = matchData.courtId;
+    if (matchData.scheduledTime) payload.scheduled_time = matchData.scheduledTime;
+    if (matchData.scores) payload.scores = matchData.scores;
+    if (matchData.team1Id) payload.team1_id = matchData.team1Id;
+    if (matchData.team2Id) payload.team2_id = matchData.team2Id;
+    
+    const { data, error } = await supabase
+      .from('matches')
+      .insert(payload)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    
+    return this.formatMatchData(data);
+  }
+  
+  async deleteMatch(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('matches')
+      .delete()
+      .eq('id', id);
+      
+    if (error) throw error;
+  }
+  
+  // Helper method to format match data consistently
+  private formatMatchData(data: any): Match {
     return {
       id: data.id,
       tournamentId: data.tournament_id,
       tournament_id: data.tournament_id,
+      division: data.division,
+      stage: data.stage || '',
+      bracketRound: data.round_number,
+      round_number: data.round_number,
+      bracketPosition: data.bracket_position || 0,
+      match_number: data.match_number || '',
+      matchNumber: data.match_number || '',
+      progression: data.progression || {},
+      scores: data.scores || [],
+      status: data.status as MatchStatus,
+      courtId: data.court_id,
+      court_id: data.court_id,
+      courtNumber: data.court_number,
       team1Id: data.team1_id,
       team2Id: data.team2_id,
-      status: data.status as MatchStatus,
-      bracketRound: data.round_number || 0,
-      round_number: data.round_number || 0,
-      bracketPosition: 0,
-      progression: {},
+      winner: data.winner,
+      loser: data.loser,
       scheduledTime: data.scheduled_time ? new Date(data.scheduled_time) : undefined,
       startTime: data.start_time ? new Date(data.start_time) : undefined,
       endTime: data.end_time ? new Date(data.end_time) : undefined,
-      courtId: data.court_id,
-      court_id: data.court_id,
       notes: data.notes,
-      scores: data.scores || [],
-      stage: 'GROUP_STAGE',
-      division: 'OPEN',
-      match_number: data.match_number,
-      matchNumber: data.match_number,
+      groupName: data.group_name,
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at)
     };
   }
-};
+}
+
+export const matchService = new MatchService();

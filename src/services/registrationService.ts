@@ -1,89 +1,147 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { APIService } from './apiService';
-import { Profile, Registration, RegistrationStatus } from '@/types/entities';
-import { TournamentRegistration } from '@/types/registration';
+import { supabase } from '@/lib/supabase';
+import { Registration, RegistrationStatus } from '@/types/entities';
+import { PlayerRegistrationWithStatus, TeamRegistrationWithStatus } from '@/types/registration';
 
-export class RegistrationService extends APIService {
-  async createRegistration(registration: Omit<Registration, 'id' | 'createdAt' | 'updatedAt'>): Promise<Registration> {
-    try {
-      console.log('[RegistrationService] Creating registration:', registration);
+export class RegistrationService {
+  async getRegistration(id: string): Promise<Registration> {
+    const { data, error } = await supabase
+      .from('registrations')
+      .select('*')
+      .eq('id', id)
+      .single();
       
-      const { data, error } = await supabase
-        .from('registrations')
-        .insert({
-          tournament_id: registration.tournamentId,
-          division_id: registration.divisionId,
-          player_id: registration.playerId,
-          partner_id: registration.partnerId,
-          status: registration.status,
-          metadata: registration.metadata,
-          notes: registration.notes,
-          priority: registration.priority || 0
+    if (error) throw error;
+    
+    return this.formatRegistrationData(data);
+  }
+  
+  async listRegistrations(tournamentId: string): Promise<Registration[]> {
+    const { data, error } = await supabase
+      .from('registrations')
+      .select('*')
+      .eq('tournament_id', tournamentId);
+      
+    if (error) throw error;
+    
+    return data.map(reg => this.formatRegistrationData(reg));
+  }
+  
+  async listPlayerRegistrations(tournamentId: string): Promise<PlayerRegistrationWithStatus[]> {
+    const { data, error } = await supabase
+      .from('registrations')
+      .select(`
+        id,
+        metadata,
+        status,
+        division_id as divisionId,
+        created_at as createdAt
+      `)
+      .eq('tournament_id', tournamentId)
+      .is('team_id', null);
+      
+    if (error) throw error;
+    
+    return data.map(reg => ({
+      id: reg.id,
+      firstName: reg.metadata?.firstName || '',
+      lastName: reg.metadata?.lastName || '',
+      email: reg.metadata?.email || '',
+      phone: reg.metadata?.phone || '',
+      status: reg.status as RegistrationStatus,
+      divisionId: reg.divisionId,
+      createdAt: new Date(reg.createdAt),
+      metadata: reg.metadata || {}
+    }));
+  }
+  
+  async listTeamRegistrations(tournamentId: string): Promise<TeamRegistrationWithStatus[]> {
+    const { data, error } = await supabase
+      .from('registrations')
+      .select(`
+        id,
+        metadata,
+        status,
+        division_id as divisionId,
+        created_at as createdAt
+      `)
+      .eq('tournament_id', tournamentId)
+      .not('team_id', 'is', null);
+      
+    if (error) throw error;
+    
+    return data.map(reg => ({
+      id: reg.id,
+      teamName: reg.metadata?.teamName || '',
+      captainName: reg.metadata?.captainName || '',
+      playerCount: reg.metadata?.players?.length || 0,
+      status: reg.status as RegistrationStatus,
+      divisionId: reg.divisionId,
+      createdAt: new Date(reg.createdAt),
+      metadata: reg.metadata || {}
+    }));
+  }
+  
+  async updateRegistrationStatus(id: string, status: RegistrationStatus): Promise<Registration> {
+    const { data, error } = await supabase
+      .from('registrations')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    
+    return this.formatRegistrationData(data);
+  }
+  
+  async promoteFromWaitlist(id: string, newStatus: RegistrationStatus): Promise<Registration> {
+    return this.updateRegistrationStatus(id, newStatus);
+  }
+  
+  async updateWaitlistPosition(id: string, newPosition: number): Promise<Registration> {
+    const { data, error } = await supabase
+      .from('registrations')
+      .update({ 
+        priority: newPosition,
+        metadata: supabase.rpc('jsonb_set_recursive', {
+          target: supabase.raw('metadata'),
+          path: '{waitlistPosition}',
+          value: newPosition.toString()
         })
-        .select()
-        .single();
-        
-      if (error) throw error;
+      })
+      .eq('id', id)
+      .select()
+      .single();
       
-      // Map the response to our entity model
-      return this.mapRegistrationFromDB(data);
-    } catch (error) {
-      console.error('[RegistrationService] Error creating registration:', error);
-      throw error;
-    }
+    if (error) throw error;
+    
+    return this.formatRegistrationData(data);
   }
-
-  async getRegistrationsByTournament(tournamentId: string): Promise<Registration[]> {
-    try {
-      console.log('[RegistrationService] Getting registrations for tournament:', tournamentId);
+  
+  async bulkUpdateStatus(ids: string[], status: RegistrationStatus): Promise<void> {
+    const { error } = await supabase
+      .from('registrations')
+      .update({ status })
+      .in('id', ids);
       
-      const { data, error } = await supabase
-        .from('registrations')
-        .select()
-        .eq('tournament_id', tournamentId);
-        
-      if (error) throw error;
-      
-      // Map the responses to our entity model
-      return data.map(this.mapRegistrationFromDB);
-    } catch (error) {
-      console.error('[RegistrationService] Error getting registrations:', error);
-      throw error;
-    }
+    if (error) throw error;
   }
-
-  async updateRegistrationStatus(registrationId: string, status: RegistrationStatus): Promise<Registration> {
-    try {
-      console.log('[RegistrationService] Updating registration status:', { registrationId, status });
-      
-      const { data, error } = await supabase
-        .from('registrations')
-        .update({ status })
-        .eq('id', registrationId)
-        .select()
-        .single();
-        
-      if (error) throw error;
-      
-      // Map the response to our entity model
-      return this.mapRegistrationFromDB(data);
-    } catch (error) {
-      console.error('[RegistrationService] Error updating registration status:', error);
-      throw error;
-    }
-  }
-
-  // Helper to map DB response to our entity model
-  private mapRegistrationFromDB(data: any): Registration {
+  
+  // Helper method to format registration data consistently
+  private formatRegistrationData(data: any): Registration {
     return {
       id: data.id,
       tournamentId: data.tournament_id,
+      tournament_id: data.tournament_id,
       divisionId: data.division_id,
+      division_id: data.division_id,
       playerId: data.player_id,
+      player_id: data.player_id,
       partnerId: data.partner_id,
+      partner_id: data.partner_id,
       status: data.status as RegistrationStatus,
-      metadata: data.metadata,
+      metadata: data.metadata || {},
       notes: data.notes,
       priority: data.priority,
       createdAt: new Date(data.created_at),

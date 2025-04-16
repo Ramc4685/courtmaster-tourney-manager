@@ -4,7 +4,8 @@ import {
   TournamentStatus, 
   CourtStatus, 
   UserRole, 
-  RegistrationStatus 
+  RegistrationStatus,
+  Division
 } from './tournament-enums';
 
 export interface Court {
@@ -50,6 +51,8 @@ export interface Match {
   matchNumber?: string;
   updatedAt: Date;
   createdAt: Date;
+  // Add missing fields required by tournament.ts Match
+  category?: any;
 }
 
 export interface MatchScore {
@@ -101,6 +104,10 @@ export interface Profile {
   fullName?: string;
   displayName?: string;
   avatarUrl?: string;
+  // Add snake_case versions for backward compatibility
+  full_name?: string;
+  display_name?: string;
+  avatar_url?: string;
   phone?: string;
   role: UserRole;
   playerStats?: {

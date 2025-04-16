@@ -74,7 +74,7 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
 
       <Separator className="my-4" />
       
-      {/* Registration settings section - connects tournament format with registration requirements */}
+      {/* Registration settings section */}
       <div>
         <h3 className="text-lg font-medium mb-4">Registration Settings</h3>
         

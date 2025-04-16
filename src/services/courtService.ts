@@ -7,7 +7,7 @@ export const courtService = {
     const { data, error } = await supabase
       .from('courts')
       .insert({
-        tournament_id: court.tournament_id,
+        tournament_id: court.tournament_id || court.tournamentId,
         name: court.name,
         description: court.description || '',
         status: court.status || CourtStatus.AVAILABLE,
@@ -54,13 +54,15 @@ export const courtService = {
     }));
   },
   
-  async updateCourt(id: string, courtData: Partial<Court>): Promise<Court> {
+  async updateCourt(id: string, courtData: Partial<Omit<Court, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Court> {
     const payload: any = {};
     if (courtData.name !== undefined) payload.name = courtData.name;
     if (courtData.description !== undefined) payload.description = courtData.description;
     if (courtData.status !== undefined) payload.status = courtData.status;
     if (courtData.number !== undefined) payload.court_number = courtData.number;
     if (courtData.court_number !== undefined) payload.court_number = courtData.court_number;
+    if (courtData.tournamentId !== undefined) payload.tournament_id = courtData.tournamentId;
+    if (courtData.tournament_id !== undefined) payload.tournament_id = courtData.tournament_id;
     
     const { data, error } = await supabase
       .from('courts')

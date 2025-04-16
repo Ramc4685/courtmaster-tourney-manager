@@ -14,7 +14,7 @@ export class NotificationService {
     return data as Notification[];
   }
   
-  async createNotification(notification: Omit<Notification, 'id' | 'createdAt'>): Promise<Notification> {
+  async createNotification(notification: Omit<Notification, 'id' | 'created_at'>): Promise<Notification> {
     const { data, error } = await supabase
       .from('notifications')
       .insert({

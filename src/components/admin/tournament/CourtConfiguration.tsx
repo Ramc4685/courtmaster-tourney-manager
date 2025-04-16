@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Court, CourtStatus } from '@/types/tournament';
+import { Court, CourtStatus } from '@/types/entities';
 import { courtService } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,14 +82,13 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
 
     try {
       const newCourtData = {
-        tournament_id: tournamentId,
+        tournamentId: tournamentId, // Use camelCase for our type
+        tournament_id: tournamentId, // Include snake_case for DB
         name,
         description: description || null,
-        status: CourtStatus.AVAILABLE, // Use enum value
-        number: court_number, // Use 'number' property
-        court_number, // Keep for backward compatibility
-        createdAt: new Date(),
-        updatedAt: new Date()
+        status: CourtStatus.AVAILABLE,
+        number: court_number,
+        court_number
       };
       await courtService.createCourt(newCourtData);
       toast({ title: "Success", description: "Court added successfully." });
@@ -118,12 +117,13 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
       const status = editingCourt.status as CourtStatus;
 
       // Only pass fields that can be updated
-      const updateData: Partial<Omit<Court, "id" | "createdAt" | "updatedAt">> = {
+      const updateData: Partial<Court> = {
          name: editingCourt.name,
          description: editingCourt.description,
          status: status,
-         number: editingCourt.number || editingCourt.court_number, // Use number field
-         court_number: editingCourt.court_number, // Keep for compatibility
+         number: editingCourt.number,
+         court_number: editingCourt.court_number,
+         tournamentId: editingCourt.tournamentId,
          tournament_id: editingCourt.tournament_id
       };
       await courtService.updateCourt(editingCourt.id, updateData);

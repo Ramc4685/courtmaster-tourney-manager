@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Court } from '@/types/tournament';
+import { Court } from '@/types/entities';
 import { courtService } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -59,7 +59,7 @@ export const CourtStatusDashboard: React.FC<CourtStatusDashboardProps> = ({ tour
       console.log('Court update received:', payload);
       const updatedCourt = payload.new.data as Court;
       // Check if the update is for the current tournament
-      if (updatedCourt && updatedCourt.tournament_id === tournamentId) {
+      if (updatedCourt && updatedCourt.tournamentId === tournamentId) {
         setCourts(currentCourts => {
           const existingIndex = currentCourts.findIndex(c => c.id === updatedCourt.id);
           if (existingIndex > -1) {
@@ -136,4 +136,4 @@ export const CourtStatusDashboard: React.FC<CourtStatusDashboardProps> = ({ tour
       </div>
     </div>
   );
-}; 
+};

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Match, Court } from '@/types/tournament';
+import { Match, Court } from '@/types/entities';
 import { Notification } from '@/types/entities';
 import { matchService, courtService, notificationService, emailService, profileService } from '@/services/api';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,7 @@ interface EditableMatch extends Match {
 }
 
 export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) => {
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<EditableMatch[]>([]);
   const [courts, setCourts] = useState<Court[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +47,10 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
         matchService.listMatches({ tournament_id: tournamentId }),
         courtService.listCourts(tournamentId)
       ]);
-      setMatches(fetchedMatches);
+      
+      // Convert to EditableMatch type to allow editing fields
+      const editableMatches = fetchedMatches.map(m => ({...m})) as EditableMatch[];
+      setMatches(editableMatches);
       setCourts(fetchedCourts);
     } catch (err) {
       console.error("Failed to fetch matches or courts:", err);
@@ -139,16 +142,17 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
             const scheduledTimeFormatted = format(updatedMatch.scheduledTime as Date, 'Pp');
             
             // Construct message based on what changed
-            let message = `Match Update (${updatedMatch.round_number}-${updatedMatch.match_number}): Scheduled for ${scheduledTimeFormatted} on ${courtName}.`;
+            let message = `Match Update: Scheduled for ${scheduledTimeFormatted} on ${courtName}.`;
             let title = 'Match Scheduled';
+            
             if (hasTimeChanged && !hasCourtChanged) {
-                message = `Match Time Update (${updatedMatch.round_number}-${updatedMatch.match_number}): Now scheduled for ${scheduledTimeFormatted} on ${courtName}.`;
+                message = `Match Time Update: Now scheduled for ${scheduledTimeFormatted} on ${courtName}.`;
                 title = 'Match Time Updated';
             } else if (!hasTimeChanged && hasCourtChanged) {
-                message = `Court Assignment Update (${updatedMatch.round_number}-${updatedMatch.match_number}): Assigned to ${courtName} at ${scheduledTimeFormatted}.`;
+                message = `Court Assignment Update: Assigned to ${courtName} at ${scheduledTimeFormatted}.`;
                 title = 'Court Assigned';
             } else { // Both changed or initially assigned
-                 message = `Match Scheduled (${updatedMatch.round_number}-${updatedMatch.match_number}): You are scheduled for ${scheduledTimeFormatted} on ${courtName}.`;
+                 message = `Match Scheduled: You are scheduled for ${scheduledTimeFormatted} on ${courtName}.`;
                  title = 'Match Scheduled';
             }
             
@@ -161,7 +165,8 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
                  message: message,
                  type: 'match_schedule_update',
                  read: false,
-                 updated_at: new Date().toISOString()
+                 updated_at: new Date().toISOString(),
+                 created_at: new Date().toISOString() // Added this required field
               }).catch(err => console.error(`Failed to create in-app notification for ${userId}:`, err));
 
               // 2. Email Notification (check preferences)
@@ -218,10 +223,10 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
                 <TableCell colSpan={7} className="text-center">No matches generated yet.</TableCell>
               </TableRow>
             )}
-            {matches.sort((a,b) => a.round_number - b.round_number || a.match_number - b.match_number).map((match) => (
+            {matches.sort((a,b) => a.bracketRound - b.bracketRound || +a.matchNumber - +b.matchNumber).map((match) => (
               <TableRow key={match.id}>
-                <TableCell>{match.round_number}</TableCell>
-                <TableCell>{match.match_number}</TableCell>
+                <TableCell>{match.bracketRound}</TableCell>
+                <TableCell>{match.matchNumber}</TableCell>
                 <TableCell>
                   {/* TODO: Display player/team names based on IDs */}
                   P1: {match.team1Id || 'TBD'} <br />
@@ -255,8 +260,8 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
             <div className="space-y-4 py-2">
                {/* Simplified display of participants */}
                <p className="text-sm text-muted-foreground">
-                 Match: {editingMatch.round_number}-{editingMatch.match_number} (ID: {editingMatch.id}) <br/>
-                 Participants: {editingMatch.team1Id || 'TBD'} vs {editingMatch.team2Id || 'TBD'}
+                 Match: {editingMatch?.bracketRound}-{editingMatch?.matchNumber} (ID: {editingMatch?.id}) <br/>
+                 Participants: {editingMatch?.team1Id || 'TBD'} vs {editingMatch?.team2Id || 'TBD'}
                </p>
               <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-1">
