@@ -1,171 +1,57 @@
-import { UserRole } from './tournament-enums';
-import { 
-  Tournament, 
-  Match, 
-  Court, 
-  TournamentCategory, 
-  Player, 
-  Team,
-  MatchScore,
-  ScoringSettings,
-  CourtStatus,
-  MatchStatus,
-  TournamentStage
-} from './tournament.ts';
-import { 
-  RegistrationStatus, 
-  TournamentRegistration 
-} from './registration';
 
-// Player Details
-export interface PlayerDetails {
-  skill_level?: string;
-  preferred_partner?: string;
-  availability?: string[];
-  playing_history?: string;
-  ranking?: number;
-  player_stats?: {
-    total_matches: number;
-    wins: number;
-    losses: number;
-    tournaments_played: number;
-    tournaments_won: number;
-    average_points_per_set: number;
-    win_percentage: number;
-    matches_won?: number;
-    matches_played?: number;
-    rating?: number;
-  };
-}
-
-// User Preferences
-export interface UserPreferences {
-  notification_emails?: boolean;
-  notification_sms?: boolean;
-  dark_mode?: boolean;
-  language?: string;
-  notifications?: {
-    match_reminders: boolean;
-    tournament_updates: boolean;
-    registration_notifications: boolean;
-    email?: boolean;
-  };
-}
-
-// Social Links
-export interface SocialLinks {
-  facebook?: string;
-  twitter?: string;
-  instagram?: string;
-  linkedin?: string;
-}
-
-// Profile
-export interface Profile {
+// Create a consistent interface mapping between snake_case backend and camelCase frontend
+export interface Court {
   id: string;
-  name: string; // Added for backward compatibility
-  full_name: string;
-  display_name: string;
-  email: string;
-  phone?: string;
-  avatar_url?: string;
-  role: UserRole;
-  player_details?: PlayerDetails;
-  player_stats?: {
-    total_matches: number;
-    wins: number;
-    losses: number;
-    tournaments_played: number;
-    tournaments_won: number;
-    average_points_per_set: number;
-    win_percentage: number;
-    matches_won?: number;
-    matches_played?: number;
-    rating?: number;
-  };
-  preferences?: UserPreferences;
-  social_links?: SocialLinks;
-  created_at?: string;
-  updated_at?: string;
+  name: string;
+  court_number: number;
+  number?: number; // Alias for court_number
+  tournament_id: string;
+  tournamentId?: string; // Alias for tournament_id
+  status: string;
+  description?: string;
+  currentMatch?: any; // Match reference
+  created_at: Date;
+  createdAt?: Date; // Alias for created_at
+  updated_at: Date;
+  updatedAt?: Date; // Alias for updated_at
 }
 
-// Role Permissions
-export interface RolePermissions {
-  can_manage_tournaments: boolean;
-  can_manage_users: boolean;
-  can_manage_registrations: boolean;
-  can_score_matches: boolean;
-  can_view_reports: boolean;
-}
-
-// User Permissions (alias for backward compatibility)
-export type UserPermissions = RolePermissions;
-
-// Score Set for scoring interface
-export interface ScoreSet {
-  set: number;
-  team1: number;
-  team2: number;
-  completed: boolean;
-}
-
-// Match Scores type for scoring interface
-export interface MatchScores {
-  currentSet: number;
-  sets: ScoreSet[];
-}
-
-// Notification interface
 export interface Notification {
   id: string;
-  user_id: string;
   title: string;
   message: string;
   type: string;
   read: boolean;
-  created_at: string;
-  updated_at: string;
-  metadata?: Record<string, any>;
+  createdAt?: Date;
+  created_at?: Date;
+  user_id?: string;
+  userId?: string;
 }
 
-// Division interface
-export interface Division {
-  id: string;
-  tournament_id: string;
-  name: string;
-  type: string;
-  min_age?: number;
-  max_age?: number;
-  gender?: string;
-  skill_level?: string;
-  created_at: Date;
-  updated_at: Date;
-  capacity?: number; // Add for RegistrationAnalytics
+export { 
+  Match, 
+  Profile, 
+  Division, 
+  MatchStatus, 
+  CourtStatus 
+} from './tournament';
+
+// Add TournamentRegistrationStatus enum
+export enum TournamentRegistrationStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  WAITLIST = 'WAITLIST',
+  CHECKED_IN = 'CHECKED_IN',
+  WITHDRAWN = 'WITHDRAWN'
 }
 
-// Registration interface
-export interface Registration extends TournamentRegistration {
-  // Additional fields specific to the entity model
+// Add RolePermissions interface
+export interface RolePermissions {
+  canEditTournament: boolean;
+  canManagePlayers: boolean;
+  canManageMatches: boolean;
+  canEnterScores: boolean;
+  canViewReports: boolean;
+  canManageCourts: boolean;
 }
-
-// Re-export all types from tournament and registration
-export type {
-  Tournament,
-  Match,
-  Court,
-  TournamentCategory,
-  Player,
-  Team,
-  MatchScore,
-  ScoringSettings,
-  TournamentRegistration
-};
-
-// Re-export enums and other values (not types)
-export {
-  UserRole,
-  MatchStatus,
-  CourtStatus,
-  TournamentStage,
-  RegistrationStatus
-};

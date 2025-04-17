@@ -1,44 +1,81 @@
-import { TournamentFormat, CategoryType } from '@/types/tournament-enums';
-import { TournamentCategory } from '@/types/tournament';
 
-// Get display name for tournament formats
+import { TournamentFormat, Division, PlayType } from '@/types/tournament-enums';
+
 export const getFormatDisplayName = (format: TournamentFormat): string => {
   switch (format) {
     case TournamentFormat.SINGLE_ELIMINATION:
-      return "Single Elimination";
+      return 'Single Elimination';
     case TournamentFormat.DOUBLE_ELIMINATION:
-      return "Double Elimination";
+      return 'Double Elimination';
     case TournamentFormat.ROUND_ROBIN:
-      return "Round Robin";
-    case TournamentFormat.SWISS:
-      return "Swiss System";
+      return 'Round Robin';
     case TournamentFormat.GROUP_KNOCKOUT:
-      return "Group + Knockout";
+      return 'Group + Knockout';
+    case TournamentFormat.SWISS:
+      return 'Swiss System';
     case TournamentFormat.MULTI_STAGE:
-      return "Multi-Stage";
+      return 'Multi-Stage';
     default:
-      return format.replace(/_/g, ' ');
+      return 'Custom Format';
   }
 };
 
-// Get description for tournament formats
 export const getFormatDescription = (format: TournamentFormat): string => {
   switch (format) {
     case TournamentFormat.SINGLE_ELIMINATION:
-      return "Lose once and you're out. Simple bracket format.";
+      return 'Players are eliminated after one loss. The last player standing wins.';
     case TournamentFormat.DOUBLE_ELIMINATION:
-      return "Players must lose twice to be eliminated. More games, more chances.";
+      return 'Players must lose twice to be eliminated. Provides a second chance.';
     case TournamentFormat.ROUND_ROBIN:
-      return "Everyone plays against everyone. Most wins determines the champion.";
-    case TournamentFormat.SWISS:
-      return "Fixed number of rounds with opponents of similar records paired.";
+      return 'Each player plays against every other player. Most wins determines the champion.';
     case TournamentFormat.GROUP_KNOCKOUT:
-      return "Round-robin groups followed by single elimination playoffs.";
+      return 'Initial group stage followed by elimination rounds with top performers.';
+    case TournamentFormat.SWISS:
+      return 'Players meet opponents with similar records without elimination.';
     case TournamentFormat.MULTI_STAGE:
-      return "Multiple stages with different formats (groups, playoffs, etc).";
+      return 'Complex tournament with multiple consecutive stages.';
     default:
-      return "Custom tournament format.";
+      return 'Customized tournament format.';
   }
 };
 
-// Other category utility functions would go here
+export const getDivisionDisplayName = (division: Division): string => {
+  switch (division) {
+    case Division.OPEN:
+      return 'Open';
+    case Division.MENS:
+      return 'Men\'s';
+    case Division.WOMENS:
+      return 'Women\'s';
+    case Division.MIXED:
+      return 'Mixed';
+    case Division.JUNIORS:
+    case Division.JUNIOR:
+      return 'Juniors';
+    case Division.SENIORS:
+      return 'Seniors';
+    case Division.BEGINNER:
+      return 'Beginner';
+    case Division.INTERMEDIATE:
+      return 'Intermediate';
+    case Division.ADVANCED:
+      return 'Advanced';
+    case Division.PRO:
+      return 'Professional';
+    default:
+      return 'Custom Division';
+  }
+};
+
+export const getPlayTypeDisplayName = (playType: PlayType): string => {
+  switch (playType) {
+    case PlayType.SINGLES:
+      return 'Singles';
+    case PlayType.DOUBLES:
+      return 'Doubles';
+    case PlayType.MIXED:
+      return 'Mixed Doubles';
+    default:
+      return 'Unknown';
+  }
+};

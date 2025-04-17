@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Court } from '@/types/tournament';
+import { Court } from '@/types/entities';
 import { courtService } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -136,4 +137,4 @@ export const CourtStatusDashboard: React.FC<CourtStatusDashboardProps> = ({ tour
       </div>
     </div>
   );
-}; 
+};

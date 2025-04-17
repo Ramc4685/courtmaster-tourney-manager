@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
-import { Court, CourtStatus } from '@/types/tournament';
+import { Court } from '@/types/entities';
+import { CourtStatus } from '@/types/tournament-enums';
 import { courtService } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,12 +86,11 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
       const newCourtData = {
         tournament_id: tournamentId,
         name,
-        description: description || null,
-        status: CourtStatus.AVAILABLE, // Use enum value
-        number: court_number, // Use 'number' property
-        court_number, // Keep for backward compatibility
-        createdAt: new Date(),
-        updatedAt: new Date()
+        description: description || '',
+        status: CourtStatus.AVAILABLE,
+        court_number,
+        created_at: new Date(),
+        updated_at: new Date()
       };
       await courtService.createCourt(newCourtData);
       toast({ title: "Success", description: "Court added successfully." });
@@ -118,12 +119,11 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
       const status = editingCourt.status as CourtStatus;
 
       // Only pass fields that can be updated
-      const updateData: Partial<Omit<Court, "id" | "createdAt" | "updatedAt">> = {
+      const updateData: Partial<Court> = {
          name: editingCourt.name,
          description: editingCourt.description,
-         status: status,
-         number: editingCourt.number || editingCourt.court_number, // Use number field
-         court_number: editingCourt.court_number, // Keep for compatibility
+         status,
+         court_number: editingCourt.court_number,
          tournament_id: editingCourt.tournament_id
       };
       await courtService.updateCourt(editingCourt.id, updateData);
@@ -183,7 +183,7 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
             <DialogHeader>
               <DialogTitle>Add New Court</DialogTitle>
               <DialogDescription>
-Enter the details for the new court.
+                Enter the details for the new court.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddCourt} className="space-y-4">

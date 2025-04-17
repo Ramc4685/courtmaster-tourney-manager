@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { TournamentFormValues } from "./types";
-import { GameType } from "@/types/tournament-enums";
+import { GameType, TournamentFormat } from "@/types/tournament-enums";
 
 interface FormatTabProps {
   form: UseFormReturn<TournamentFormValues>;
@@ -74,7 +74,7 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
 
       <Separator className="my-4" />
       
-      {/* Registration settings section - connects tournament format with registration requirements */}
+      {/* Registration settings section */}
       <div>
         <h3 className="text-lg font-medium mb-4">Registration Settings</h3>
         

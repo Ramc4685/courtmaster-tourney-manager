@@ -4,14 +4,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PlayerRegistrationList } from '@/components/registration/PlayerRegistrationList';
 import { TeamRegistrationList } from '@/components/registration/TeamRegistrationList';
 import { WaitlistManager } from '@/components/registration/WaitlistManager';
-import { PlayerRegistrationWithStatus, TeamRegistrationWithStatus, RegistrationStatus } from '@/types/registration';
+import { PlayerRegistrationWithStatus, TeamRegistrationWithStatus } from '@/types/registration';
+import { RegistrationStatus } from '@/types/tournament-enums';
 import { useRegistration } from '@/contexts/registration/useRegistration';
-import { Division } from '@/types/entities';
 import { registrationService } from '@/services/api';
 
 interface RegistrationManagementDashboardProps {
   tournamentId: string;
-  divisions: Division[];
+  divisions: string[];
 }
 
 export const RegistrationManagementDashboard: React.FC<RegistrationManagementDashboardProps> = ({ 
@@ -38,10 +38,10 @@ export const RegistrationManagementDashboard: React.FC<RegistrationManagementDas
 
   // Filter waitlisted registrations
   const waitlistedPlayers = playerRegistrations.filter(reg => 
-    reg.status === RegistrationStatus.WAITLISTED);
+    reg.status === RegistrationStatus.WAITLIST);
     
   const waitlistedTeams = teamRegistrations.filter(reg => 
-    reg.status === RegistrationStatus.WAITLISTED);
+    reg.status === RegistrationStatus.WAITLIST);
     
   const combinedWaitlist = [...waitlistedPlayers, ...waitlistedTeams].sort((a, b) => {
     const posA = a.metadata.waitlistPosition || Infinity;

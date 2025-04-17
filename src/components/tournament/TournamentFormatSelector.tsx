@@ -1,8 +1,47 @@
+
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TournamentFormat } from '@/types/tournament-enums';
-import { getFormatDisplayName, getFormatDescription } from '@/utils/categoryUtils';
+
+// Adding utility functions needed by the component
+export const getFormatDisplayName = (format: TournamentFormat): string => {
+  switch (format) {
+    case TournamentFormat.SINGLE_ELIMINATION:
+      return 'Single Elimination';
+    case TournamentFormat.DOUBLE_ELIMINATION:
+      return 'Double Elimination';
+    case TournamentFormat.ROUND_ROBIN:
+      return 'Round Robin';
+    case TournamentFormat.GROUP_KNOCKOUT:
+      return 'Group + Knockout';
+    case TournamentFormat.SWISS:
+      return 'Swiss System';
+    case TournamentFormat.MULTI_STAGE:
+      return 'Multi-Stage';
+    default:
+      return 'Custom Format';
+  }
+};
+
+export const getFormatDescription = (format: TournamentFormat): string => {
+  switch (format) {
+    case TournamentFormat.SINGLE_ELIMINATION:
+      return 'Players are eliminated after one loss. The last player standing wins.';
+    case TournamentFormat.DOUBLE_ELIMINATION:
+      return 'Players must lose twice to be eliminated. Provides a second chance.';
+    case TournamentFormat.ROUND_ROBIN:
+      return 'Each player plays against every other player. Most wins determines the champion.';
+    case TournamentFormat.GROUP_KNOCKOUT:
+      return 'Initial group stage followed by elimination rounds with top performers.';
+    case TournamentFormat.SWISS:
+      return 'Players meet opponents with similar records without elimination.';
+    case TournamentFormat.MULTI_STAGE:
+      return 'Complex tournament with multiple consecutive stages.';
+    default:
+      return 'Customized tournament format.';
+  }
+};
 
 interface TournamentFormatSelectorProps {
   value: TournamentFormat;

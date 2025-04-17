@@ -18,6 +18,11 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateUserProfile: (profile: Partial<DbProfile>) => Promise<void>;
   refreshSession: () => Promise<void>;
+  // Alias methods for components that use different naming conventions
+  register: (email: string, password: string, fullName: string) => Promise<void>;
+  logout: () => Promise<void>;
+  // For backward compatibility
+  demoMode?: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -254,6 +259,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     updateUserProfile,
     refreshSession,
+    // Aliases for compatibility
+    register: signUp,
+    logout: signOut,
+    demoMode: false,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

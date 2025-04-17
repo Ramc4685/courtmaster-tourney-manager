@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 import { TournamentFormat, Division, GameType, PlayType } from '@/types/tournament-enums';
 
@@ -44,7 +45,7 @@ export const divisionSchema = z.object({
 export interface DivisionInterface {
   id: string;
   name: string;
-  type: typeof Division[keyof typeof Division];
+  type: Division;
   categories: Category[];
 }
 

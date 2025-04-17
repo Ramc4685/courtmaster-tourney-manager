@@ -1,122 +1,84 @@
 
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Trophy, Clipboard, Users } from "lucide-react";
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { CalendarDays, Users, Award, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Home = () => {
-  const navigate = useNavigate();
-
   return (
-    <div className="container py-12">
-      <div className="text-center mb-12 max-w-3xl mx-auto">
-        <Trophy className="h-16 w-16 mx-auto mb-4 text-primary" />
-        <h1 className="text-4xl font-bold tracking-tight mb-4">CourtMaster</h1>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col space-y-6">
+        <h1 className="text-3xl font-bold">Welcome to CourtMaster</h1>
         <p className="text-xl text-muted-foreground">
-          All-in-one Tournament Management & Scoring System for Badminton Events
+          Your comprehensive tournament management system
         </p>
-        <div className="flex flex-wrap justify-center gap-4 mt-8">
-          <Button 
-            size="lg"
-            onClick={() => navigate('/tournaments')}
-            className="px-6"
-          >
-            Browse Tournaments
-          </Button>
-          <Button 
-            size="lg" 
-            variant="outline"
-            onClick={() => navigate('/login')}
-            className="px-6"
-          >
-            Sign In
-          </Button>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-16">
-        <div className="text-center p-4">
-          <div className="rounded-full bg-primary/10 w-14 h-14 flex items-center justify-center mx-auto mb-4">
-            <Trophy className="h-7 w-7 text-primary" />
-          </div>
-          <h3 className="text-lg font-medium mb-2">Tournament Management</h3>
-          <p className="text-muted-foreground">Create and manage full tournaments with customizable formats</p>
-        </div>
-        
-        <div className="text-center p-4">
-          <div className="rounded-full bg-primary/10 w-14 h-14 flex items-center justify-center mx-auto mb-4">
-            <Clipboard className="h-7 w-7 text-primary" />
-          </div>
-          <h3 className="text-lg font-medium mb-2">Real-time Scoring</h3>
-          <p className="text-muted-foreground">Score matches in real-time with our intuitive interface</p>
-        </div>
-        
-        <div className="text-center p-4">
-          <div className="rounded-full bg-primary/10 w-14 h-14 flex items-center justify-center mx-auto mb-4">
-            <Users className="h-7 w-7 text-primary" />
-          </div>
-          <h3 className="text-lg font-medium mb-2">Player Registration</h3>
-          <p className="text-muted-foreground">Streamlined registration process for participants</p>
-        </div>
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <CalendarDays className="h-5 w-5 mr-2 text-primary" />
+                Tournaments
+              </CardTitle>
+              <CardDescription>Manage your tournaments</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-4">Create and manage tournaments with flexible formats.</p>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/tournaments">View Tournaments</Link>
+              </Button>
+            </CardContent>
+          </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-        <Card className="shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-2">
-            <div className="rounded-full bg-primary/10 w-12 h-12 flex items-center justify-center mb-2">
-              <Trophy className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle>Tournament Management</CardTitle>
-            <CardDescription>
-              Create and manage full badminton tournaments with brackets, scheduling and more
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0 pb-2">
-            <ul className="list-disc list-inside text-sm space-y-1">
-              <li>Create tournaments with multiple categories</li>
-              <li>Manage teams, courts and schedules</li>
-              <li>Track scores and generate brackets</li>
-              <li>View comprehensive tournament statistics</li>
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <Button 
-              className="w-full" 
-              onClick={() => navigate('/tournaments')}
-            >
-              Explore Tournaments
-            </Button>
-          </CardFooter>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Users className="h-5 w-5 mr-2 text-primary" />
+                Players
+              </CardTitle>
+              <CardDescription>Manage players and teams</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-4">Register players and teams for your tournaments.</p>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/players">View Players</Link>
+              </Button>
+            </CardContent>
+          </Card>
 
-        <Card className="shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-2">
-            <div className="rounded-full bg-green-500/10 w-12 h-12 flex items-center justify-center mb-2">
-              <Clipboard className="h-6 w-6 text-green-500" />
-            </div>
-            <CardTitle>Quick Match Scoring</CardTitle>
-            <CardDescription>
-              Create standalone matches for immediate scoring without tournament context
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0 pb-2">
-            <ul className="list-disc list-inside text-sm space-y-1">
-              <li>Create matches with simple team/player entry</li>
-              <li>Score matches in real-time</li>
-              <li>Share match scores via public links</li>
-              <li>No tournament setup required</li>
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <Button 
-              className="w-full bg-green-500 hover:bg-green-600" 
-              onClick={() => navigate('/quick-match')}
-            >
-              Create Quick Match
-            </Button>
-          </CardFooter>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Award className="h-5 w-5 mr-2 text-primary" />
+                Scores
+              </CardTitle>
+              <CardDescription>Track match results</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-4">Record and manage match scores in real-time.</p>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/scoring">View Scoring</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Settings className="h-5 w-5 mr-2 text-primary" />
+                Settings
+              </CardTitle>
+              <CardDescription>Configure your account</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-4">Customize your tournament management experience.</p>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/settings">View Settings</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

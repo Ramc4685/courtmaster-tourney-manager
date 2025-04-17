@@ -1,18 +1,15 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { RegistrationStatus, TournamentRegistration } from '@/types/registration';
-
-// We'll use a simple QR code representation for now
-// In a real app, you would use a library like qrcode.react
+import QRCode from 'react-qr-code';
+import { RegistrationStatus } from '@/types/tournament-enums';
+import { TournamentRegistration } from '@/types/registration';
 
 interface QRCodeDisplayProps {
   registrationId: string;
   name: string;
-  type: 'player' | 'team';
+  type: string;
   status: RegistrationStatus;
-  registration?: TournamentRegistration; // Add this for backward compatibility with tests
+  registration: TournamentRegistration;
 }
 
 export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
@@ -22,50 +19,52 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   status,
   registration
 }) => {
-  // If registration is provided, use its values (for backward compatibility with tests)
-  const id = registration?.id || registrationId;
-  const displayName = registration?.metadata?.playerName || registration?.metadata?.teamName || name;
-  const displayStatus = registration?.status || status;
-
-  // Generate QR code data
-  const qrData = JSON.stringify({
-    id: id,
-    type,
-    timestamp: Date.now(),
-  });
-
-  // Determine badge color based on status
-  const getBadgeColor = () => {
-    if (displayStatus === RegistrationStatus.APPROVED) return 'bg-green-100 text-green-800';
-    if (displayStatus === RegistrationStatus.CHECKED_IN) return 'bg-blue-100 text-blue-800';
-    if (displayStatus === RegistrationStatus.WAITLISTED) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-gray-100 text-gray-800';
+  const getStatusColor = () => {
+    switch (status) {
+      case RegistrationStatus.APPROVED:
+        return 'text-green-600';
+      case RegistrationStatus.PENDING:
+        return 'text-amber-600';
+      case RegistrationStatus.REJECTED:
+        return 'text-red-600';
+      case RegistrationStatus.WAITLIST:
+        return 'text-blue-600';
+      case RegistrationStatus.CHECKED_IN:
+        return 'text-purple-600';
+      default:
+        return 'text-gray-600';
+    }
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-md">{displayName}</CardTitle>
-          <Badge className={getBadgeColor()}>
-            {displayStatus === RegistrationStatus.CHECKED_IN ? 'Checked In' : displayStatus}
-          </Badge>
+    <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="flex flex-col items-center">
+        <div className="mb-4" data-testid="qr-code-image">
+          <QRCode value={registrationId} size={180} />
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between">
-          <div className="w-24 h-24 bg-gray-100 border border-gray-300 flex items-center justify-center text-xs text-gray-500 overflow-hidden">
-            {/* This is a placeholder for a real QR code */}
-            QR Code<br/>ID: {id.substring(0, 8)}...
-          </div>
-          <div className="ml-4 flex-1">
-            <p className="text-sm font-medium">Registration ID</p>
-            <p className="text-xs text-gray-500">{id}</p>
-            <p className="text-sm font-medium mt-2">Type</p>
-            <p className="text-xs text-gray-500 capitalize">{type}</p>
+        <h2 className="text-xl font-bold">{name}</h2>
+        <div className="mt-4 w-full">
+          <div className="grid grid-cols-2 gap-y-2">
+            <span className="font-semibold">Registration ID:</span>
+            <span>{registrationId}</span>
+            
+            <span className="font-semibold">Type:</span>
+            <span>{type}</span>
+            
+            <span className="font-semibold">Status:</span>
+            <span className={getStatusColor()}>{status}</span>
+            
+            {registration.metadata.checkInTime && (
+              <>
+                <span className="font-semibold">Checked In:</span>
+                <span>{new Date(registration.metadata.checkInTime).toLocaleString()}</span>
+              </>
+            )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
+
+export default QRCodeDisplay;
