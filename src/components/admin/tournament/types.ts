@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 import { TournamentFormat, Division, GameType, PlayType } from '@/types/tournament-enums';
 
@@ -30,9 +29,12 @@ export const DivisionLevels = DIVISION_LEVELS;
 export const categorySchema = z.object({
   id: z.string(),
   name: z.string().min(1, "Category name is required"),
-  playType: z.nativeEnum(PlayType),
+  division: z.string(),
+  type: z.string(),
+  playType: z.nativeEnum(PlayType).default(PlayType.SINGLES),
   format: z.nativeEnum(TournamentFormat).default(TournamentFormat.SINGLE_ELIMINATION),
-  division: z.nativeEnum(Division).default(Division.OPEN),
+  seeded: z.boolean().optional(),
+  teams: z.array(z.any()).optional() // We'll type this properly when needed
 });
 
 export const divisionSchema = z.object({

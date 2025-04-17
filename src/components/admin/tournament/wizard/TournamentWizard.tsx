@@ -5,10 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { tournamentFormSchema, TournamentFormValues, Category } from '../types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import CategoriesStep from './steps/CategoriesStep'; // Import as default
+import CategoriesStep from './steps/CategoriesStep';
 import { useToast } from '@/components/ui/use-toast';
-import { tournamentService } from '@/services/api';
-import { useRouter } from 'next/router';
+import { tournamentService } from '@/services';
+import { useNavigate } from 'react-router-dom';
+import { GameType, Division, TournamentFormat, TournamentStatus, TournamentStageEnum, PlayType } from '@/types/tournament-enums';
+import { Tournament } from '@/types/tournament';
+import { v4 as uuidv4 } from 'uuid';
 
 interface TournamentWizardProps {
   onComplete?: (data: TournamentFormValues) => void;
@@ -18,7 +21,7 @@ export default function TournamentWizard({ onComplete }: TournamentWizardProps) 
   const [step, setStep] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
   const { toast } = useToast();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const form = useForm<TournamentFormValues>({
     resolver: zodResolver(tournamentFormSchema),
@@ -28,7 +31,7 @@ export default function TournamentWizard({ onComplete }: TournamentWizardProps) 
       description: '',
       startDate: new Date(),
       endDate: new Date(),
-      gameType: 'BADMINTON',
+      gameType: GameType.BADMINTON,
       divisionDetails: [],
       registrationEnabled: false,
       maxTeams: 32,
@@ -66,20 +69,51 @@ export default function TournamentWizard({ onComplete }: TournamentWizardProps) 
   const handleCreateTournament = async () => {
     try {
       const values = form.getValues();
-      // Update the form values with the categories
-      values.divisionDetails = [
-        {
-          id: 'default-division',
-          name: 'Default Division',
-          type: 'OPEN',
-          categories: categories
-        }
-      ];
+      const tournament: Tournament = {
+        id: '', // Will be set by the service
+        name: values.name,
+        location: values.location,
+        description: values.description || '',
+        startDate: values.startDate,
+        endDate: values.endDate,
+        registrationDeadline: values.registrationDeadline,
+        format: TournamentFormat.SINGLE_ELIMINATION, // Default format
+        status: TournamentStatus.DRAFT,
+        currentStage: TournamentStageEnum.GROUP_STAGE,
+        registrationEnabled: values.registrationEnabled,
+        requirePlayerProfile: values.requirePlayerProfile || false,
+        maxTeams: values.maxTeams,
+        teams: [],
+        matches: [],
+        courts: [],
+        categories: values.divisionDetails.flatMap(division => 
+          division.categories.map(cat => ({
+            id: '',  // Will be set by the service
+            name: cat.name,
+            division: division.type,
+            type: cat.type || 'standard',
+            playType: cat.playType || PlayType.SINGLES,
+            format: cat.format || TournamentFormat.SINGLE_ELIMINATION,
+            teams: []
+          }))
+        ),
+        scoringSettings: {
+          matchFormat: 'standard',
+          pointsToWin: values.scoringRules.pointsToWin,
+          maxSets: 3,
+          mustWinByTwo: values.scoringRules.mustWinByTwo,
+          maxPoints: values.scoringRules.maxPoints,
+          requireTwoPointLead: true,
+          maxTwoPointLeadScore: values.scoringRules.maxPoints,
+          setsToWin: 2
+        },
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
 
-      console.log('Submitting tournament data:', values);
+      console.log('Submitting tournament data:', tournament);
 
-      // Call API service to create tournament
-      const createdTournament = await tournamentService.createTournament(values);
+      const createdTournament = await tournamentService.createTournament(tournament);
       
       toast({
         title: "Success",
@@ -92,7 +126,7 @@ export default function TournamentWizard({ onComplete }: TournamentWizardProps) 
       }
 
       // Redirect to tournament management page
-      router.push(`/admin/tournaments/${createdTournament.id}`);
+      navigate(`/tournaments/${createdTournament.id}`);
     } catch (error) {
       console.error('Failed to create tournament:', error);
       toast({
@@ -106,6 +140,16 @@ export default function TournamentWizard({ onComplete }: TournamentWizardProps) 
   const handleCategoriesChange = (updatedCategories: Category[]) => {
     setCategories(updatedCategories);
   };
+
+  const mappedCategories = categories.map((category) => ({
+    id: uuidv4(),
+    name: category.name,
+    division: category.division,
+    type: category.type || 'standard',
+    playType: category.playType || PlayType.SINGLES,
+    format: category.format || TournamentFormat.SINGLE_ELIMINATION,
+    teams: []
+  }));
 
   return (
     <div className="space-y-8">
