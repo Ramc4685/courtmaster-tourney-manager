@@ -27,7 +27,8 @@ export enum MatchStatus {
   SCHEDULED = 'SCHEDULED',
   IN_PROGRESS = 'IN_PROGRESS', 
   COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED'
+  CANCELLED = 'CANCELLED',
+  DEFERRED = 'DEFERRED'
 }
 
 export enum TournamentFormat {
@@ -51,7 +52,8 @@ export enum RegistrationStatus {
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
   WAITLIST = 'WAITLIST',
-  CHECKED_IN = 'CHECKED_IN'
+  CHECKED_IN = 'CHECKED_IN',
+  WITHDRAWN = 'WITHDRAWN'
 }
 
 export enum UserRole {
@@ -59,7 +61,10 @@ export enum UserRole {
   ORGANIZER = 'organizer',
   SCOREKEEPER = 'scorekeeper',
   PLAYER = 'player',
-  SPECTATOR = 'spectator'
+  SPECTATOR = 'spectator',
+  DIRECTOR = 'director',
+  FRONT_DESK = 'front_desk',
+  ADMIN_STAFF = 'admin_staff'
 }
 
 export enum TournamentStatus {
@@ -67,7 +72,8 @@ export enum TournamentStatus {
   REGISTRATION = 'REGISTRATION',
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED'
+  CANCELLED = 'CANCELLED',
+  PUBLISHED = 'PUBLISHED'
 }
 
 export enum CourtStatus {

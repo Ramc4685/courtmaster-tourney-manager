@@ -34,6 +34,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { categorySchema } from '../../types';
 import { PlayType, TournamentFormat, Division } from '@/types/tournament-enums';
+import { PlusCircle, Trash2 } from 'lucide-react';
 
 // Import Category interface from types file
 import { Category } from '../../types';
@@ -83,7 +84,7 @@ const CategoriesStep: React.FC<CategoriesStepProps> = ({ categories, onCategorie
       label: 'Juniors'
     },
     {
-      value: Division.SENIOR,
+      value: Division.SENIORS,
       label: 'Seniors'
     },
     {
@@ -162,7 +163,7 @@ const CategoriesStep: React.FC<CategoriesStepProps> = ({ categories, onCategorie
       case Division.WOMENS: return 'bg-purple-100 text-purple-800';
       case Division.MIXED: return 'bg-amber-100 text-amber-800';
       case Division.JUNIOR: return 'bg-indigo-100 text-indigo-800';
-      case Division.SENIOR: return 'bg-teal-100 text-teal-800';
+      case Division.SENIORS: return 'bg-teal-100 text-teal-800';
       case Division.BEGINNER: return 'bg-lime-100 text-lime-800';
       case Division.INTERMEDIATE: return 'bg-orange-100 text-orange-800';
       case Division.ADVANCED: return 'bg-fuchsia-100 text-fuchsia-800';

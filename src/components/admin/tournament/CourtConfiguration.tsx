@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Court } from '@/types/entities';
 import { CourtStatus } from '@/types/tournament-enums';
@@ -83,11 +84,13 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
 
     try {
       const newCourtData = {
-        tournamentId: tournamentId,
+        tournament_id: tournamentId,
         name,
-        description: description || null,
+        description: description || '',
         status: CourtStatus.AVAILABLE,
-        number: court_number,
+        court_number,
+        created_at: new Date(),
+        updated_at: new Date()
       };
       await courtService.createCourt(newCourtData);
       toast({ title: "Success", description: "Court added successfully." });
@@ -119,10 +122,8 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
       const updateData: Partial<Court> = {
          name: editingCourt.name,
          description: editingCourt.description,
-         status: status,
-         number: editingCourt.number,
+         status,
          court_number: editingCourt.court_number,
-         tournamentId: editingCourt.tournamentId,
          tournament_id: editingCourt.tournament_id
       };
       await courtService.updateCourt(editingCourt.id, updateData);
@@ -182,7 +183,7 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
             <DialogHeader>
               <DialogTitle>Add New Court</DialogTitle>
               <DialogDescription>
-Enter the details for the new court.
+                Enter the details for the new court.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddCourt} className="space-y-4">

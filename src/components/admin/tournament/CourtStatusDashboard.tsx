@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Court } from '@/types/entities';
 import { courtService } from '@/services/api';
@@ -59,7 +60,7 @@ export const CourtStatusDashboard: React.FC<CourtStatusDashboardProps> = ({ tour
       console.log('Court update received:', payload);
       const updatedCourt = payload.new.data as Court;
       // Check if the update is for the current tournament
-      if (updatedCourt && updatedCourt.tournamentId === tournamentId) {
+      if (updatedCourt && updatedCourt.tournament_id === tournamentId) {
         setCourts(currentCourts => {
           const existingIndex = currentCourts.findIndex(c => c.id === updatedCourt.id);
           if (existingIndex > -1) {

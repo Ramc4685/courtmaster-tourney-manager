@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Match, Court } from '@/types/entities';
-import { Notification } from '@/types/entities';
+import { Match, Court, Notification } from '@/types/entities';
 import { matchService, courtService, notificationService, emailService, profileService } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -160,12 +159,11 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
             for (const userId of participantIds) {
               // 1. In-App Notification
               notificationService.createNotification({
-                 user_id: userId,
+                 userId: userId,
                  title: title,
                  message: message,
                  type: 'match_schedule_update',
-                 read: false,
-                 updated_at: new Date().toISOString()
+                 read: false
               }).catch(err => console.error(`Failed to create in-app notification for ${userId}:`, err));
 
               // 2. Email Notification (check preferences)
