@@ -165,8 +165,7 @@ export const MatchScheduler: React.FC<MatchSchedulerProps> = ({ tournamentId }) 
                  message: message,
                  type: 'match_schedule_update',
                  read: false,
-                 updated_at: new Date().toISOString(),
-                 created_at: new Date().toISOString() // Added this required field
+                 updated_at: new Date().toISOString()
               }).catch(err => console.error(`Failed to create in-app notification for ${userId}:`, err));
 
               // 2. Email Notification (check preferences)

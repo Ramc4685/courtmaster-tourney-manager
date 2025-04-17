@@ -3,6 +3,11 @@ import React from 'react';
 import { UserRole } from '@/types/tournament-enums';
 import { RolePermissions } from '@/types/entities';
 
+export interface LayoutProps {
+  permissions?: RolePermissions;
+  children?: React.ReactNode;
+}
+
 interface RoleBasedLayoutProps {
   role: UserRole;
   children: React.ReactNode;

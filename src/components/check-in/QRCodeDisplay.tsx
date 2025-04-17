@@ -1,68 +1,70 @@
 
 import React from 'react';
 import QRCode from 'react-qr-code';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { RegistrationStatus } from '@/types/tournament-enums';
+import { TournamentRegistration } from '@/types/registration';
 
-export interface QRCodeDisplayProps {
+interface QRCodeDisplayProps {
   registrationId: string;
   name: string;
-  type: 'player' | 'team';
+  type: string;
   status: RegistrationStatus;
+  registration: TournamentRegistration;
 }
 
-export function QRCodeDisplay({ registrationId, name, type, status }: QRCodeDisplayProps) {
-  const getStatusColor = (status: RegistrationStatus) => {
+export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
+  registrationId,
+  name,
+  type,
+  status,
+  registration
+}) => {
+  const getStatusColor = () => {
     switch (status) {
       case RegistrationStatus.APPROVED:
-        return 'bg-green-100 text-green-800 border-green-300';
-      case RegistrationStatus.CHECKED_IN:
-        return 'bg-blue-100 text-blue-800 border-blue-300';
+        return 'text-green-600';
       case RegistrationStatus.PENDING:
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case RegistrationStatus.WAITLIST:
-        return 'bg-orange-100 text-orange-800 border-orange-300';
+        return 'text-amber-600';
       case RegistrationStatus.REJECTED:
-        return 'bg-red-100 text-red-800 border-red-300';
+        return 'text-red-600';
+      case RegistrationStatus.WAITLIST:
+        return 'text-blue-600';
+      case RegistrationStatus.CHECKED_IN:
+        return 'text-purple-600';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return 'text-gray-600';
     }
   };
 
-  // Generate QR data as a JSON string to be scanned
-  const qrData = JSON.stringify({
-    id: registrationId,
-    name,
-    type,
-    status
-  });
-
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardContent className="p-6 flex flex-col items-center space-y-4">
-        <div className="w-64 h-64 flex items-center justify-center p-2 bg-white">
-          <QRCode value={qrData} size={240} />
+    <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="flex flex-col items-center">
+        <div className="mb-4" data-testid="qr-code-image">
+          <QRCode value={registrationId} size={180} />
         </div>
-        
-        <div className="text-center mt-4">
-          <h3 className="font-bold text-lg">{name}</h3>
-          <p className="text-sm text-gray-500 capitalize">{type}</p>
-          <Badge className={`mt-2 ${getStatusColor(status)}`}>
-            {status}
-          </Badge>
+        <h2 className="text-xl font-bold">{name}</h2>
+        <div className="mt-4 w-full">
+          <div className="grid grid-cols-2 gap-y-2">
+            <span className="font-semibold">Registration ID:</span>
+            <span>{registrationId}</span>
+            
+            <span className="font-semibold">Type:</span>
+            <span>{type}</span>
+            
+            <span className="font-semibold">Status:</span>
+            <span className={getStatusColor()}>{status}</span>
+            
+            {registration.metadata.checkInTime && (
+              <>
+                <span className="font-semibold">Checked In:</span>
+                <span>{new Date(registration.metadata.checkInTime).toLocaleString()}</span>
+              </>
+            )}
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
-}
+};
 
-// Mock function for tests
-export function generateQRCodeForRegistration(registrationData: any): QRCodeDisplayProps {
-  return {
-    registrationId: registrationData.id,
-    name: registrationData.metadata?.playerName || registrationData.metadata?.teamName || 'Unnamed',
-    type: registrationData.metadata?.teamName ? 'team' : 'player',
-    status: registrationData.status
-  };
-}
+export default QRCodeDisplay;

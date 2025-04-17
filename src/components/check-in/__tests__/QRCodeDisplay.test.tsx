@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import QRCodeDisplay from '../QRCodeDisplay';
+import { QRCodeDisplay } from '../QRCodeDisplay';
 import { RegistrationStatus } from '@/types/tournament-enums';
 import { TournamentRegistration } from '@/types/registration';
 

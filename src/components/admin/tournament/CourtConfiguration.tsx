@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Court, CourtStatus } from '@/types/entities';
+import { Court } from '@/types/entities';
+import { CourtStatus } from '@/types/tournament-enums';
 import { courtService } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,13 +83,11 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
 
     try {
       const newCourtData = {
-        tournamentId: tournamentId, // Use camelCase for our type
-        tournament_id: tournamentId, // Include snake_case for DB
+        tournamentId: tournamentId,
         name,
         description: description || null,
         status: CourtStatus.AVAILABLE,
         number: court_number,
-        court_number
       };
       await courtService.createCourt(newCourtData);
       toast({ title: "Success", description: "Court added successfully." });

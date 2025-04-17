@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { TournamentFormValues } from "./types";
-import { GameType } from "@/types/tournament-enums";
+import { GameType, TournamentFormat } from "@/types/tournament-enums";
 
 interface FormatTabProps {
   form: UseFormReturn<TournamentFormValues>;
