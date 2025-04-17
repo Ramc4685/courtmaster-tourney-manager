@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,8 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Category, Division } from '../../types';
-import { PlusCircle, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import {
   Card,
@@ -34,7 +33,10 @@ import {
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { categorySchema } from '../../types';
-import { PlayType, TournamentFormat } from '@/types/tournament-enums';
+import { PlayType, TournamentFormat, Division } from '@/types/tournament-enums';
+
+// Import Category interface from types file
+import { Category } from '../../types';
 
 interface CategoriesStepProps {
   categories: Category[];

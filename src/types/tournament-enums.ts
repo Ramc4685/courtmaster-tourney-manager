@@ -14,7 +14,13 @@ export enum Division {
   SENIORS = 'SENIOR',
   OPEN = 'OPEN',
   MENS = 'MENS',
-  WOMENS = 'WOMENS'
+  WOMENS = 'WOMENS',
+  MIXED = 'MIXED',
+  BEGINNER = 'BEGINNER',
+  INTERMEDIATE = 'INTERMEDIATE',
+  ADVANCED = 'ADVANCED',
+  PRO = 'PRO',
+  JUNIOR = 'JUNIOR'
 }
 
 export enum MatchStatus {
@@ -24,4 +30,55 @@ export enum MatchStatus {
   CANCELLED = 'CANCELLED'
 }
 
-export { CourtStatus } from './entities';
+export enum TournamentFormat {
+  SINGLE_ELIMINATION = 'SINGLE_ELIMINATION',
+  DOUBLE_ELIMINATION = 'DOUBLE_ELIMINATION',
+  ROUND_ROBIN = 'ROUND_ROBIN',
+  GROUP_KNOCKOUT = 'GROUP_KNOCKOUT',
+  SWISS = 'SWISS',
+  CUSTOM = 'CUSTOM',
+  MULTI_STAGE = 'MULTI_STAGE'
+}
+
+export enum PlayType {
+  SINGLES = 'SINGLES',
+  DOUBLES = 'DOUBLES',
+  MIXED = 'MIXED'
+}
+
+export enum RegistrationStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  WAITLIST = 'WAITLIST',
+  CHECKED_IN = 'CHECKED_IN'
+}
+
+export enum UserRole {
+  ADMIN = 'admin',
+  ORGANIZER = 'organizer',
+  SCOREKEEPER = 'scorekeeper',
+  PLAYER = 'player',
+  SPECTATOR = 'spectator'
+}
+
+export enum TournamentStatus {
+  DRAFT = 'DRAFT',
+  REGISTRATION = 'REGISTRATION',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
+}
+
+export enum CourtStatus {
+  AVAILABLE = 'AVAILABLE',
+  IN_USE = 'IN_USE',
+  MAINTENANCE = 'MAINTENANCE',
+  RESERVED = 'RESERVED'
+}
+
+export enum TournamentStageEnum {
+  GROUP_STAGE = 'GROUP_STAGE',
+  DIVISION_PLACEMENT = 'DIVISION_PLACEMENT',
+  PLAYOFF_KNOCKOUT = 'PLAYOFF_KNOCKOUT'
+}

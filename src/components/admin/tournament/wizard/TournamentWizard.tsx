@@ -3,7 +3,7 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Box, Paper } from '@mui/material';
 import { BasicInfoStep } from './steps/BasicInfoStep';
-import { CategoriesStep } from './steps/CategoriesStep';
+import CategoriesStep from './steps/CategoriesStep';
 import { GameSettingsStep } from './steps/GameSettingsStep';
 import { RegistrationStep } from './steps/RegistrationStep';
 import { ReviewStep } from './steps/ReviewStep';

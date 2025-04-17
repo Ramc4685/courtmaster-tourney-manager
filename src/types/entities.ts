@@ -1,6 +1,22 @@
 
+// Create a consistent interface mapping between snake_case backend and camelCase frontend
+export interface Court {
+  id: string;
+  name: string;
+  court_number: number;
+  tournament_id: string;
+  status: string;
+  description?: string;
+  number?: number;
+  tournamentId?: string; // Alias for tournament_id
+  currentMatch?: any; // Match reference
+  created_at: Date;
+  updated_at: Date;
+  createdAt?: Date; // Alias for created_at
+  updatedAt?: Date; // Alias for updated_at
+}
+
 export { 
-  Court, 
   Match, 
   Profile, 
   Division, 
@@ -8,12 +24,12 @@ export {
   CourtStatus 
 } from './tournament';
 
-// Add snake_case to camelCase mapping
-export interface Court {
+// Add Notification interface for components that need it
+export interface Notification {
   id: string;
-  name: string;
-  court_number: number;
-  tournament_id: string;
-  created_at: Date;
-  updated_at: Date;
+  title: string;
+  message: string;
+  type: string;
+  read: boolean;
+  createdAt: Date;
 }
