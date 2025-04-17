@@ -1,6 +1,5 @@
-
+import { APIService } from './APIService';  // Note capital 'S'
 // Re-export all services
-import { APIService } from './apiService';
 import { RegistrationService } from './registrationService';
 import { ProfileService } from './profileService';
 import { courtService } from './courtService';
