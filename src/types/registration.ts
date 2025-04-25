@@ -1,6 +1,5 @@
-
 import { z } from 'zod';
-import { TournamentRegistrationStatus } from './entities';
+import { RegistrationStatus } from './entities';
 
 export const playerRegistrationSchema = z.object({
   player_id: z.string(),
@@ -30,6 +29,13 @@ export const teamRegistrationSchema = z.object({
   ).min(1, "At least one player is required"),
 });
 
+export interface RegistrationMetadata {
+  waitlistPosition?: number;
+  checkInTime?: string;
+  notes?: string;
+  verificationCode?: string;
+}
+
 export interface PlayerRegistrationWithStatus {
   id: string;
   playerId: string;
@@ -38,7 +44,8 @@ export interface PlayerRegistrationWithStatus {
   lastName: string;
   email: string;
   phone?: string;
-  status: TournamentRegistrationStatus;
+  status: RegistrationStatus;
+  metadata: RegistrationMetadata;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,7 +57,8 @@ export interface TeamRegistrationWithStatus {
   teamName: string;
   captainName: string;
   playerCount: number;
-  status: TournamentRegistrationStatus;
+  status: RegistrationStatus;
+  metadata: RegistrationMetadata;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -59,7 +67,8 @@ export interface TournamentRegistration {
   id: string;
   tournamentId: string;
   divisionId: string;
-  status: TournamentRegistrationStatus;
+  status: RegistrationStatus;
   registeredAt: Date;
   updatedAt: Date;
+  metadata: RegistrationMetadata;
 }

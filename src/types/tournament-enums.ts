@@ -1,17 +1,17 @@
 
 // Ensure all enums are properly exported
 export enum GameType {
-  SINGLE_ELIMINATION = 'SINGLE_ELIMINATION',
-  DOUBLE_ELIMINATION = 'DOUBLE_ELIMINATION',
-  ROUND_ROBIN = 'ROUND_ROBIN',
   BADMINTON = 'BADMINTON',
   TENNIS = 'TENNIS', 
-  PICKLEBALL = 'PICKLEBALL'
+  PICKLEBALL = 'PICKLEBALL',
+  SINGLE_ELIMINATION = 'SINGLE_ELIMINATION',
+  DOUBLE_ELIMINATION = 'DOUBLE_ELIMINATION',
+  ROUND_ROBIN = 'ROUND_ROBIN'
 }
 
 export enum Division {
-  JUNIORS = 'JUNIOR',
-  SENIORS = 'SENIOR',
+  JUNIORS = 'JUNIORS',
+  SENIORS = 'SENIORS',
   OPEN = 'OPEN',
   MENS = 'MENS',
   WOMENS = 'WOMENS',
@@ -19,8 +19,7 @@ export enum Division {
   BEGINNER = 'BEGINNER',
   INTERMEDIATE = 'INTERMEDIATE',
   ADVANCED = 'ADVANCED',
-  PRO = 'PRO',
-  JUNIOR = 'JUNIOR'
+  PRO = 'PRO'
 }
 
 export enum MatchStatus {
@@ -47,13 +46,11 @@ export enum PlayType {
   MIXED = 'MIXED'
 }
 
-export enum RegistrationStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  WAITLIST = 'WAITLIST',
-  CHECKED_IN = 'CHECKED_IN',
-  WITHDRAWN = 'WITHDRAWN'
+export enum CourtStatus {
+  AVAILABLE = 'AVAILABLE',
+  IN_USE = 'IN_USE',
+  MAINTENANCE = 'MAINTENANCE',
+  RESERVED = 'RESERVED'
 }
 
 export enum UserRole {
@@ -74,13 +71,6 @@ export enum TournamentStatus {
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
   PUBLISHED = 'PUBLISHED'
-}
-
-export enum CourtStatus {
-  AVAILABLE = 'AVAILABLE',
-  IN_USE = 'IN_USE',
-  MAINTENANCE = 'MAINTENANCE',
-  RESERVED = 'RESERVED'
 }
 
 export enum TournamentStageEnum {

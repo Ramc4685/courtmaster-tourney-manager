@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { UserMenu } from '../auth/UserMenu';
+import UserMenu from '../auth/UserMenu';
 import { Trophy, Calendar, Users, Settings } from 'lucide-react';
 
 export const Navbar = () => {

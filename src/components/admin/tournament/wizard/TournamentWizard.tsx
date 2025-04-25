@@ -120,12 +120,10 @@ export default function TournamentWizard({ onComplete }: TournamentWizardProps) 
         description: "Tournament created successfully!",
       });
 
-      // Call onComplete callback if provided
       if (onComplete) {
         onComplete(values);
       }
 
-      // Redirect to tournament management page
       navigate(`/tournaments/${createdTournament.id}`);
     } catch (error) {
       console.error('Failed to create tournament:', error);
@@ -136,20 +134,6 @@ export default function TournamentWizard({ onComplete }: TournamentWizardProps) 
       });
     }
   };
-
-  const handleCategoriesChange = (updatedCategories: Category[]) => {
-    setCategories(updatedCategories);
-  };
-
-  const mappedCategories = categories.map((category) => ({
-    id: uuidv4(),
-    name: category.name,
-    division: category.division,
-    type: category.type || 'standard',
-    playType: category.playType || PlayType.SINGLES,
-    format: category.format || TournamentFormat.SINGLE_ELIMINATION,
-    teams: []
-  }));
 
   return (
     <div className="space-y-8">
@@ -166,24 +150,12 @@ export default function TournamentWizard({ onComplete }: TournamentWizardProps) 
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="step1">
-          <Card>
-            <CardContent className="pt-6">
-              {/* Tournament Info Step */}
-              <div className="space-y-4">
-                {/* Step 1 Form Fields */}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="step2">
           <Card>
             <CardContent className="pt-6">
-              {/* Categories Step */}
               <CategoriesStep 
                 categories={categories}
-                onCategoriesChange={handleCategoriesChange}
+                onCategoriesChange={setCategories}
               />
             </CardContent>
           </Card>

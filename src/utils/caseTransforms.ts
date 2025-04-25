@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for transforming between camelCase and snake_case
  */
@@ -48,3 +47,34 @@ export function snakeizeKeys<T extends Record<string, any>>(obj: T): Record<stri
   
   return result;
 }
+
+// Add new adapter utilities for Court type
+export const courtAdapter = {
+  toFrontend: (court: any): Court => ({
+    id: court.id,
+    name: court.name,
+    courtNumber: court.court_number,
+    court_number: court.court_number,
+    tournament_id: court.tournament_id,
+    tournamentId: court.tournament_id,
+    status: court.status,
+    description: court.description,
+    currentMatch: court.current_match,
+    created_at: court.created_at,
+    createdAt: new Date(court.created_at),
+    updated_at: court.updated_at,
+    updatedAt: new Date(court.updated_at)
+  }),
+  
+  toBackend: (court: Partial<Court>) => ({
+    id: court.id,
+    name: court.name,
+    court_number: court.courtNumber || court.court_number,
+    tournament_id: court.tournamentId || court.tournament_id,
+    status: court.status,
+    description: court.description,
+    current_match: court.currentMatch,
+    created_at: court.createdAt || court.created_at,
+    updated_at: court.updatedAt || court.updated_at
+  })
+};

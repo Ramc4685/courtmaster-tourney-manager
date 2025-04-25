@@ -1,26 +1,24 @@
-
 import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import { v4 as uuidv4 } from 'uuid';
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Form,
   FormControl,
@@ -35,8 +33,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { categorySchema } from '../../types';
 import { PlayType, TournamentFormat, Division } from '@/types/tournament-enums';
 import { PlusCircle, Trash2 } from 'lucide-react';
-
-// Import Category interface from types file
 import { Category } from '../../types';
 
 interface CategoriesStepProps {
@@ -80,7 +76,7 @@ const CategoriesStep: React.FC<CategoriesStepProps> = ({ categories, onCategorie
       label: 'Mixed'
     },
     {
-      value: Division.JUNIOR,
+      value: Division.JUNIORS,
       label: 'Juniors'
     },
     {
@@ -162,7 +158,7 @@ const CategoriesStep: React.FC<CategoriesStepProps> = ({ categories, onCategorie
       case Division.MENS: return 'bg-green-100 text-green-800';
       case Division.WOMENS: return 'bg-purple-100 text-purple-800';
       case Division.MIXED: return 'bg-amber-100 text-amber-800';
-      case Division.JUNIOR: return 'bg-indigo-100 text-indigo-800';
+      case Division.JUNIORS: return 'bg-indigo-100 text-indigo-800';
       case Division.SENIORS: return 'bg-teal-100 text-teal-800';
       case Division.BEGINNER: return 'bg-lime-100 text-lime-800';
       case Division.INTERMEDIATE: return 'bg-orange-100 text-orange-800';
