@@ -10,6 +10,7 @@ import QRCheckIn from "@/components/check-in/QRCheckIn";
 import { PlayerRegistrationList } from "@/components/registration/PlayerRegistrationList";
 import { TeamRegistrationList } from "@/components/registration/TeamRegistrationList";
 import { RegistrationStats } from "@/components/registration/RegistrationStats";
+import { RegistrationStatus } from "@/types/tournament-enums";
 
 const CheckIn: React.FC = () => {
   const { id: tournamentId } = useParams<{ id: string }>();
@@ -138,4 +139,4 @@ const CheckIn: React.FC = () => {
   );
 };
 
-export default CheckIn; 
+export default CheckIn;

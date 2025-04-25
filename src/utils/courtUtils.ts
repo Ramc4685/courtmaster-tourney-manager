@@ -1,5 +1,7 @@
 
-import { Tournament, Match, Court, CourtStatus } from "@/types/tournament";
+import { Tournament, Match } from "@/types/tournament";
+import { Court } from '@/types/entities';
+import { CourtStatus } from '@/types/tournament-enums';
 import { findCourtById, findMatchById, updateCourtInTournament, updateMatchInTournament } from "./tournamentUtils";
 
 // Assign court to match

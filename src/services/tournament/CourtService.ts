@@ -1,5 +1,7 @@
 
-import { Tournament, Court, Match, CourtStatus } from "@/types/tournament";
+import { Tournament, Match } from "@/types/tournament";
+import { Court } from '@/types/entities';
+import { CourtStatus } from '@/types/tournament-enums';
 import { tournamentService } from "./TournamentService";
 import { findMatchById, findCourtById } from "@/utils/tournamentUtils";
 

@@ -1,5 +1,6 @@
 
 // Ensure all enums are properly exported
+
 export enum GameType {
   BADMINTON = 'BADMINTON',
   TENNIS = 'TENNIS', 
@@ -19,7 +20,8 @@ export enum Division {
   BEGINNER = 'BEGINNER',
   INTERMEDIATE = 'INTERMEDIATE',
   ADVANCED = 'ADVANCED',
-  PRO = 'PRO'
+  PRO = 'PRO',
+  INITIAL = 'INITIAL' // Adding this as it's referenced in code
 }
 
 export enum MatchStatus {
@@ -50,7 +52,8 @@ export enum CourtStatus {
   AVAILABLE = 'AVAILABLE',
   IN_USE = 'IN_USE',
   MAINTENANCE = 'MAINTENANCE',
-  RESERVED = 'RESERVED'
+  RESERVED = 'RESERVED',
+  UNAVAILABLE = 'UNAVAILABLE' // Adding this as it might be referenced
 }
 
 export enum UserRole {
@@ -78,3 +81,15 @@ export enum TournamentStageEnum {
   DIVISION_PLACEMENT = 'DIVISION_PLACEMENT',
   PLAYOFF_KNOCKOUT = 'PLAYOFF_KNOCKOUT'
 }
+
+// Define RegistrationStatus here as the canonical source
+export enum RegistrationStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  WAITLIST = 'WAITLIST',
+  CHECKED_IN = 'CHECKED_IN',
+  WITHDRAWN = 'WITHDRAWN'
+}
+
+// Ensure we have a single source of truth for all enums

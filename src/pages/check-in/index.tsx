@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import RegistrationStatusList from "@/components/registration/RegistrationStatusList";
-import { RegistrationStatus, PlayerRegistrationWithStatus, TeamRegistrationWithStatus } from "@/types/registration";
+import { PlayerRegistrationWithStatus, TeamRegistrationWithStatus } from "@/types/registration";
+import { RegistrationStatus } from "@/types/tournament-enums";
 
 const CheckInPage: React.FC = () => {
   const { updatePlayerStatus, updateTeamStatus, playerRegistrations, teamRegistrations } = useRegistration();
@@ -128,4 +129,4 @@ const CheckInPage: React.FC = () => {
   );
 };
 
-export default CheckInPage; 
+export default CheckInPage;

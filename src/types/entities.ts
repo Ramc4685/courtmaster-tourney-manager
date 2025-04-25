@@ -1,5 +1,8 @@
 
-import { TournamentFormat, Division, PlayType, CourtStatus, UserRole, TournamentStatus, MatchStatus } from './tournament-enums';
+import { TournamentFormat, Division, PlayType, UserRole, TournamentStatus, MatchStatus } from './tournament-enums';
+
+// Re-export CourtStatus directly from tournament-enums
+export { CourtStatus } from './tournament-enums';
 
 // Create a consistent interface mapping between snake_case backend and camelCase frontend
 export interface Court {
@@ -95,15 +98,8 @@ export interface Match {
   scorerName?: string;
 }
 
-// Standardize registration status
-export enum RegistrationStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  WAITLIST = 'WAITLIST',
-  CHECKED_IN = 'CHECKED_IN',
-  WITHDRAWN = 'WITHDRAWN'
-}
+// Standardize registration status - export directly from tournament-enums
+export { RegistrationStatus } from './tournament-enums';
 
 // Remove TournamentRegistrationStatus and use RegistrationStatus instead
-export { RegistrationStatus as TournamentRegistrationStatus };
+export { RegistrationStatus as TournamentRegistrationStatus } from './tournament-enums';

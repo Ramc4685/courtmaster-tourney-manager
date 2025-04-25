@@ -1,6 +1,7 @@
 
 import { supabase } from '@/lib/supabase';
-import { Court, CourtStatus } from '@/types/entities';
+import { Court } from '@/types/entities';
+import { CourtStatus } from '@/types/tournament-enums';
 import { camelizeKeys, snakeizeKeys } from '@/utils/caseTransforms';
 
 export const courtService = {
