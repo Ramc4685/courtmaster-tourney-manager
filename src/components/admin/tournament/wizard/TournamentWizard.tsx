@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,7 +8,7 @@ import { tournamentFormSchema, TournamentFormValues, Category } from '../types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CategoriesStep from './steps/CategoriesStep';
 import { useToast } from '@/components/ui/use-toast';
-import { tournamentService } from '@/services';
+import { tournamentService } from '@/services/api';
 import { useNavigate } from 'react-router-dom';
 import { GameType, Division, TournamentFormat, TournamentStatus, TournamentStageEnum, PlayType } from '@/types/tournament-enums';
 import { Tournament } from '@/types/tournament';

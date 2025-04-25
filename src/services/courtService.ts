@@ -4,14 +4,14 @@ import { Court, CourtStatus } from '@/types/entities';
 import { camelizeKeys, snakeizeKeys } from '@/utils/caseTransforms';
 
 export const courtService = {
-  async createCourt(court: Omit<Court, "id" | "createdAt" | "updatedAt">): Promise<Court> {
+  async createCourt(court: Omit<Court, "id">): Promise<Court> {
     // Convert camelCase to snake_case for database
     const payload = {
-      tournament_id: court.tournamentId,
+      tournament_id: court.tournamentId || court.tournament_id,
       name: court.name,
       description: court.description || '',
       status: court.status || CourtStatus.AVAILABLE,
-      court_number: court.number
+      court_number: court.courtNumber || court.court_number
     };
       
     const { data, error } = await supabase
@@ -26,14 +26,16 @@ export const courtService = {
     return {
       id: data.id,
       name: data.name,
-      number: data.court_number,
+      courtNumber: data.court_number,
       court_number: data.court_number, // For backward compatibility
       status: data.status as CourtStatus,
       description: data.description,
       tournamentId: data.tournament_id,
       tournament_id: data.tournament_id, // For backward compatibility
       createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at)
+      created_at: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+      updated_at: new Date(data.updated_at)
     };
   },
   
@@ -48,24 +50,30 @@ export const courtService = {
     return data.map(court => ({
       id: court.id,
       name: court.name,
-      number: court.court_number,
+      courtNumber: court.court_number,
       court_number: court.court_number, // For backward compatibility
       status: court.status as CourtStatus,
       description: court.description,
       tournamentId: court.tournament_id,
       tournament_id: court.tournament_id, // For backward compatibility
       createdAt: new Date(court.created_at),
-      updatedAt: new Date(court.updated_at)
+      created_at: new Date(court.created_at),
+      updatedAt: new Date(court.updated_at),
+      updated_at: new Date(court.updated_at)
     }));
   },
   
-  async updateCourt(id: string, courtData: Partial<Omit<Court, "id" | "createdAt" | "updatedAt">>): Promise<Court> {
+  async updateCourt(id: string, courtData: Partial<Court>): Promise<Court> {
     const payload: any = {};
     if (courtData.name !== undefined) payload.name = courtData.name;
     if (courtData.description !== undefined) payload.description = courtData.description;
     if (courtData.status !== undefined) payload.status = courtData.status;
-    if (courtData.number !== undefined) payload.court_number = courtData.number;
-    if (courtData.tournamentId !== undefined) payload.tournament_id = courtData.tournamentId;
+    if (courtData.courtNumber !== undefined || courtData.court_number !== undefined) {
+      payload.court_number = courtData.courtNumber || courtData.court_number;
+    }
+    if (courtData.tournamentId !== undefined || courtData.tournament_id !== undefined) {
+      payload.tournament_id = courtData.tournamentId || courtData.tournament_id;
+    }
     
     const { data, error } = await supabase
       .from('courts')
@@ -79,14 +87,16 @@ export const courtService = {
     return {
       id: data.id,
       name: data.name,
-      number: data.court_number,
+      courtNumber: data.court_number,
       court_number: data.court_number, // For backward compatibility
       status: data.status as CourtStatus,
       description: data.description,
       tournamentId: data.tournament_id,
       tournament_id: data.tournament_id, // For backward compatibility
       createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at)
+      created_at: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+      updated_at: new Date(data.updated_at)
     };
   },
   

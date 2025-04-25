@@ -1,39 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { v4 as uuidv4 } from 'uuid';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { categorySchema } from '../../types';
-import { PlayType, TournamentFormat, Division } from '@/types/tournament-enums';
+
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Division, TournamentFormat, PlayType } from '@/types/tournament-enums';
+import { Category, CategoryType, DivisionLevel } from '@/components/admin/tournament/types';
 import { PlusCircle, Trash2 } from 'lucide-react';
-import { Category } from '../../types';
+import { z } from 'zod';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+// Define the schema for categories
+const categorySchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, { message: 'Category name is required' }),
+  type: z.string(),
+  playType: z.nativeEnum(PlayType),
+  level: z.string(),
+  format: z.nativeEnum(TournamentFormat),
+  seeded: z.boolean().default(false)
+});
+
+// Define the schema for the form
+const formSchema = z.object({
+  categories: z.array(categorySchema)
+});
+
+// Define the types based on the schema
+type CategoryFormValues = z.infer<typeof categorySchema>;
+type FormValues = z.infer<typeof formSchema>;
 
 interface CategoriesStepProps {
   categories: Category[];
@@ -41,266 +39,221 @@ interface CategoriesStepProps {
 }
 
 const CategoriesStep: React.FC<CategoriesStepProps> = ({ categories, onCategoriesChange }) => {
-  const [localCategories, setLocalCategories] = useState<Category[]>(categories);
+  // Initialize form with existing categories or defaults
+  const defaultValues: FormValues = {
+    categories: categories.length > 0 
+      ? categories.map(cat => ({
+          id: cat.id,
+          name: cat.name,
+          type: cat.type || '',
+          playType: cat.playType || PlayType.SINGLES,
+          level: cat.type || 'STANDARD',
+          format: cat.format || TournamentFormat.SINGLE_ELIMINATION,
+          seeded: cat.seeded || false
+        }))
+      : [{
+          id: crypto.randomUUID(),
+          name: 'Men\'s Singles',
+          type: 'STANDARD',
+          playType: PlayType.SINGLES,
+          level: 'INTERMEDIATE',
+          format: TournamentFormat.SINGLE_ELIMINATION,
+          seeded: false
+        }]
+  };
 
-  useEffect(() => {
-    onCategoriesChange(localCategories);
-  }, [localCategories, onCategoriesChange]);
-
-  const categoryForm = useForm<Category>({
-    resolver: zodResolver(categorySchema),
-    defaultValues: {
-      id: '',
-      name: '',
-      playType: PlayType.SINGLES,
-      format: TournamentFormat.SINGLE_ELIMINATION,
-      division: Division.OPEN,
-    },
+  const { control, handleSubmit, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues
   });
 
-  const divisionOptions = [
-    {
-      value: Division.OPEN,
-      label: 'Open'
-    },
-    {
-      value: Division.MENS,
-      label: 'Mens'
-    },
-    {
-      value: Division.WOMENS,
-      label: 'Womens'
-    },
-    {
-      value: Division.MIXED,
-      label: 'Mixed'
-    },
-    {
-      value: Division.JUNIORS,
-      label: 'Juniors'
-    },
-    {
-      value: Division.SENIORS,
-      label: 'Seniors'
-    },
-    {
-      value: Division.BEGINNER,
-      label: 'Beginner'
-    },
-    {
-      value: Division.INTERMEDIATE,
-      label: 'Intermediate'
-    },
-    {
-      value: Division.ADVANCED,
-      label: 'Advanced'
-    },
-    {
-      value: Division.PRO,
-      label: 'Pro'
-    },
-  ];
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'categories'
+  });
 
-  const playTypeOptions = [
-    {
-      value: PlayType.SINGLES,
-      label: 'Singles'
-    },
-    {
-      value: PlayType.DOUBLES,
-      label: 'Doubles'
-    },
-    {
-      value: PlayType.MIXED,
-      label: 'Mixed'
-    },
-  ];
-
-  const formatOptions = [
-    {
-      value: TournamentFormat.SINGLE_ELIMINATION,
-      label: 'Single Elimination'
-    },
-    {
-      value: TournamentFormat.DOUBLE_ELIMINATION,
-      label: 'Double Elimination'
-    },
-    {
-      value: TournamentFormat.ROUND_ROBIN,
-      label: 'Round Robin'
-    },
-  ];
-
-  const addCategory = () => {
-    const newCategory: Category = {
-      id: uuidv4(),
-      name: `Category ${localCategories.length + 1}`,
+  const handleAddCategory = () => {
+    append({
+      id: crypto.randomUUID(),
+      name: '',
+      type: 'STANDARD',
       playType: PlayType.SINGLES,
+      level: 'INTERMEDIATE',
       format: TournamentFormat.SINGLE_ELIMINATION,
-      division: Division.OPEN,
-    };
-    setLocalCategories([...localCategories, newCategory]);
+      seeded: false
+    });
   };
 
-  const removeCategory = (id: string) => {
-    setLocalCategories(localCategories.filter(category => category.id !== id));
+  const onSubmit = (data: FormValues) => {
+    const transformedCategories = data.categories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      type: cat.type,
+      division: cat.playType === PlayType.SINGLES 
+        ? (cat.level === 'BEGINNER' ? Division.JUNIORS 
+           : cat.level === 'INTERMEDIATE' ? Division.INTERMEDIATE
+           : cat.level === 'ADVANCED' ? Division.ADVANCED
+           : Division.SENIORS)
+        : Division.MIXED,
+      playType: cat.playType,
+      format: cat.format,
+      seeded: cat.seeded
+    }));
+    
+    onCategoriesChange(transformedCategories);
   };
 
-  const updateCategory = (id: string, updatedValues: Partial<Category>) => {
-    setLocalCategories(localCategories.map(category =>
-      category.id === id ? { ...category, ...updatedValues } : category
-    ));
-  };
-
-  const getDivisionColor = (division: string) => {
-    switch (division) {
-      case Division.OPEN: return 'bg-blue-100 text-blue-800';
-      case Division.MENS: return 'bg-green-100 text-green-800';
-      case Division.WOMENS: return 'bg-purple-100 text-purple-800';
-      case Division.MIXED: return 'bg-amber-100 text-amber-800';
-      case Division.JUNIORS: return 'bg-indigo-100 text-indigo-800';
-      case Division.SENIORS: return 'bg-teal-100 text-teal-800';
-      case Division.BEGINNER: return 'bg-lime-100 text-lime-800';
-      case Division.INTERMEDIATE: return 'bg-orange-100 text-orange-800';
-      case Division.ADVANCED: return 'bg-fuchsia-100 text-fuchsia-800';
-      case Division.PRO: return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // Auto-save when form changes
+  React.useEffect(() => {
+    const subscription = control.watch((value, { name }) => {
+      if (value.categories) {
+        handleSubmit(onSubmit)();
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [control, handleSubmit, onSubmit]);
 
   return (
-    <div className="flex flex-col space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Categories</h2>
-        <Button size="sm" onClick={addCategory}>
-          <PlusCircle className="mr-2 h-4 w-4" />
+        <h3 className="text-lg font-medium">Tournament Categories</h3>
+        <Button 
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleAddCategory}
+          className="flex items-center"
+        >
+          <PlusCircle className="mr-2 h-4 w-4" /> 
           Add Category
         </Button>
       </div>
 
-      <ScrollArea className="rounded-md border p-4 h-[400px]">
-        <div className="flex flex-col space-y-4">
-          {localCategories.map((category) => (
-            <Card key={category.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>
-                    <Input
-                      type="text"
-                      placeholder="Category Name"
-                      value={category.name}
-                      onChange={(e) => updateCategory(category.id, { name: e.target.value })}
-                    />
-                  </CardTitle>
-                  <Button variant="destructive" size="icon" onClick={() => removeCategory(category.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-                <CardDescription>
-                  <Badge className={getDivisionColor(category.division)}>{category.division}</Badge>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4">
+      {fields.map((field, index) => (
+        <Card key={field.id} className="overflow-hidden">
+          <CardContent className="p-4">
+            <div className="flex justify-between items-start">
+              <div className="grow space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={categoryForm.control}
-                    name="playType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Play Type</FormLabel>
-                        <Select
-                          onValueChange={(value) => updateCategory(category.id, { playType: value as PlayType })}
-                          defaultValue={category.playType}
+                  <div>
+                    <Label htmlFor={`categories.${index}.name`}>Category Name</Label>
+                    <Controller
+                      control={control}
+                      name={`categories.${index}.name`}
+                      render={({ field }) => (
+                        <Input {...field} placeholder="e.g. Men's Singles A" />
+                      )}
+                    />
+                    {errors.categories?.[index]?.name && (
+                      <p className="text-red-500 text-sm mt-1">{errors.categories[index]?.name?.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor={`categories.${index}.playType`}>Play Type</Label>
+                    <Controller
+                      control={control}
+                      name={`categories.${index}.playType`}
+                      render={({ field }) => (
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
                         >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a play type" />
-                            </SelectTrigger>
-                          </FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select play type" />
+                          </SelectTrigger>
                           <SelectContent>
-                            {playTypeOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value={PlayType.SINGLES}>Singles</SelectItem>
+                            <SelectItem value={PlayType.DOUBLES}>Doubles</SelectItem>
+                            <SelectItem value={PlayType.MIXED}>Mixed Doubles</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>
-                          The type of play for this category.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={categoryForm.control}
-                    name="format"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Format</FormLabel>
-                        <Select
-                          onValueChange={(value) => updateCategory(category.id, { format: value as TournamentFormat })}
-                          defaultValue={category.format}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a format" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {formatOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          The format for this category.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      )}
+                    />
+                  </div>
                 </div>
 
-                <FormField
-                  control={categoryForm.control}
-                  name="division"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Division</FormLabel>
-                      <Select
-                        onValueChange={(value) => updateCategory(category.id, { division: value as Division })}
-                        defaultValue={category.division}
-                      >
-                        <FormControl>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor={`categories.${index}.level`}>Level</Label>
+                    <Controller
+                      control={control}
+                      name={`categories.${index}.level`}
+                      render={({ field }) => (
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                        >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a division" />
+                            <SelectValue placeholder="Select level" />
                           </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {divisionOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        The division for this category.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </ScrollArea>
-    </div>
+                          <SelectContent>
+                            <SelectItem value="BEGINNER">Beginner</SelectItem>
+                            <SelectItem value="INTERMEDIATE">Intermediate</SelectItem>
+                            <SelectItem value="ADVANCED">Advanced</SelectItem>
+                            <SelectItem value="SENIORS">Seniors</SelectItem>
+                            <SelectItem value="OPEN">Open</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`categories.${index}.format`}>Format</Label>
+                    <Controller
+                      control={control}
+                      name={`categories.${index}.format`}
+                      render={({ field }) => (
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select format" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={TournamentFormat.SINGLE_ELIMINATION}>Single Elimination</SelectItem>
+                            <SelectItem value={TournamentFormat.DOUBLE_ELIMINATION}>Double Elimination</SelectItem>
+                            <SelectItem value={TournamentFormat.ROUND_ROBIN}>Round Robin</SelectItem>
+                            <SelectItem value={TournamentFormat.GROUP_KNOCKOUT}>Group + Knockout</SelectItem>
+                            <SelectItem value={TournamentFormat.SWISS}>Swiss System</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Controller
+                    control={control}
+                    name={`categories.${index}.seeded`}
+                    render={({ field }) => (
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        id={`categories.${index}.seeded`}
+                      />
+                    )}
+                  />
+                  <Label htmlFor={`categories.${index}.seeded`}>Enable Seeding</Label>
+                </div>
+              </div>
+
+              <Button 
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => remove(index)}
+                disabled={fields.length === 1}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </form>
   );
 };
 

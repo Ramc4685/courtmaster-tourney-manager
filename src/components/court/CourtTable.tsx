@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Court } from '@/types/entities';
 import { CourtStatus } from '@/types/tournament-enums';
@@ -29,10 +30,6 @@ const CourtStatusBadge = ({ status }: { status: CourtStatus }) => {
     case CourtStatus.RESERVED:
       badgeText = "Reserved";
       badgeColor = "bg-blue-100 text-blue-800";
-      break;
-    case CourtStatus.UNAVAILABLE:
-      badgeText = "Unavailable";
-      badgeColor = "bg-gray-100 text-gray-800";
       break;
     default:
       badgeText = "Unknown";
@@ -79,7 +76,7 @@ const CourtTable: React.FC<CourtTableProps> = ({ courts, onEditCourt, onDeleteCo
         <tbody>
           {courts.map((court) => (
             <tr key={court.id} className="border-b hover:bg-gray-50">
-              <td className="px-6 py-4">{court.number}</td>
+              <td className="px-6 py-4">{court.courtNumber || court.court_number}</td>
               <td className="px-6 py-4">{court.name}</td>
               <td className="px-6 py-4">
                 <CourtStatusBadge status={court.status} />

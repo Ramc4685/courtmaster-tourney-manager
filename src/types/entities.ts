@@ -45,13 +45,55 @@ export interface RolePermissions {
   can_view_reports: boolean;
 }
 
-export { 
-  Match, 
-  Profile, 
-  Division, 
-  MatchStatus, 
-  CourtStatus 
-};
+export interface Notification {
+  id?: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: string;
+  read: boolean;
+  createdAt?: Date;
+}
+
+export interface Profile {
+  id: string;
+  full_name: string;
+  display_name: string;
+  avatar_url: string;
+  phone: string;
+  role: UserRole;
+  created_at: string;
+  updated_at: string;
+  email?: string;
+  preferences?: {
+    notifications?: {
+      match_reminders?: boolean;
+      email?: boolean;
+    }
+  }
+}
+
+export interface Match {
+  id: string;
+  tournamentId: string;
+  divisionId?: string;
+  team1Id?: string;
+  team2Id?: string;
+  status: MatchStatus;
+  scheduledTime?: Date | string;
+  startTime?: Date | string;
+  endTime?: Date | string;
+  courtId?: string;
+  courtNumber?: number;
+  bracketRound: number;
+  bracketPosition: number;
+  matchNumber: string;
+  progression: string;
+  scores?: Array<{ team1Score: number, team2Score: number }>;
+  winner?: string;
+  loser?: string;
+  scorerName?: string;
+}
 
 // Standardize registration status
 export enum RegistrationStatus {

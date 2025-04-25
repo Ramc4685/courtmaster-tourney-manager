@@ -17,7 +17,7 @@ interface RoleBasedLayoutProps {
 const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   [UserRole.ADMIN]: {
     viewTournament: true,
-    editTournament: true,
+    canEditTournament: true,
     createTournament: true,
     deleteTournament: true,
     manageRegistrations: true,
@@ -30,6 +30,11 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     manageSystem: true,
     viewReports: true,
     exportData: true,
+    canManagePlayers: true,
+    canManageMatches: true,
+    canEnterScores: true,
+    canViewReports: true,
+    canManageCourts: true,
     // Legacy permissions
     can_manage_tournaments: true,
     can_manage_users: true,
@@ -39,7 +44,7 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   },
   [UserRole.DIRECTOR]: {
     viewTournament: true,
-    editTournament: true,
+    canEditTournament: true,
     createTournament: true,
     deleteTournament: true,
     manageRegistrations: true,
@@ -52,6 +57,11 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     manageSystem: false,
     viewReports: true,
     exportData: true,
+    canManagePlayers: true,
+    canManageMatches: true,
+    canEnterScores: true,
+    canViewReports: true,
+    canManageCourts: true,
     // Legacy permissions
     can_manage_tournaments: true,
     can_manage_users: false,
@@ -61,7 +71,7 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   },
   [UserRole.ORGANIZER]: {
     viewTournament: true,
-    editTournament: true,
+    canEditTournament: true,
     createTournament: true,
     deleteTournament: false,
     manageRegistrations: true,
@@ -74,6 +84,11 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     manageSystem: false,
     viewReports: true,
     exportData: true,
+    canManagePlayers: true,
+    canManageMatches: true,
+    canEnterScores: true,
+    canViewReports: true,
+    canManageCourts: true,
     // Legacy permissions
     can_manage_tournaments: true,
     can_manage_users: false,
@@ -83,7 +98,7 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   },
   [UserRole.SCOREKEEPER]: {
     viewTournament: true,
-    editTournament: false,
+    canEditTournament: false,
     createTournament: false,
     deleteTournament: false,
     manageRegistrations: false,
@@ -96,6 +111,11 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     manageSystem: false,
     viewReports: false,
     exportData: false,
+    canManagePlayers: false,
+    canManageMatches: false,
+    canEnterScores: true,
+    canViewReports: false,
+    canManageCourts: false,
     // Legacy permissions
     can_manage_tournaments: false,
     can_manage_users: false,
@@ -105,7 +125,7 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   },
   [UserRole.FRONT_DESK]: {
     viewTournament: true,
-    editTournament: false,
+    canEditTournament: false,
     createTournament: false,
     deleteTournament: false,
     manageRegistrations: true,
@@ -118,6 +138,11 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     manageSystem: false,
     viewReports: false,
     exportData: false,
+    canManagePlayers: true,
+    canManageMatches: false,
+    canEnterScores: false,
+    canViewReports: false,
+    canManageCourts: false,
     // Legacy permissions
     can_manage_tournaments: false,
     can_manage_users: false,
@@ -127,7 +152,7 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   },
   [UserRole.ADMIN_STAFF]: {
     viewTournament: true,
-    editTournament: false,
+    canEditTournament: false,
     createTournament: false,
     deleteTournament: false,
     manageRegistrations: true,
@@ -140,6 +165,11 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     manageSystem: false,
     viewReports: true,
     exportData: false,
+    canManagePlayers: true,
+    canManageMatches: true,
+    canEnterScores: true,
+    canViewReports: true,
+    canManageCourts: true,
     // Legacy permissions
     can_manage_tournaments: false,
     can_manage_users: false,
@@ -149,7 +179,7 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   },
   [UserRole.PLAYER]: {
     viewTournament: true,
-    editTournament: false,
+    canEditTournament: false,
     createTournament: false,
     deleteTournament: false,
     manageRegistrations: false,
@@ -162,6 +192,11 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     manageSystem: false,
     viewReports: false,
     exportData: false,
+    canManagePlayers: false,
+    canManageMatches: false,
+    canEnterScores: false,
+    canViewReports: false,
+    canManageCourts: false,
     // Legacy permissions
     can_manage_tournaments: false,
     can_manage_users: false,
@@ -171,7 +206,7 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   },
   [UserRole.SPECTATOR]: {
     viewTournament: true,
-    editTournament: false,
+    canEditTournament: false,
     createTournament: false,
     deleteTournament: false,
     manageRegistrations: false,
@@ -184,6 +219,11 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     manageSystem: false,
     viewReports: false,
     exportData: false,
+    canManagePlayers: false,
+    canManageMatches: false,
+    canEnterScores: false,
+    canViewReports: false,
+    canManageCourts: false,
     // Legacy permissions
     can_manage_tournaments: false,
     can_manage_users: false,
@@ -202,7 +242,7 @@ const RoleBasedLayout: React.FC<RoleBasedLayoutProps> = ({ role, children }) => 
       {/* Pass permissions to children if needed */}
       {React.Children.map(children, child => {
         if (React.isValidElement(child)) {
-          return React.cloneElement(child, { permissions });
+          return React.cloneElement(child, { rolePermissions: permissions });
         }
         return child;
       })}
