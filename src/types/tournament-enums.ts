@@ -117,5 +117,14 @@ export enum AuditLogType {
   MATCH_CANCELLED = 'MATCH_CANCELLED'
 }
 
-// Add a new type export for CategoryType
-export type CategoryType = 'MENS' | 'WOMENS' | 'MIXED' | 'OPEN' | 'STANDARD' | 'CUSTOM';
+// Expanded CategoryType with more specific type
+export type CategoryType = 
+  | 'MENS' 
+  | 'WOMENS' 
+  | 'MIXED' 
+  | 'OPEN' 
+  | 'STANDARD' 
+  | 'CUSTOM' 
+  | 'SINGLES' 
+  | 'DOUBLES' 
+  | 'TEAM';
