@@ -49,10 +49,14 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
             control={form.control}
             name="firstName"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="animate-fade-in">
                 <FormLabel>First Name</FormLabel>
                 <FormControl>
-                  <Input {...field} disabled={isSubmitting} />
+                  <Input 
+                    {...field} 
+                    disabled={isSubmitting} 
+                    className="input-focus"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -63,10 +67,14 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
             control={form.control}
             name="lastName"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="animate-fade-in">
                 <FormLabel>Last Name</FormLabel>
                 <FormControl>
-                  <Input {...field} disabled={isSubmitting} />
+                  <Input 
+                    {...field} 
+                    disabled={isSubmitting} 
+                    className="input-focus"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -77,10 +85,15 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
             control={form.control}
             name="email"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="animate-fade-in">
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input {...field} type="email" disabled={isSubmitting} />
+                  <Input 
+                    {...field} 
+                    type="email" 
+                    disabled={isSubmitting} 
+                    className="input-focus"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -91,10 +104,15 @@ const PlayerRegistrationForm: React.FC<PlayerRegistrationFormProps> = ({
             control={form.control}
             name="phone"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="animate-fade-in">
                 <FormLabel>Phone (optional)</FormLabel>
                 <FormControl>
-                  <Input {...field} type="tel" disabled={isSubmitting} />
+                  <Input 
+                    {...field} 
+                    type="tel" 
+                    disabled={isSubmitting} 
+                    className="input-focus"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

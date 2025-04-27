@@ -1,4 +1,5 @@
 
+import { z } from 'zod';
 import { RegistrationStatus } from './tournament-enums';
 
 export interface RegistrationComment {
@@ -19,6 +20,15 @@ export interface RegistrationMetadata {
   source?: string;
   checkInNotes?: string;
   checkInTime?: string;
+  playerName?: string;
+  contactEmail?: string;
+  teamSize?: number;
+  waitlistHistory?: Array<{
+    date: string;
+    fromPosition: number;
+    toPosition: number;
+    reason?: string;
+  }>;
 }
 
 export interface TeamMember {
@@ -72,4 +82,23 @@ export interface TournamentRegistration {
   created_at: string;
   updated_at: string;
   metadata: RegistrationMetadata;
+}
+
+// Player registration schema
+export const playerRegistrationSchema = z.object({
+  player_id: z.string(),
+  division_id: z.string(),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().optional()
+});
+
+// Generic registration interface for mixed lists
+export interface RegistrationItem {
+  id: string;
+  status: RegistrationStatus;
+  metadata: RegistrationMetadata;
+  createdAt: Date;
+  updatedAt: Date;
 }

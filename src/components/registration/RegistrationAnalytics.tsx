@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlayerRegistrationWithStatus, TeamRegistrationWithStatus, TournamentRegistrationStatus } from '@/types/registration';
-import { Division } from '@/types/entities';
+import { PlayerRegistrationWithStatus, TeamRegistrationWithStatus, RegistrationItem } from '@/types/registration';
+import { RegistrationStatus } from '@/types/tournament-enums';
+import { Division } from '@/types/tournament';
 
 interface RegistrationAnalyticsProps {
   playerRegistrations: PlayerRegistrationWithStatus[];
@@ -24,26 +26,27 @@ export const RegistrationAnalytics: React.FC<RegistrationAnalyticsProps> = ({
   teamRegistrations,
   divisions,
 }) => {
-  const getStatusCounts = (registrations: (PlayerRegistrationWithStatus | TeamRegistrationWithStatus)[]) => {
+  const getStatusCounts = (registrations: RegistrationItem[]) => {
     return registrations.reduce((acc, reg) => {
       acc[reg.status] = (acc[reg.status] || 0) + 1;
       return acc;
-    }, {} as Record<TournamentRegistrationStatus, number>);
+    }, {} as Record<RegistrationStatus, number>);
   };
 
-  const getStatusColor = (status: TournamentRegistrationStatus) => {
+  const getStatusColor = (status: RegistrationStatus) => {
     switch (status) {
-      case 'PENDING':
+      case RegistrationStatus.PENDING:
         return 'bg-yellow-100 text-yellow-800';
-      case 'APPROVED':
+      case RegistrationStatus.APPROVED:
         return 'bg-green-100 text-green-800';
-      case 'WAITLIST':
+      case RegistrationStatus.WAITLIST:
+      case RegistrationStatus.WAITLISTED:
         return 'bg-orange-100 text-orange-800';
-      case 'REJECTED':
+      case RegistrationStatus.REJECTED:
         return 'bg-red-100 text-red-800';
-      case 'CHECKED_IN':
+      case RegistrationStatus.CHECKED_IN:
         return 'bg-blue-100 text-blue-800';
-      case 'WITHDRAWN':
+      case RegistrationStatus.WITHDRAWN:
         return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -57,8 +60,10 @@ export const RegistrationAnalytics: React.FC<RegistrationAnalyticsProps> = ({
         ...teamRegistrations.filter(r => r.division_id === division.id),
       ];
 
-      const approved = divisionRegistrations.filter(r => r.status === 'APPROVED').length;
-      const waitlisted = divisionRegistrations.filter(r => r.status === 'WAITLIST').length;
+      const approved = divisionRegistrations.filter(r => r.status === RegistrationStatus.APPROVED).length;
+      const waitlisted = divisionRegistrations.filter(r => 
+        r.status === RegistrationStatus.WAITLIST || r.status === RegistrationStatus.WAITLISTED
+      ).length;
       const total = divisionRegistrations.length;
       const capacity = division.capacity || Infinity;
       const fillRate = capacity === Infinity ? 0 : (approved / capacity) * 100;
@@ -75,20 +80,34 @@ export const RegistrationAnalytics: React.FC<RegistrationAnalyticsProps> = ({
     });
   };
 
-  const playerStatusCounts = getStatusCounts(playerRegistrations);
-  const teamStatusCounts = getStatusCounts(teamRegistrations);
+  // Type assertion to make the combined array work with getStatusCounts
+  const playerStatusCounts = getStatusCounts(playerRegistrations as unknown as RegistrationItem[]);
+  const teamStatusCounts = getStatusCounts(teamRegistrations as unknown as RegistrationItem[]);
   const divisionStats = calculateDivisionStats();
 
   const totalRegistrations = playerRegistrations.length + teamRegistrations.length;
-  const registrationsPerDay = playerRegistrations.concat(teamRegistrations).reduce((acc, reg) => {
+  
+  // Combine registrations for per-day analysis
+  const combinedRegistrations = [
+    ...playerRegistrations.map(reg => ({
+      createdAt: reg.createdAt,
+      type: 'player' as const
+    })),
+    ...teamRegistrations.map(reg => ({
+      createdAt: reg.createdAt,
+      type: 'team' as const
+    }))
+  ];
+  
+  const registrationsPerDay = combinedRegistrations.reduce((acc, reg) => {
     const date = new Date(reg.createdAt).toLocaleDateString();
     acc[date] = (acc[date] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <Card>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 animate-fade-in">
+      <Card className="card-hover">
         <CardHeader>
           <CardTitle>Registration Overview</CardTitle>
         </CardHeader>
@@ -110,7 +129,7 @@ export const RegistrationAnalytics: React.FC<RegistrationAnalyticsProps> = ({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="card-hover">
         <CardHeader>
           <CardTitle>Status Distribution</CardTitle>
         </CardHeader>
@@ -138,7 +157,7 @@ export const RegistrationAnalytics: React.FC<RegistrationAnalyticsProps> = ({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="card-hover">
         <CardHeader>
           <CardTitle>Division Capacity</CardTitle>
         </CardHeader>
@@ -149,7 +168,7 @@ export const RegistrationAnalytics: React.FC<RegistrationAnalyticsProps> = ({
                 <p className="text-sm font-medium">{stat.name}</p>
                 <div className="h-2 bg-secondary rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-primary"
+                    className="h-full bg-primary transition-all duration-500 ease-in-out"
                     style={{ width: `${Math.min(stat.fillRate, 100)}%` }}
                   />
                 </div>
@@ -163,7 +182,7 @@ export const RegistrationAnalytics: React.FC<RegistrationAnalyticsProps> = ({
         </CardContent>
       </Card>
 
-      <Card className="md:col-span-2 lg:col-span-3">
+      <Card className="md:col-span-2 lg:col-span-3 card-hover">
         <CardHeader>
           <CardTitle>Registration Trend</CardTitle>
         </CardHeader>
@@ -183,4 +202,4 @@ export const RegistrationAnalytics: React.FC<RegistrationAnalyticsProps> = ({
       </Card>
     </div>
   );
-}; 
+};
