@@ -1,4 +1,3 @@
-
 // Ensure all enums are properly exported
 
 export enum GameType {
@@ -117,3 +116,6 @@ export enum AuditLogType {
   SCORE_UPDATED = 'SCORE_UPDATED',
   MATCH_CANCELLED = 'MATCH_CANCELLED'
 }
+
+// Add a new type export for CategoryType
+export type CategoryType = 'MENS' | 'WOMENS' | 'MIXED' | 'OPEN' | 'STANDARD' | 'CUSTOM';
