@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Table,
@@ -26,36 +27,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PlayerRegistrationWithStatus, TournamentRegistrationStatus } from "@/types/registration";
+import { PlayerRegistrationWithStatus } from "@/types/registration";
+import { RegistrationStatus } from "@/types/tournament-enums";
 import { MoreVertical, ArrowUpDown, Search } from "lucide-react";
 import { format } from "date-fns";
 
 interface PlayerRegistrationListProps {
   registrations: PlayerRegistrationWithStatus[];
-  onUpdateStatus: (id: string, status: TournamentRegistrationStatus) => Promise<void>;
-  onBulkUpdateStatus?: (ids: string[], status: TournamentRegistrationStatus) => Promise<void>;
+  onStatusUpdate: (id: string, status: RegistrationStatus) => Promise<void>;
+  onBulkStatusUpdate?: (ids: string[], status: RegistrationStatus) => Promise<void>;
 }
 
 export const PlayerRegistrationList: React.FC<PlayerRegistrationListProps> = ({
   registrations,
-  onUpdateStatus,
-  onBulkUpdateStatus,
+  onStatusUpdate,
+  onBulkStatusUpdate,
 }) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<TournamentRegistrationStatus | "ALL">("ALL");
+  const [statusFilter, setStatusFilter] = useState<RegistrationStatus | "ALL">("ALL");
   const [sortField, setSortField] = useState<"name" | "date">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  const getStatusColor = (status: TournamentRegistrationStatus) => {
+  const getStatusColor = (status: RegistrationStatus) => {
     switch (status) {
-      case "APPROVED":
+      case RegistrationStatus.APPROVED:
         return "bg-green-500/10 text-green-500";
-      case "REJECTED":
+      case RegistrationStatus.REJECTED:
         return "bg-red-500/10 text-red-500";
-      case "WAITLIST":
+      case RegistrationStatus.WAITLIST:
+      case RegistrationStatus.WAITLISTED:
         return "bg-yellow-500/10 text-yellow-500";
-      case "CHECKED_IN":
+      case RegistrationStatus.CHECKED_IN:
         return "bg-blue-500/10 text-blue-500";
       default:
         return "bg-gray-500/10 text-gray-500";
@@ -103,33 +106,33 @@ export const PlayerRegistrationList: React.FC<PlayerRegistrationListProps> = ({
     );
   };
 
-  const handleBulkAction = async (status: TournamentRegistrationStatus) => {
-    if (onBulkUpdateStatus && selectedIds.length > 0) {
-      await onBulkUpdateStatus(selectedIds, status);
+  const handleBulkAction = async (status: RegistrationStatus) => {
+    if (onBulkStatusUpdate && selectedIds.length > 0) {
+      await onBulkStatusUpdate(selectedIds, status);
       setSelectedIds([]);
     }
   };
 
   const statusOptions = [
     { value: 'ALL', label: 'All' },
-    { value: 'PENDING', label: 'Pending' },
-    { value: 'APPROVED', label: 'Approved' },
-    { value: 'WAITLIST', label: 'Waitlist' },
-    { value: 'REJECTED', label: 'Rejected' },
-    { value: 'CHECKED_IN', label: 'Checked In' },
-    { value: 'WITHDRAWN', label: 'Withdrawn' },
+    { value: RegistrationStatus.PENDING, label: 'Pending' },
+    { value: RegistrationStatus.APPROVED, label: 'Approved' },
+    { value: RegistrationStatus.WAITLIST, label: 'Waitlist' },
+    { value: RegistrationStatus.REJECTED, label: 'Rejected' },
+    { value: RegistrationStatus.CHECKED_IN, label: 'Checked In' },
+    { value: RegistrationStatus.WITHDRAWN, label: 'Withdrawn' },
   ];
 
   const bulkActions = [
-    { value: 'APPROVED', label: 'Approve Selected' },
-    { value: 'REJECTED', label: 'Reject Selected' },
-    { value: 'WAITLIST', label: 'Move to Waitlist' },
-    { value: 'CHECKED_IN', label: 'Check In' },
-    { value: 'WITHDRAWN', label: 'Mark as Withdrawn' },
+    { value: RegistrationStatus.APPROVED, label: 'Approve Selected' },
+    { value: RegistrationStatus.REJECTED, label: 'Reject Selected' },
+    { value: RegistrationStatus.WAITLIST, label: 'Move to Waitlist' },
+    { value: RegistrationStatus.CHECKED_IN, label: 'Check In' },
+    { value: RegistrationStatus.WITHDRAWN, label: 'Mark as Withdrawn' },
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-fade-in">
       <div className="flex items-center gap-4">
         <div className="flex-1">
           <div className="relative">
@@ -138,13 +141,13 @@ export const PlayerRegistrationList: React.FC<PlayerRegistrationListProps> = ({
               placeholder="Search by name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
+              className="pl-8 input-focus"
             />
           </div>
         </div>
         <Select
           value={statusFilter}
-          onValueChange={(value) => setStatusFilter(value as TournamentRegistrationStatus | "ALL")}
+          onValueChange={(value) => setStatusFilter(value as RegistrationStatus | "ALL")}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by status" />
@@ -160,7 +163,7 @@ export const PlayerRegistrationList: React.FC<PlayerRegistrationListProps> = ({
         {selectedIds.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline">
+              <Button variant="outline" className="animate-scale-in">
                 Bulk Actions ({selectedIds.length})
               </Button>
             </DropdownMenuTrigger>
@@ -168,7 +171,7 @@ export const PlayerRegistrationList: React.FC<PlayerRegistrationListProps> = ({
               <DropdownMenuLabel>Update Status</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {bulkActions.map((action) => (
-                <DropdownMenuItem key={action.value} onClick={() => handleBulkAction(action.value as TournamentRegistrationStatus)}>
+                <DropdownMenuItem key={action.value} onClick={() => handleBulkAction(action.value)}>
                   {action.label}
                 </DropdownMenuItem>
               ))}
@@ -177,7 +180,7 @@ export const PlayerRegistrationList: React.FC<PlayerRegistrationListProps> = ({
         )}
       </div>
 
-      <Table>
+      <Table className="animate-fade-in">
         <TableHeader>
           <TableRow>
             <TableHead className="w-12">
@@ -206,7 +209,7 @@ export const PlayerRegistrationList: React.FC<PlayerRegistrationListProps> = ({
         </TableHeader>
         <TableBody>
           {filteredRegistrations.map((registration) => (
-            <TableRow key={registration.id}>
+            <TableRow key={registration.id} className="interactive-hover">
               <TableCell>
                 <Checkbox
                   checked={selectedIds.includes(registration.id)}
@@ -227,23 +230,23 @@ export const PlayerRegistrationList: React.FC<PlayerRegistrationListProps> = ({
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" className="hover:scale-110 transition-transform">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onUpdateStatus(registration.id, "APPROVED")}>
+                    <DropdownMenuItem onClick={() => onStatusUpdate(registration.id, RegistrationStatus.APPROVED)}>
                       Approve
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onUpdateStatus(registration.id, "REJECTED")}>
+                    <DropdownMenuItem onClick={() => onStatusUpdate(registration.id, RegistrationStatus.REJECTED)}>
                       Reject
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onUpdateStatus(registration.id, "WAITLIST")}>
+                    <DropdownMenuItem onClick={() => onStatusUpdate(registration.id, RegistrationStatus.WAITLIST)}>
                       Move to Waitlist
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onUpdateStatus(registration.id, "CHECKED_IN")}>
+                    <DropdownMenuItem onClick={() => onStatusUpdate(registration.id, RegistrationStatus.CHECKED_IN)}>
                       Check In
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -255,4 +258,4 @@ export const PlayerRegistrationList: React.FC<PlayerRegistrationListProps> = ({
       </Table>
     </div>
   );
-}; 
+};

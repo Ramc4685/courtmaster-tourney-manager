@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   FormControl,
@@ -7,69 +8,63 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { PlusCircle, Trash2 } from "lucide-react";
 import { teamRegistrationSchema } from "@/types/registration";
 import { BaseRegistrationForm } from "./BaseRegistrationForm";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Plus, Trash2 } from "lucide-react";
 import { useFieldArray } from "react-hook-form";
-
-// Extend the team registration schema to include player_id and division_id
-const extendedTeamRegistrationSchema = teamRegistrationSchema.extend({
-  player_id: z.string(),
-  division_id: z.string()
-});
 
 interface TeamRegistrationFormProps {
   tournamentId: string;
   divisionId: string;
-  playerId: string;
-  onSubmit: (data: z.infer<typeof extendedTeamRegistrationSchema>) => Promise<void>;
+  onSubmit: (data: z.infer<typeof teamRegistrationSchema>) => Promise<void>;
   registrationDeadline?: string;
 }
 
 const TeamRegistrationForm: React.FC<TeamRegistrationFormProps> = ({
   tournamentId,
   divisionId,
-  playerId,
   onSubmit,
   registrationDeadline,
 }) => {
-  const defaultValues: z.infer<typeof extendedTeamRegistrationSchema> = {
-    player_id: playerId,
+  const defaultValues: z.infer<typeof teamRegistrationSchema> = {
+    team_name: "",
     division_id: divisionId,
-    teamName: "",
-    captainName: "",
-    captainEmail: "",
-    captainPhone: "",
-    members: [{
+    captain: {
       firstName: "",
       lastName: "",
       email: "",
       phone: "",
-      isTeamCaptain: false
-    }],
+    },
+    players: [
+      {
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+      },
+    ],
   };
 
   return (
     <BaseRegistrationForm
-      schema={extendedTeamRegistrationSchema}
+      schema={teamRegistrationSchema}
       defaultValues={defaultValues}
       onSubmit={onSubmit}
       registrationDeadline={registrationDeadline}
-      submitButtonText="Submit Team Registration"
     >
       {({ form, isSubmitting }) => {
         const { fields, append, remove } = useFieldArray({
           control: form.control,
-          name: "members"
+          name: "players"
         });
 
         return (
           <>
             <FormField
               control={form.control}
-              name="teamName"
+              name="team_name"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Team Name</FormLabel>
@@ -81,74 +76,99 @@ const TeamRegistrationForm: React.FC<TeamRegistrationFormProps> = ({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="captainName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Captain Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} disabled={isSubmitting} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="space-y-4">
+              <h3 className="font-medium">Team Captain</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="captain.firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled={isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="captainEmail"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Captain Email</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="email" disabled={isSubmitting} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="captain.lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled={isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="captainPhone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Captain Phone (optional)</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="tel" disabled={isSubmitting} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="captain.email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="email"
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="captain.phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone (optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="tel" disabled={isSubmitting} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <FormLabel>Team Members</FormLabel>
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium">Team Members</h3>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => append({
-                    firstName: "",
-                    lastName: "",
-                    email: "",
-                    phone: "",
-                    isTeamCaptain: false
-                  })}
+                  onClick={() =>
+                    append({
+                      firstName: "",
+                      lastName: "",
+                      email: "",
+                      phone: "",
+                    })
+                  }
                   disabled={isSubmitting}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Member
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Player
                 </Button>
               </div>
 
               {fields.map((field, index) => (
-                <div key={field.id} className="space-y-4 rounded-lg border p-4">
-                  <div className="flex justify-end">
+                <div
+                  key={field.id}
+                  className="border rounded-md p-4 space-y-4 relative"
+                >
+                  <div className="absolute top-4 right-4">
                     <Button
                       type="button"
                       variant="ghost"
@@ -157,13 +177,14 @@ const TeamRegistrationForm: React.FC<TeamRegistrationFormProps> = ({
                       disabled={isSubmitting || fields.length === 1}
                     >
                       <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Remove player</span>
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField
                       control={form.control}
-                      name={`members.${index}.firstName`}
+                      name={`players.${index}.firstName`}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>First Name</FormLabel>
@@ -177,7 +198,7 @@ const TeamRegistrationForm: React.FC<TeamRegistrationFormProps> = ({
 
                     <FormField
                       control={form.control}
-                      name={`members.${index}.lastName`}
+                      name={`players.${index}.lastName`}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Last Name</FormLabel>
@@ -191,12 +212,16 @@ const TeamRegistrationForm: React.FC<TeamRegistrationFormProps> = ({
 
                     <FormField
                       control={form.control}
-                      name={`members.${index}.email`}
+                      name={`players.${index}.email`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>Email (optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} type="email" disabled={isSubmitting} />
+                            <Input
+                              {...field}
+                              type="email"
+                              disabled={isSubmitting}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -205,7 +230,7 @@ const TeamRegistrationForm: React.FC<TeamRegistrationFormProps> = ({
 
                     <FormField
                       control={form.control}
-                      name={`members.${index}.phone`}
+                      name={`players.${index}.phone`}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Phone (optional)</FormLabel>
@@ -227,4 +252,4 @@ const TeamRegistrationForm: React.FC<TeamRegistrationFormProps> = ({
   );
 };
 
-export default TeamRegistrationForm; 
+export default TeamRegistrationForm;

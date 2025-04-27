@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { Profile } from '@/types/entities';
 import { UserRole } from '@/types/tournament-enums';
 
-export const profileService = {
+export class ProfileService {
   async getProfile(userId: string): Promise<Profile | null> {
     const { data, error } = await supabase
       .from('profiles')
@@ -34,7 +34,7 @@ export const profileService = {
       created_at: data.created_at,
       updated_at: data.updated_at
     };
-  },
+  }
   
   async updateProfile(userId: string, profileData: Partial<Profile>): Promise<Profile> {
     const payload: any = {};
@@ -73,4 +73,7 @@ export const profileService = {
       updated_at: data.updated_at
     };
   }
-};
+}
+
+// Export a singleton instance
+export const profileService = new ProfileService();

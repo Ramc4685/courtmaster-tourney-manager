@@ -1,13 +1,16 @@
 
-export const emailService = {
-  async sendEmail({ to, subject, html }: { to: string; subject: string; html: string }): Promise<{ success: boolean }> {
-    console.log('Email would be sent in production:', { to, subject, html });
-    // This is a stub implementation
-    // In a real app, you would call an API endpoint or use a service like SendGrid
+export interface EmailOptions {
+  to: string;
+  subject: string;
+  html: string;
+}
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    return { success: true };
+export class EmailService {
+  async send(options: EmailOptions): Promise<void> {
+    // TODO: Implement actual email sending logic
+    console.log('Email sending not yet implemented:', options);
   }
-};
+}
+
+// Create and export a singleton instance
+export const emailService = new EmailService();

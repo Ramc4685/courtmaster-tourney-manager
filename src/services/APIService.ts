@@ -1,10 +1,21 @@
 
+// Implement a basic APIService class
 export class APIService {
-  // This is a stub class for now
-  // It will be expanded with actual API methods later
+  // Provide methods for common API operations
+  async listTournaments(filters?: Record<string, any>): Promise<any[]> {
+    // Placeholder implementation - replace with actual API call
+    console.log('Fetching tournaments with filters:', filters);
+    return [];
+  }
+
+  async listMatches(filters?: Record<string, any>): Promise<any[]> {
+    // Placeholder implementation - replace with actual API call
+    console.log('Fetching matches with filters:', filters);
+    return [];
+  }
+
+  // Add more generic API methods as needed
   constructor() {
     console.log('APIService initialized');
   }
-
-  // You can add more methods here later
 }

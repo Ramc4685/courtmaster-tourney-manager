@@ -1,17 +1,20 @@
-
 // Ensure all enums are properly exported
+
 export enum GameType {
-  SINGLE_ELIMINATION = 'SINGLE_ELIMINATION',
-  DOUBLE_ELIMINATION = 'DOUBLE_ELIMINATION',
-  ROUND_ROBIN = 'ROUND_ROBIN',
   BADMINTON = 'BADMINTON',
   TENNIS = 'TENNIS', 
-  PICKLEBALL = 'PICKLEBALL'
+  PICKLEBALL = 'PICKLEBALL',
+  VOLLEYBALL = 'VOLLEYBALL',
+  SQUASH = 'SQUASH',
+  TABLE_TENNIS = 'TABLE_TENNIS',
+  SINGLE_ELIMINATION = 'SINGLE_ELIMINATION',
+  DOUBLE_ELIMINATION = 'DOUBLE_ELIMINATION',
+  ROUND_ROBIN = 'ROUND_ROBIN'
 }
 
 export enum Division {
-  JUNIORS = 'JUNIOR',
-  SENIORS = 'SENIOR',
+  JUNIORS = 'JUNIORS',
+  SENIORS = 'SENIORS',
   OPEN = 'OPEN',
   MENS = 'MENS',
   WOMENS = 'WOMENS',
@@ -20,7 +23,8 @@ export enum Division {
   INTERMEDIATE = 'INTERMEDIATE',
   ADVANCED = 'ADVANCED',
   PRO = 'PRO',
-  JUNIOR = 'JUNIOR'
+  CUSTOM = 'CUSTOM',
+  INITIAL = 'INITIAL'
 }
 
 export enum MatchStatus {
@@ -47,13 +51,12 @@ export enum PlayType {
   MIXED = 'MIXED'
 }
 
-export enum RegistrationStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  WAITLIST = 'WAITLIST',
-  CHECKED_IN = 'CHECKED_IN',
-  WITHDRAWN = 'WITHDRAWN'
+export enum CourtStatus {
+  AVAILABLE = 'AVAILABLE',
+  IN_USE = 'IN_USE',
+  MAINTENANCE = 'MAINTENANCE',
+  RESERVED = 'RESERVED',
+  UNAVAILABLE = 'UNAVAILABLE'
 }
 
 export enum UserRole {
@@ -76,15 +79,52 @@ export enum TournamentStatus {
   PUBLISHED = 'PUBLISHED'
 }
 
-export enum CourtStatus {
-  AVAILABLE = 'AVAILABLE',
-  IN_USE = 'IN_USE',
-  MAINTENANCE = 'MAINTENANCE',
-  RESERVED = 'RESERVED'
-}
-
 export enum TournamentStageEnum {
   GROUP_STAGE = 'GROUP_STAGE',
   DIVISION_PLACEMENT = 'DIVISION_PLACEMENT',
-  PLAYOFF_KNOCKOUT = 'PLAYOFF_KNOCKOUT'
+  PLAYOFF_KNOCKOUT = 'PLAYOFF_KNOCKOUT',
+  INITIAL_ROUND = 'INITIAL_ROUND',
+  ELIMINATION_ROUND = 'ELIMINATION_ROUND',
+  FINALS = 'FINALS',
+  REGISTRATION = 'REGISTRATION',
+  SEEDING = 'SEEDING'
 }
+
+// Define RegistrationStatus here as the canonical source
+export enum RegistrationStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  WAITLIST = 'WAITLIST',
+  WAITLISTED = 'WAITLISTED',
+  CHECKED_IN = 'CHECKED_IN',
+  WITHDRAWN = 'WITHDRAWN',
+  CONFIRMED = 'CONFIRMED',
+  CANCELLED = 'CANCELLED'
+}
+
+// Alias for backward compatibility
+export type TournamentRegistrationStatus = RegistrationStatus;
+
+// Audit log types
+export enum AuditLogType {
+  MATCH_CREATED = 'MATCH_CREATED',
+  MATCH_UPDATED = 'MATCH_UPDATED',
+  MATCH_DELETED = 'MATCH_DELETED',
+  MATCH_STARTED = 'MATCH_STARTED',
+  MATCH_COMPLETED = 'MATCH_COMPLETED',
+  SCORE_UPDATED = 'SCORE_UPDATED',
+  MATCH_CANCELLED = 'MATCH_CANCELLED'
+}
+
+// Expanded CategoryType with more specific type
+export type CategoryType = 
+  | 'MENS' 
+  | 'WOMENS' 
+  | 'MIXED' 
+  | 'OPEN' 
+  | 'STANDARD' 
+  | 'CUSTOM' 
+  | 'SINGLES' 
+  | 'DOUBLES' 
+  | 'TEAM';

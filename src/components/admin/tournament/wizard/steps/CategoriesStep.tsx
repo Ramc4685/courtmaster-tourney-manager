@@ -1,309 +1,254 @@
 
-import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import React, { useState } from 'react';
+import { Control, useFieldArray, UseFormWatch } from "react-hook-form";
 import { v4 as uuidv4 } from 'uuid';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { categorySchema } from '../../types';
-import { PlayType, TournamentFormat, Division } from '@/types/tournament-enums';
-import { PlusCircle, Trash2 } from 'lucide-react';
-
-// Import Category interface from types file
-import { Category } from '../../types';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { PlusCircle, Trash2 } from "lucide-react";
+import { Division, PlayType, TournamentFormat } from '@/types/tournament-enums';
+import { TournamentFormValues, Category } from "../../types";
 
 interface CategoriesStepProps {
   categories: Category[];
   onCategoriesChange: (categories: Category[]) => void;
+  control: Control<TournamentFormValues>;
+  watch: UseFormWatch<TournamentFormValues>;
 }
 
-const CategoriesStep: React.FC<CategoriesStepProps> = ({ categories, onCategoriesChange }) => {
-  const [localCategories, setLocalCategories] = useState<Category[]>(categories);
-
-  useEffect(() => {
-    onCategoriesChange(localCategories);
-  }, [localCategories, onCategoriesChange]);
-
-  const categoryForm = useForm<Category>({
-    resolver: zodResolver(categorySchema),
-    defaultValues: {
-      id: '',
-      name: '',
-      playType: PlayType.SINGLES,
-      format: TournamentFormat.SINGLE_ELIMINATION,
-      division: Division.OPEN,
-    },
+const CategoriesStep: React.FC<CategoriesStepProps> = ({
+  categories,
+  onCategoriesChange,
+  control,
+  watch
+}) => {
+  const { fields: divisionFields, append: appendDivision, remove: removeDivision } = useFieldArray({
+    control,
+    name: "divisionDetails"
   });
-
-  const divisionOptions = [
-    {
-      value: Division.OPEN,
-      label: 'Open'
-    },
-    {
-      value: Division.MENS,
-      label: 'Mens'
-    },
-    {
-      value: Division.WOMENS,
-      label: 'Womens'
-    },
-    {
-      value: Division.MIXED,
-      label: 'Mixed'
-    },
-    {
-      value: Division.JUNIOR,
-      label: 'Juniors'
-    },
-    {
-      value: Division.SENIORS,
-      label: 'Seniors'
-    },
-    {
-      value: Division.BEGINNER,
-      label: 'Beginner'
-    },
-    {
-      value: Division.INTERMEDIATE,
-      label: 'Intermediate'
-    },
-    {
-      value: Division.ADVANCED,
-      label: 'Advanced'
-    },
-    {
-      value: Division.PRO,
-      label: 'Pro'
-    },
-  ];
-
-  const playTypeOptions = [
-    {
-      value: PlayType.SINGLES,
-      label: 'Singles'
-    },
-    {
-      value: PlayType.DOUBLES,
-      label: 'Doubles'
-    },
-    {
-      value: PlayType.MIXED,
-      label: 'Mixed'
-    },
-  ];
-
-  const formatOptions = [
-    {
-      value: TournamentFormat.SINGLE_ELIMINATION,
-      label: 'Single Elimination'
-    },
-    {
-      value: TournamentFormat.DOUBLE_ELIMINATION,
-      label: 'Double Elimination'
-    },
-    {
-      value: TournamentFormat.ROUND_ROBIN,
-      label: 'Round Robin'
-    },
-  ];
-
-  const addCategory = () => {
-    const newCategory: Category = {
+  
+  const handleAddDivision = () => {
+    appendDivision({
       id: uuidv4(),
-      name: `Category ${localCategories.length + 1}`,
-      playType: PlayType.SINGLES,
-      format: TournamentFormat.SINGLE_ELIMINATION,
-      division: Division.OPEN,
-    };
-    setLocalCategories([...localCategories, newCategory]);
+      name: `Division ${divisionFields.length + 1}`,
+      type: Division.OPEN,
+      categories: []
+    });
   };
 
-  const removeCategory = (id: string) => {
-    setLocalCategories(localCategories.filter(category => category.id !== id));
-  };
-
-  const updateCategory = (id: string, updatedValues: Partial<Category>) => {
-    setLocalCategories(localCategories.map(category =>
-      category.id === id ? { ...category, ...updatedValues } : category
-    ));
-  };
-
-  const getDivisionColor = (division: string) => {
-    switch (division) {
-      case Division.OPEN: return 'bg-blue-100 text-blue-800';
-      case Division.MENS: return 'bg-green-100 text-green-800';
-      case Division.WOMENS: return 'bg-purple-100 text-purple-800';
-      case Division.MIXED: return 'bg-amber-100 text-amber-800';
-      case Division.JUNIOR: return 'bg-indigo-100 text-indigo-800';
-      case Division.SENIORS: return 'bg-teal-100 text-teal-800';
-      case Division.BEGINNER: return 'bg-lime-100 text-lime-800';
-      case Division.INTERMEDIATE: return 'bg-orange-100 text-orange-800';
-      case Division.ADVANCED: return 'bg-fuchsia-100 text-fuchsia-800';
-      case Division.PRO: return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const handleAddCategory = (divisionIndex: number) => {
+    const divisionDetails = watch("divisionDetails");
+    const updatedDivisions = [...divisionDetails];
+    
+    if (updatedDivisions[divisionIndex]) {
+      updatedDivisions[divisionIndex].categories = [
+        ...(updatedDivisions[divisionIndex].categories || []),
+        {
+          id: uuidv4(),
+          name: `Category ${(updatedDivisions[divisionIndex].categories?.length || 0) + 1}`,
+          type: "standard",
+          playType: PlayType.SINGLES,
+          format: TournamentFormat.SINGLE_ELIMINATION,
+          seeded: true
+        }
+      ];
     }
+    
+    // This will trigger a re-render with the updated categories
   };
 
   return (
-    <div className="flex flex-col space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Categories</h2>
-        <Button size="sm" onClick={addCategory}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Category
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Tournament Divisions & Categories</h3>
+        <Button onClick={handleAddDivision} type="button" variant="outline" size="sm">
+          <PlusCircle className="h-4 w-4 mr-2" />
+          Add Division
         </Button>
       </div>
 
-      <ScrollArea className="rounded-md border p-4 h-[400px]">
-        <div className="flex flex-col space-y-4">
-          {localCategories.map((category) => (
-            <Card key={category.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>
-                    <Input
-                      type="text"
-                      placeholder="Category Name"
-                      value={category.name}
-                      onChange={(e) => updateCategory(category.id, { name: e.target.value })}
-                    />
-                  </CardTitle>
-                  <Button variant="destructive" size="icon" onClick={() => removeCategory(category.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-                <CardDescription>
-                  <Badge className={getDivisionColor(category.division)}>{category.division}</Badge>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={categoryForm.control}
-                    name="playType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Play Type</FormLabel>
-                        <Select
-                          onValueChange={(value) => updateCategory(category.id, { playType: value as PlayType })}
-                          defaultValue={category.playType}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a play type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {playTypeOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          The type of play for this category.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={categoryForm.control}
-                    name="format"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Format</FormLabel>
-                        <Select
-                          onValueChange={(value) => updateCategory(category.id, { format: value as TournamentFormat })}
-                          defaultValue={category.format}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a format" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {formatOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          The format for this category.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
+      {divisionFields.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8 text-gray-500">
+              No divisions added yet. Click "Add Division" to create your first division.
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {divisionFields.map((divisionField, divisionIndex) => (
+            <Card key={divisionField.id}>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <FormField
-                  control={categoryForm.control}
-                  name="division"
+                  control={control}
+                  name={`divisionDetails.${divisionIndex}.name`}
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Division</FormLabel>
-                      <Select
-                        onValueChange={(value) => updateCategory(category.id, { division: value as Division })}
-                        defaultValue={category.division}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a division" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {divisionOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        The division for this category.
-                      </FormDescription>
+                    <FormItem className="flex-1">
+                      <FormLabel>Division Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Enter division name" />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                <Button
+                  onClick={() => removeDivision(divisionIndex)}
+                  variant="ghost"
+                  size="sm"
+                  className="ml-2"
+                >
+                  <Trash2 className="h-4 w-4 text-gray-500" />
+                </Button>
+              </CardHeader>
+
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={control}
+                    name={`divisionDetails.${divisionIndex}.type`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Division Type</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select division type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value={Division.OPEN}>Open</SelectItem>
+                            <SelectItem value={Division.MENS}>Men's</SelectItem>
+                            <SelectItem value={Division.WOMENS}>Women's</SelectItem>
+                            <SelectItem value={Division.MIXED}>Mixed</SelectItem>
+                            <SelectItem value={Division.JUNIORS}>Juniors</SelectItem>
+                            <SelectItem value={Division.SENIORS}>Seniors</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-sm font-medium">Categories</h4>
+                    <Button
+                      onClick={() => handleAddCategory(divisionIndex)}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Add Category
+                    </Button>
+                  </div>
+
+                  {(watch(`divisionDetails.${divisionIndex}.categories`) || []).length === 0 ? (
+                    <div className="border rounded-md p-4 text-center text-gray-500">
+                      No categories added yet. Click "Add Category" to create your first category.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {watch(`divisionDetails.${divisionIndex}.categories`)?.map(
+                        (category, categoryIndex) => (
+                          <div key={category.id} className="border rounded-md p-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <FormField
+                                control={control}
+                                name={`divisionDetails.${divisionIndex}.categories.${categoryIndex}.name`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Category Name</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="Enter category name" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={control}
+                                name={`divisionDetails.${divisionIndex}.categories.${categoryIndex}.playType`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Play Type</FormLabel>
+                                    <Select
+                                      onValueChange={field.onChange}
+                                      defaultValue={field.value}
+                                    >
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select play type" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        <SelectItem value={PlayType.SINGLES}>Singles</SelectItem>
+                                        <SelectItem value={PlayType.DOUBLES}>Doubles</SelectItem>
+                                        <SelectItem value={PlayType.MIXED}>Mixed</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={control}
+                                name={`divisionDetails.${divisionIndex}.categories.${categoryIndex}.format`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Tournament Format</FormLabel>
+                                    <Select
+                                      onValueChange={field.onChange}
+                                      defaultValue={field.value}
+                                    >
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select format" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        <SelectItem value={TournamentFormat.SINGLE_ELIMINATION}>
+                                          Single Elimination
+                                        </SelectItem>
+                                        <SelectItem value={TournamentFormat.DOUBLE_ELIMINATION}>
+                                          Double Elimination
+                                        </SelectItem>
+                                        <SelectItem value={TournamentFormat.ROUND_ROBIN}>
+                                          Round Robin
+                                        </SelectItem>
+                                        <SelectItem value={TournamentFormat.GROUP_KNOCKOUT}>
+                                          Group + Knockout
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
-      </ScrollArea>
+      )}
     </div>
   );
 };

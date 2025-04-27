@@ -1,12 +1,14 @@
+
 import React from 'react';
 import { Court } from '@/types/entities';
 import { CourtStatus } from '@/types/tournament-enums';
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge";
 
 interface CourtTableProps {
   courts: Court[];
-  onEditCourt: (court: Court) => void;
-  onDeleteCourt: (courtId: string) => void;
+  onEditCourt?: (court: Court) => void;
+  onDeleteCourt?: (courtId: string) => void;
+  onCourtUpdate?: (court: Court) => void;
 }
 
 const CourtStatusBadge = ({ status }: { status: CourtStatus }) => {
@@ -47,7 +49,15 @@ const CourtStatusBadge = ({ status }: { status: CourtStatus }) => {
   );
 };
 
-const CourtTable: React.FC<CourtTableProps> = ({ courts, onEditCourt, onDeleteCourt }) => {
+const CourtTable: React.FC<CourtTableProps> = ({ courts, onEditCourt, onDeleteCourt, onCourtUpdate }) => {
+  const handleEditCourt = (court: Court) => {
+    if (onEditCourt) onEditCourt(court);
+  };
+
+  const handleDeleteCourt = (courtId: string) => {
+    if (onDeleteCourt) onDeleteCourt(courtId);
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
@@ -79,25 +89,29 @@ const CourtTable: React.FC<CourtTableProps> = ({ courts, onEditCourt, onDeleteCo
         <tbody>
           {courts.map((court) => (
             <tr key={court.id} className="border-b hover:bg-gray-50">
-              <td className="px-6 py-4">{court.number}</td>
+              <td className="px-6 py-4">{court.courtNumber || court.court_number}</td>
               <td className="px-6 py-4">{court.name}</td>
               <td className="px-6 py-4">
                 <CourtStatusBadge status={court.status} />
               </td>
               <td className="px-6 py-4 text-right">
                 {/* Actions */}
-                <button
-                  onClick={() => onEditCourt(court)}
-                  className="font-medium text-indigo-600 hover:text-indigo-500 mr-4"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => onDeleteCourt(court.id)}
-                  className="font-medium text-red-600 hover:text-red-500"
-                >
-                  Delete
-                </button>
+                {onEditCourt && (
+                  <button
+                    onClick={() => handleEditCourt(court)}
+                    className="font-medium text-indigo-600 hover:text-indigo-500 mr-4"
+                  >
+                    Edit
+                  </button>
+                )}
+                {onDeleteCourt && (
+                  <button
+                    onClick={() => handleDeleteCourt(court.id)}
+                    className="font-medium text-red-600 hover:text-red-500"
+                  >
+                    Delete
+                  </button>
+                )}
               </td>
             </tr>
           ))}

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -22,26 +23,28 @@ interface CourtCreateDialogProps {
 
 export const CourtCreateDialog: React.FC<CourtCreateDialogProps> = ({ open, onClose, onCreate, tournamentId }) => {
   const [name, setName] = useState('');
-  const [number, setNumber] = useState<number | undefined>(undefined);
+  const [courtNumber, setCourtNumber] = useState<number | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Validate form
-    if (!name || !number) {
+    if (!name || !courtNumber) {
       setError('Name and court number are required.');
       return;
     }
 
     const newCourt: Omit<Court, "id"> = {
       tournamentId,
+      tournament_id: tournamentId,
       name,
-      number,
+      courtNumber,
+      court_number: courtNumber,
       status: CourtStatus.AVAILABLE,
       createdAt: new Date(),
+      created_at: new Date(),
       updatedAt: new Date(),
-      court_number: number,
-      tournament_id: tournamentId
+      updated_at: new Date()
     };
 
     onCreate(newCourt);
@@ -70,20 +73,20 @@ export const CourtCreateDialog: React.FC<CourtCreateDialogProps> = ({ open, onCl
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="number">Court Number</Label>
+            <Label htmlFor="courtNumber">Court Number</Label>
             <Input
               type="number"
-              id="number"
-              value={number !== undefined ? number.toString() : ''}
-              onChange={(e) => setNumber(e.target.value ? parseInt(e.target.value, 10) : undefined)}
+              id="courtNumber"
+              value={courtNumber !== undefined ? courtNumber.toString() : ''}
+              onChange={(e) => setCourtNumber(e.target.value ? parseInt(e.target.value, 10) : undefined)}
               placeholder="1"
               required
             />
           </div>
+          <DialogFooter>
+            <Button type="submit">Create Court</Button>
+          </DialogFooter>
         </form>
-        <DialogFooter>
-          <Button type="submit" onClick={handleSubmit}>Create Court</Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

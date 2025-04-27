@@ -1,4 +1,6 @@
 
+import { UserRole, TournamentFormat, TournamentStageEnum as TournamentStage, TournamentStatus, CourtStatus, MatchStatus, AuditLogType } from './tournament-enums';
+
 // Export tournament types
 export interface Tournament {
   id: string;
@@ -87,11 +89,22 @@ export interface Match {
   winner?: number;
   groupName?: string;
   matchNumber?: string;
+  scorerName?: string;
 }
 
 export interface MatchScore {
   team1Score: number;
   team2Score: number;
+}
+
+export interface AuditLog {
+  id: string;
+  type: AuditLogType;
+  userId: string;
+  matchId: string;
+  tournamentId: string;
+  details: Record<string, any>;
+  createdAt: Date;
 }
 
 export interface StandaloneMatch {
@@ -122,42 +135,20 @@ export interface ScoringSettings {
   matchFormat: string;
 }
 
+// Export Division interface with required properties
+export interface Division {
+  id: string;
+  name: string;
+  type: string;
+  capacity?: number;
+  categories?: any[];
+  min_age?: number;
+  max_age?: number;
+  gender?: string;
+  skill_level?: string;
+}
+
 // Export enum types
-export enum TournamentStatus {
-  DRAFT = "DRAFT",
-  PUBLISHED = "PUBLISHED",
-  REGISTRATION = "REGISTRATION",
-  IN_PROGRESS = "IN_PROGRESS",
-  COMPLETED = "COMPLETED",
-  CANCELLED = "CANCELLED"
-}
-
-export enum MatchStatus {
-  SCHEDULED = "SCHEDULED",
-  IN_PROGRESS = "IN_PROGRESS",
-  COMPLETED = "COMPLETED",
-  CANCELLED = "CANCELLED",
-  DEFERRED = "DEFERRED"
-}
-
-export enum CourtStatus {
-  AVAILABLE = "AVAILABLE",
-  IN_USE = "IN_USE",
-  MAINTENANCE = "MAINTENANCE",
-  RESERVED = "RESERVED"
-}
-
-export enum TournamentFormat {
-  SINGLE_ELIMINATION = "SINGLE_ELIMINATION",
-  DOUBLE_ELIMINATION = "DOUBLE_ELIMINATION",
-  ROUND_ROBIN = "ROUND_ROBIN",
-  GROUP_KNOCKOUT = "GROUP_KNOCKOUT",
-  SWISS = "SWISS",
-  CUSTOM = "CUSTOM"
-}
-
-export type Division = string;
-
+export { MatchStatus, CourtStatus, TournamentFormat, TournamentStatus, TournamentStage };
 export type CategoryType = string;
-
 export type ScorerType = "TOURNAMENT" | "STANDALONE";

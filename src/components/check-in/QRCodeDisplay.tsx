@@ -28,6 +28,7 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
       case RegistrationStatus.REJECTED:
         return 'text-red-600';
       case RegistrationStatus.WAITLIST:
+      case RegistrationStatus.WAITLISTED:
         return 'text-blue-600';
       case RegistrationStatus.CHECKED_IN:
         return 'text-purple-600';
@@ -37,7 +38,7 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="bg-white p-6 rounded-lg shadow-md animate-scale-in">
       <div className="flex flex-col items-center">
         <div className="mb-4" data-testid="qr-code-image">
           <QRCode value={registrationId} size={180} />

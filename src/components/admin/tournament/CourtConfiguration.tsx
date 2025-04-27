@@ -84,12 +84,16 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
 
     try {
       const newCourtData = {
+        tournamentId: tournamentId,
         tournament_id: tournamentId,
         name,
         description: description || '',
         status: CourtStatus.AVAILABLE,
-        court_number,
+        courtNumber: court_number,
+        court_number: court_number,
+        createdAt: new Date(),
         created_at: new Date(),
+        updatedAt: new Date(),
         updated_at: new Date()
       };
       await courtService.createCourt(newCourtData);
@@ -124,7 +128,9 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
          description: editingCourt.description,
          status,
          court_number: editingCourt.court_number,
-         tournament_id: editingCourt.tournament_id
+         courtNumber: editingCourt.court_number,
+         tournament_id: editingCourt.tournament_id,
+         tournamentId: editingCourt.tournament_id
       };
       await courtService.updateCourt(editingCourt.id, updateData);
       toast({ title: "Success", description: "Court updated successfully." });
@@ -288,7 +294,7 @@ export const CourtConfiguration: React.FC<CourtConfigurationProps> = ({ tourname
                 ) : (
                   <>
                     {/* View Mode */}
-                    <TableCell>{court.court_number}</TableCell>
+                    <TableCell>{court.court_number || court.courtNumber}</TableCell>
                     <TableCell>{court.name}</TableCell>
                     <TableCell>{court.description || '-'}</TableCell>
                     <TableCell>{court.status}</TableCell>
