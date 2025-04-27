@@ -21,7 +21,8 @@ export enum Division {
   INTERMEDIATE = 'INTERMEDIATE',
   ADVANCED = 'ADVANCED',
   PRO = 'PRO',
-  CUSTOM = 'CUSTOM'
+  CUSTOM = 'CUSTOM',
+  INITIAL = 'INITIAL'
 }
 
 export enum MatchStatus {
@@ -99,6 +100,9 @@ export enum RegistrationStatus {
   CANCELLED = 'CANCELLED',
   WAITLISTED = 'WAITLISTED'
 }
+
+// Alias for backward compatibility
+export type TournamentRegistrationStatus = RegistrationStatus;
 
 // Audit log types
 export enum AuditLogType {

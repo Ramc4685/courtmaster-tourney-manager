@@ -1,99 +1,75 @@
 
-import { z } from 'zod';
 import { RegistrationStatus } from './tournament-enums';
 
-export const playerRegistrationSchema = z.object({
-  player_id: z.string(),
-  division_id: z.string(),
-  firstName: z.string().min(2, "First name is required"),
-  lastName: z.string().min(2, "Last name is required"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
-});
-
-export const teamRegistrationSchema = z.object({
-  team_name: z.string().min(2, "Team name is required"),
-  division_id: z.string(),
-  captain: z.object({
-    firstName: z.string().min(2, "Captain's first name is required"),
-    lastName: z.string().min(2, "Captain's last name is required"),
-    email: z.string().email("Invalid email address"),
-    phone: z.string().optional(),
-  }),
-  players: z.array(
-    z.object({
-      firstName: z.string().min(2, "Player's first name is required"),
-      lastName: z.string().min(2, "Player's last name is required"),
-      email: z.string().email("Invalid email address").optional(),
-      phone: z.string().optional(),
-    })
-  ).min(1, "At least one player is required"),
-});
+export interface RegistrationComment {
+  id: string;
+  text: string;
+  createdAt: string;
+  createdBy: string;
+}
 
 export interface RegistrationMetadata {
-  waitlistPosition?: number;
-  checkInTime?: string;
   notes?: string;
-  verificationCode?: string;
   priority?: number;
-  comments?: Array<{
-    id: string;
-    text: string;
-    createdAt: string;
-    createdBy: string;
-  }>;
-  playerName?: string;
-  contactEmail?: string;
-  teamSize?: number;
-  waitlistHistory?: Array<{
-    date: string;
-    fromPosition: number;
-    toPosition: number;
-    reason?: string;
-  }>;
+  comments?: RegistrationComment[];
+  waitlistPosition?: number;
+  waitlistReason?: string;
+  waitlistNotified?: string;
+  tags?: string[];
+  source?: string;
+  checkInNotes?: string;
+  checkInTime?: string;
+}
+
+export interface TeamMember {
+  name: string;
+  email: string;
+  phone?: string;
+  role?: string;
 }
 
 export interface PlayerRegistrationWithStatus {
   id: string;
   playerId: string;
-  divisionId: string;
-  division_id?: string;
   firstName: string;
   lastName: string;
   email: string;
   phone?: string;
+  division_id: string;
+  tournament_id: string;
   status: RegistrationStatus;
   metadata: RegistrationMetadata;
   createdAt: Date;
   updatedAt: Date;
-  tournamentId?: string;
 }
 
 export interface TeamRegistrationWithStatus {
   id: string;
-  teamId: string;
-  divisionId: string;
-  division_id?: string;
+  teamId?: string;
   teamName: string;
   captainName: string;
-  playerCount: number;
+  captainEmail: string;
+  captainPhone?: string;
+  division_id: string;
+  tournament_id: string;
+  members: TeamMember[];
   status: RegistrationStatus;
   metadata: RegistrationMetadata;
   createdAt: Date;
   updatedAt: Date;
-  tournamentId?: string;
-  members?: any[];
 }
+
+// For backward compatibility
+export type TournamentRegistrationStatus = RegistrationStatus;
 
 export interface TournamentRegistration {
   id: string;
-  tournamentId: string;
-  divisionId: string;
+  tournament_id: string;
+  player_id?: string;
+  team_id?: string;
+  division_id: string;
   status: RegistrationStatus;
-  registeredAt: Date;
-  updatedAt: Date;
+  created_at: string;
+  updated_at: string;
   metadata: RegistrationMetadata;
 }
-
-// For backward compatibility, re-export RegistrationStatus
-export { RegistrationStatus }
