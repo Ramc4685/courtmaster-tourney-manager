@@ -1,11 +1,10 @@
-
 // Re-export all services
 import { RegistrationService } from './registrationService';
 import { ProfileService } from './profileService';
 import { courtService } from './courtService';
 import { matchService } from './matchService';
 import { NotificationService } from './notificationService';
-import { EmailService } from './emailService';
+import { EmailService, emailService } from './emailService';
 import { TournamentService } from './tournament/TournamentService';
 
 // Registration Service
@@ -27,7 +26,7 @@ export const tournamentService = new TournamentService();
 export const notificationService = new NotificationService();
 
 // Email Service
-export const emailService = new EmailService();
+export { emailService, EmailService };
 
 // For backward compatibility
 export default {

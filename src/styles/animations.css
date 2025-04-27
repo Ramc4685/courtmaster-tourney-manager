@@ -1,0 +1,74 @@
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInBottom {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Animation utility classes */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideInBottom 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+/* Interactive element animations */
+.interactive-hover {
+  @apply transition-all duration-200;
+}
+
+.interactive-hover:hover {
+  @apply transform scale-[1.02];
+}
+
+.button-hover {
+  @apply transition-all duration-200;
+}
+
+.button-hover:hover {
+  @apply transform scale-[1.05] brightness-105;
+}
+
+.card-hover {
+  @apply transition-all duration-200;
+}
+
+.card-hover:hover {
+  @apply transform -translate-y-1 shadow-lg;
+}
+
+/* Form field focus animations */
+.input-focus {
+  @apply transition-all duration-200;
+}
+
+.input-focus:focus {
+  @apply ring-2 ring-primary/50;
+}
