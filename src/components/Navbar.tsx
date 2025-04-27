@@ -44,10 +44,10 @@ export default function Navbar() {
                     <span className="sr-only">Open user menu</span>
                     <img
                       className="h-8 w-8 rounded-full"
-                      src={user?.avatarUrl || user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.displayName || user?.display_name || 'User'}`}
+                      src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.display_name || 'User'}`}
                       alt=""
                     />
-                    <span className="ml-3 text-gray-700">{user?.displayName || user?.display_name || 'User'}</span>
+                    <span className="ml-3 text-gray-700">{user?.display_name || 'User'}</span>
                   </Link>
                   <button
                     onClick={() => signOut()}

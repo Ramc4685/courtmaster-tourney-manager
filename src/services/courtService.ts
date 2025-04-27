@@ -2,18 +2,11 @@
 import { supabase } from '@/lib/supabase';
 import { Court } from '@/types/entities';
 import { CourtStatus } from '@/types/tournament-enums';
-import { camelizeKeys, snakeizeKeys } from '@/utils/caseTransforms';
+import { courtFromBackend, courtToBackend } from '@/utils/adapters/courtAdapter';
 
 export const courtService = {
   async createCourt(court: Omit<Court, "id">): Promise<Court> {
-    // Convert camelCase to snake_case for database
-    const payload = {
-      tournament_id: court.tournamentId || court.tournament_id,
-      name: court.name,
-      description: court.description || '',
-      status: court.status || CourtStatus.AVAILABLE,
-      court_number: court.courtNumber || court.court_number
-    };
+    const payload = courtToBackend(court);
       
     const { data, error } = await supabase
       .from('courts')
@@ -23,21 +16,7 @@ export const courtService = {
       
     if (error) throw error;
     
-    // Transform database response to camelCase for frontend use
-    return {
-      id: data.id,
-      name: data.name,
-      courtNumber: data.court_number,
-      court_number: data.court_number, // For backward compatibility
-      status: data.status as CourtStatus,
-      description: data.description,
-      tournamentId: data.tournament_id,
-      tournament_id: data.tournament_id, // For backward compatibility
-      createdAt: new Date(data.created_at),
-      created_at: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
-      updated_at: new Date(data.updated_at)
-    };
+    return courtFromBackend(data);
   },
   
   async listCourts(tournamentId: string): Promise<Court[]> {
@@ -48,33 +27,11 @@ export const courtService = {
       
     if (error) throw error;
     
-    return data.map(court => ({
-      id: court.id,
-      name: court.name,
-      courtNumber: court.court_number,
-      court_number: court.court_number, // For backward compatibility
-      status: court.status as CourtStatus,
-      description: court.description,
-      tournamentId: court.tournament_id,
-      tournament_id: court.tournament_id, // For backward compatibility
-      createdAt: new Date(court.created_at),
-      created_at: new Date(court.created_at),
-      updatedAt: new Date(court.updated_at),
-      updated_at: new Date(court.updated_at)
-    }));
+    return data.map(courtFromBackend);
   },
   
   async updateCourt(id: string, courtData: Partial<Court>): Promise<Court> {
-    const payload: any = {};
-    if (courtData.name !== undefined) payload.name = courtData.name;
-    if (courtData.description !== undefined) payload.description = courtData.description;
-    if (courtData.status !== undefined) payload.status = courtData.status;
-    if (courtData.courtNumber !== undefined || courtData.court_number !== undefined) {
-      payload.court_number = courtData.courtNumber || courtData.court_number;
-    }
-    if (courtData.tournamentId !== undefined || courtData.tournament_id !== undefined) {
-      payload.tournament_id = courtData.tournamentId || courtData.tournament_id;
-    }
+    const payload = courtToBackend(courtData);
     
     const { data, error } = await supabase
       .from('courts')
@@ -85,20 +42,7 @@ export const courtService = {
       
     if (error) throw error;
     
-    return {
-      id: data.id,
-      name: data.name,
-      courtNumber: data.court_number,
-      court_number: data.court_number, // For backward compatibility
-      status: data.status as CourtStatus,
-      description: data.description,
-      tournamentId: data.tournament_id,
-      tournament_id: data.tournament_id, // For backward compatibility
-      createdAt: new Date(data.created_at),
-      created_at: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
-      updated_at: new Date(data.updated_at)
-    };
+    return courtFromBackend(data);
   },
   
   async deleteCourt(id: string): Promise<void> {

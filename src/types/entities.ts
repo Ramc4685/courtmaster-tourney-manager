@@ -1,8 +1,30 @@
 
-import { TournamentFormat, Division, PlayType, UserRole, TournamentStatus, MatchStatus } from './tournament-enums';
+import { 
+  UserRole, 
+  TournamentFormat, 
+  Division, 
+  PlayType, 
+  TournamentStatus, 
+  MatchStatus, 
+  CourtStatus,
+  RegistrationStatus,
+  TournamentStageEnum,
+  AuditLogType
+} from './tournament-enums';
 
-// Re-export CourtStatus directly from tournament-enums
-export { CourtStatus } from './tournament-enums';
+// Export all enums directly from tournament-enums for easier access
+export { 
+  UserRole, 
+  TournamentFormat, 
+  Division, 
+  PlayType, 
+  TournamentStatus, 
+  MatchStatus, 
+  CourtStatus,
+  RegistrationStatus,
+  TournamentStageEnum,
+  AuditLogType
+};
 
 // Create a consistent interface mapping between snake_case backend and camelCase frontend
 export interface Court {
@@ -14,11 +36,52 @@ export interface Court {
   tournamentId: string;
   status: CourtStatus;
   description?: string;
-  currentMatch?: any; // Match reference
+  currentMatch?: Match; // Match reference
   created_at: Date;
   createdAt: Date;
   updated_at: Date;
   updatedAt: Date;
+}
+
+export interface Match {
+  id: string;
+  tournamentId: string;
+  tournament_id?: string;
+  divisionId?: string;
+  division_id?: string;
+  team1Id?: string;
+  team2Id?: string;
+  team1_player1?: string;
+  team2_player1?: string;
+  team1_player2?: string;
+  team2_player2?: string;
+  status: MatchStatus;
+  scheduledTime?: Date | string;
+  scheduled_time?: Date | string;
+  startTime?: Date | string;
+  start_time?: Date | string;
+  endTime?: Date | string;
+  end_time?: Date | string;
+  courtId?: string;
+  court_id?: string;
+  courtNumber?: number;
+  court?: { id: string; name: string; number: number; };
+  bracketRound: number;
+  bracketPosition: number;
+  matchNumber: string;
+  progression: string | { winnerGoesTo?: string; loserGoesTo?: string; };
+  scores?: Array<{ team1Score: number, team2Score: number }>;
+  winner?: string | number;
+  loser?: string | number;
+  winner_team?: number;
+  scorerName?: string;
+  verified?: boolean;
+  groupName?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  created_at?: Date;
+  updated_at?: Date;
+  division?: string | Division;
 }
 
 export interface RolePermissions {
@@ -41,6 +104,7 @@ export interface RolePermissions {
   manageSystem: boolean;
   viewReports: boolean;
   exportData: boolean;
+  rolePermissions?: Record<string, boolean>;
   can_manage_tournaments: boolean;
   can_manage_users: boolean;
   can_manage_registrations: boolean;
@@ -67,6 +131,15 @@ export interface Profile {
   role: UserRole;
   created_at: string;
   updated_at: string;
+  
+  // Added to handle common camelCase access patterns
+  fullName?: string;
+  displayName?: string;
+  avatarUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  
+  // Add email field which is commonly used
   email?: string;
   preferences?: {
     notifications?: {
@@ -76,30 +149,48 @@ export interface Profile {
   }
 }
 
-export interface Match {
-  id: string;
-  tournamentId: string;
-  divisionId?: string;
-  team1Id?: string;
-  team2Id?: string;
-  status: MatchStatus;
-  scheduledTime?: Date | string;
-  startTime?: Date | string;
-  endTime?: Date | string;
-  courtId?: string;
-  courtNumber?: number;
-  bracketRound: number;
-  bracketPosition: number;
-  matchNumber: string;
-  progression: string;
-  scores?: Array<{ team1Score: number, team2Score: number }>;
-  winner?: string;
-  loser?: string;
-  scorerName?: string;
+export interface RegistrationMetadata {
+  waitlistPosition?: number;
+  checkInTime?: string;
+  notes?: string;
+  verificationCode?: string;
+  priority?: number;
+  comments?: Array<{
+    id: string;
+    text: string;
+    createdAt: string;
+    createdBy: string;
+  }>;
+  playerName?: string;
+  contactEmail?: string;
+  teamSize?: number;
+  waitlistHistory?: Array<{
+    date: string;
+    fromPosition: number;
+    toPosition: number;
+    reason?: string;
+  }>;
 }
 
-// Standardize registration status - export directly from tournament-enums
-export { RegistrationStatus } from './tournament-enums';
+export interface AuditLog {
+  id: string;
+  type: AuditLogType;
+  userId: string;
+  matchId: string;
+  tournamentId: string;
+  details: Record<string, any>;
+  createdAt: Date;
+}
 
-// Remove TournamentRegistrationStatus and use RegistrationStatus instead
-export { RegistrationStatus as TournamentRegistrationStatus } from './tournament-enums';
+export interface StandaloneMatch extends Omit<Match, 'tournamentId' | 'division'> {
+  tournamentId: string; 
+  tournamentName?: string;
+  division: string | Division;
+  courtName?: string;
+  categoryName?: string;
+  category?: {
+    id: string;
+    name: string;
+    type: string;
+  };
+}

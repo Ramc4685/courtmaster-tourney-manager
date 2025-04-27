@@ -1,4 +1,10 @@
+
 import React, { useState } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -7,26 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -34,450 +26,648 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  PlayerRegistrationWithStatus,
-  TeamRegistrationWithStatus,
-  RegistrationStatus,
-} from "@/types/registration";
-import { Upload, MoreVertical, Filter, ArrowUpDown } from "lucide-react";
-import { format } from "date-fns";
+import { AlertCircle, ChevronDown, FileDown, FileUp, Search } from "lucide-react";
+import { PlayerRegistrationWithStatus, TeamRegistrationWithStatus } from "@/types/registration";
+import { RegistrationStatus } from "@/types/tournament-enums";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface RegistrationStatusListProps {
   playerRegistrations: PlayerRegistrationWithStatus[];
   teamRegistrations: TeamRegistrationWithStatus[];
-  onImportPlayers: (file: File) => Promise<void>;
-  onImportTeams: (file: File) => Promise<void>;
-  onUpdateStatus: (id: string, status: RegistrationStatus, type: "player" | "team") => Promise<void>;
-  onBulkUpdateStatus?: (ids: string[], status: RegistrationStatus, type: "player" | "team") => Promise<void>;
+  onUpdateStatus: (
+    registrationId: string,
+    status: RegistrationStatus,
+    type: "player" | "team"
+  ) => void;
+  onBulkUpdateStatus?: (
+    ids: string[],
+    status: RegistrationStatus,
+    type: "player" | "team"
+  ) => void;
+  onImportPlayers?: (file: File) => void;
+  onImportTeams?: (file: File) => void;
+  onExportPlayers?: () => void;
+  onExportTeams?: () => void;
 }
 
 const RegistrationStatusList: React.FC<RegistrationStatusListProps> = ({
   playerRegistrations,
   teamRegistrations,
-  onImportPlayers,
-  onImportTeams,
   onUpdateStatus,
   onBulkUpdateStatus,
+  onImportPlayers,
+  onImportTeams,
+  onExportPlayers,
+  onExportTeams,
 }) => {
-  const [selectedTab, setSelectedTab] = useState<"players" | "teams">("players");
+  const [tab, setTab] = useState("individual");
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<RegistrationStatus | "ALL">("ALL");
-  const [sortField, setSortField] = useState<"name" | "date" | "status" | "priority">("date");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [showStatusDialog, setShowStatusDialog] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<RegistrationStatus | null>(null);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-    type: "players" | "teams"
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  // Filter registrations based on search term and status
+  const filteredPlayerRegistrations = playerRegistrations.filter(
+    (registration) => {
+      const matchesSearch =
+        registration.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        registration.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        registration.email.toLowerCase().includes(searchTerm.toLowerCase());
 
-    try {
-      if (type === "players") {
-        await onImportPlayers(file);
-      } else {
-        await onImportTeams(file);
-      }
-      event.target.value = "";
-    } catch (error) {
-      console.error(`Failed to import ${type}:`, error);
-    }
-  };
+      const matchesStatus =
+        statusFilter === "all" || registration.status === statusFilter;
 
-  const handleSort = (field: "name" | "date" | "status" | "priority") => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
-  };
-
-  const handleBulkStatusUpdate = async () => {
-    if (!selectedStatus || !onBulkUpdateStatus || selectedIds.length === 0) return;
-    await onBulkUpdateStatus(selectedIds, selectedStatus, selectedTab === "players" ? "player" : "team");
-    setSelectedIds([]);
-    setShowStatusDialog(false);
-  };
-
-  const getStatusColor = (status: RegistrationStatus) => {
-    switch (status) {
-      case "APPROVED":
-        return "bg-green-500/10 text-green-500";
-      case "REJECTED":
-        return "bg-red-500/10 text-red-500";
-      case "WAITLIST":
-        return "bg-yellow-500/10 text-yellow-500";
-      case "CHECKED_IN":
-        return "bg-blue-500/10 text-blue-500";
-      default:
-        return "bg-gray-500/10 text-gray-500";
-    }
-  };
-
-  const filteredRegistrations = (selectedTab === "players" ? playerRegistrations : teamRegistrations)
-    .filter((reg) => {
-      const name = selectedTab === "players"
-        ? `${(reg as PlayerRegistrationWithStatus).firstName} ${(reg as PlayerRegistrationWithStatus).lastName}`
-        : (reg as TeamRegistrationWithStatus).teamName;
-      const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === "ALL" || reg.status === statusFilter;
       return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => {
-      if (sortField === "name") {
-        const nameA = selectedTab === "players"
-          ? `${(a as PlayerRegistrationWithStatus).firstName} ${(a as PlayerRegistrationWithStatus).lastName}`
-          : (a as TeamRegistrationWithStatus).teamName;
-        const nameB = selectedTab === "players"
-          ? `${(b as PlayerRegistrationWithStatus).firstName} ${(b as PlayerRegistrationWithStatus).lastName}`
-          : (b as TeamRegistrationWithStatus).teamName;
-        return sortDirection === "asc"
-          ? nameA.localeCompare(nameB)
-          : nameB.localeCompare(nameA);
-      } else if (sortField === "date") {
-        return sortDirection === "asc"
-          ? a.createdAt.getTime() - b.createdAt.getTime()
-          : b.createdAt.getTime() - a.createdAt.getTime();
-      } else if (sortField === "priority") {
-        const priorityA = a.metadata.priority || 0;
-        const priorityB = b.metadata.priority || 0;
-        return sortDirection === "asc"
-          ? priorityA - priorityB
-          : priorityB - priorityA;
-      } else {
-        return sortDirection === "asc"
-          ? a.status.localeCompare(b.status)
-          : b.status.localeCompare(a.status);
-      }
-    });
+    }
+  );
+
+  const filteredTeamRegistrations = teamRegistrations.filter(
+    (registration) => {
+      const matchesSearch = registration.teamName
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+
+      const matchesStatus =
+        statusFilter === "all" || registration.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    }
+  );
+
+  const handleSelectAllPlayers = (checked: boolean) => {
+    setSelectedPlayerIds(
+      checked ? filteredPlayerRegistrations.map((r) => r.id) : []
+    );
+  };
+
+  const handleSelectAllTeams = (checked: boolean) => {
+    setSelectedTeamIds(checked ? filteredTeamRegistrations.map((r) => r.id) : []);
+  };
+
+  const handleBulkUpdatePlayerStatus = (status: RegistrationStatus) => {
+    if (onBulkUpdateStatus && selectedPlayerIds.length > 0) {
+      onBulkUpdateStatus(selectedPlayerIds, status, "player");
+      setSelectedPlayerIds([]);
+    }
+  };
+
+  const handleBulkUpdateTeamStatus = (status: RegistrationStatus) => {
+    if (onBulkUpdateStatus && selectedTeamIds.length > 0) {
+      onBulkUpdateStatus(selectedTeamIds, status, "team");
+      setSelectedTeamIds([]);
+    }
+  };
+
+  const handleImportPlayers = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && onImportPlayers) {
+      onImportPlayers(file);
+      // Reset the input
+      event.target.value = "";
+    }
+  };
+
+  const handleImportTeams = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && onImportTeams) {
+      onImportTeams(file);
+      // Reset the input
+      event.target.value = "";
+    }
+  };
+
+  const getStatusBadge = (status: RegistrationStatus) => {
+    switch (status) {
+      case RegistrationStatus.APPROVED:
+        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
+      case RegistrationStatus.PENDING:
+        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+      case RegistrationStatus.REJECTED:
+        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+      case RegistrationStatus.WAITLIST:
+        return <Badge className="bg-blue-100 text-blue-800">Waitlisted</Badge>;
+      case RegistrationStatus.CHECKED_IN:
+        return <Badge className="bg-indigo-100 text-indigo-800">Checked In</Badge>;
+      case RegistrationStatus.WITHDRAWN:
+        return <Badge className="bg-gray-100 text-gray-800">Withdrawn</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
+    }
+  };
+
+  const priorityLabel = (priority: number = 0) => {
+    if (priority > 10) return <Badge className="bg-red-100 text-red-800">High</Badge>;
+    if (priority > 5) return <Badge className="bg-yellow-100 text-yellow-800">Medium</Badge>;
+    return <Badge className="bg-blue-100 text-blue-800">Normal</Badge>;
+  };
 
   return (
-    <div className="space-y-4">
-      <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as "players" | "teams")}>
+    <div className="space-y-6">
+      <Tabs value={tab} onValueChange={setTab}>
         <div className="flex justify-between items-center mb-4">
           <TabsList>
-            <TabsTrigger value="players">Players</TabsTrigger>
+            <TabsTrigger value="individual">Individual Players</TabsTrigger>
             <TabsTrigger value="teams">Teams</TabsTrigger>
           </TabsList>
-
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64"
-            />
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as RegistrationStatus | "ALL")}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="APPROVED">Approved</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
-                <SelectItem value="WAITLIST">Waitlist</SelectItem>
-                <SelectItem value="CHECKED_IN">Checked In</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex items-center gap-2">
-              <Input
-                type="file"
-                accept=".csv,.xlsx"
-                onChange={(e) => handleFileUpload(e, selectedTab)}
-                className="hidden"
-                id={`${selectedTab}-upload`}
-              />
-              <label htmlFor={`${selectedTab}-upload`}>
-                <Button variant="outline" size="icon" asChild>
-                  <span>
-                    <Upload className="h-4 w-4" />
-                  </span>
-                </Button>
-              </label>
-            </div>
-          </div>
         </div>
 
-        <TabsContent value="players">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.length === filteredRegistrations.length}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedIds(filteredRegistrations.map(reg => reg.id));
-                      } else {
-                        setSelectedIds([]);
-                      }
-                    }}
-                    className="rounded"
-                  />
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("name")} className="flex items-center gap-1">
-                    Name <ArrowUpDown className="h-4 w-4" />
+        <div className="mb-4 flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search registrations..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value={RegistrationStatus.PENDING}>
+                Pending
+              </SelectItem>
+              <SelectItem value={RegistrationStatus.APPROVED}>
+                Approved
+              </SelectItem>
+              <SelectItem value={RegistrationStatus.REJECTED}>
+                Rejected
+              </SelectItem>
+              <SelectItem value={RegistrationStatus.WAITLIST}>
+                Waitlisted
+              </SelectItem>
+              <SelectItem value={RegistrationStatus.CHECKED_IN}>
+                Checked In
+              </SelectItem>
+              <SelectItem value={RegistrationStatus.WITHDRAWN}>
+                Withdrawn
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <TabsContent value="individual">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>
+                Individual Player Registrations
+                <Badge className="ml-2">
+                  {filteredPlayerRegistrations.length}
+                </Badge>
+              </CardTitle>
+              <div className="flex space-x-2">
+                {onImportPlayers && (
+                  <div>
+                    <Button variant="outline" asChild>
+                      <label>
+                        <FileUp className="h-4 w-4 mr-2" />
+                        Import
+                        <input
+                          type="file"
+                          accept=".csv,.xlsx"
+                          onChange={handleImportPlayers}
+                          className="hidden"
+                        />
+                      </label>
+                    </Button>
+                  </div>
+                )}
+                {onExportPlayers && (
+                  <Button variant="outline" onClick={onExportPlayers}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Export
                   </Button>
-                </TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("date")} className="flex items-center gap-1">
-                    Date <ArrowUpDown className="h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("status")} className="flex items-center gap-1">
-                    Status <ArrowUpDown className="h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("priority")}
-                    className="flex items-center gap-1"
-                  >
-                    Priority
-                    {sortField === "priority" && (
-                      <ArrowUpDown className={`h-4 w-4 ${sortDirection === "desc" ? "transform rotate-180" : ""}`} />
-                    )}
-                  </Button>
-                </TableHead>
-                <TableHead className="w-12"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRegistrations.map((registration) => {
-                const player = registration as PlayerRegistrationWithStatus;
-                return (
-                  <TableRow key={player.id}>
-                    <TableCell>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(player.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedIds([...selectedIds, player.id]);
-                          } else {
-                            setSelectedIds(selectedIds.filter(id => id !== player.id));
-                          }
-                        }}
-                        className="rounded"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {player.firstName} {player.lastName}
-                    </TableCell>
-                    <TableCell>{player.email}</TableCell>
-                    <TableCell>{player.phone || "-"}</TableCell>
-                    <TableCell>{format(player.createdAt, "MMM d, yyyy")}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(player.status)}>
-                        {player.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {filteredPlayerRegistrations.length > 0 ? (
+                <div>
+                  {onBulkUpdateStatus && selectedPlayerIds.length > 0 && (
+                    <div className="flex items-center mb-4 p-2 bg-muted rounded-md">
+                      <span className="mr-2 text-sm">
+                        {selectedPlayerIds.length} selected
+                      </span>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
+                          <Button variant="outline" size="sm">
+                            Bulk Action
+                            <ChevronDown className="ml-2 h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => onUpdateStatus(player.id, "APPROVED", "player")}>
-                            Approve
+                        <DropdownMenuContent>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleBulkUpdatePlayerStatus(RegistrationStatus.APPROVED)
+                            }
+                          >
+                            Approve Selected
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onUpdateStatus(player.id, "REJECTED", "player")}>
-                            Reject
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleBulkUpdatePlayerStatus(RegistrationStatus.REJECTED)
+                            }
+                          >
+                            Reject Selected
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onUpdateStatus(player.id, "WAITLIST", "player")}>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleBulkUpdatePlayerStatus(RegistrationStatus.WAITLIST)
+                            }
+                          >
                             Move to Waitlist
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onUpdateStatus(player.id, "CHECKED_IN", "player")}>
-                            Check In
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                    </div>
+                  )}
+
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          {onBulkUpdateStatus && (
+                            <TableHead className="w-[40px]">
+                              <input
+                                type="checkbox"
+                                checked={
+                                  filteredPlayerRegistrations.length > 0 &&
+                                  selectedPlayerIds.length ===
+                                    filteredPlayerRegistrations.length
+                                }
+                                onChange={(e) =>
+                                  handleSelectAllPlayers(e.target.checked)
+                                }
+                                className="h-4 w-4 rounded border-gray-300"
+                              />
+                            </TableHead>
+                          )}
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead className="hidden md:table-cell">
+                            Division
+                          </TableHead>
+                          <TableHead>Priority</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredPlayerRegistrations.map((registration) => (
+                          <TableRow key={registration.id}>
+                            {onBulkUpdateStatus && (
+                              <TableCell>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedPlayerIds.includes(
+                                    registration.id
+                                  )}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedPlayerIds([
+                                        ...selectedPlayerIds,
+                                        registration.id,
+                                      ]);
+                                    } else {
+                                      setSelectedPlayerIds(
+                                        selectedPlayerIds.filter(
+                                          (id) => id !== registration.id
+                                        )
+                                      );
+                                    }
+                                  }}
+                                  className="h-4 w-4 rounded border-gray-300"
+                                />
+                              </TableCell>
+                            )}
+                            <TableCell>
+                              {registration.firstName} {registration.lastName}
+                            </TableCell>
+                            <TableCell>{registration.email}</TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              {registration.divisionId || registration.division_id}
+                            </TableCell>
+                            <TableCell>
+                              {priorityLabel(registration.metadata?.priority)}
+                            </TableCell>
+                            <TableCell>
+                              {getStatusBadge(registration.status)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    Actions
+                                    <ChevronDown className="ml-2 h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      onUpdateStatus(
+                                        registration.id,
+                                        RegistrationStatus.APPROVED,
+                                        "player"
+                                      )
+                                    }
+                                  >
+                                    Approve
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      onUpdateStatus(
+                                        registration.id,
+                                        RegistrationStatus.REJECTED,
+                                        "player"
+                                      )
+                                    }
+                                  >
+                                    Reject
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      onUpdateStatus(
+                                        registration.id,
+                                        RegistrationStatus.WAITLIST,
+                                        "player"
+                                      )
+                                    }
+                                  >
+                                    Move to Waitlist
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      onUpdateStatus(
+                                        registration.id,
+                                        RegistrationStatus.CHECKED_IN,
+                                        "player"
+                                      )
+                                    }
+                                  >
+                                    Mark as Checked In
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-2 text-lg font-medium">
+                      No registrations found
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {searchTerm || statusFilter !== "all"
+                        ? "No registrations match the current filters."
+                        : "There are no player registrations for this tournament yet."}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="teams">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.length === filteredRegistrations.length}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedIds(filteredRegistrations.map(reg => reg.id));
-                      } else {
-                        setSelectedIds([]);
-                      }
-                    }}
-                    className="rounded"
-                  />
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("name")} className="flex items-center gap-1">
-                    Team Name <ArrowUpDown className="h-4 w-4" />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>
+                Team Registrations
+                <Badge className="ml-2">{filteredTeamRegistrations.length}</Badge>
+              </CardTitle>
+              <div className="flex space-x-2">
+                {onImportTeams && (
+                  <div>
+                    <Button variant="outline" asChild>
+                      <label>
+                        <FileUp className="h-4 w-4 mr-2" />
+                        Import
+                        <input
+                          type="file"
+                          accept=".csv,.xlsx"
+                          onChange={handleImportTeams}
+                          className="hidden"
+                        />
+                      </label>
+                    </Button>
+                  </div>
+                )}
+                {onExportTeams && (
+                  <Button variant="outline" onClick={onExportTeams}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Export
                   </Button>
-                </TableHead>
-                <TableHead>Captain</TableHead>
-                <TableHead>Members</TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("date")} className="flex items-center gap-1">
-                    Date <ArrowUpDown className="h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("status")} className="flex items-center gap-1">
-                    Status <ArrowUpDown className="h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("priority")}
-                    className="flex items-center gap-1"
-                  >
-                    Priority
-                    {sortField === "priority" && (
-                      <ArrowUpDown className={`h-4 w-4 ${sortDirection === "desc" ? "transform rotate-180" : ""}`} />
-                    )}
-                  </Button>
-                </TableHead>
-                <TableHead className="w-12"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRegistrations.map((registration) => {
-                const team = registration as TeamRegistrationWithStatus;
-                return (
-                  <TableRow key={team.id}>
-                    <TableCell>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(team.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedIds([...selectedIds, team.id]);
-                          } else {
-                            setSelectedIds(selectedIds.filter(id => id !== team.id));
-                          }
-                        }}
-                        className="rounded"
-                      />
-                    </TableCell>
-                    <TableCell>{team.teamName}</TableCell>
-                    <TableCell>{team.captainName}</TableCell>
-                    <TableCell>{team.members.length} members</TableCell>
-                    <TableCell>{format(team.createdAt, "MMM d, yyyy")}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(team.status)}>
-                        {team.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {filteredTeamRegistrations.length > 0 ? (
+                <div>
+                  {onBulkUpdateStatus && selectedTeamIds.length > 0 && (
+                    <div className="flex items-center mb-4 p-2 bg-muted rounded-md">
+                      <span className="mr-2 text-sm">
+                        {selectedTeamIds.length} selected
+                      </span>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
+                          <Button variant="outline" size="sm">
+                            Bulk Action
+                            <ChevronDown className="ml-2 h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => onUpdateStatus(team.id, "APPROVED", "team")}>
-                            Approve
+                        <DropdownMenuContent>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleBulkUpdateTeamStatus(RegistrationStatus.APPROVED)
+                            }
+                          >
+                            Approve Selected
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onUpdateStatus(team.id, "REJECTED", "team")}>
-                            Reject
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleBulkUpdateTeamStatus(RegistrationStatus.REJECTED)
+                            }
+                          >
+                            Reject Selected
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onUpdateStatus(team.id, "WAITLIST", "team")}>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleBulkUpdateTeamStatus(RegistrationStatus.WAITLIST)
+                            }
+                          >
                             Move to Waitlist
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onUpdateStatus(team.id, "CHECKED_IN", "team")}>
-                            Check In
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                    </div>
+                  )}
+
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          {onBulkUpdateStatus && (
+                            <TableHead className="w-[40px]">
+                              <input
+                                type="checkbox"
+                                checked={
+                                  filteredTeamRegistrations.length > 0 &&
+                                  selectedTeamIds.length ===
+                                    filteredTeamRegistrations.length
+                                }
+                                onChange={(e) =>
+                                  handleSelectAllTeams(e.target.checked)
+                                }
+                                className="h-4 w-4 rounded border-gray-300"
+                              />
+                            </TableHead>
+                          )}
+                          <TableHead>Team Name</TableHead>
+                          <TableHead>Captain</TableHead>
+                          <TableHead className="hidden md:table-cell">
+                            Players
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell">
+                            Division
+                          </TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredTeamRegistrations.map((registration) => (
+                          <TableRow key={registration.id}>
+                            {onBulkUpdateStatus && (
+                              <TableCell>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedTeamIds.includes(
+                                    registration.id
+                                  )}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedTeamIds([
+                                        ...selectedTeamIds,
+                                        registration.id,
+                                      ]);
+                                    } else {
+                                      setSelectedTeamIds(
+                                        selectedTeamIds.filter(
+                                          (id) => id !== registration.id
+                                        )
+                                      );
+                                    }
+                                  }}
+                                  className="h-4 w-4 rounded border-gray-300"
+                                />
+                              </TableCell>
+                            )}
+                            <TableCell>{registration.teamName}</TableCell>
+                            <TableCell>{registration.captainName}</TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              {registration.playerCount}{" "}
+                              {registration.playerCount === 1
+                                ? "player"
+                                : "players"}
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              {registration.divisionId || registration.division_id}
+                            </TableCell>
+                            <TableCell>
+                              {getStatusBadge(registration.status)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    Actions
+                                    <ChevronDown className="ml-2 h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      onUpdateStatus(
+                                        registration.id,
+                                        RegistrationStatus.APPROVED,
+                                        "team"
+                                      )
+                                    }
+                                  >
+                                    Approve
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      onUpdateStatus(
+                                        registration.id,
+                                        RegistrationStatus.REJECTED,
+                                        "team"
+                                      )
+                                    }
+                                  >
+                                    Reject
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      onUpdateStatus(
+                                        registration.id,
+                                        RegistrationStatus.WAITLIST,
+                                        "team"
+                                      )
+                                    }
+                                  >
+                                    Move to Waitlist
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      onUpdateStatus(
+                                        registration.id,
+                                        RegistrationStatus.CHECKED_IN,
+                                        "team"
+                                      )
+                                    }
+                                  >
+                                    Mark as Checked In
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-2 text-lg font-medium">
+                      No team registrations found
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {searchTerm || statusFilter !== "all"
+                        ? "No team registrations match the current filters."
+                        : "There are no team registrations for this tournament yet."}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
-
-      {selectedIds.length > 0 && (
-        <div className="fixed bottom-4 right-4 bg-background border rounded-lg shadow-lg p-4 flex items-center gap-4">
-          <span>{selectedIds.length} selected</span>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSelectedIds([]);
-            }}
-          >
-            Clear
-          </Button>
-          <Button
-            onClick={() => {
-              setShowStatusDialog(true);
-            }}
-          >
-            Update Status
-          </Button>
-        </div>
-      )}
-
-      <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Status</DialogTitle>
-            <DialogDescription>
-              Update the status for {selectedIds.length} selected {selectedTab}
-            </DialogDescription>
-          </DialogHeader>
-          <Select value={selectedStatus || ""} onValueChange={(value) => setSelectedStatus(value as RegistrationStatus)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select new status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="APPROVED">Approve</SelectItem>
-              <SelectItem value="REJECTED">Reject</SelectItem>
-              <SelectItem value="WAITLIST">Move to Waitlist</SelectItem>
-              <SelectItem value="CHECKED_IN">Check In</SelectItem>
-            </SelectContent>
-          </Select>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowStatusDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleBulkStatusUpdate}>
-              Update
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
 
-export default RegistrationStatusList; 
+export default RegistrationStatusList;

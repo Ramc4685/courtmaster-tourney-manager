@@ -6,19 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { tournamentFormSchema, TournamentFormValues, Category } from '../types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import CategoriesStep from './steps/CategoriesStep';
 import { useToast } from '@/components/ui/use-toast';
-import { tournamentService } from '@/services/api';
 import { useNavigate } from 'react-router-dom';
 import { GameType, Division, TournamentFormat, TournamentStatus, TournamentStageEnum, PlayType } from '@/types/tournament-enums';
-import { Tournament } from '@/types/tournament';
 import { v4 as uuidv4 } from 'uuid';
+import CategoriesStep from './steps/CategoriesStep';
+import { tournamentService } from '@/services/api';
 
 interface TournamentWizardProps {
   onComplete?: (data: TournamentFormValues) => void;
 }
 
-export default function TournamentWizard({ onComplete }: TournamentWizardProps) {
+const TournamentWizard: React.FC<TournamentWizardProps> = ({ onComplete }) => {
   const [step, setStep] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
   const { toast } = useToast();
@@ -70,7 +69,9 @@ export default function TournamentWizard({ onComplete }: TournamentWizardProps) 
   const handleCreateTournament = async () => {
     try {
       const values = form.getValues();
-      const tournament: Tournament = {
+      
+      // Create tournament object with proper structure
+      const tournament = {
         id: '', // Will be set by the service
         name: values.name,
         location: values.location,
@@ -89,7 +90,7 @@ export default function TournamentWizard({ onComplete }: TournamentWizardProps) 
         courts: [],
         categories: values.divisionDetails.flatMap(division => 
           division.categories.map(cat => ({
-            id: '',  // Will be set by the service
+            id: cat.id || uuidv4(),
             name: cat.name,
             division: division.type,
             type: cat.type || 'standard',
@@ -157,6 +158,8 @@ export default function TournamentWizard({ onComplete }: TournamentWizardProps) 
               <CategoriesStep 
                 categories={categories}
                 onCategoriesChange={setCategories}
+                control={form.control}
+                watch={form.watch}
               />
             </CardContent>
           </Card>
@@ -193,3 +196,5 @@ export default function TournamentWizard({ onComplete }: TournamentWizardProps) 
     </div>
   );
 }
+
+export default TournamentWizard;

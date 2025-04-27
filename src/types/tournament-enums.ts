@@ -5,9 +5,9 @@ export enum GameType {
   BADMINTON = 'BADMINTON',
   TENNIS = 'TENNIS', 
   PICKLEBALL = 'PICKLEBALL',
-  SINGLE_ELIMINATION = 'SINGLE_ELIMINATION',
-  DOUBLE_ELIMINATION = 'DOUBLE_ELIMINATION',
-  ROUND_ROBIN = 'ROUND_ROBIN'
+  VOLLEYBALL = 'VOLLEYBALL',
+  SQUASH = 'SQUASH',
+  TABLE_TENNIS = 'TABLE_TENNIS'
 }
 
 export enum Division {
@@ -21,7 +21,7 @@ export enum Division {
   INTERMEDIATE = 'INTERMEDIATE',
   ADVANCED = 'ADVANCED',
   PRO = 'PRO',
-  INITIAL = 'INITIAL' // Adding this as it's referenced in code
+  CUSTOM = 'CUSTOM'
 }
 
 export enum MatchStatus {
@@ -53,7 +53,7 @@ export enum CourtStatus {
   IN_USE = 'IN_USE',
   MAINTENANCE = 'MAINTENANCE',
   RESERVED = 'RESERVED',
-  UNAVAILABLE = 'UNAVAILABLE' // Adding this as it might be referenced
+  UNAVAILABLE = 'UNAVAILABLE'
 }
 
 export enum UserRole {
@@ -79,7 +79,12 @@ export enum TournamentStatus {
 export enum TournamentStageEnum {
   GROUP_STAGE = 'GROUP_STAGE',
   DIVISION_PLACEMENT = 'DIVISION_PLACEMENT',
-  PLAYOFF_KNOCKOUT = 'PLAYOFF_KNOCKOUT'
+  PLAYOFF_KNOCKOUT = 'PLAYOFF_KNOCKOUT',
+  INITIAL_ROUND = 'INITIAL_ROUND',
+  ELIMINATION_ROUND = 'ELIMINATION_ROUND',
+  FINALS = 'FINALS',
+  REGISTRATION = 'REGISTRATION',
+  SEEDING = 'SEEDING'
 }
 
 // Define RegistrationStatus here as the canonical source
@@ -89,7 +94,19 @@ export enum RegistrationStatus {
   REJECTED = 'REJECTED',
   WAITLIST = 'WAITLIST',
   CHECKED_IN = 'CHECKED_IN',
-  WITHDRAWN = 'WITHDRAWN'
+  WITHDRAWN = 'WITHDRAWN',
+  CONFIRMED = 'CONFIRMED',
+  CANCELLED = 'CANCELLED',
+  WAITLISTED = 'WAITLISTED'
 }
 
-// Ensure we have a single source of truth for all enums
+// Audit log types
+export enum AuditLogType {
+  MATCH_CREATED = 'MATCH_CREATED',
+  MATCH_UPDATED = 'MATCH_UPDATED',
+  MATCH_DELETED = 'MATCH_DELETED',
+  MATCH_STARTED = 'MATCH_STARTED',
+  MATCH_COMPLETED = 'MATCH_COMPLETED',
+  SCORE_UPDATED = 'SCORE_UPDATED',
+  MATCH_CANCELLED = 'MATCH_CANCELLED'
+}

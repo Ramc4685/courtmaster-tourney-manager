@@ -3,18 +3,22 @@ import React from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CourtTable from "@/components/court/CourtTable";
-import { Court } from "@/types/tournament";
+import { Court } from "@/types/entities";
 
 interface CourtsTabProps {
   courts: Court[];
-  onCourtUpdate: (court: Court) => void;
+  onCourtUpdate?: (court: Court) => void;
   onAddCourtClick: () => void;
+  onEditCourt?: (court: Court) => void;
+  onDeleteCourt?: (courtId: string) => void;
 }
 
 const CourtsTab: React.FC<CourtsTabProps> = ({
   courts,
   onCourtUpdate,
-  onAddCourtClick
+  onAddCourtClick,
+  onEditCourt,
+  onDeleteCourt
 }) => {
   return (
     <div className="space-y-4">
@@ -28,6 +32,8 @@ const CourtsTab: React.FC<CourtsTabProps> = ({
       <CourtTable
         courts={courts}
         onCourtUpdate={onCourtUpdate}
+        onEditCourt={onEditCourt}
+        onDeleteCourt={onDeleteCourt}
       />
     </div>
   );

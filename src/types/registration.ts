@@ -1,5 +1,6 @@
+
 import { z } from 'zod';
-import { RegistrationStatus } from './entities';
+import { RegistrationStatus } from './tournament-enums';
 
 export const playerRegistrationSchema = z.object({
   player_id: z.string(),
@@ -34,12 +35,29 @@ export interface RegistrationMetadata {
   checkInTime?: string;
   notes?: string;
   verificationCode?: string;
+  priority?: number;
+  comments?: Array<{
+    id: string;
+    text: string;
+    createdAt: string;
+    createdBy: string;
+  }>;
+  playerName?: string;
+  contactEmail?: string;
+  teamSize?: number;
+  waitlistHistory?: Array<{
+    date: string;
+    fromPosition: number;
+    toPosition: number;
+    reason?: string;
+  }>;
 }
 
 export interface PlayerRegistrationWithStatus {
   id: string;
   playerId: string;
   divisionId: string;
+  division_id?: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -48,12 +66,14 @@ export interface PlayerRegistrationWithStatus {
   metadata: RegistrationMetadata;
   createdAt: Date;
   updatedAt: Date;
+  tournamentId?: string;
 }
 
 export interface TeamRegistrationWithStatus {
   id: string;
   teamId: string;
   divisionId: string;
+  division_id?: string;
   teamName: string;
   captainName: string;
   playerCount: number;
@@ -61,6 +81,8 @@ export interface TeamRegistrationWithStatus {
   metadata: RegistrationMetadata;
   createdAt: Date;
   updatedAt: Date;
+  tournamentId?: string;
+  members?: any[];
 }
 
 export interface TournamentRegistration {
@@ -72,3 +94,6 @@ export interface TournamentRegistration {
   updatedAt: Date;
   metadata: RegistrationMetadata;
 }
+
+// For backward compatibility, re-export RegistrationStatus
+export { RegistrationStatus }
