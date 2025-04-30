@@ -17,7 +17,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   },
   global: {
     headers: {
-      'x-application-name': 'courtmaster'
+      'x-application-name': 'courtmaster',
+      'apikey': SUPABASE_PUBLISHABLE_KEY
     }
   },
   realtime: {

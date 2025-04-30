@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,18 +11,53 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, isAuthenticated, isLoading: authLoading, sessionChecked } = useAuth();
+  const location = useLocation();
+
+  useEffect(() => {
+    console.log('[LoginPage] State:', {
+      isAuthenticated,
+      authLoading,
+      sessionChecked,
+      pathname: location.pathname
+    });
+  }, [isAuthenticated, authLoading, sessionChecked, location.pathname]);
+
+  // Show loading state while checking session
+  if (!sessionChecked || authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    console.log('[LoginPage] User is authenticated, redirecting');
+    const from = location.state?.from?.pathname || '/tournaments';
+    return <Navigate to={from} replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[LoginPage] Attempting login:', { email });
+
+    if (!email || !password) {
+      toast.error('Please enter both email and password');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       await signIn(email, password);
       toast.success('Welcome back!');
     } catch (error) {
-      console.error('Login error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to sign in. Please check your credentials.');
+      console.error('[LoginPage] Login error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to sign in');
     } finally {
       setIsLoading(false);
     }
@@ -71,6 +106,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="mt-1"
+                  disabled={isLoading}
                 />
               </div>
 
@@ -85,6 +121,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="mt-1"
+                  disabled={isLoading}
                 />
               </div>
 
@@ -94,13 +131,21 @@ export default function LoginPage() {
                   className="w-full"
                   disabled={isLoading}
                 >
-                  {isLoading ? "Signing in..." : "Sign in"}
+                  {isLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Signing in...
+                    </div>
+                  ) : (
+                    "Sign in"
+                  )}
                 </Button>
                 <Button
                   type="button"
                   variant="secondary"
                   className="w-full"
                   onClick={handleQuickLogin}
+                  disabled={isLoading}
                 >
                   Quick Login (Demo)
                 </Button>

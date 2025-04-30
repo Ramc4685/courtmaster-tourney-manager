@@ -23,18 +23,21 @@ export const TournamentContext = createContext<TournamentContextType | undefined
 
 export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [currentTournament, setCurrentTournament] = useState<Tournament | null>(null);
-
-  useEffect(() => {
-    loadTournaments();
-  }, []);
+  const [currentTournament, setCurrentTournamentState] = useState<Tournament | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadTournaments = async () => {
     try {
+      setIsLoading(true);
+      setError(null);
       const loadedTournaments = await tournamentService.getTournaments();
       setTournaments(loadedTournaments);
     } catch (error) {
       console.error("Error loading tournaments:", error);
+      setError("Failed to load tournaments");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -102,7 +105,7 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     try {
       const createdTournament = await tournamentService.createTournament(newTournament);
       setTournaments(prevTournaments => [...prevTournaments, createdTournament]);
-      setCurrentTournament(createdTournament);
+      setCurrentTournamentState(createdTournament);
       return createdTournament;
     } catch (error) {
       console.error("Error creating tournament:", error);
@@ -117,7 +120,7 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
         prevTournaments.map(t => (t.id === tournament.id ? tournament : t))
       );
       if (currentTournament?.id === tournament.id) {
-        setCurrentTournament(tournament);
+        setCurrentTournamentState(tournament);
       }
     } catch (error) {
       console.error("Error updating tournament:", error);
@@ -131,16 +134,16 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
         prevTournaments.filter(t => t.id !== tournamentId)
       );
       if (currentTournament?.id === tournamentId) {
-        setCurrentTournament(null);
+        setCurrentTournamentState(null);
       }
     } catch (error) {
       console.error("Error deleting tournament:", error);
     }
   };
 
-  const setCurrentTournamentContext = async (tournament: Tournament) => {
+  const setCurrentTournament = async (tournament: Tournament) => {
     try {
-      setCurrentTournament(tournament);
+      setCurrentTournamentState(tournament);
       await tournamentService.saveCurrentTournament(tournament);
     } catch (error) {
       console.error("Error setting current tournament:", error);
@@ -690,7 +693,7 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       if (!createdTournament) {
         throw new Error("Failed to create tournament - no tournament returned");
       }
-      await setCurrentTournamentContext(createdTournament);
+      await setCurrentTournament(createdTournament);
       toast({
         title: "Sample Tournament Created",
         description: `Created a new ${format.replace(/_/g, ' ')} tournament template.`
@@ -744,11 +747,13 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
   const tournamentContextValue: TournamentContextType = {
     tournaments,
     currentTournament,
-    setCurrentTournament: setCurrentTournamentContext,
+    isLoading,
+    error,
+    loadTournaments,
     createTournament,
     updateTournament,
     deleteTournament,
-    loadTournaments,
+    setCurrentTournament,
     startMatch,
     updateMatchStatus,
     updateMatchScore,

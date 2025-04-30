@@ -1,17 +1,17 @@
-
 import { 
   Tournament, 
   Match, 
   Court, 
   Team, 
-  TournamentFormat, 
-  Division, 
-  Category,
-  CourtStatus,
-  ScoringSettings,
-  MatchStatus,
   TournamentCategory
 } from "@/types/tournament";
+import {
+  TournamentFormat,
+  Division,
+  CourtStatus,
+  MatchStatus
+} from "@/types/tournament-enums";
+import { ScoringSettings } from "@/types/scoring";
 
 // Define SchedulingOptions and SchedulingResult types to match the services implementation
 export interface SchedulingOptions {
@@ -35,8 +35,20 @@ export interface SchedulingResult {
 export interface TournamentContextType {
   tournaments: Tournament[];
   currentTournament: Tournament | null;
+  isLoading: boolean;
+  error: string | null;
   setCurrentTournament: (tournament: Tournament) => Promise<void>;
-  createTournament: (data: {name: string, description?: string, format?: TournamentFormat, categories: TournamentCategory[]}) => Promise<Tournament>;
+  createTournament: (data: {
+    name: string;
+    description?: string;
+    format?: TournamentFormat;
+    categories: TournamentCategory[];
+    location?: string;
+    registrationEnabled?: boolean;
+    requirePlayerProfile?: boolean;
+    startDate?: string | Date;
+    endDate?: string | Date;
+  }) => Promise<Tournament>;
   updateTournament: (tournament: Tournament) => Promise<void>;
   deleteTournament: (tournamentId: string) => Promise<void>;
   loadTournaments: () => Promise<void>;

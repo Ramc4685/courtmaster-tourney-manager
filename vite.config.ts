@@ -12,6 +12,22 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "0.0.0.0",
     port: 8080,
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+      credentials: true
+    },
+    proxy: {
+      '/rest/v1': {
+        target: 'https://psbcrxgcfgqvrgkxilgi.supabase.co',
+        changeOrigin: true,
+        secure: false,
+        headers: {
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzYmNyeGdjZmdxdnJna3hpbGdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMyMjI3NDUsImV4cCI6MjA1ODc5ODc0NX0.gmFiigBSe9ziFP2oFJWLqqwKbQVrZnrlJMN0uGPuzKo'
+        }
+      }
+    },
     allowedHosts: [
       // Allow the specific host causing the issue
       "3c369f66-82fd-492f-a24a-0dbb48d7615a.lovableproject.com",
