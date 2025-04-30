@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { User, UserCredentials } from '@/types/user';
 import { TournamentUserRole } from '@/types/user';
 import { SupabaseAuthService } from './SupabaseAuthService';

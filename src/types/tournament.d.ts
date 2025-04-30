@@ -1,5 +1,16 @@
-
-import { UserRole, TournamentFormat, TournamentStageEnum as TournamentStage, TournamentStatus, CourtStatus, MatchStatus, AuditLogType } from './tournament-enums';
+import { 
+  UserRole, 
+  TournamentFormat, 
+  TournamentStageEnum, 
+  TournamentStatus, 
+  CourtStatus, 
+  MatchStatus, 
+  AuditLogType,
+  Division,
+  CategoryType,
+  TournamentFormatConfig
+} from './tournament-enums';
+import { ScoringSettings } from './scoring';
 
 // Export tournament types
 export interface Tournament {
@@ -7,29 +18,35 @@ export interface Tournament {
   name: string;
   description?: string;
   location: string;
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
   registrationDeadline?: Date;
   registrationEnabled: boolean;
   requirePlayerProfile: boolean;
   maxTeams: number;
   format: TournamentFormat;
+  formatConfig: TournamentFormatConfig;
+  scoring: ScoringSettings;
   status: TournamentStatus;
   categories: TournamentCategory[];
   teams: Team[];
   matches: Match[];
   courts: Court[];
-  scoringSettings: ScoringSettings;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   organizer_id?: string;
+  currentStage?: TournamentStageEnum;
+  divisions: Division[];
+  stages: TournamentStage[];
+  metadata?: Record<string, any>;
 }
 
 export interface TournamentCategory {
   id: string;
   name: string;
-  type: string;
+  type: CategoryType;
   division: Division;
+  format?: TournamentFormatConfig;
 }
 
 export interface Team {
@@ -67,7 +84,7 @@ export interface Match {
   id: string;
   tournamentId: string;
   division: Division;
-  stage: TournamentStage;
+  stage: TournamentStageEnum;
   bracketRound: number;
   bracketPosition: number;
   progression: {
@@ -128,27 +145,13 @@ export interface StandaloneMatch {
   winner?: number;
 }
 
-export interface ScoringSettings {
-  pointsToWin: number;
-  mustWinByTwo: boolean;
-  maxPoints: number;
-  matchFormat: string;
-}
-
-// Export Division interface with required properties
-export interface Division {
-  id: string;
-  name: string;
-  type: string;
-  capacity?: number;
-  categories?: any[];
-  min_age?: number;
-  max_age?: number;
-  gender?: string;
-  skill_level?: string;
-}
-
 // Export enum types
-export { MatchStatus, CourtStatus, TournamentFormat, TournamentStatus, TournamentStage };
-export type CategoryType = string;
+export { 
+  MatchStatus, 
+  CourtStatus, 
+  TournamentFormat, 
+  TournamentStatus, 
+  TournamentStageEnum as TournamentStage
+};
+
 export type ScorerType = "TOURNAMENT" | "STANDALONE";

@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import type { Tournament, Match, Court, Team, MatchScore } from "@/types/tournament";
-import { TournamentStage, StageType, TournamentFormat, MatchStatus, Division } from '@/types/tournament-enums';
+import { 
+  TournamentFormat, 
+  TournamentStageEnum,
+  TournamentStatus,
+  MatchStatus,
+  Division
+} from '@/types/tournament-enums';
 import { generateId } from "@/utils/tournamentUtils";
 import { assignCourtToMatch, autoAssignCourts } from "@/utils/courtUtils";
 import { findMatchById, updateMatchInTournament } from "@/utils/tournamentUtils";
@@ -15,7 +21,7 @@ interface TournamentState {
   tournament: Tournament | null;
   isLoading: boolean;
   error: string | null;
-  currentStage: TournamentStage;
+  currentStage: TournamentStageEnum;
 
   // Tournament operations
   loadTournaments: () => Promise<void>;
@@ -32,7 +38,7 @@ interface TournamentState {
   // Match operations
   updateMatch: (match: Match) => void;
   updateMatchStatus: (matchId: string, status: MatchStatus) => void;
-  updateMatchScore: (matchId: string, score: MatchScore) => void;
+  updateMatchScore: (matchId: string, score: { team1Score: number; team2Score: number }) => void;
   completeMatch: (matchId: string) => void;
   scheduleMatch: (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => void;
 
@@ -47,13 +53,13 @@ interface TournamentState {
 
   // New operations
   setTournament: (tournament: Tournament) => void;
-  updateTournamentStage: (stage: TournamentStage) => void;
+  updateTournamentStage: (stage: TournamentStageEnum) => void;
 }
 
 interface TournamentActions {
   setTournament: (tournament: Tournament) => void;
-  updateMatchScore: (matchId: string, score: MatchScore) => void;
-  updateTournamentStage: (stage: TournamentStage) => void;
+  updateMatchScore: (matchId: string, score: { team1Score: number; team2Score: number }) => void;
+  updateTournamentStage: (stage: TournamentStageEnum) => void;
 }
 
 type TournamentStore = TournamentState & TournamentActions;
@@ -76,34 +82,36 @@ const loadCurrentTournamentFromStorage = async (): Promise<Tournament | null> =>
 // Create the store
 export const useTournamentStore = create<TournamentStore>((set, get) => {
   // Helper functions for tournament stage management
-  const generateNextTournamentStage = (tournament: Tournament): TournamentStage => {
+  const generateNextTournamentStage = (tournament: Tournament): TournamentStageEnum => {
     const nextStage = advanceToNextStage(tournament);
     
-    if (nextStage === TournamentStage.GROUP_STAGE) {
+    if (nextStage === TournamentStageEnum.GROUP_STAGE) {
       tournament.matches = generateGroupStageMatches(tournament);
-    } else if (nextStage === TournamentStage.ELIMINATION_ROUND) {
+    } else if (nextStage === TournamentStageEnum.ELIMINATION_ROUND) {
       tournament.matches = generateEliminationRoundMatches(tournament);
-    } else if (nextStage === TournamentStage.FINALS) {
+    } else if (nextStage === TournamentStageEnum.FINALS) {
       tournament.matches = generateFinalMatches(tournament);
     }
     
     return nextStage;
   };
 
-  const advanceToNextStage = (tournament: Tournament): TournamentStage => {
-    switch (tournament.currentStage) {
-      case TournamentStage.REGISTRATION:
-        return TournamentStage.SEEDING;
-      case TournamentStage.SEEDING:
-        return TournamentStage.GROUP_STAGE;
-      case TournamentStage.GROUP_STAGE:
-        return TournamentStage.ELIMINATION_ROUND;
-      case TournamentStage.ELIMINATION_ROUND:
-        return TournamentStage.FINALS;
-      case TournamentStage.FINALS:
-        return TournamentStage.COMPLETED;
+  const advanceToNextStage = (tournament: Tournament): TournamentStageEnum => {
+    const currentStage = tournament.currentStage;
+    switch (currentStage) {
+      case TournamentStageEnum.REGISTRATION:
+        return TournamentStageEnum.SEEDING;
+      case TournamentStageEnum.SEEDING:
+        return TournamentStageEnum.GROUP_STAGE;
+      case TournamentStageEnum.GROUP_STAGE:
+        return TournamentStageEnum.ELIMINATION_ROUND;
+      case TournamentStageEnum.ELIMINATION_ROUND:
+        return TournamentStageEnum.FINALS;
+      case TournamentStageEnum.FINALS:
+        tournament.status = TournamentStatus.COMPLETED;
+        return TournamentStageEnum.FINALS;
       default:
-        return tournament.currentStage;
+        return currentStage;
     }
   };
 
@@ -122,11 +130,11 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
 
   const generateNextStageMatches = (tournament: Tournament): Match[] => {
     switch (tournament.currentStage) {
-      case TournamentStage.GROUP_STAGE:
+      case TournamentStageEnum.GROUP_STAGE:
         return generateGroupStageMatches(tournament);
-      case TournamentStage.ELIMINATION_ROUND:
+      case TournamentStageEnum.ELIMINATION_ROUND:
         return generateEliminationRoundMatches(tournament);
-      case TournamentStage.FINALS:
+      case TournamentStageEnum.FINALS:
         return generateFinalMatches(tournament);
       default:
         return [];
@@ -152,21 +160,35 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
     return Math.random().toString(36).substring(2, 15);
   };
 
-  const updateMatchScore = (match: Match, scores: MatchScore[]) => {
-    const latestScore = scores[scores.length - 1];
-    return {
-      ...match,
-      scores,
-      team1Score: latestScore?.team1Score || 0,
-      team2Score: latestScore?.team2Score || 0,
-    };
+  const updateMatchScore = (matchId: string, score: { team1Score: number; team2Score: number }) => {
+    const tournament = get().tournament;
+    if (!tournament) return;
+
+    const updatedMatches = tournament.matches.map(match => {
+      if (match.id === matchId) {
+        return {
+          ...match,
+          scores: [...match.scores, score],
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return match;
+    });
+
+    set({
+      tournament: {
+        ...tournament,
+        matches: updatedMatches,
+        updatedAt: new Date().toISOString()
+      }
+    });
   };
 
-  const updateTournamentStage = (tournament: Tournament, stage: TournamentStage) => {
+  const updateTournamentStage = (tournament: Tournament, stage: TournamentStageEnum) => {
     return {
       ...tournament,
       currentStage: stage,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     };
   };
 
@@ -177,7 +199,7 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
     tournament: null,
     isLoading: false,
     error: null,
-    currentStage: TournamentStage.REGISTRATION,
+    currentStage: TournamentStageEnum.REGISTRATION,
 
     // Load tournaments from storage
     loadTournaments: async () => {
@@ -215,9 +237,9 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
         id: generateId(),
         ...tournamentData,
         matches: [],
-        currentStage: TournamentStage.REGISTRATION,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        currentStage: TournamentStageEnum.REGISTRATION,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
 
       const updatedTournaments = [...get().tournaments, newTournament];
@@ -291,7 +313,7 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
       const updatedTournament = {
         ...currentTournament,
         teams: [...currentTournament.teams, team],
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString()
       };
       
       updateTournament(updatedTournament);
@@ -304,7 +326,7 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
       const updatedTournament = {
         ...currentTournament,
         teams: [...currentTournament.teams, ...teams],
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString()
       };
       
       updateTournament(updatedTournament);
@@ -328,7 +350,7 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
       const updatedTournament = {
         ...currentTournament,
         matches: updatedMatches,
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString()
       };
       
       updateTournament(updatedTournament);
@@ -341,7 +363,7 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
       const match = findMatchById(currentTournament, matchId);
       if (!match) return;
       
-      const updatedMatch = { ...match, status, updatedAt: new Date() };
+      const updatedMatch = { ...match, status, updatedAt: new Date().toISOString() };
       const updatedMatches = currentTournament.matches.map(m => 
         m.id === matchId ? updatedMatch : m
       );
@@ -349,7 +371,7 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
       const updatedTournament = {
         ...currentTournament,
         matches: updatedMatches,
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString()
       };
       
       updateTournament(updatedTournament);
@@ -362,14 +384,14 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
       const updatedMatches = currentTournament.matches.map((match) => {
         if (match.id === matchId) {
           const updatedScores = [...(match.scores || [])];
-          updatedScores.push([score.team1Score, score.team2Score]);
+          updatedScores.push({ team1Score: score.team1Score, team2Score: score.team2Score });
           
           return {
             ...match,
             team1Score: score.team1Score,
             team2Score: score.team2Score,
             scores: updatedScores,
-            updatedAt: new Date()
+            updatedAt: new Date().toISOString()
           };
         }
         return match;
@@ -378,7 +400,7 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
       const updatedTournament = {
         ...currentTournament,
         matches: updatedMatches,
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString()
       };
       
       updateTournament(updatedTournament);
@@ -406,7 +428,7 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
       const updatedTournament = {
         ...currentTournament,
         courts: updatedCourts,
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString()
       };
       
       updateTournament(updatedTournament);
@@ -440,7 +462,7 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
       const updatedTournament = {
         ...currentTournament,
         currentStage: nextStage,
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString()
       };
 
       updateTournament(updatedTournament);
@@ -467,7 +489,7 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
         ...currentTournament,
         currentStage: nextStage,
         matches: [...currentTournament.matches, ...nextStageMatches],
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString()
       };
 
       updateTournament(updatedTournament);
@@ -481,7 +503,7 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
         tournament: {
           ...state.tournament,
           currentStage: stage,
-          updatedAt: new Date()
+          updatedAt: new Date().toISOString()
         }
       };
     })
@@ -489,34 +511,36 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
 });
 
 // Helper functions for tournament stage management
-export const generateNextTournamentStage = (tournament: Tournament): TournamentStage => {
+export const generateNextTournamentStage = (tournament: Tournament): TournamentStageEnum => {
   const nextStage = advanceToNextStage(tournament);
   
-  if (nextStage === TournamentStage.GROUP_STAGE) {
+  if (nextStage === TournamentStageEnum.GROUP_STAGE) {
     tournament.matches = generateGroupStageMatches(tournament);
-  } else if (nextStage === TournamentStage.ELIMINATION_ROUND) {
+  } else if (nextStage === TournamentStageEnum.ELIMINATION_ROUND) {
     tournament.matches = generateEliminationRoundMatches(tournament);
-  } else if (nextStage === TournamentStage.FINALS) {
+  } else if (nextStage === TournamentStageEnum.FINALS) {
     tournament.matches = generateFinalMatches(tournament);
   }
   
   return nextStage;
 };
 
-export const advanceToNextStage = (tournament: Tournament): TournamentStage => {
-  switch (tournament.currentStage) {
-    case TournamentStage.REGISTRATION:
-      return TournamentStage.SEEDING;
-    case TournamentStage.SEEDING:
-      return TournamentStage.GROUP_STAGE;
-    case TournamentStage.GROUP_STAGE:
-      return TournamentStage.ELIMINATION_ROUND;
-    case TournamentStage.ELIMINATION_ROUND:
-      return TournamentStage.FINALS;
-    case TournamentStage.FINALS:
-      return TournamentStage.COMPLETED;
+export const advanceToNextStage = (tournament: Tournament): TournamentStageEnum => {
+  const currentStage = tournament.currentStage;
+  switch (currentStage) {
+    case TournamentStageEnum.REGISTRATION:
+      return TournamentStageEnum.SEEDING;
+    case TournamentStageEnum.SEEDING:
+      return TournamentStageEnum.GROUP_STAGE;
+    case TournamentStageEnum.GROUP_STAGE:
+      return TournamentStageEnum.ELIMINATION_ROUND;
+    case TournamentStageEnum.ELIMINATION_ROUND:
+      return TournamentStageEnum.FINALS;
+    case TournamentStageEnum.FINALS:
+      tournament.status = TournamentStatus.COMPLETED;
+      return TournamentStageEnum.FINALS;
     default:
-      return tournament.currentStage;
+      return currentStage;
   }
 };
 
@@ -535,11 +559,11 @@ export const isStageComplete = (tournament: Tournament): boolean => {
 
 export const generateNextStageMatches = (tournament: Tournament): Match[] => {
   switch (tournament.currentStage) {
-    case TournamentStage.GROUP_STAGE:
+    case TournamentStageEnum.GROUP_STAGE:
       return generateGroupStageMatches(tournament);
-    case TournamentStage.ELIMINATION_ROUND:
+    case TournamentStageEnum.ELIMINATION_ROUND:
       return generateEliminationRoundMatches(tournament);
-    case TournamentStage.FINALS:
+    case TournamentStageEnum.FINALS:
       return generateFinalMatches(tournament);
     default:
       return [];
@@ -563,23 +587,5 @@ const generateFinalMatches = (tournament: Tournament): Match[] => {
 
 const generateMatchId = () => {
   return Math.random().toString(36).substring(2, 15);
-};
-
-const updateMatchScore = (match: Match, scores: MatchScore[]) => {
-  const latestScore = scores[scores.length - 1];
-  return {
-    ...match,
-    scores,
-    team1Score: latestScore?.team1Score || 0,
-    team2Score: latestScore?.team2Score || 0,
-  };
-};
-
-const updateTournamentStage = (tournament: Tournament, stage: TournamentStage) => {
-  return {
-    ...tournament,
-    currentStage: stage,
-    updatedAt: new Date(),
-  };
 };
 

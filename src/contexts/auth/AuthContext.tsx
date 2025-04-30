@@ -36,17 +36,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAuthenticated = !!user;
 
   const fetchProfile = async (userId: string) => {
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    if (profileError) {
-      throw profileError;
+      if (profileError) {
+        // If profile doesn't exist, create it
+        if (profileError.code === 'PGRST116') {
+          const { data: session } = await supabase.auth.getSession();
+          if (!session?.session?.user) throw new Error('No user session');
+          
+          const newProfile = {
+            id: userId,
+            full_name: session.session.user.email?.split('@')[0] || 'User',
+            display_name: session.session.user.email?.split('@')[0] || 'User',
+            role: 'player'
+          };
+
+          const { data: createdProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert([newProfile])
+            .select()
+            .single();
+
+          if (createError) throw createError;
+          return createdProfile;
+        }
+        throw profileError;
+      }
+
+      return profile;
+    } catch (error) {
+      console.error('Error fetching/creating profile:', error);
+      throw error;
     }
-
-    return profile;
   };
 
   useEffect(() => {
@@ -114,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: 'Welcome back!',
         description: 'You have successfully signed in.',
       });
-      navigate('/dashboard');
+      navigate('/tournaments');
     } catch (error) {
       console.error('Sign in error:', error);
       setError(error instanceof Error ? error.message : 'Failed to sign in');

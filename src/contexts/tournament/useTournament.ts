@@ -1,6 +1,15 @@
 import { create } from "zustand";
 import { Tournament, TournamentCategory, Match, Team } from "@/types/tournament";
-import { TournamentFormat, CategoryType, TournamentStage, TournamentStatus, GameType, Division, PlayType } from "@/types/tournament-enums";
+import { 
+  TournamentFormat, 
+  CategoryType, 
+  TournamentStageEnum, 
+  TournamentStatus, 
+  GameType, 
+  Division, 
+  PlayType,
+  TournamentFormatConfig
+} from "@/types/tournament-enums";
 import { TournamentFormValues } from "@/components/admin/tournament/types";
 import { tournamentService } from "@/services/tournament/TournamentService";
 import { useAuth } from '@/contexts/auth/AuthContext';
@@ -65,12 +74,15 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
         throw new Error('User must be logged in to create a tournament');
       }
 
+      const format = createTournamentFormat(data);
+
       const categories: TournamentCategory[] = data.divisionDetails.flatMap(division => 
         division.categories.map(category => ({
           id: category.id,
           name: category.name,
           type: CategoryType.CUSTOM,
-          division: division.type as Division
+          division: division.type as Division,
+          format: format
         }))
       );
 
@@ -78,72 +90,35 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
         id: crypto.randomUUID(),
         name: data.name,
         description: data.description || '',
-        format: {
-          type: TournamentFormat.SINGLE_ELIMINATION,
-          stages: [TournamentStage.REGISTRATION, TournamentStage.SEEDING, TournamentStage.ELIMINATION_ROUND, TournamentStage.FINALS],
-          scoring: {
-            matchFormat: 'STANDARD',
-            setsToWin: 2,
-            pointsToWinSet: data.scoringRules.pointsToWin,
-            tiebreakPoints: data.scoringRules.maxPoints,
-            finalSetTiebreak: true,
-            pointsToWin: data.scoringRules.pointsToWin,
-            mustWinByTwo: data.scoringRules.mustWinByTwo,
-            maxPoints: data.scoringRules.maxPoints,
-            maxSets: 3,
-            requireTwoPointLead: true,
-            maxTwoPointLeadScore: 30
-          },
-          divisions: data.divisionDetails.map(division => division.type as Division),
-          seedingEnabled: true
-        },
-        formatConfig: {
-          type: TournamentFormat.SINGLE_ELIMINATION,
-          stages: [TournamentStage.REGISTRATION, TournamentStage.SEEDING, TournamentStage.ELIMINATION_ROUND, TournamentStage.FINALS],
-          scoring: {
-            matchFormat: 'STANDARD',
-            setsToWin: 2,
-            pointsToWinSet: data.scoringRules.pointsToWin,
-            tiebreakPoints: data.scoringRules.maxPoints,
-            finalSetTiebreak: true,
-            pointsToWin: data.scoringRules.pointsToWin,
-            mustWinByTwo: data.scoringRules.mustWinByTwo,
-            maxPoints: data.scoringRules.maxPoints,
-            maxSets: 3,
-            requireTwoPointLead: true,
-            maxTwoPointLeadScore: 30
-          },
-          divisions: data.divisionDetails.map(division => division.type as Division),
-          thirdPlaceMatch: false,
-          seedingEnabled: true
-        },
+        format: TournamentFormat.SINGLE_ELIMINATION,
+        formatConfig: format,
         status: TournamentStatus.REGISTRATION,
         organizer_id: user?.id,
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
+        startDate: new Date(data.startDate).toISOString(),
+        endDate: new Date(data.endDate).toISOString(),
         location: data.location,
         registrationEnabled: data.registrationEnabled,
         requirePlayerProfile: data.requirePlayerProfile,
         registrationDeadline: data.registrationDeadline ? new Date(data.registrationDeadline) : undefined,
         maxTeams: data.maxTeams,
-        scoringSettings: {
+        scoring: {
           matchFormat: 'STANDARD',
           pointsToWin: data.scoringRules.pointsToWin,
           mustWinByTwo: data.scoringRules.mustWinByTwo,
           maxPoints: data.scoringRules.maxPoints,
           maxSets: 3,
           requireTwoPointLead: true,
-          maxTwoPointLeadScore: 30,
-          setsToWin: 2
+          maxTwoPointLeadScore: 30
         },
         categories,
         teams: [],
         matches: [],
         courts: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        currentStage: TournamentStage.REGISTRATION,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        currentStage: TournamentStageEnum.REGISTRATION,
         divisions: data.divisionDetails.map(division => division.type as Division),
+        stages: [TournamentStageEnum.REGISTRATION],
         metadata: {
           gameType: data.gameType || GameType.BADMINTON
         }
@@ -175,13 +150,13 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
       // TODO: Add API call to update tournament
       set(state => ({
         tournaments: state.tournaments.map(t =>
-          t.id === tournament.id ? { ...t, ...tournament, updatedAt: new Date() } : t
+          t.id === tournament.id ? { ...t, ...tournament, updatedAt: new Date().toISOString() } : t
         ),
         selectedTournament: state.selectedTournament?.id === tournament.id
-          ? { ...state.selectedTournament, ...tournament, updatedAt: new Date() }
+          ? { ...state.selectedTournament, ...tournament, updatedAt: new Date().toISOString() }
           : state.selectedTournament,
         currentTournament: state.currentTournament?.id === tournament.id
-          ? { ...state.currentTournament, ...tournament, updatedAt: new Date() }
+          ? { ...state.currentTournament, ...tournament, updatedAt: new Date().toISOString() }
           : state.currentTournament,
         isLoading: false,
       }));
@@ -281,7 +256,7 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
     await get().updateTournament({ 
       ...currentTournament,
       teams: updatedTeams,
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     });
   },
 
@@ -302,7 +277,7 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
     await get().updateTournament({ 
       ...currentTournament,
       teams: updatedTeams,
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     });
   },
 
@@ -317,7 +292,7 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
     await get().updateTournament({ 
       ...currentTournament,
       teams: updatedTeams,
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     });
   },
 
@@ -400,3 +375,28 @@ export const useTournament = () => {
     // Add any additional methods or computed values here
   };
 };
+
+const createTournamentFormat = (data: TournamentFormValues): TournamentFormatConfig => ({
+  type: TournamentFormat.SINGLE_ELIMINATION,
+  stages: [
+    TournamentStageEnum.REGISTRATION,
+    TournamentStageEnum.SEEDING,
+    TournamentStageEnum.ELIMINATION_ROUND,
+    TournamentStageEnum.FINALS
+  ],
+  scoring: {
+    matchFormat: 'STANDARD',
+    setsToWin: 2,
+    tiebreakPoints: data.scoringRules.maxPoints,
+    finalSetTiebreak: true,
+    pointsToWin: data.scoringRules.pointsToWin,
+    mustWinByTwo: data.scoringRules.mustWinByTwo,
+    maxPoints: data.scoringRules.maxPoints,
+    maxSets: 3,
+    requireTwoPointLead: true,
+    maxTwoPointLeadScore: 30
+  },
+  divisions: data.divisionDetails.map(division => division.type as Division),
+  thirdPlaceMatch: false,
+  seedingEnabled: true
+});

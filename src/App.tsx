@@ -4,8 +4,7 @@ import { AuthProvider, useAuth } from '@/contexts/auth/AuthContext';
 import { Layout } from '@/components/layout/Layout';
 import LoginPage from '@/pages/auth/LoginPage';
 import SignUpPage from '@/pages/auth/SignUpPage';
-import LandingPage from '@/pages/LandingPage';
-import DashboardPage from '@/pages/DashboardPage';
+import Index from '@/pages/Index';
 import TournamentListPage from '@/pages/tournaments/TournamentListPage';
 import TournamentDetailsPage from '@/pages/TournamentDetail';
 import CreateTournamentPage from '@/pages/tournaments/CreateTournamentPage';
@@ -40,15 +39,14 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return !isAuthenticated ? <>{children}</> : <Navigate to="/dashboard" replace />;
+  return !isAuthenticated ? <>{children}</> : <Navigate to="/tournaments" replace />;
 }
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
-  
   return (
     <Routes>
       {/* Public Routes */}
+      <Route path="/" element={<Index />} />
       <Route
         path="/login"
         element={
@@ -66,39 +64,77 @@ function AppRoutes() {
         }
       />
 
-      {/* Landing Page - Redirect to dashboard if authenticated */}
+      {/* Protected Routes */}
       <Route
-        path="/"
-        element={
-          isAuthenticated ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
-            <LandingPage />
-          )
-        }
-      />
-
-      {/* Private Routes */}
-      <Route
+        path="/tournaments"
         element={
           <PrivateRoute>
             <Layout>
-              <Outlet />
+              <TournamentListPage />
             </Layout>
           </PrivateRoute>
         }
-      >
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/tournaments">
-          <Route index element={<TournamentListPage />} />
-          <Route path="new" element={<CreateTournamentPage />} />
-          <Route path=":id" element={<TournamentDetailsPage />} />
-          <Route path=":id/register" element={<TournamentRegistrationPage />} />
-          <Route path=":id/registrations" element={<RegistrationManagementPage />} />
-          <Route path=":id/check-in" element={<CheckInPage />} />
-        </Route>
-        <Route path="/profile" element={<ProfilePage />} />
-      </Route>
+      />
+      <Route
+        path="/tournaments/new"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <CreateTournamentPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/tournaments/:id"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <TournamentDetailsPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/tournaments/:id/registration"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <TournamentRegistrationPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/tournaments/:id/registration/manage"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <RegistrationManagementPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/tournaments/:id/check-in"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <CheckInPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <ProfilePage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
 
       {/* 404 Route */}
       <Route path="*" element={<NotFound />} />
@@ -111,7 +147,7 @@ export default function App() {
     <Router>
       <AuthProvider>
         <AppRoutes />
-        <Toaster richColors position="top-right" />
+        <Toaster />
       </AuthProvider>
     </Router>
   );

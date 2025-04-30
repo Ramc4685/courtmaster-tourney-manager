@@ -1,10 +1,13 @@
 import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
 import { Registration, RegistrationStatus } from '@/domain/models/registration';
 import { RegistrationService, RegisterPlayerDTO, RegisterTeamDTO } from '@/domain/services/registration.service';
 import { ValidationError } from '@/domain/services/errors';
 import { RegistrationRepository } from '@/infrastructure/repositories/registration.repository';
 import { NotificationService } from '@/domain/services/notification.service';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
+import { PlayerRegistrationWithStatus, TeamRegistrationWithStatus } from '@/types/registration';
+import { toast } from 'sonner';
 
 // Initialize services
 const repository = new RegistrationRepository(supabase);

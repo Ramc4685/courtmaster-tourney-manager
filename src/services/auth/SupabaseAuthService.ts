@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { Profile } from '@/types/entities';
 
 export interface UserCredentials {

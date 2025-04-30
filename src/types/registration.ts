@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 import { RegistrationStatus } from './tournament-enums';
 
@@ -102,3 +101,21 @@ export interface RegistrationItem {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Team registration schema
+export const teamRegistrationSchema = z.object({
+  team_name: z.string().min(1, "Team name is required"),
+  division_id: z.string(),
+  captain: z.object({
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    email: z.string().email("Invalid email address"),
+    phone: z.string().optional()
+  }),
+  players: z.array(z.object({
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    email: z.string().email("Invalid email address"),
+    phone: z.string().optional()
+  })).min(1, "At least one player is required")
+});

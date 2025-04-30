@@ -1,5 +1,19 @@
-
 // Ensure all enums are properly exported
+
+import { ScoringSettings } from './scoring';
+
+// Convert CategoryType from type to enum
+export enum CategoryType {
+  MENS = 'MENS',
+  WOMENS = 'WOMENS',
+  MIXED = 'MIXED',
+  OPEN = 'OPEN',
+  STANDARD = 'STANDARD',
+  CUSTOM = 'CUSTOM',
+  SINGLES = 'SINGLES',
+  DOUBLES = 'DOUBLES',
+  TEAM = 'TEAM'
+}
 
 export enum GameType {
   BADMINTON = 'BADMINTON',
@@ -118,14 +132,24 @@ export enum AuditLogType {
   MATCH_CANCELLED = 'MATCH_CANCELLED'
 }
 
-// Expanded CategoryType with more specific type
-export type CategoryType = 
-  | 'MENS' 
-  | 'WOMENS' 
-  | 'MIXED' 
-  | 'OPEN' 
-  | 'STANDARD' 
-  | 'CUSTOM' 
-  | 'SINGLES' 
-  | 'DOUBLES' 
-  | 'TEAM';
+// Add Division interface
+export interface DivisionConfig {
+  id: string;
+  name: string;
+  type: Division;
+  capacity?: number;
+  categories?: any[];
+  min_age?: number;
+  max_age?: number;
+  gender?: string;
+  skill_level?: string;
+}
+
+export interface TournamentFormatConfig {
+  type: TournamentFormat;
+  stages: TournamentStageEnum[];
+  scoring: ScoringSettings;
+  divisions: Division[];
+  thirdPlaceMatch?: boolean;
+  seedingEnabled?: boolean;
+}

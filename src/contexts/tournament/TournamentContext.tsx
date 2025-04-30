@@ -1,6 +1,16 @@
 import React, { createContext, useState, useEffect, PropsWithChildren } from 'react';
-import { Tournament, Match, Court, Team, TournamentCategory, ScoringSettings } from "@/types/tournament";
-import { TournamentFormat, TournamentStatus, TournamentStage, CategoryType, Division, CourtStatus, MatchStatus } from "@/types/tournament-enums";
+import { Tournament, Match, Court, Team, TournamentCategory } from "@/types/tournament";
+import { ScoringSettings } from "@/types/scoring";
+import { 
+  TournamentFormat, 
+  TournamentStatus, 
+  TournamentStageEnum,
+  CategoryType, 
+  Division, 
+  CourtStatus, 
+  MatchStatus,
+  TournamentFormatConfig
+} from "@/types/tournament-enums";
 import { generateId } from '@/utils/tournamentUtils';
 import { tournamentService } from '@/services/tournament/TournamentService';
 import { matchService } from '@/services/tournament/MatchService';
@@ -29,29 +39,64 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
   };
 
   const createTournament = async (data: {name: string, description?: string, format?: TournamentFormat, categories: TournamentCategory[], location?: string, registrationEnabled?: boolean, requirePlayerProfile?: boolean, startDate?: string | Date, endDate?: string | Date}): Promise<Tournament> => {
+    const formatConfig: TournamentFormatConfig = {
+      type: data.format || TournamentFormat.SINGLE_ELIMINATION,
+      stages: [
+        TournamentStageEnum.REGISTRATION,
+        TournamentStageEnum.SEEDING,
+        TournamentStageEnum.ELIMINATION_ROUND,
+        TournamentStageEnum.FINALS
+      ],
+      scoring: {
+        pointsToWin: 21,
+        mustWinByTwo: true,
+        maxPoints: 30,
+        maxSets: 3,
+        requireTwoPointLead: true,
+        maxTwoPointLeadScore: 30,
+        setsToWin: 2,
+        matchFormat: 'STANDARD',
+        finalSetTiebreak: true,
+        tiebreakPoints: 30
+      },
+      divisions: [],
+      thirdPlaceMatch: false,
+      seedingEnabled: true
+    };
+
     const newTournament: Tournament = {
       id: generateId(),
       name: data.name,
       categories: data.categories,
-      format: data.format || "SINGLE_ELIMINATION" as TournamentFormat,
-      startDate: data.startDate ? (typeof data.startDate === 'string' ? new Date(data.startDate) : data.startDate) : new Date(),
-      endDate: data.endDate ? (typeof data.endDate === 'string' ? new Date(data.endDate) : data.endDate) : new Date(),
+      format: data.format || TournamentFormat.SINGLE_ELIMINATION,
+      formatConfig,
+      startDate: data.startDate ? 
+        (typeof data.startDate === 'string' ? data.startDate : data.startDate.toISOString()) 
+        : new Date().toISOString(),
+      endDate: data.endDate ? 
+        (typeof data.endDate === 'string' ? data.endDate : data.endDate.toISOString()) 
+        : new Date().toISOString(),
       matches: [],
       teams: [],
       courts: [],
-      status: 'DRAFT' as TournamentStatus,
-      currentStage: "INITIAL_ROUND" as TournamentStage,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      status: TournamentStatus.DRAFT,
+      currentStage: TournamentStageEnum.INITIAL_ROUND,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       location: data.location || "Unspecified Location",
-      registrationEnabled: data.registrationEnabled || true,
-      requirePlayerProfile: data.requirePlayerProfile || false,
-      scoringSettings: {
-        maxPoints: 21,
+      registrationEnabled: data.registrationEnabled ?? true,
+      requirePlayerProfile: data.requirePlayerProfile ?? false,
+      maxTeams: 32,
+      scoring: {
+        pointsToWin: 21,
+        mustWinByTwo: true,
+        maxPoints: 30,
         maxSets: 3,
         requireTwoPointLead: true,
         maxTwoPointLeadScore: 30
-      } as ScoringSettings
+      },
+      divisions: [],
+      stages: []
     };
 
     try {
@@ -106,35 +151,33 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return;
 
     try {
-      // Update local state first
       const updatedMatches = currentTournament.matches.map(match => 
-        match.id === matchId ? { ...match, status: "IN_PROGRESS" as MatchStatus } : match
+        match.id === matchId ? { ...match, status: MatchStatus.IN_PROGRESS } : match
       );
       
       const updatedTournament = { ...currentTournament, matches: updatedMatches };
       await updateTournament(updatedTournament);
       
-      // Then update the backend
-      await matchService.updateMatchStatus(currentTournament.id, matchId, "IN_PROGRESS");
+      await matchService.updateMatchStatus(currentTournament.id, matchId, MatchStatus.IN_PROGRESS);
     } catch (error) {
       console.error("Error starting match:", error);
     }
   };
 
-  const updateMatchStatus = async (matchId: string, status: string) => {
+  const updateMatchStatus = async (matchId: string, status: MatchStatus): Promise<void> => {
     if (!currentTournament) return;
 
     try {
       // Update local state first
       const updatedMatches = currentTournament.matches.map(match => 
-        match.id === matchId ? { ...match, status: status as MatchStatus } : match
+        match.id === matchId ? { ...match, status } : match
       );
       
       const updatedTournament = { ...currentTournament, matches: updatedMatches };
       await updateTournament(updatedTournament);
       
       // Then update the backend
-      await matchService.updateMatchStatus(currentTournament.id, matchId, status as MatchStatus);
+      await matchService.updateMatchStatus(currentTournament.id, matchId, status);
     } catch (error) {
       console.error("Error updating match status:", error);
     }
@@ -281,30 +324,25 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     
     try {
       const matchesToStart = currentTournament.matches.filter(
-        match => match.status === "SCHEDULED" && match.courtNumber && match.team1 && match.team2
+        match => match.status === MatchStatus.SCHEDULED && match.courtNumber && match.team1 && match.team2
       );
       
       let startedCount = 0;
-      
-      // Create a copy of the tournament to make multiple updates
       let updatedTournament = { ...currentTournament };
       
       for (const match of matchesToStart) {
-        // Update match status in our copy
         updatedTournament = {
           ...updatedTournament,
           matches: updatedTournament.matches.map(m => 
-            m.id === match.id ? { ...m, status: "IN_PROGRESS" as MatchStatus } : m
+            m.id === match.id ? { ...m, status: MatchStatus.IN_PROGRESS } : m
           )
         };
         
-        // Update backend in parallel
-        await matchService.updateMatchStatus(currentTournament.id, match.id, "IN_PROGRESS");
+        await matchService.updateMatchStatus(currentTournament.id, match.id, MatchStatus.IN_PROGRESS);
         startedCount++;
       }
       
       if (startedCount > 0) {
-        // Update local state once with all changes
         await updateTournament(updatedTournament);
       }
       
@@ -329,7 +367,7 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       
       // If match is not started yet, start it
       if (match.status === "SCHEDULED") {
-        await updateMatchStatus(matchId, "IN_PROGRESS");
+        await updateMatchStatus(matchId, MatchStatus.IN_PROGRESS);
         
         // Get the updated match from state
         const updatedMatch = currentTournament.matches.find(m => m.id === matchId);
@@ -584,9 +622,21 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     const category: TournamentCategory = {
       id: generateId(),
       name: "Men's Singles",
-      type: CategoryType.MENS_SINGLES,
+      type: CategoryType.SINGLES,
       division: Division.MENS,
-      format: format,
+      format: {
+        type: format,
+        stages: [TournamentStageEnum.INITIAL_ROUND],
+        scoring: {
+          pointsToWin: 21,
+          mustWinByTwo: true,
+          maxPoints: 30,
+          maxSets: 3,
+          requireTwoPointLead: true,
+          maxTwoPointLeadScore: 30
+        },
+        divisions: []
+      }
     };
 
     const sampleTournament: Tournament = {
@@ -594,18 +644,33 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       name: `Sample ${format.replace(/_/g, ' ')} Tournament`,
       description: `A sample tournament using the ${format.replace(/_/g, ' ')} format`,
       format: format,
+      formatConfig: {
+        type: format,
+        stages: [TournamentStageEnum.INITIAL_ROUND],
+        scoring: {
+          pointsToWin: 21,
+          mustWinByTwo: true,
+          maxPoints: 30,
+          maxSets: 3,
+          requireTwoPointLead: true,
+          maxTwoPointLeadScore: 30
+        },
+        divisions: [],
+        thirdPlaceMatch: false,
+        seedingEnabled: true
+      },
       location: "Sample Location",
       startDate: formatDate(new Date(), "yyyy-MM-dd"),
       endDate: formatDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"),
       status: TournamentStatus.DRAFT,
-      currentStage: TournamentStage.INITIAL_ROUND,
+      currentStage: TournamentStageEnum.INITIAL_ROUND,
       registrationEnabled: true,
       requirePlayerProfile: false,
       teams: [],
       matches: [],
       courts: [],
       categories: [category],
-      scoringSettings: {
+      scoring: {
         pointsToWin: 21,
         mustWinByTwo: true,
         maxPoints: 30,
@@ -613,8 +678,11 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
         requireTwoPointLead: true,
         maxTwoPointLeadScore: 30
       },
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      maxTeams: 32,
+      divisions: [],
+      stages: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
     try {
