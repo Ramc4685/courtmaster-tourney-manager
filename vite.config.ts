@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => ({
   base: '/',
   server: {
     host: "0.0.0.0",
-    port: 8080,
+    port: 8080, // Keep original port, Vite will find the next available one if needed
     cors: {
       origin: "*",
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -23,20 +23,23 @@ export default defineConfig(({ mode }) => ({
         target: 'https://psbcrxgcfgqvrgkxilgi.supabase.co',
         changeOrigin: true,
         secure: false,
-        headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzYmNyeGdjZmdxdnJna3hpbGdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMyMjI3NDUsImV4cCI6MjA1ODc5ODc0NX0.gmFiigBSe9ziFP2oFJWLqqwKbQVrZnrlJMN0uGPuzKo'
-        }
+        // Removed headers section to let Supabase client handle auth
       }
     },
     allowedHosts: [
       // Allow the specific host causing the issue
       "3c369f66-82fd-492f-a24a-0dbb48d7615a.lovableproject.com",
       "acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev",
+      // Add the manus proxy domains
+      "8081-i03v2iqxbunrmdcsim8on-67675091.manus.computer",
+      "8082-i8untq19ygoazabr0j8d4-67675091.manus.computer",
+      "8081-i8untq19ygoazabr0j8d4-67675091.manus.computer", // Explicitly add current host
       // Include localhost and other common development domains
       "localhost",
       "127.0.0.1",
       "*.lovable.app",
       "*.lovableproject.com",
+      "*.manus.computer", // Allow all manus subdomains as a fallback
     ],
   },
   plugins: [
@@ -203,3 +206,4 @@ export default defineConfig(({ mode }) => ({
     treeShaking: true,
   },
 }));
+

@@ -1,6 +1,5 @@
-
-import React, { useState } from 'react';
-import { Control, useFieldArray, UseFormWatch } from "react-hook-form";
+import React from 'react';
+import { Control, useFieldArray, UseFormWatch, useFormContext } from "react-hook-form";
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,53 +11,58 @@ import { PlusCircle, Trash2 } from "lucide-react";
 import { Division, PlayType, TournamentFormat } from '@/types/tournament-enums';
 import { TournamentFormValues, Category } from "../../types";
 
+// FIX: Removed unused props 'categories' and 'onCategoriesChange'
 interface CategoriesStepProps {
-  categories: Category[];
-  onCategoriesChange: (categories: Category[]) => void;
   control: Control<TournamentFormValues>;
   watch: UseFormWatch<TournamentFormValues>;
 }
 
 const CategoriesStep: React.FC<CategoriesStepProps> = ({
-  categories,
-  onCategoriesChange,
   control,
   watch
 }) => {
+  const { setValue } = useFormContext<TournamentFormValues>(); // Get setValue from context
   const { fields: divisionFields, append: appendDivision, remove: removeDivision } = useFieldArray({
     control,
     name: "divisionDetails"
   });
-  
+
   const handleAddDivision = () => {
     appendDivision({
       id: uuidv4(),
       name: `Division ${divisionFields.length + 1}`,
       type: Division.OPEN,
+      level: 'A', // Add default level if required by type
       categories: []
     });
   };
 
   const handleAddCategory = (divisionIndex: number) => {
-    const divisionDetails = watch("divisionDetails");
-    const updatedDivisions = [...divisionDetails];
-    
-    if (updatedDivisions[divisionIndex]) {
-      updatedDivisions[divisionIndex].categories = [
-        ...(updatedDivisions[divisionIndex].categories || []),
-        {
-          id: uuidv4(),
-          name: `Category ${(updatedDivisions[divisionIndex].categories?.length || 0) + 1}`,
-          type: "standard",
-          playType: PlayType.SINGLES,
-          format: TournamentFormat.SINGLE_ELIMINATION,
-          seeded: true
-        }
-      ];
-    }
-    
-    // This will trigger a re-render with the updated categories
+    const currentDivisions = watch("divisionDetails");
+    const targetDivision = currentDivisions[divisionIndex];
+    const newCategory: Category = {
+      id: uuidv4(),
+      name: `Category ${(targetDivision.categories?.length || 0) + 1}`,
+      type: "standard", // Default type
+      playType: PlayType.SINGLES,
+      format: TournamentFormat.SINGLE_ELIMINATION,
+      maxTeams: undefined, // Optional
+      seeded: true, // Default
+    };
+    // Use setValue to update the specific categories array within the division
+    setValue(`divisionDetails.${divisionIndex}.categories`, [
+      ...(targetDivision.categories || []),
+      newCategory
+    ]);
   };
+
+  const handleRemoveCategory = (divisionIndex: number, categoryIndex: number) => {
+    const currentDivisions = watch("divisionDetails");
+    const targetDivision = currentDivisions[divisionIndex];
+    const updatedCategories = (targetDivision.categories || []).filter((_, idx) => idx !== categoryIndex);
+    setValue(`divisionDetails.${divisionIndex}.categories`, updatedCategories);
+  };
+
 
   return (
     <div className="space-y-6">
@@ -82,28 +86,31 @@ const CategoriesStep: React.FC<CategoriesStepProps> = ({
         <div className="space-y-6">
           {divisionFields.map((divisionField, divisionIndex) => (
             <Card key={divisionField.id}>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <FormField
-                  control={control}
-                  name={`divisionDetails.${divisionIndex}.name`}
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel>Division Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Enter division name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                 <div className="flex-1 space-y-1">
+                   <FormField
+                     control={control}
+                     name={`divisionDetails.${divisionIndex}.name`}
+                     render={({ field }) => (
+                       <FormItem>
+                         <FormLabel className="sr-only">Division Name</FormLabel>
+                         <FormControl>
+                           <Input {...field} placeholder="Enter division name" className="text-lg font-semibold" />
+                         </FormControl>
+                         <FormMessage />
+                       </FormItem>
+                     )}
+                   />
+                 </div>
                 <Button
                   onClick={() => removeDivision(divisionIndex)}
                   variant="ghost"
-                  size="sm"
-                  className="ml-2"
+                  size="icon"
+                  className="ml-2 text-muted-foreground hover:text-destructive"
+                  type="button"
                 >
-                  <Trash2 className="h-4 w-4 text-gray-500" />
+                  <Trash2 className="h-4 w-4" />
+                  <span className="sr-only">Remove Division</span>
                 </Button>
               </CardHeader>
 
@@ -137,6 +144,19 @@ const CategoriesStep: React.FC<CategoriesStepProps> = ({
                       </FormItem>
                     )}
                   />
+                   <FormField
+                     control={control}
+                     name={`divisionDetails.${divisionIndex}.level`}
+                     render={({ field }) => (
+                       <FormItem>
+                         <FormLabel>Level (Optional)</FormLabel>
+                         <FormControl>
+                           <Input {...field} placeholder="e.g., A, B, 4.0+" />
+                         </FormControl>
+                         <FormMessage />
+                       </FormItem>
+                     )}
+                   />
                 </div>
 
                 <div>
@@ -155,14 +175,24 @@ const CategoriesStep: React.FC<CategoriesStepProps> = ({
 
                   {(watch(`divisionDetails.${divisionIndex}.categories`) || []).length === 0 ? (
                     <div className="border rounded-md p-4 text-center text-gray-500">
-                      No categories added yet. Click "Add Category" to create your first category.
+                      No categories added yet. Click "Add Category".
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {watch(`divisionDetails.${divisionIndex}.categories`)?.map(
                         (category, categoryIndex) => (
-                          <div key={category.id} className="border rounded-md p-4">
-                            <div className="grid grid-cols-2 gap-4">
+                          <div key={category.id} className="border rounded-md p-4 relative group">
+                            <Button
+                              onClick={() => handleRemoveCategory(divisionIndex, categoryIndex)}
+                              variant="ghost"
+                              size="icon"
+                              className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                              type="button"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Remove Category</span>
+                            </Button>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               <FormField
                                 control={control}
                                 name={`divisionDetails.${divisionIndex}.categories.${categoryIndex}.name`}
@@ -170,7 +200,7 @@ const CategoriesStep: React.FC<CategoriesStepProps> = ({
                                   <FormItem>
                                     <FormLabel>Category Name</FormLabel>
                                     <FormControl>
-                                      <Input {...field} placeholder="Enter category name" />
+                                      <Input {...field} placeholder="e.g., Men's Singles A" />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -195,7 +225,7 @@ const CategoriesStep: React.FC<CategoriesStepProps> = ({
                                       <SelectContent>
                                         <SelectItem value={PlayType.SINGLES}>Singles</SelectItem>
                                         <SelectItem value={PlayType.DOUBLES}>Doubles</SelectItem>
-                                        <SelectItem value={PlayType.MIXED}>Mixed</SelectItem>
+                                        <SelectItem value={PlayType.MIXED}>Mixed Doubles</SelectItem>
                                       </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -208,7 +238,7 @@ const CategoriesStep: React.FC<CategoriesStepProps> = ({
                                 name={`divisionDetails.${divisionIndex}.categories.${categoryIndex}.format`}
                                 render={({ field }) => (
                                   <FormItem>
-                                    <FormLabel>Tournament Format</FormLabel>
+                                    <FormLabel>Category Format</FormLabel>
                                     <Select
                                       onValueChange={field.onChange}
                                       defaultValue={field.value}
@@ -254,3 +284,4 @@ const CategoriesStep: React.FC<CategoriesStepProps> = ({
 };
 
 export default CategoriesStep;
+

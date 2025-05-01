@@ -1,59 +1,55 @@
 import { camelCase, snakeCase } from 'lodash';
 
 /**
- * Transforms an object's keys from snake_case to camelCase
+ * Transforms an object's keys from snake_case to camelCase, recursively.
  */
 export const camelizeKeys = (obj: Record<string, any>): Record<string, any> => {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj;
-  
+
   const result: Record<string, any> = {};
-  
+
   Object.entries(obj).forEach(([key, value]) => {
+    const newKey = camelCase(key);
     // Transform nested objects
     if (value !== null && typeof value === 'object') {
       if (Array.isArray(value)) {
-        result[camelCase(key)] = value.map(item => 
+        result[newKey] = value.map(item =>
           typeof item === 'object' && item !== null ? camelizeKeys(item) : item
         );
       } else {
-        result[camelCase(key)] = camelizeKeys(value);
+        result[newKey] = camelizeKeys(value);
       }
     } else {
-      result[camelCase(key)] = value;
+      result[newKey] = value;
     }
-    
-    // Keep original snake_case key for compatibility
-    result[key] = value;
   });
-  
+
   return result;
 };
 
 /**
- * Transforms an object's keys from camelCase to snake_case
+ * Transforms an object's keys from camelCase to snake_case, recursively.
  */
 export const snakeizeKeys = (obj: Record<string, any>): Record<string, any> => {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj;
-  
+
   const result: Record<string, any> = {};
-  
+
   Object.entries(obj).forEach(([key, value]) => {
-    // Skip already snake_cased keys to avoid duplication
-    if (key.includes('_')) return;
-    
+    const newKey = snakeCase(key);
     // Transform the value if needed
     if (value !== null && typeof value === 'object') {
       if (Array.isArray(value)) {
-        result[snakeCase(key)] = value.map(item => 
+        result[newKey] = value.map(item =>
           typeof item === 'object' && item !== null ? snakeizeKeys(item) : item
         );
       } else {
-        result[snakeCase(key)] = snakeizeKeys(value);
+        result[newKey] = snakeizeKeys(value);
       }
     } else {
-      result[snakeCase(key)] = value;
+      result[newKey] = value;
     }
   });
-  
+
   return result;
 };
