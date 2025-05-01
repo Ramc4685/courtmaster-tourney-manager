@@ -8,28 +8,40 @@ export class TournamentService {
     try {
       // Convert to backend format
       const payload = snakeizeKeys(tournament);
-      
-      // Remove ID field if it's empty
-      if (payload.id === '') {
+
+      // Remove ID field if it's empty or null (shouldn't be set on create)
+      if (!payload.id) { // Check if id is falsy (null, undefined, '')
         delete payload.id;
       }
-      
+
+      // Log the payload and auth user ID for debugging RLS
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Attempting to insert tournament. Payload:', payload);
+      console.log('Current auth user ID:', user?.id);
+      console.log("Payload organizer_id:", payload.organizer_id);
+
+      // Log the final payload right before insertion
+      console.log("Final payload being sent to Supabase:", JSON.stringify(payload, null, 2));
+
       const { data, error } = await supabase
         .from('tournaments')
-        .insert(payload)
+        .insert(payload) // Ensure payload includes organizer_id correctly
         .select()
         .single();
-        
-      if (error) throw error;
-      
+
+      if (error) {
+        console.error("Supabase insert error (full details):", JSON.stringify(error, null, 2)); // Log full error object
+        throw error; // Re-throw the error so the UI can catch it
+      }
+
       // Convert response back to frontend format
       return camelizeKeys(data);
     } catch (error) {
-      console.error('Error creating tournament:', error);
-      throw error;
+      console.error('Error creating tournament in service:', error);
+      throw error; // Re-throw the error
     }
   }
-  
+
   async getTournament(id: string): Promise<any> {
     try {
       const { data, error } = await supabase
@@ -37,66 +49,72 @@ export class TournamentService {
         .select('*')
         .eq('id', id)
         .single();
-        
+
       if (error) throw error;
-      
+
       return camelizeKeys(data);
     } catch (error) {
       console.error('Error getting tournament:', error);
       throw error;
     }
   }
-  
+
   async getTournaments(): Promise<any[]> {
     try {
       const { data, error } = await supabase
         .from('tournaments')
         .select('*')
         .order('created_at', { ascending: false });
-        
-      if (error) throw error;
-      
+
+      if (error) {
+        // Log the specific error when fetching tournaments (likely RLS)
+        console.error('Supabase select error (getTournaments):', error);
+        // Return empty array to prevent refresh loop, but log the error
+        return []; 
+      }
+
       return data.map(tournament => camelizeKeys(tournament));
     } catch (error) {
-      console.error('Error getting tournaments:', error);
-      throw error;
+      console.error('Error getting tournaments in service:', error);
+      // Return empty array in case of other errors to prevent loop
+      return []; 
     }
   }
-  
+
   async updateTournament(tournament: any): Promise<any> {
     try {
       const payload = snakeizeKeys(tournament);
-      
+
       const { data, error } = await supabase
         .from('tournaments')
         .update(payload)
         .eq('id', tournament.id)
         .select()
         .single();
-        
+
       if (error) throw error;
-      
+
       return camelizeKeys(data);
     } catch (error) {
       console.error('Error updating tournament:', error);
       throw error;
     }
   }
-  
+
   async deleteTournament(id: string): Promise<void> {
     try {
       const { error } = await supabase
         .from('tournaments')
         .delete()
         .eq('id', id);
-        
+
       if (error) throw error;
     } catch (error) {
       console.error('Error deleting tournament:', error);
       throw error;
     }
   }
-  
+
   async saveCurrentTournament(tournament: any): Promise<void> {
     // For temporary storage, we could use localStorage or sessionStorage
     try {
@@ -107,70 +125,9 @@ export class TournamentService {
     }
   }
 
-  private toBackendFormat(tournament: Tournament) {
-    const { 
-      id, 
-      name, 
-      description, 
-      startDate, 
-      endDate, 
-      location, 
-      format, 
-      formatConfig,
-      scoring, 
-      divisions, 
-      stages, 
-      status,
-      registrationEnabled,
-      requirePlayerProfile,
-      maxTeams
-    } = tournament;
-    
-    return {
-      id: id || undefined,
-      name,
-      description,
-      start_date: new Date(startDate),
-      end_date: new Date(endDate),
-      location,
-      format,
-      format_config: formatConfig,
-      scoring,
-      divisions,
-      stages,
-      status,
-      registration_enabled: registrationEnabled,
-      require_player_profile: requirePlayerProfile,
-      max_teams: maxTeams
-    };
-  }
-
-  private toFrontendFormat(tournament: any): Tournament {
-    return {
-      id: tournament.id,
-      name: tournament.name,
-      description: tournament.description,
-      startDate: tournament.start_date.toISOString(),
-      endDate: tournament.end_date.toISOString(),
-      location: tournament.location,
-      format: tournament.format,
-      formatConfig: tournament.format_config,
-      scoring: tournament.scoring,
-      divisions: tournament.divisions || [],
-      stages: tournament.stages || [],
-      status: tournament.status,
-      registrationEnabled: tournament.registration_enabled,
-      requirePlayerProfile: tournament.require_player_profile,
-      maxTeams: tournament.max_teams,
-      createdAt: tournament.created_at.toISOString(),
-      updatedAt: tournament.updated_at.toISOString(),
-      teams: tournament.teams || [],
-      matches: tournament.matches || [],
-      courts: tournament.courts || [],
-      categories: tournament.categories || []
-    };
-  }
+  // Removed private methods as they were not used and potentially outdated
 }
 
 // Export a singleton instance
 export const tournamentService = new TournamentService();
+

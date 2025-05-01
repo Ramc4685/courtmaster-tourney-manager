@@ -1,4 +1,3 @@
-
 import { 
   UserRole, 
   TournamentFormat, 
@@ -9,7 +8,8 @@ import {
   CourtStatus,
   RegistrationStatus,
   TournamentStageEnum,
-  AuditLogType
+  AuditLogType,
+  NotificationType // Add NotificationType here
 } from './tournament-enums';
 
 // Export all enums directly from tournament-enums for easier access
@@ -23,7 +23,8 @@ export {
   CourtStatus,
   RegistrationStatus,
   TournamentStageEnum,
-  AuditLogType
+  AuditLogType,
+  NotificationType // Export NotificationType
 };
 
 // Create a consistent interface mapping between snake_case backend and camelCase frontend
@@ -70,9 +71,11 @@ export interface Match {
   bracketPosition: number;
   matchNumber: string;
   progression: string | { winnerGoesTo?: string; loserGoesTo?: string; };
-  scores?: Array<{ team1Score: number, team2Score: number }>;
+  scores?: MatchScores; // Use MatchScores type
   winner?: string | number;
   loser?: string | number;
+  winner_id?: string | null; // Added for consistency
+  loser_id?: string | null; // Added for consistency
   winner_team?: number;
   scorerName?: string;
   verified?: boolean;
@@ -82,7 +85,26 @@ export interface Match {
   created_at?: Date;
   updated_at?: Date;
   division?: string | Division;
+  // Add fields for participants if needed directly on match
+  team1_name?: string;
+  team2_name?: string;
 }
+
+// Define ScoreSet and MatchScores types
+export interface ScoreSet {
+  team1: number;
+  team2: number;
+  completed?: boolean; // Optional: Mark if the set itself is complete
+  winner?: 1 | 2 | null; // Optional: Winner of the set
+}
+
+export interface MatchScores {
+  sets: ScoreSet[];
+  current_set: number; // Index of the current set being played (0-based)
+  serving?: 1 | 2 | null; // Which team is serving
+  // Add other score-related metadata if needed
+}
+
 
 export interface RolePermissions {
   canEditTournament: boolean;
@@ -113,13 +135,16 @@ export interface RolePermissions {
 }
 
 export interface Notification {
-  id?: string;
-  userId: string;
+  id: string; // Changed to non-optional as DB generates it
+  user_id: string;
   title: string;
   message: string;
-  type: string;
+  type: NotificationType;
   read: boolean;
-  createdAt?: Date;
+  created_at: string; // Use string for ISO date format
+  updated_at?: string | null; // Use string for ISO date format
+  related_entity_id?: string | null; // Optional: ID of related entity (tournament, match)
+  related_entity_type?: string | null; // Optional: Type of related entity ('tournament', 'match')
 }
 
 export interface Profile {
@@ -149,28 +174,7 @@ export interface Profile {
   }
 }
 
-export interface RegistrationMetadata {
-  waitlistPosition?: number;
-  checkInTime?: string;
-  notes?: string;
-  verificationCode?: string;
-  priority?: number;
-  comments?: Array<{
-    id: string;
-    text: string;
-    createdAt: string;
-    createdBy: string;
-  }>;
-  playerName?: string;
-  contactEmail?: string;
-  teamSize?: number;
-  waitlistHistory?: Array<{
-    date: string;
-    fromPosition: number;
-    toPosition: number;
-    reason?: string;
-  }>;
-}
+// RegistrationMetadata moved to registration.ts
 
 export interface AuditLog {
   id: string;
@@ -194,3 +198,4 @@ export interface StandaloneMatch extends Omit<Match, 'tournamentId' | 'division'
     type: string;
   };
 }
+

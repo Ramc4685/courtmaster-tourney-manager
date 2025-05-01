@@ -11,29 +11,45 @@ import { toast } from 'sonner';
 
 const ProfilePage: React.FC = () => {
   const { user, updateUserProfile } = useAuth();
-  const [name, setName] = useState('');
+  // State now uses fullName to match the database schema
+  const [fullName, setFullName] = useState(''); 
   const [email, setEmail] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     if (user) {
-      setName(user.name || '');
-      setEmail(user.email || '');
+      // Use full_name from the user profile object
+      setFullName(user.full_name || ''); 
+      // Email is not directly in the profiles table, get it from the auth user if available (might need adjustment in AuthContext if not passed)
+      // For now, assuming AuthContext provides it somehow or it's read-only from initial auth
+      // Let's try getting it from user.email if AuthContext adds it, otherwise keep it potentially blank/read-only
+      setEmail(user.email || ''); // Assuming user object might have email from auth.users
     }
   }, [user]);
 
   const handleUpdateProfile = async () => {
+    if (!user) {
+      toast.error('You must be logged in to update your profile.');
+      return;
+    }
     try {
-      await updateUserProfile({ name });
+      // Send full_name matching the database column
+      await updateUserProfile({ full_name: fullName }); 
       toast.success('Profile updated successfully!');
       setIsEditMode(false);
     } catch (error: any) {
+      console.error('[ProfilePage] Update error:', error); // Add console log
       toast.error(error.message || 'Failed to update profile.');
     }
   };
 
   if (!user) {
-    return <div>Loading...</div>;
+    // Display a more informative loading state or redirect
+    return (
+      <Layout>
+        <div className="container mx-auto py-8 text-center">Loading profile...</div>
+      </Layout>
+    );
   }
 
   return (
@@ -46,8 +62,9 @@ const ProfilePage: React.FC = () => {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-center">
               <Avatar className="h-20 w-20">
-                <AvatarImage src={user?.avatar_url || ''} alt={user?.name || 'Avatar'} />
-                <AvatarFallback>{user?.name?.charAt(0) || '?'}</AvatarFallback>
+                <AvatarImage src={user?.avatar_url || ''} alt={user?.full_name || 'Avatar'} />
+                {/* Use first letter of full_name for fallback */}
+                <AvatarFallback>{user?.full_name?.charAt(0).toUpperCase() || '?'}</AvatarFallback> 
               </Avatar>
             </div>
             <Tabs defaultValue="account" className="space-y-4">
@@ -58,23 +75,29 @@ const ProfilePage: React.FC = () => {
               <TabsContent value="account" className="space-y-4">
                 <div className="space-y-2">
                   <div className="space-y-1">
-                    <Label htmlFor="name">Name</Label>
+                    {/* Label updated to Full Name */}
+                    <Label htmlFor="fullName">Full Name</Label> 
                     <Input
-                      id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      id="fullName"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
                       disabled={!isEditMode}
                     />
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" value={email} disabled />
+                    {/* Email is generally not updatable via profile, disable it */}
+                    <Input id="email" value={email} disabled /> 
                   </div>
                 </div>
                 <div className="flex justify-end">
                   {isEditMode ? (
                     <div className="space-x-2">
-                      <Button variant="ghost" onClick={() => setIsEditMode(false)}>
+                      <Button variant="ghost" onClick={() => {
+                        // Reset fields to original values on cancel
+                        setFullName(user.full_name || '');
+                        setIsEditMode(false);
+                      }}>
                         Cancel
                       </Button>
                       <Button onClick={handleUpdateProfile}>Save</Button>
@@ -98,3 +121,4 @@ const ProfilePage: React.FC = () => {
 };
 
 export default ProfilePage;
+

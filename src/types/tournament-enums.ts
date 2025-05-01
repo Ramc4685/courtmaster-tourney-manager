@@ -132,6 +132,17 @@ export enum AuditLogType {
   MATCH_CANCELLED = 'MATCH_CANCELLED'
 }
 
+// Notification types
+export enum NotificationType {
+  GENERAL = 'GENERAL',
+  ANNOUNCEMENT = 'ANNOUNCEMENT',
+  MATCH_REMINDER = 'MATCH_REMINDER',
+  SCORE_UPDATE = 'SCORE_UPDATE',
+  REGISTRATION_CONFIRMATION = 'REGISTRATION_CONFIRMATION',
+  WAITLIST_PROMOTION = 'WAITLIST_PROMOTION',
+  PAYMENT_REMINDER = 'PAYMENT_REMINDER'
+}
+
 // Add Division interface
 export interface DivisionConfig {
   id: string;
@@ -153,3 +164,4 @@ export interface TournamentFormatConfig {
   thirdPlaceMatch?: boolean;
   seedingEnabled?: boolean;
 }
+

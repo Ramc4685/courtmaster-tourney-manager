@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, PropsWithChildren } from 'react';
+import React, { createContext, useState, useEffect, PropsWithChildren, useCallback } from 'react'; // Import useCallback
 import { Tournament, Match, Court, Team, TournamentCategory } from "@/types/tournament";
 import { ScoringSettings } from "@/types/scoring";
 import { 
@@ -27,19 +27,27 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadTournaments = async () => {
+  // Wrap loadTournaments in useCallback to stabilize its reference
+  const loadTournaments = useCallback(async () => {
+    console.log("[TournamentContext] Attempting to load tournaments..."); // Add log
     try {
       setIsLoading(true);
       setError(null);
       const loadedTournaments = await tournamentService.getTournaments();
+      console.log("[TournamentContext] Tournaments loaded successfully:", loadedTournaments.length); // Add log
       setTournaments(loadedTournaments);
     } catch (error) {
-      console.error("Error loading tournaments:", error);
-      setError("Failed to load tournaments");
+      console.error("[TournamentContext] Error loading tournaments:", error); // Enhance log
+      // Check if the error is the expected RLS error, provide a clearer message
+      if (error instanceof Error && error.message.includes('403')) { 
+        setError("Permission denied: Could not load tournaments due to security policy.");
+      } else {
+        setError("Failed to load tournaments. Please check console for details.");
+      }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []); // Empty dependency array ensures the function reference is stable
 
   const createTournament = async (data: {name: string, description?: string, format?: TournamentFormat, categories: TournamentCategory[], location?: string, registrationEnabled?: boolean, requirePlayerProfile?: boolean, startDate?: string | Date, endDate?: string | Date}): Promise<Tournament> => {
     const formatConfig: TournamentFormatConfig = {
@@ -488,310 +496,70 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     }
   };
 
-  // Alias for deleteCategory for compatibility
-  const removeCategory = async (categoryId: string) => {
-    await deleteCategory(categoryId);
-  };
-
-  const generateBrackets = async (): Promise<number> => {
-    if (!currentTournament) return 0;
-
-    try {
-      const { tournament, matchesCreated } = await schedulingService.generateBrackets(currentTournament);
-
-      if (tournament) {
-        await updateTournament(tournament);
-        return matchesCreated;
-      } else {
-        return 0;
-      }
-    } catch (error) {
-      console.error("Error generating brackets:", error);
-      return 0;
-    }
-  };
-
-  // Schedule a single match
-  const scheduleMatch = async (team1Id: string, team2Id: string, scheduledTime: Date, courtId?: string, categoryId?: string) => {
-    if (!currentTournament) return;
-    
-    try {
-      const result = await schedulingService.scheduleMatch(
-        currentTournament, 
-        team1Id, 
-        team2Id, 
-        scheduledTime,
-        courtId,
-        categoryId
-      );
-      
-      if (result.tournament) {
-        await updateTournament(result.tournament);
-      }
-    } catch (error) {
-      console.error("Error scheduling match:", error);
-    }
-  };
-
-  // Update the scheduleMatches function to use the correct types
-  const scheduleMatches = async (teamPairs: { team1: Team; team2: Team }[], options: SchedulingOptions): Promise<SchedulingResult> => {
+  const scheduleMatches = async (options: SchedulingOptions): Promise<SchedulingResult> => {
     if (!currentTournament) {
-      throw new Error("No tournament selected");
+      return { success: false, message: "No tournament selected" };
     }
     
     try {
-      const result = await schedulingService.scheduleMatches(currentTournament, teamPairs, options);
-      
-      if (result.tournament) {
+      const result = await schedulingService.scheduleMatches(currentTournament, options);
+      if (result.success && result.tournament) {
         await updateTournament(result.tournament);
       }
-      
-      return {
-        tournament: result.tournament,
-        matchesScheduled: result.matchesScheduled,
-        courtsAssigned: result.courtsAssigned,
-        matchesStarted: result.matchesStarted,
-        errors: result.errors
-      };
+      return result;
     } catch (error) {
       console.error("Error scheduling matches:", error);
-      throw error;
+      return { success: false, message: "An unexpected error occurred during scheduling" };
     }
   };
 
-  // Generic update match function
-  const updateMatch = async (match: Match) => {
-    if (!currentTournament) return;
-    
-    try {
-      const updatedMatches = currentTournament.matches.map(m => 
-        m.id === match.id ? match : m
-      );
-      
-      const updatedTournament = { ...currentTournament, matches: updatedMatches };
-      await updateTournament(updatedTournament);
-    } catch (error) {
-      console.error("Error updating match:", error);
-    }
-  };
-
-  // Generate a multi-stage tournament
-  const generateMultiStageTournament = async () => {
-    if (!currentTournament) return;
-    
-    try {
-      const { tournament } = await schedulingService.generateMultiStageTournament(currentTournament);
-      
-      if (tournament) {
-        await updateTournament(tournament);
-      }
-    } catch (error) {
-      console.error("Error generating multi-stage tournament:", error);
-    }
-  };
-
-  // Advance tournament to next stage
-  const advanceToNextStage = async () => {
-    if (!currentTournament) return;
-    
-    try {
-      const { tournament } = await schedulingService.advanceToNextStage(currentTournament);
-      
-      if (tournament) {
-        await updateTournament(tournament);
-      }
-    } catch (error) {
-      console.error("Error advancing tournament to next stage:", error);
-    }
-  };
-
-  // Load sample data
-  const loadSampleData = async (format?: TournamentFormat): Promise<void> => {
-    if (!format) {
-      throw new Error("Tournament format is required for sample data");
-    }
-
-    // Check if demo mode is enabled
-    const isDemoMode = localStorage.getItem('demo_mode') === 'true';
-    if (!isDemoMode) {
-      toast({
-        title: "Demo Mode Required",
-        description: "Please enable demo mode to load sample data.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const category: TournamentCategory = {
-      id: generateId(),
-      name: "Men's Singles",
-      type: CategoryType.SINGLES,
-      division: Division.MENS,
-      format: {
-        type: format,
-        stages: [TournamentStageEnum.INITIAL_ROUND],
-        scoring: {
-          pointsToWin: 21,
-          mustWinByTwo: true,
-          maxPoints: 30,
-          maxSets: 3,
-          requireTwoPointLead: true,
-          maxTwoPointLeadScore: 30
-        },
-        divisions: []
-      }
-    };
-
-    const sampleTournament: Tournament = {
-      id: generateId(),
-      name: `Sample ${format.replace(/_/g, ' ')} Tournament`,
-      description: `A sample tournament using the ${format.replace(/_/g, ' ')} format`,
-      format: format,
-      formatConfig: {
-        type: format,
-        stages: [TournamentStageEnum.INITIAL_ROUND],
-        scoring: {
-          pointsToWin: 21,
-          mustWinByTwo: true,
-          maxPoints: 30,
-          maxSets: 3,
-          requireTwoPointLead: true,
-          maxTwoPointLeadScore: 30
-        },
-        divisions: [],
-        thirdPlaceMatch: false,
-        seedingEnabled: true
-      },
-      location: "Sample Location",
-      startDate: formatDate(new Date(), "yyyy-MM-dd"),
-      endDate: formatDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"),
-      status: TournamentStatus.DRAFT,
-      currentStage: TournamentStageEnum.INITIAL_ROUND,
-      registrationEnabled: true,
-      requirePlayerProfile: false,
-      teams: [],
-      matches: [],
-      courts: [],
-      categories: [category],
-      scoring: {
-        pointsToWin: 21,
-        mustWinByTwo: true,
-        maxPoints: 30,
-        maxSets: 3,
-        requireTwoPointLead: true,
-        maxTwoPointLeadScore: 30
-      },
-      maxTeams: 32,
-      divisions: [],
-      stages: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    try {
-      const createdTournament = await createTournament(sampleTournament);
-      if (!createdTournament) {
-        throw new Error("Failed to create tournament - no tournament returned");
-      }
-      await setCurrentTournament(createdTournament);
-      toast({
-        title: "Sample Tournament Created",
-        description: `Created a new ${format.replace(/_/g, ' ')} tournament template.`
-      });
-    } catch (error) {
-      console.error("Error creating sample tournament:", error);
-      toast({
-        title: "Error Creating Sample Tournament",
-        description: "Failed to create sample tournament. Please try again.",
-        variant: "destructive"
-      });
-      throw error;
-    }
-  };
-
-  // Load category demo data
-  const loadCategoryDemoData = async (tournamentId: string, categoryId: string, format: TournamentFormat) => {
-    // Check if demo mode is enabled
-    const isDemoMode = localStorage.getItem('demo_mode') === 'true';
-    if (!isDemoMode) {
-      toast({
-        title: "Demo Mode Required",
-        description: "Please enable demo mode to load demo data.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!currentTournament || currentTournament.id !== tournamentId) return;
-    
-    try {
-      const { tournament } = await schedulingService.loadCategoryDemoData(
-        currentTournament, 
-        categoryId, 
-        format
-      );
-      
-      if (tournament) {
-        await updateTournament(tournament);
-      }
-    } catch (error) {
-      console.error("Error loading category demo data:", error);
-      toast({
-        title: "Error Loading Demo Data",
-        description: "Failed to load category demo data. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const tournamentContextValue: TournamentContextType = {
-    tournaments,
-    currentTournament,
-    isLoading,
-    error,
-    loadTournaments,
-    createTournament,
-    updateTournament,
-    deleteTournament,
-    setCurrentTournament,
-    startMatch,
-    updateMatchStatus,
-    updateMatchScore,
-    completeMatch,
-    assignCourt,
-    freeCourt,
-    autoAssignCourts,
-    startMatchesWithCourts,
-    initializeScoring,
-    addTeam,
-    updateTeam,
-    deleteTeam,
-    importTeams,
-    addCategory,
-    updateCategory,
-    deleteCategory,
-    removeCategory,
-    generateBrackets,
-    scheduleMatch,
-    scheduleMatches,
-    updateMatch,
-    generateMultiStageTournament,
-    advanceToNextStage,
-    loadSampleData,
-    loadCategoryDemoData
-  };
+  // Load initial data on mount
+  useEffect(() => {
+    loadTournaments();
+  }, [loadTournaments]); // Dependency array now correctly includes the stable loadTournaments
 
   return (
-    <TournamentContext.Provider value={tournamentContextValue}>
+    <TournamentContext.Provider value={{
+      tournaments,
+      currentTournament,
+      isLoading,
+      error,
+      loadTournaments,
+      createTournament,
+      updateTournament,
+      deleteTournament,
+      setCurrentTournament,
+      startMatch,
+      updateMatchStatus,
+      updateMatchScore,
+      completeMatch,
+      assignCourt,
+      freeCourt,
+      autoAssignCourts,
+      startMatchesWithCourts,
+      initializeScoring,
+      addTeam,
+      updateTeam,
+      deleteTeam,
+      importTeams,
+      addCategory,
+      updateCategory,
+      deleteCategory,
+      scheduleMatches
+    }}>
       {children}
     </TournamentContext.Provider>
   );
 };
 
+
+
+// Custom hook to use the Tournament context
 export const useTournament = () => {
   const context = React.useContext(TournamentContext);
   if (context === undefined) {
-    throw new Error('useTournament must be used within a TournamentProvider');
+    throw new Error("useTournament must be used within a TournamentProvider");
   }
   return context;
 };
+

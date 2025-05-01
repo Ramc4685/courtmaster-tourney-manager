@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { RegistrationStatus } from './tournament-enums';
+// Import and re-export RegistrationStatus
+import { RegistrationStatus as ImportedRegistrationStatus } from './tournament-enums';
+export const RegistrationStatus = ImportedRegistrationStatus;
 
 export interface RegistrationComment {
   id: string;
@@ -28,6 +30,8 @@ export interface RegistrationMetadata {
     toPosition: number;
     reason?: string;
   }>;
+  // Add fields based on actual usage/schema
+  updatedAt?: string; // Added for consistency if needed
 }
 
 export interface TeamMember {
@@ -37,85 +41,61 @@ export interface TeamMember {
   role?: string;
 }
 
-export interface PlayerRegistrationWithStatus {
+// Consolidated Player Registration Type (used by service/context)
+export interface PlayerRegistration {
   id: string;
-  playerId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  division_id: string;
-  tournament_id: string;
+  tournamentId: string;
+  userId: string;
+  categoryId?: string | null; // Optional based on schema
   status: RegistrationStatus;
-  metadata: RegistrationMetadata;
-  createdAt: Date;
-  updatedAt: Date;
+  registeredAt: string; // Use string for ISO date format
+  updatedAt?: string | null; // Use string for ISO date format
+  playerName: string;
+  playerEmail: string;
+  waiverAccepted?: boolean | null;
+  paymentStatus?: string | null; // e.g., 'pending', 'paid', 'failed'
+  waitlistPosition?: number | null;
+  // Add other relevant fields from DB schema if needed
 }
 
-export interface TeamRegistrationWithStatus {
+// Consolidated Team Registration Type (used by service/context)
+export interface TeamRegistration {
   id: string;
-  teamId?: string;
+  tournamentId: string;
+  teamId: string; // Assuming a link to a teams table
+  categoryId?: string | null; // Optional based on schema
+  status: RegistrationStatus;
+  registeredAt: string; // Use string for ISO date format
+  updatedAt?: string | null; // Use string for ISO date format
   teamName: string;
-  captainName: string;
-  captainEmail: string;
-  captainPhone?: string;
-  division_id: string;
-  tournament_id: string;
-  members: TeamMember[];
-  status: RegistrationStatus;
-  metadata: RegistrationMetadata;
-  createdAt: Date;
-  updatedAt: Date;
+  captainId?: string | null;
+  memberUserIds?: string[]; // Or fetch members separately
+  waiverAccepted?: boolean | null;
+  paymentStatus?: string | null;
+  waitlistPosition?: number | null;
+  // Add other relevant fields from DB schema if needed
 }
 
-// For backward compatibility
-export type TournamentRegistrationStatus = RegistrationStatus;
 
-export interface TournamentRegistration {
-  id: string;
-  tournament_id: string;
-  player_id?: string;
-  team_id?: string;
-  division_id: string;
-  status: RegistrationStatus;
-  created_at: string;
-  updated_at: string;
-  metadata: RegistrationMetadata;
-}
-
-// Player registration schema
-export const playerRegistrationSchema = z.object({
-  player_id: z.string(),
-  division_id: z.string(),
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().optional()
-});
-
-// Generic registration interface for mixed lists
+// Generic registration interface for mixed lists (e.g., waitlist)
 export interface RegistrationItem {
   id: string;
+  name: string; // Player name or Team name
+  type: 'player' | 'team';
   status: RegistrationStatus;
-  metadata: RegistrationMetadata;
-  createdAt: Date;
-  updatedAt: Date;
+  registeredAt: string;
+  updatedAt?: string | null;
+  waitlistPosition?: number | null;
+  // Add other common fields if necessary
 }
 
-// Team registration schema
-export const teamRegistrationSchema = z.object({
-  team_name: z.string().min(1, "Team name is required"),
-  division_id: z.string(),
-  captain: z.object({
-    firstName: z.string().min(1, "First name is required"),
-    lastName: z.string().min(1, "Last name is required"),
-    email: z.string().email("Invalid email address"),
-    phone: z.string().optional()
-  }),
-  players: z.array(z.object({
-    firstName: z.string().min(1, "First name is required"),
-    lastName: z.string().min(1, "Last name is required"),
-    email: z.string().email("Invalid email address"),
-    phone: z.string().optional()
-  })).min(1, "At least one player is required")
+
+// Zod schemas for validation (if needed, align with actual form data)
+export const playerRegistrationSchema = z.object({
+  // ... schema based on registration form fields
 });
+
+export const teamRegistrationSchema = z.object({
+  // ... schema based on registration form fields
+});
+
