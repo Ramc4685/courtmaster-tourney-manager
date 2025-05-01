@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Match, MatchScores, ScoreSet, MatchStatus } from '@/types/entities';
-import { matchService, profileService, teamService } from '@/services/api'; // Added teamService
+import { Match, MatchScores, ScoreSet, MatchStatus, NotificationType } from "@/types/entities"; // Added NotificationType
+import { matchService, profileService, teamService, notificationService } from "@/services/api"; // Added notificationService
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
@@ -163,10 +163,10 @@ export const ScoringInterface: React.FC<ScoringInterfaceProps> = ({
 
   // --- Scoring Logic --- 
   const handleScore = async (teamIndex: 1 | 2) => {
-    if (!match || !tournament?.settings?.scoring) return;
+    if (!match || !tournament?.scoring) return; // Check for tournament.scoring
 
     const currentScores = match.scores ? JSON.parse(JSON.stringify(match.scores)) : getInitialScores();
-    const scoringSettings = tournament.settings.scoring;
+    const scoringSettings = tournament.scoring; // Use the correct path
 
     // Check if match/set is already completed
     if (match.status === MatchStatus.COMPLETED || currentScores.sets.find(s => s.set === currentScores.currentSet)?.completed) {
@@ -213,6 +213,44 @@ export const ScoringInterface: React.FC<ScoringInterfaceProps> = ({
         try {
           const updatedMatch = await matchService.updateMatch(match.id, { scores: updatedScores, status: newMatchStatus, winner_id: winnerId, loser_id: loserId });
           if (onMatchComplete) onMatchComplete(updatedMatch);
+
+          // --- Send Notifications ---
+          try {
+            // Fetch participant user IDs (assuming player IDs are user IDs)
+            // TODO: Handle team logic - fetch team members if team IDs are used
+            const winnerUserId = matchWinner === 1 ? match.player1_id : match.player2_id;
+            const loserUserId = matchWinner === 1 ? match.player2_id : match.player1_id;
+            const winnerName = matchWinner === 1 ? participant1Name : participant2Name;
+            const loserName = matchWinner === 1 ? participant2Name : participant1Name;
+
+            if (winnerUserId) {
+              await notificationService.createNotification({
+                user_id: winnerUserId,
+                title: `Match Won in ${tournament.name}! 🎉`,
+                message: `Congratulations! You won your match against ${loserName}. Final score details available.`, // TODO: Add score details?
+                type: NotificationType.MATCH_RESULT,
+                related_entity_id: match.id,
+                related_entity_type: "match",
+              });
+            }
+            if (loserUserId) {
+              await notificationService.createNotification({
+                user_id: loserUserId,
+                title: `Match Result in ${tournament.name}`,
+                message: `Match completed against ${winnerName}. Check the results for details.`, // TODO: Add score details?
+                type: NotificationType.MATCH_RESULT,
+                related_entity_id: match.id,
+                related_entity_type: "match",
+              });
+            }
+            console.log(`[ScoringInterface] Match completion notifications sent for match ${match.id}`);
+          } catch (notificationError) {
+            console.error("[ScoringInterface] Failed to send match completion notifications:", notificationError);
+            // Don't block UI for notification errors, just log it
+            toast({ variant: "default", title: "Notification Error", description: "Could not send match result notifications." });
+          }
+          // --- End Send Notifications ---
+
         } catch (err) {
           console.error("[ScoringInterface] Failed to update final match score/status:", err);
           toast({ variant: "destructive", title: "Error", description: "Could not save final match result. Please try again." });
