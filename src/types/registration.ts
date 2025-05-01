@@ -62,14 +62,15 @@ export interface PlayerRegistration {
 export interface TeamRegistration {
   id: string;
   tournamentId: string;
-  teamId: string; // Assuming a link to a teams table
+  teamId: string; // Link to teams table
+  divisionId: string; // Link to divisions table
   categoryId?: string | null; // Optional based on schema
   status: RegistrationStatus;
   registeredAt: string; // Use string for ISO date format
   updatedAt?: string | null; // Use string for ISO date format
   teamName: string;
-  captainId?: string | null;
-  memberUserIds?: string[]; // Or fetch members separately
+  captainId?: string | null; // May need separate fetch if not in teams table
+  // memberUserIds?: string[]; // Removed: Fetch members separately if needed
   waiverAccepted?: boolean | null;
   paymentStatus?: string | null;
   waitlistPosition?: number | null;

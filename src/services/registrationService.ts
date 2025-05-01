@@ -1,17 +1,27 @@
 import { supabase } from "@/lib/supabase";
 import { PlayerRegistration, TeamRegistration, RegistrationStatus } from "@/types/registration";
 import { Database } from "@/lib/database.types";
+import { Tournament } from "@/types/tournament"; // Import Tournament type
 
 // Define types for insert/update payloads
 type PlayerRegInsert = Database["public"]["Tables"]["tournament_registrations"]["Insert"];
 type PlayerRegUpdate = Database["public"]["Tables"]["tournament_registrations"]["Update"];
-type TeamRegInsert = Database["public"]["Tables"]["team_registrations"]["Insert"]; // Assuming a separate table
-type TeamRegUpdate = Database["public"]["Tables"]["team_registrations"]["Update"]; // Assuming a separate table
+// Assuming team registrations are also in 'registrations' table based on previous analysis
+type RegInsert = Database["public"]["Tables"]["registrations"]["Insert"];
+type RegUpdate = Database["public"]["Tables"]["registrations"]["Update"];
 
-// NOTE: The schema provided doesn't explicitly show a separate team_registrations table.
-// Assuming for now that team registrations might also use tournament_registrations 
-// or require a different structure. Adjust based on actual schema.
-// For now, team functions will be placeholders or mirror player functions.
+// Combined type for user registrations (can be player or team)
+export interface UserRegistration {
+  id: string;
+  tournamentId: string;
+  tournamentName: string;
+  tournamentStartDate: string;
+  tournamentEndDate: string;
+  status: RegistrationStatus;
+  registeredAt: string;
+  isTeamRegistration: boolean;
+  teamName?: string; // Optional: only for team registrations
+}
 
 export class RegistrationService {
   /**
@@ -21,13 +31,12 @@ export class RegistrationService {
   async getPlayerRegistrations(tournamentId: string): Promise<PlayerRegistration[]> {
     console.log(`[RegService] Fetching player registrations for tournament: ${tournamentId}`);
     const { data, error } = await supabase
-      .from("tournament_registrations")
+      .from("tournament_registrations") // Assuming this is the correct table for player registrations
       .select(`
         *,
         profiles ( id, full_name, display_name, email )
       `)
       .eq("tournament_id", tournamentId)
-      // .is("team_id", null) // Assuming player registrations have team_id as null
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -43,10 +52,8 @@ export class RegistrationService {
         categoryId: reg.category_id,
         status: reg.status as RegistrationStatus,
         registeredAt: reg.created_at,
-        // Extract profile info
         playerName: reg.profiles?.display_name || reg.profiles?.full_name || "Unknown Player",
         playerEmail: reg.profiles?.email || "N/A",
-        // Add other relevant fields like waiver_accepted, payment_status etc.
         waiverAccepted: reg.waiver_accepted || false,
         paymentStatus: reg.payment_status || 'pending',
         waitlistPosition: reg.waitlist_position
@@ -55,22 +62,19 @@ export class RegistrationService {
 
   /**
    * Fetches team registrations for a specific tournament.
-   * Placeholder - Adjust based on actual schema for teams.
+   * Joins with the teams table to get team details.
    */
   async getTeamRegistrations(tournamentId: string): Promise<TeamRegistration[]> {
     console.log(`[RegService] Fetching team registrations for tournament: ${tournamentId}`);
-    // --- Placeholder Implementation --- 
-    // Adjust query based on how teams are stored (e.g., separate table or flag in tournament_registrations)
-    // Example assuming team_id is present in tournament_registrations for team entries:
-    /*
+    
     const { data, error } = await supabase
-      .from("tournament_registrations")
+      .from("registrations") // Use the correct table name
       .select(`
         *,
-        teams ( id, name, captain_id, members:team_members(user_id) )
+        teams ( id, name, captain_id )
       `)
       .eq("tournament_id", tournamentId)
-      .not("team_id", "is", null)
+      .not("team_id", "is", null) // Filter for team registrations
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -78,24 +82,125 @@ export class RegistrationService {
       throw error;
     }
     
+    // Map data to TeamRegistration type
     return data.map((reg: any) => ({
         id: reg.id,
         tournamentId: reg.tournament_id,
         teamId: reg.team_id,
+        divisionId: reg.division_id,
         categoryId: reg.category_id,
         status: reg.status as RegistrationStatus,
         registeredAt: reg.created_at,
+        updatedAt: reg.updated_at,
         teamName: reg.teams?.name || "Unknown Team",
         captainId: reg.teams?.captain_id,
-        memberUserIds: reg.teams?.members?.map((m: any) => m.user_id) || [],
-        waiverAccepted: reg.waiver_accepted || false,
-        paymentStatus: reg.payment_status || 'pending',
         waitlistPosition: reg.waitlist_position
     }));
-    */
-    console.warn("[RegService] getTeamRegistrations is a placeholder and needs implementation based on schema.")
-    return []; // Return empty array for now
   }
+
+  /**
+   * Fetches all registrations (player and team) for a specific user.
+   * Includes tournament details.
+   */
+  async getUserRegistrations(userId: string): Promise<UserRegistration[]> {
+    console.log(`[RegService] Fetching registrations for user: ${userId}`);
+    
+    // 1. Fetch player registrations (assuming table 'tournament_registrations')
+    const { data: playerRegsData, error: playerRegsError } = await supabase
+      .from('tournament_registrations')
+      .select(`
+        id,
+        tournament_id,
+        status,
+        created_at,
+        tournaments ( id, name, start_date, end_date )
+      `)
+      .eq('user_id', userId);
+
+    if (playerRegsError) {
+      console.error("[RegService] Error fetching user's player registrations:", playerRegsError);
+      throw playerRegsError;
+    }
+
+    // 2. Fetch teams the user is a member of
+    const { data: teamMembersData, error: teamMembersError } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', userId);
+
+    if (teamMembersError) {
+      console.error("[RegService] Error fetching user's teams:", teamMembersError);
+      throw teamMembersError;
+    }
+
+    const teamIds = teamMembersData.map(tm => tm.team_id);
+    let teamRegsData: any[] = [];
+
+    // 3. Fetch team registrations if the user is part of any teams
+    if (teamIds.length > 0) {
+      const { data: fetchedTeamRegs, error: teamRegsError } = await supabase
+        .from('registrations') // Assuming 'registrations' table holds team registrations
+        .select(`
+          id,
+          tournament_id,
+          team_id,
+          status,
+          created_at,
+          tournaments ( id, name, start_date, end_date ),
+          teams ( name )
+        `)
+        .in('team_id', teamIds);
+
+      if (teamRegsError) {
+        console.error("[RegService] Error fetching user's team registrations:", teamRegsError);
+        throw teamRegsError;
+      }
+      teamRegsData = fetchedTeamRegs;
+    }
+
+    // 4. Combine and map results
+    const combinedRegistrations: UserRegistration[] = [];
+
+    playerRegsData.forEach((reg: any) => {
+      if (reg.tournaments) { // Ensure tournament data exists
+        combinedRegistrations.push({
+          id: reg.id,
+          tournamentId: reg.tournament_id,
+          tournamentName: reg.tournaments.name,
+          tournamentStartDate: reg.tournaments.start_date,
+          tournamentEndDate: reg.tournaments.end_date,
+          status: reg.status as RegistrationStatus,
+          registeredAt: reg.created_at,
+          isTeamRegistration: false,
+        });
+      }
+    });
+
+    teamRegsData.forEach((reg: any) => {
+      if (reg.tournaments && reg.teams) { // Ensure tournament and team data exists
+        // Avoid duplicates if a user is registered individually AND via a team for the same tournament (edge case)
+        if (!combinedRegistrations.some(cr => cr.tournamentId === reg.tournament_id)) {
+          combinedRegistrations.push({
+            id: reg.id,
+            tournamentId: reg.tournament_id,
+            tournamentName: reg.tournaments.name,
+            tournamentStartDate: reg.tournaments.start_date,
+            tournamentEndDate: reg.tournaments.end_date,
+            status: reg.status as RegistrationStatus,
+            registeredAt: reg.created_at,
+            isTeamRegistration: true,
+            teamName: reg.teams.name,
+          });
+        }
+      }
+    });
+
+    // Sort by registration date or tournament start date if needed
+    combinedRegistrations.sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime());
+
+    return combinedRegistrations;
+  }
+
 
   /**
    * Updates the status of a single player registration.
@@ -106,7 +211,6 @@ export class RegistrationService {
         status: status,
         updated_at: new Date().toISOString()
     };
-    // If moving from waitlist, clear position
     if (status !== 'WAITLIST') {
         updatePayload.waitlist_position = null;
     }
@@ -124,14 +228,12 @@ export class RegistrationService {
 
   /**
    * Updates the status of a single team registration.
-   * Placeholder - Adjust based on actual schema.
+   * Uses the registrations table.
    */
   async updateTeamRegistrationStatus(id: string, status: RegistrationStatus): Promise<void> {
     console.log(`[RegService] Updating team registration ${id} status to ${status}`);
-    // --- Placeholder Implementation --- 
-    // Adjust based on schema
-    /*
-    const updatePayload: TeamRegUpdate = { 
+    
+    const updatePayload: RegUpdate = { // Use RegUpdate for 'registrations' table
         status: status,
         updated_at: new Date().toISOString()
     };
@@ -140,16 +242,15 @@ export class RegistrationService {
     }
     
     const { error } = await supabase
-      .from("team_registrations") // Or tournament_registrations
+      .from("registrations") // Target the registrations table
       .update(updatePayload)
-      .eq("id", id);
+      .eq("id", id)
+      .not("team_id", "is", null); // Ensure it's a team registration
 
     if (error) {
       console.error("[RegService] Error updating team registration status:", error);
       throw error;
     }
-    */
-    console.warn("[RegService] updateTeamRegistrationStatus is a placeholder.")
   }
 
   /**
@@ -178,31 +279,29 @@ export class RegistrationService {
 
   /**
    * Bulk updates the status for multiple team registrations.
-   * Placeholder - Adjust based on actual schema.
+   * Uses the registrations table.
    */
   async bulkUpdateTeamStatus(ids: string[], status: RegistrationStatus): Promise<void> {
     console.log(`[RegService] Bulk updating ${ids.length} team registrations to ${status}`);
-    // --- Placeholder Implementation --- 
-    /*
-    const updatePayload: TeamRegUpdate = { 
+    
+    const updatePayload: RegUpdate = { // Use RegUpdate for 'registrations' table
         status: status,
         updated_at: new Date().toISOString()
     };
-     if (status !== 'WAITLIST') {
+    if (status !== 'WAITLIST') {
         updatePayload.waitlist_position = null;
     }
-    
+
     const { error } = await supabase
-      .from("team_registrations") // Or tournament_registrations
+      .from("registrations") // Target the registrations table
       .update(updatePayload)
-      .in("id", ids);
+      .in("id", ids)
+      .not("team_id", "is", null); // Ensure these are team registrations
 
     if (error) {
       console.error("[RegService] Error bulk updating team status:", error);
       throw error;
     }
-    */
-    console.warn("[RegService] bulkUpdateTeamStatus is a placeholder.")
   }
   
   // --- Add methods for creating registrations (player/team) --- 

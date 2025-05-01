@@ -10,7 +10,7 @@ import {
   CategoryType,
   TournamentFormatConfig
 } from './tournament-enums';
-import { ScoringSettings } from './scoring';
+import { ScoringRules } from './scoring';
 
 // Export tournament types
 export interface Tournament {
@@ -26,7 +26,7 @@ export interface Tournament {
   maxTeams: number;
   format: TournamentFormat;
   formatConfig: TournamentFormatConfig;
-  scoring: ScoringSettings;
+  scoring: ScoringRules; // Use ScoringRules from scoring.ts
   status: TournamentStatus;
   categories: TournamentCategory[];
   teams: Team[];

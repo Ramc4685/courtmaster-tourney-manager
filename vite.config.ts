@@ -27,19 +27,10 @@ export default defineConfig(({ mode }) => ({
       }
     },
     allowedHosts: [
-      // Allow the specific host causing the issue
-      "3c369f66-82fd-492f-a24a-0dbb48d7615a.lovableproject.com",
-      "acc909ab-1fc0-45e6-8e2f-6575c70efec1-00-20zq21czf8spr.picard.replit.dev",
-      // Add the manus proxy domains
-      "8081-i03v2iqxbunrmdcsim8on-67675091.manus.computer",
-      "8082-i8untq19ygoazabr0j8d4-67675091.manus.computer",
-      "8081-i8untq19ygoazabr0j8d4-67675091.manus.computer", // Explicitly add current host
-      // Include localhost and other common development domains
+      // Allow localhost and all manus subdomains
       "localhost",
       "127.0.0.1",
-      "*.lovable.app",
-      "*.lovableproject.com",
-      "*.manus.computer", // Allow all manus subdomains as a fallback
+      "*.manus.computer",
     ],
   },
   plugins: [

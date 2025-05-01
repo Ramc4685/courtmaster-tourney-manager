@@ -10,8 +10,9 @@ import TournamentDetailsPage from '@/pages/TournamentDetail';
 import CreateTournamentPage from '@/pages/tournaments/CreateTournamentPage';
 import TournamentRegistrationPage from '@/pages/tournament/TournamentRegistration';
 import RegistrationManagementPage from '@/pages/tournament/RegistrationManagement';
-import ProfilePage from '@/pages/Profile';
-import NotFound from '@/pages/NotFound';
+import ProfilePage from "@/pages/Profile";
+import Dashboard from "@/pages/Dashboard"; // Import Dashboard component
+import NotFound from "@/pages/NotFound";
 import { CheckInPage } from '@/pages/tournament/CheckInPage';
 import { useAuth } from './contexts/auth/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -97,6 +98,10 @@ const router = createBrowserRouter([
           {
             path: '/profile',
             element: <ProfilePage />
+          },
+          {
+            path: "/dashboard",
+            element: <Dashboard />
           }
         ]
       },
