@@ -57,7 +57,7 @@
     "date-fns": "^2.30.0",
     "exceljs": "^4.4.0",
     "framer-motion": "^12.9.2",
-    "lucide-react": "^0.462.0",
+    "lucide-react": "^0.515.0",
     "nanoid": "^5.1.5",
     "next-themes": "^0.3.0",
     "papaparse": "^5.5.2",
