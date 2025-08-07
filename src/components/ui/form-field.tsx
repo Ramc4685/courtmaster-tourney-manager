@@ -7,16 +7,20 @@ export interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputEleme
   error?: string;
 }
 
-export const FormField: React.FC<FormFieldProps> = ({
-  label,
-  error,
-  className,
-  ...props
-}) => {
+export const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>((
+  {
+    label,
+    error,
+    className,
+    ...props
+  },
+  ref
+) => {
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">{label}</label>
       <Input
+        ref={ref}
         className={`w-full ${className || ""}`}
         {...props}
       />
@@ -25,4 +29,6 @@ export const FormField: React.FC<FormFieldProps> = ({
       )}
     </div>
   );
-};
+});
+
+FormField.displayName = "FormField";

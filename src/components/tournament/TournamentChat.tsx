@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { supabase } from "@/lib/supabase";
-import { RealtimeChannel } from '@supabase/supabase-js';
+
 import { formatDistanceToNow } from 'date-fns';
 import { Send } from 'lucide-react';
 
@@ -64,39 +63,25 @@ export const TournamentChat: React.FC<TournamentChatProps> = ({ tournamentId }) 
     fetchMessages();
   }, [fetchMessages]);
 
-  // Realtime subscription for new messages
+  // Realtime subscription for new messages using Appwrite
   useEffect(() => {
     if (!tournamentId) return;
 
     const channelName = `tournament_chat_${tournamentId}`;
-    const channel = supabase.channel(channelName);
-
-    const handleNewMessage = (payload: any) => {
-      console.log('New message received:', payload);
-      const newMessageData = payload.new as TournamentMessage;
-      // Add sender info if it was included in the payload (requires adjusting DB function/select)
-      // newMessageData.sender = payload.new.sender; 
-      setMessages((currentMessages) => [...currentMessages, newMessageData]);
-      scrollToBottom();
-    };
-
-    channel
-      .on('postgres_changes', 
-          { event: 'INSERT', schema: 'public', table: 'tournament_messages', filter: `tournament_id=eq.${tournamentId}` }, 
-          handleNewMessage
-      )
-      .subscribe((status, err) => {
-        if (status === 'SUBSCRIBED') {
-          console.log(`Subscribed to ${channelName}`);
-        } else {
-          console.error(`Subscription error on ${channelName}:`, status, err);
-          setError('Chat connection error.');
-        }
-      });
+    // Using Appwrite real-time subscription instead of Supabase
+    const unsubscribe = realtime.subscribe(`databases.${APPWRITE_DATABASE_ID}.collections.${COLLECTIONS.TOURNAMENT_MESSAGES}.documents`, (response) => {
+      if (response.events && response.events.includes('database.documents.create')) {
+        const newMessageData = response.payload as TournamentMessage;
+        setMessages((currentMessages) => [...currentMessages, newMessageData]);
+        scrollToBottom();
+      }
+    });
 
     return () => {
-      supabase.removeChannel(channel);
-      console.log(`Unsubscribed from ${channelName}`);
+      if (unsubscribe) {
+        unsubscribe();
+        console.log(`Unsubscribed from ${channelName}`);
+      }
     };
   }, [tournamentId]);
 

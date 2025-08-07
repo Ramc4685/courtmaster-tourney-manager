@@ -1,7 +1,5 @@
-import { supabase } from '@/lib/supabase';
 import { User, UserCredentials } from '@/types/user';
 import { TournamentUserRole } from '@/types/user';
-import { SupabaseAuthService } from './SupabaseAuthService';
 
 // BaseAuthService interface
 interface BaseAuthService {
@@ -130,6 +128,6 @@ class MockAuthService implements BaseAuthService {
 
 // Create and export a singleton instance of the service
 // const authService = new MockAuthService();
-const authService = new SupabaseAuthService();
+const authService = new AppwriteAuthService();
 
 export { authService };

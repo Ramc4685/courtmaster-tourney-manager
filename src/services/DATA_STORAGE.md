@@ -72,9 +72,9 @@ The app's architecture supports easy migration to Firebase:
 
 The application's abstracted storage interface also supports:
 
-1. **Supabase**: PostgreSQL + Realtime capabilities
-   - Direct drop-in replacement for Firebase
-   - Better SQL capabilities
+1. **Appwrite**: Open-source backend server with real-time capabilities
+   - Self-hostable or cloud-hosted
+   - Built-in authentication, database, and storage
 
 2. **MongoDB Atlas**: For document-based storage
    - Good fit for the tournament document structure
@@ -95,8 +95,8 @@ export const createStorageService = (config?: StorageConfig): StorageService => 
     return new FirestoreStorageService();
   }
   
-  if (config?.useSupabase) {
-    return new SupabaseStorageService();
+  if (config?.useLocalStorage) {
+    return new LocalStorageService();
   }
   
   return new LocalStorageService();

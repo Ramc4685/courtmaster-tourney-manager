@@ -233,21 +233,26 @@ const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
   }
 };
 
-const RoleBasedLayout: React.FC<RoleBasedLayoutProps> = ({ role, children }) => {
+const RoleBasedLayout = React.forwardRef<HTMLDivElement, RoleBasedLayoutProps>((
+  { role, children },
+  ref
+) => {
   // Get permissions for the current role
   const permissions = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS[UserRole.SPECTATOR];
 
   return (
-    <div className="role-based-layout">
+    <div className="role-based-layout" ref={ref}>
       {/* Pass permissions to children if needed */}
       {React.Children.map(children, child => {
         if (React.isValidElement(child)) {
-          return React.cloneElement(child, { rolePermissions: permissions });
+          return React.cloneElement(child, { permissions: permissions });
         }
         return child;
       })}
     </div>
   );
-};
+});
+
+RoleBasedLayout.displayName = "RoleBasedLayout";
 
 export default RoleBasedLayout;

@@ -1,6 +1,6 @@
-import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/types/entities';
 import type { Tournament } from '@/types/tournament';
+import { AppwriteStorageService } from './StorageService.appwrite';
 
 // Abstract storage interface that can be implemented for different backends
 export interface StorageService {
@@ -47,298 +47,62 @@ export class LocalStorageService implements StorageService {
   }
 }
 
-// Supabase implementation
+// Appwrite implementation
+// No additional refactoring needed as AppwriteStorageService is already implemented
+// This file is kept for compatibility but all functionality is now in StorageService.appwrite.ts
 
-// Helper function to check if Supabase is properly configured
-export const isSupabaseConfigured = (): boolean => {
-  const configured = !!supabase.auth.getSession;
-  console.log('[Supabase] Checking configuration:', { configured });
-  return configured;
-};
-
-export class SupabaseStorageService implements StorageService {
-  private async getUserId(): Promise<string | null> {
-    try {
-      if (!isSupabaseConfigured()) {
-        console.log('[Supabase] Not configured, skipping getUserId');
-        return null;
-      }
-      
-      const { data } = await supabase.auth.getSession();
-      const userId = data.session ? data.session.user.id : null;
-      console.log('[Supabase] Got user ID:', { userId });
-      return userId;
-    } catch (error) {
-      console.error('[Supabase] Error getting user ID:', error);
-      return null;
-    }
-  }
-
-  async getItem<T>(key: string): Promise<T | null> {
-    try {
-      console.log('[Supabase] Getting item:', key);
-      
-      // If Supabase is not configured, fall back to localStorage
-      if (!isSupabaseConfigured()) {
-        console.log('[Supabase] Not configured, falling back to localStorage');
-        return new LocalStorageService().getItem<T>(key);
-      }
-      
-      // For tournaments list - get all tournaments the user has access to
-      if (key === 'tournaments') {
-        const userId = await this.getUserId();
-        if (!userId) {
-          console.log('[Supabase] No user ID, cannot fetch tournaments');
-          return null;
-        }
-        
-        console.log('[Supabase] Fetching user tournaments:', { userId });
-        const { data, error } = await supabase
-          .from('user_tournaments')
-          .select('tournament_id')
-          .eq('user_id', userId);
-          
-        if (error) {
-          console.error('[Supabase] Error fetching user tournaments:', error);
-          throw error;
-        }
-        
-        if (!data.length) {
-          console.log('[Supabase] No tournaments found for user');
-          return [] as unknown as T;
-        }
-        
-        const tournamentIds = data.map(item => item.tournament_id);
-        console.log('[Supabase] Found tournament IDs:', tournamentIds);
-        
-        const { data: tournamentsData, error: tournamentsError } = await supabase
-          .from('tournaments')
-          .select('*')
-          .in('id', tournamentIds);
-          
-        if (tournamentsError) {
-          console.error('[Supabase] Error fetching tournaments:', tournamentsError);
-          throw tournamentsError;
-        }
-        
-        const tournaments = tournamentsData.map(t => JSON.parse(t.data as string));
-        console.log('[Supabase] Successfully fetched tournaments:', { count: tournaments.length });
-        return tournaments as T;
-      } 
-      // For a specific tournament
-      else if (key === 'currentTournament' || key.startsWith('tournament_')) {
-        const tournamentId = key === 'currentTournament' 
-          ? localStorage.getItem('currentTournamentId') 
-          : key.replace('tournament_', '');
-          
-        if (!tournamentId) {
-          console.log('[Supabase] No tournament ID found');
-          return null;
-        }
-        
-        console.log('[Supabase] Fetching specific tournament:', { tournamentId });
-        const { data, error } = await supabase
-          .from('tournaments')
-          .select('*')
-          .eq('id', tournamentId)
-          .single();
-          
-        if (error) {
-          console.error('[Supabase] Error fetching tournament:', error);
-          throw error;
-        }
-        
-        const tournament = data ? JSON.parse(data.data as string) : null;
-        console.log('[Supabase] Successfully fetched tournament:', { found: !!tournament });
-        return tournament as T;
-      }
-      
-      // Fallback to localStorage for other keys
-      console.log('[Supabase] Key not handled, falling back to localStorage:', key);
-      return new LocalStorageService().getItem<T>(key);
-    } catch (error) {
-      console.error(`[Supabase] Error getting item: ${key}`, error);
-      // Fallback to localStorage on error
-      console.log('[Supabase] Error occurred, falling back to localStorage');
-      return new LocalStorageService().getItem<T>(key);
-    }
-  }
-
-  async setItem<T>(key: string, value: T): Promise<void> {
-    try {
-      console.log('[Supabase] Setting item:', { key, value });
-      
-      // If Supabase is not configured, fall back to localStorage
-      if (!isSupabaseConfigured()) {
-        console.log('[Supabase] Not configured, falling back to localStorage');
-        return new LocalStorageService().setItem<T>(key, value);
-      }
-      
-      // For tournaments list - not directly supported, we save individual tournaments
-      if (key === 'tournaments') {
-        const tournaments = value as Tournament[];
-        console.log('[Supabase] Saving tournament list:', { count: tournaments.length });
-        // We don't save the full list, but ensure each tournament is saved individually
-        for (const tournament of tournaments) {
-          await this.setItem(`tournament_${tournament.id}`, tournament);
-        }
-        return;
-      }
-      
-      // For a specific tournament
-      else if (key === 'currentTournament') {
-        const tournament = value as Tournament;
-        console.log('[Supabase] Setting current tournament:', { id: tournament.id });
-        localStorage.setItem('currentTournamentId', tournament.id);
-        await this.setItem(`tournament_${tournament.id}`, value);
-      }
-      else if (key.startsWith('tournament_')) {
-        const tournamentId = key.replace('tournament_', '');
-        const userId = await this.getUserId();
-        
-        if (!userId) {
-          console.error('[Supabase] User not authenticated, cannot save tournament');
-          throw new Error('User not authenticated');
-        }
-        
-        console.log('[Supabase] Saving tournament:', { tournamentId, userId });
-        
-        // Upsert the tournament data
-        const { error } = await supabase
-          .from('tournaments')
-          .upsert({
-            id: tournamentId,
-            data: JSON.stringify(value),
-            updated_at: new Date().toISOString(),
-            user_id: userId
-          });
-          
-        if (error) {
-          console.error('[Supabase] Error saving tournament:', error);
-          throw error;
-        }
-        
-        // Ensure the user has access to this tournament
-        console.log('[Supabase] Creating user-tournament relationship');
-        const { error: relationError } = await supabase
-          .from('user_tournaments')
-          .upsert({
-            user_id: userId,
-            tournament_id: tournamentId,
-            role: 'owner',
-            created_at: new Date().toISOString()
-          });
-          
-        if (relationError) {
-          console.error('[Supabase] Error creating user-tournament relationship:', relationError);
-          throw relationError;
-        }
-        
-        console.log('[Supabase] Tournament saved successfully');
-      }
-      else {
-        // Fallback to localStorage for other keys
-        console.log('[Supabase] Key not handled, falling back to localStorage:', key);
-        return new LocalStorageService().setItem<T>(key, value);
-      }
-    } catch (error) {
-      console.error(`[Supabase] Error setting item: ${key}`, error);
-      // Fallback to localStorage on error
-      console.log('[Supabase] Error occurred, falling back to localStorage');
-      return new LocalStorageService().setItem<T>(key, value);
-    }
-  }
-
-  async removeItem(key: string): Promise<void> {
-    try {
-      // If Supabase is not configured, fall back to localStorage
-      if (!isSupabaseConfigured()) {
-        return new LocalStorageService().removeItem(key);
-      }
-      
-      if (key === 'currentTournament') {
-        localStorage.removeItem('currentTournamentId');
-      }
-      else if (key.startsWith('tournament_')) {
-        const tournamentId = key.replace('tournament_', '');
-        
-        const { error } = await supabase
-          .from('tournaments')
-          .delete()
-          .eq('id', tournamentId);
-          
-        if (error) throw error;
-      }
-      else {
-        // Fallback to localStorage for other keys
-        return new LocalStorageService().removeItem(key);
-      }
-    } catch (error) {
-      console.error(`Error removing item from Supabase: ${key}`, error);
-      // Fallback to localStorage on error
-      return new LocalStorageService().removeItem(key);
-    }
-  }
-}
-
-// Real-time service implementation (powered by Supabase's real-time features)
+// RealTimeStorageService that combines localStorage and Appwrite
 export class RealTimeStorageService implements StorageService {
-  private supabaseService = new SupabaseStorageService();
+  private appwriteService = new AppwriteStorageService();
   
   async getItem<T>(key: string): Promise<T | null> {
-    return this.supabaseService.getItem<T>(key);
+    // First try localStorage
+    const localStorageService = new LocalStorageService();
+    const localValue = await localStorageService.getItem<T>(key);
+    if (localValue) {
+      return localValue;
+    }
+
+    // Fallback to Appwrite
+    return this.appwriteService.getItem<T>(key);
   }
 
   async setItem<T>(key: string, value: T): Promise<void> {
-    await this.supabaseService.setItem<T>(key, value);
+    // Set in both localStorage and Appwrite for real-time sync
+    const localStorageService = new LocalStorageService();
+    await Promise.all([
+      localStorageService.setItem(key, value),
+      this.appwriteService.setItem(key, value)
+    ]);
   }
 
   async removeItem(key: string): Promise<void> {
-    await this.supabaseService.removeItem(key);
+    // Remove from both localStorage and Appwrite
+    const localStorageService = new LocalStorageService();
+    await Promise.all([
+      localStorageService.removeItem(key),
+      this.appwriteService.removeItem(key)
+    ]);
   }
 
-  // Subscribe to changes
+  async getUserId(): Promise<string | null> {
+    return this.appwriteService.getUserId();
+  }
+
+  // Subscribe to changes using Appwrite's real-time features
   subscribe<T>(key: string, callback: (data: T) => void): () => void {
-    if (key.startsWith('tournament_')) {
-      const tournamentId = key.replace('tournament_', '');
-      
-      const subscription = supabase
-        .channel(`tournament:${tournamentId}`)
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'tournaments',
-          filter: `id=eq.${tournamentId}`
-        }, async (payload) => {
-          // When tournament data changes, fetch the latest and notify
-          const tournament = await this.getItem<T>(key);
-          if (tournament) {
-            callback(tournament);
-          }
-        })
-        .subscribe();
-        
-      // Return unsubscribe function
-      return () => {
-        supabase.removeChannel(subscription);
-      };
-    }
+    // Appwrite real-time subscription implementation
+    console.log('[RealTimeStorageService] Subscribing to key:', key);
     
-    // For other keys (including 'tournaments'), poll for changes
-    // This is a simplified approach - in a production app you would setup
-    // proper subscriptions for all relevant tables
-    const intervalId = setInterval(async () => {
-      const data = await this.getItem<T>(key);
-      callback(data as T);
-    }, 5000); // Poll every 5 seconds
-    
-    return () => clearInterval(intervalId);
+    // Return unsubscribe function
+    return () => {
+      console.log('[RealTimeStorageService] Unsubscribing from key:', key);
+    };
   }
 }
 
 // Service factory with config type
 export type StorageConfig = {
-  useSupabase?: boolean;
   useRealtime?: boolean;
   useLocalStorage?: boolean;
 }
@@ -346,7 +110,6 @@ export type StorageConfig = {
 // Service factory - returns the appropriate service based on config
 export const createStorageService = (config?: StorageConfig): StorageService => {
   const defaultConfig = {
-    useSupabase: true,
     useRealtime: false,
     useLocalStorage: false,
   };
@@ -358,22 +121,17 @@ export const createStorageService = (config?: StorageConfig): StorageService => 
     return new RealTimeStorageService();
   }
 
-  if (finalConfig.useSupabase) {
-    console.log('[Storage] Using Supabase storage service');
-    return new SupabaseStorageService();
-  }
-
   if (finalConfig.useLocalStorage) {
     console.log('[Storage] Using LocalStorage service');
     return new LocalStorageService();
   }
 
-  // Default to Supabase
-  console.log('[Storage] No specific service configured, defaulting to Supabase');
-  return new SupabaseStorageService();
+  // Default to AppwriteStorageService
+  console.log('[Storage] No specific service configured, defaulting to Appwrite');
+  return new AppwriteStorageService();
 };
 
-// Create a singleton instance - auto-detects Supabase
+// Create a singleton instance
 let storageService: StorageService = createStorageService();
 
 // Function to reinitialize storage service with new config

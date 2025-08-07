@@ -6,12 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { FaGoogle, FaApple } from 'react-icons/fa';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, isAuthenticated, isLoading: authLoading, sessionChecked } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple, isAuthenticated, isLoading: authLoading, sessionChecked } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -63,10 +64,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickLogin = () => {
-    setEmail('demoadmin@example.com');
-    setPassword('demo123');
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -140,15 +137,44 @@ export default function LoginPage() {
                     "Sign in"
                   )}
                 </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="w-full"
-                  onClick={handleQuickLogin}
-                  disabled={isLoading}
-                >
-                  Quick Login (Demo)
-                </Button>
+                
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or continue with
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => signInWithGoogle()}
+                    disabled={isLoading}
+                  >
+                    <FaGoogle className="mr-2 h-4 w-4" />
+                    Google
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => signInWithApple()}
+                    disabled={isLoading}
+                  >
+                    <FaApple className="mr-2 h-4 w-4" />
+                    Apple
+                  </Button>
+                </div>
+                
+                <div className="mt-2 text-center">
+                  <Link to="/demo" className="font-medium text-indigo-600 hover:text-indigo-500">
+                    Try the demo version
+                  </Link>
+                </div>
               </div>
             </form>
           </CardContent>
@@ -156,4 +182,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-} 
+}

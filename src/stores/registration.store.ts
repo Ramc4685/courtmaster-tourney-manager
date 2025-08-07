@@ -3,16 +3,13 @@ import { devtools } from 'zustand/middleware';
 import { Registration, RegistrationStatus } from '@/domain/models/registration';
 import { RegistrationService, RegisterPlayerDTO, RegisterTeamDTO } from '@/domain/services/registration.service';
 import { ValidationError } from '@/domain/services/errors';
-import { RegistrationRepository } from '@/infrastructure/repositories/registration.repository';
+import { RegistrationRepository } from '@/infrastructure/repositories/registration.repository.appwrite';
 import { NotificationService } from '@/domain/services/notification.service';
-import { supabase } from '@/lib/supabase';
-import { PlayerRegistrationWithStatus, TeamRegistrationWithStatus } from '@/types/registration';
-import { toast } from 'sonner';
+import { Registration } from '@/types/entities';
+import { RegistrationDTO } from '@/infrastructure/dtos/registration.dto';
 
-// Initialize services
-const repository = new RegistrationRepository(supabase);
-const notificationService = new NotificationService();
-const registrationService = new RegistrationService(repository, notificationService);
+// Initialize repository with Appwrite client
+const repository = new RegistrationRepository();
 
 interface RegistrationState {
   registrations: Map<string, Registration>;
@@ -37,7 +34,7 @@ export const useRegistrationStore = create<RegistrationState>((set, get) => {
     registerPlayer: async (data) => {
       set({ isLoading: true, error: null });
       try {
-        const registration = await registrationService.registerPlayer(data);
+        const registration = await repository.createPlayerRegistration(data);
         set(state => ({
           registrations: new Map(state.registrations).set(registration.id, registration),
           isLoading: false
@@ -54,7 +51,7 @@ export const useRegistrationStore = create<RegistrationState>((set, get) => {
     registerTeam: async (data) => {
       set({ isLoading: true, error: null });
       try {
-        const registration = await registrationService.registerTeam(data);
+        const registration = await repository.createTeamRegistration(data);
         set(state => ({
           registrations: new Map(state.registrations).set(registration.id, registration),
           isLoading: false
@@ -71,7 +68,7 @@ export const useRegistrationStore = create<RegistrationState>((set, get) => {
     updateStatus: async (id, status) => {
       set({ isLoading: true, error: null });
       try {
-        const registration = await registrationService.updateStatus(id, status);
+        const registration = await repository.updateRegistrationStatus(id, status);
         set(state => ({
           registrations: new Map(state.registrations).set(registration.id, registration),
           isLoading: false
@@ -88,7 +85,7 @@ export const useRegistrationStore = create<RegistrationState>((set, get) => {
     updateWaitlistPosition: async (id, newPosition) => {
       set({ isLoading: true, error: null });
       try {
-        const registration = await registrationService.updateWaitlistPosition(id, newPosition);
+        const registration = await repository.updateWaitlistPosition(id, newPosition);
         set(state => ({
           registrations: new Map(state.registrations).set(registration.id, registration),
           isLoading: false
@@ -105,7 +102,7 @@ export const useRegistrationStore = create<RegistrationState>((set, get) => {
     addComment: async (id, comment) => {
       set({ isLoading: true, error: null });
       try {
-        const registration = await registrationService.addComment(id, comment);
+        const registration = await repository.addComment(id, comment);
         set(state => ({
           registrations: new Map(state.registrations).set(registration.id, registration),
           isLoading: false

@@ -72,8 +72,8 @@ The current implementation works with the Vercel deployment and can be extended 
    - Ideal for real-time communication
    - Built-in offline support
 
-2. **Supabase Realtime**:
-   - PostgreSQL-powered real-time capabilities
+2. **Appwrite Realtime**:
+   - Built-in real-time subscriptions
    - Compatible with current architecture
 
 3. **WebSockets via Socket.io**:

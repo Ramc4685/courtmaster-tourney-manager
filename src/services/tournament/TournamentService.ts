@@ -1,7 +1,8 @@
-import { supabase } from '@/lib/supabase';
+import { databases, client } from '@/lib/appwrite';
+import { ID, Query } from 'appwrite';
 import { Tournament } from '../../types/tournament';
 import { camelizeKeys, snakeizeKeys } from '@/utils/caseTransforms';
-import { ScoringSettings } from '../../types/scoring';
+// Removed unused import
 
 export class TournamentService {
   async createTournament(tournament: any): Promise<any> {
@@ -9,30 +10,24 @@ export class TournamentService {
       // Convert to backend format
       const payload = snakeizeKeys(tournament);
 
-      // Remove ID field if it's empty or null (shouldn't be set on create)
-      if (!payload.id) { // Check if id is falsy (null, undefined, '')
-        delete payload.id;
-      }
+      // Generate ID if not provided
+      const documentId = payload.id || ID.unique();
+      delete payload.id; // Remove ID as it's passed separately in Appwrite
 
-      // Log the payload and auth user ID for debugging RLS
-      const { data: { user } } = await supabase.auth.getUser();
       console.log('Attempting to insert tournament. Payload:', payload);
-      console.log('Current auth user ID:', user?.id);
       console.log("Payload organizer_id:", payload.organizer_id);
 
-      // Log the final payload right before insertion
-      console.log("Final payload being sent to Supabase:", JSON.stringify(payload, null, 2));
+      // Get environment variables
+      const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'default';
+      const tournamentCollectionId = import.meta.env.VITE_APPWRITE_TOURNAMENTS_COLLECTION_ID || 'tournaments';
 
-      const { data, error } = await supabase
-        .from('tournaments')
-        .insert(payload) // Ensure payload includes organizer_id correctly
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Supabase insert error (full details):", JSON.stringify(error, null, 2)); // Log full error object
-        throw error; // Re-throw the error so the UI can catch it
-      }
+      // Create document in Appwrite
+      const data = await databases.createDocument(
+        databaseId,
+        tournamentCollectionId,
+        documentId,
+        payload
+      );
 
       // Convert response back to frontend format
       return camelizeKeys(data);
@@ -44,13 +39,15 @@ export class TournamentService {
 
   async getTournament(id: string): Promise<any> {
     try {
-      const { data, error } = await supabase
-        .from('tournaments')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
+      // Get environment variables
+      const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'default';
+      const tournamentCollectionId = import.meta.env.VITE_APPWRITE_TOURNAMENTS_COLLECTION_ID || 'tournaments';
+      
+      const data = await databases.getDocument(
+        databaseId,
+        tournamentCollectionId,
+        id
+      );
 
       return camelizeKeys(data);
     } catch (error) {
@@ -61,22 +58,23 @@ export class TournamentService {
 
   async getTournaments(): Promise<any[]> {
     try {
-      const { data, error } = await supabase
-        .from('tournaments')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Get environment variables
+      const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'default';
+      const tournamentCollectionId = import.meta.env.VITE_APPWRITE_TOURNAMENTS_COLLECTION_ID || 'tournaments';
+      
+      const response = await databases.listDocuments(
+        databaseId,
+        tournamentCollectionId,
+        [
+          // Sort by created_at in descending order
+          Query.orderDesc('$createdAt')
+        ]
+      );
 
-      if (error) {
-        // Log the specific error when fetching tournaments (likely RLS)
-        console.error('Supabase select error (getTournaments):', error);
-        // Return empty array to prevent refresh loop, but log the error
-        return []; 
-      }
-
-      return data.map(tournament => camelizeKeys(tournament));
+      return response.documents.map(tournament => camelizeKeys(tournament));
     } catch (error) {
       console.error('Error getting tournaments in service:', error);
-      // Return empty array in case of other errors to prevent loop
+      // Return empty array in case of errors to prevent loop
       return []; 
     }
   }
@@ -84,15 +82,19 @@ export class TournamentService {
   async updateTournament(tournament: any): Promise<any> {
     try {
       const payload = snakeizeKeys(tournament);
-
-      const { data, error } = await supabase
-        .from('tournaments')
-        .update(payload)
-        .eq('id', tournament.id)
-        .select()
-        .single();
-
-      if (error) throw error;
+      const tournamentId = tournament.id;
+      delete payload.id; // Remove ID as it's passed separately in Appwrite
+      
+      // Get environment variables
+      const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'default';
+      const tournamentCollectionId = import.meta.env.VITE_APPWRITE_TOURNAMENTS_COLLECTION_ID || 'tournaments';
+      
+      const data = await databases.updateDocument(
+        databaseId,
+        tournamentCollectionId,
+        tournamentId,
+        payload
+      );
 
       return camelizeKeys(data);
     } catch (error) {
@@ -103,12 +105,15 @@ export class TournamentService {
 
   async deleteTournament(id: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('tournaments')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      // Get environment variables
+      const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'default';
+      const tournamentCollectionId = import.meta.env.VITE_APPWRITE_TOURNAMENTS_COLLECTION_ID || 'tournaments';
+      
+      await databases.deleteDocument(
+        databaseId,
+        tournamentCollectionId,
+        id
+      );
     } catch (error) {
       console.error('Error deleting tournament:', error);
       throw error;

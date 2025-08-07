@@ -1,11 +1,12 @@
 import { BaseRepository } from './base.repository';
 import { ProfileDTO } from '@/types/dtos';
 import { Profile } from '@/types/models';
-import { supabase } from '@/lib/supabase';
+import { databases } from '@/lib/appwrite';
+import { COLLECTIONS } from '@/lib/appwrite';
 
 export class ProfileRepository extends BaseRepository<ProfileDTO, Profile> {
   constructor() {
-    super(supabase, 'profiles');
+    super(import.meta.env.VITE_APPWRITE_DATABASE_ID, COLLECTIONS.PROFILES);
   }
 
   protected toDomain(dto: ProfileDTO): Profile {

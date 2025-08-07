@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth/AuthContext';
 import { useStore } from '../stores/store';
-import { Bell } from 'lucide-react';
+import NotificationDropdown from './notification/NotificationDropdown';
 
 export default function Navbar() {
   const { signOut } = useAuth();
@@ -22,16 +22,7 @@ export default function Navbar() {
 
           <div className="flex items-center">
             <div className="relative">
-              <button
-                type="button"
-                className="p-2 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                <span className="sr-only">View notifications</span>
-                <Bell className="h-6 w-6" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white" />
-                )}
-              </button>
+              <NotificationDropdown />
             </div>
 
             <div className="ml-4 flex items-center md:ml-6">

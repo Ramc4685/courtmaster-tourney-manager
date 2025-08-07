@@ -5,8 +5,7 @@ import { Match, Profile, Court, MatchScores } from '@/types/entities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, parseISO, isFuture } from 'date-fns';
 import { CalendarDays, Clock, MapPin, BarChart2, Trophy, Percent, History } from 'lucide-react';
-import { supabase } from "@/lib/supabase";
-import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { subscribeToMatches } from '@/lib/appwrite';
 import { Badge } from "@/components/ui/badge";
 
 const PlayerDashboard: React.FC = () => {
@@ -113,25 +112,27 @@ const PlayerDashboard: React.FC = () => {
       }
     };
 
-    const channel = supabase
-      .channel(`public:matches:player=${user.id}`)
-      .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'matches' }, 
-          handleMatchUpdate 
-      )
-      .subscribe((status, err) => {
-         if (status === 'SUBSCRIBED') {
-            console.log(`Subscribed to player ${user.id} match updates!`);
-            fetchMatchesAndNames();
-         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            console.error(`Player ${user.id} match subscription error:`, status, err);
-            setErrorMatches('Realtime connection error for matches.');
-         }
-      });
+    // Subscribe to match updates using Appwrite
+    const unsubscribe = subscribeToMatches((payload) => {
+      console.log('Received match update payload:', payload);
+      // Check if the update is relevant to the current user
+      if (payload.events.some(event => 
+        event.payload.player1_id === user.id || 
+        event.payload.player2_id === user.id ||
+        event.payload.team1_id === user.id ||
+        event.payload.team2_id === user.id
+      )) {
+        console.log(`Match update relevant to user ${user.id}, refetching matches and names...`);
+        fetchMatchesAndNames();
+      }
+    });
+
+    // Initial fetch
+    fetchMatchesAndNames();
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
+      if (unsubscribe) {
+        unsubscribe();
         console.log(`Unsubscribed from player ${user.id} match updates`);
       }
     };

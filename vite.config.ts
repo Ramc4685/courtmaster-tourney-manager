@@ -18,14 +18,6 @@ export default defineConfig(({ mode }) => ({
       allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
       credentials: true
     },
-    proxy: {
-      '/rest/v1': {
-        target: 'https://psbcrxgcfgqvrgkxilgi.supabase.co',
-        changeOrigin: true,
-        secure: false,
-        // Removed headers section to let Supabase client handle auth
-      }
-    },
     allowedHosts: [
       // Allow localhost and all manus subdomains
       "localhost",
@@ -158,8 +150,8 @@ export default defineConfig(({ mode }) => ({
             "@/components/ui/card",
             "@/components/ui/select",
           ],
-          // Supabase and auth
-          auth: ["@supabase/supabase-js"],
+          // Authentication
+          auth: ["appwrite"],
           // Data visualization
           charts: ["recharts"],
           // Date handling

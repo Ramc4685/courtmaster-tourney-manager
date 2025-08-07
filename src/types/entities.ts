@@ -171,7 +171,14 @@ export interface Profile {
       match_reminders?: boolean;
       email?: boolean;
     }
-  }
+  };
+  player_stats?: {
+    matches_won: number;
+    matches_played: number;
+    tournaments_won: number;
+    tournaments_played: number;
+    rating: string | number;
+  };
 }
 
 // RegistrationMetadata moved to registration.ts

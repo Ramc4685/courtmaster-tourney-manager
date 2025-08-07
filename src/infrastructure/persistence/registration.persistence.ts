@@ -1,6 +1,6 @@
 import { BaseDTO } from '../repositories/base.repository';
 import { Registration, RegistrationStatus, RegistrationMetadata } from '@/domain/models/registration';
-import { Json } from '@/types/supabase';
+import { Json } from '@/lib/database.types';
 
 export interface RegistrationPersistenceDTO extends BaseDTO {
   tournament_id: string;

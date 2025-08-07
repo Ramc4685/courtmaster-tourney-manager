@@ -1,9 +1,12 @@
+import React from 'react';
 import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/auth/AuthContext';
 import { TournamentProvider } from '@/contexts/tournament/TournamentContext';
 import { Layout } from '@/components/layout/Layout';
 import LoginPage from '@/pages/auth/LoginPage';
 import SignUpPage from '@/pages/auth/SignUpPage';
+import AuthCallbackPage from '@/pages/auth/AuthCallbackPage';
+import DemoPage from '@/pages/demo/DemoPage';
 import Index from '@/pages/Index';
 import TournamentListPage from '@/pages/tournaments/TournamentListPage';
 import TournamentDetailsPage from '@/pages/TournamentDetail';
@@ -13,9 +16,11 @@ import RegistrationManagementPage from '@/pages/tournament/RegistrationManagemen
 import ProfilePage from "@/pages/Profile";
 import Dashboard from "@/pages/Dashboard"; // Import Dashboard component
 import NotFound from "@/pages/NotFound";
+import NotificationsPage from "@/pages/NotificationsPage";
 import { CheckInPage } from '@/pages/tournament/CheckInPage';
 import { useAuth } from './contexts/auth/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { NotificationProvider } from '@/contexts/notification/NotificationProvider';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -38,8 +43,13 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const router = createBrowserRouter([
   {
-    element: <AuthProvider><Outlet /></AuthProvider>,
+    element: <AuthProvider><NotificationProvider><Outlet /></NotificationProvider></AuthProvider>,
     children: [
+      // Demo page route (public)
+      {
+        path: '/demo',
+        element: <PublicRoute><React.Suspense fallback={<div>Loading...</div>}><DemoPage /></React.Suspense></PublicRoute>,
+      },
       {
         path: '/',
         element: <Index />,
@@ -59,6 +69,10 @@ const router = createBrowserRouter([
             <SignUpPage />
           </PublicRoute>
         ),
+      },
+      {
+        path: '/auth/callback',
+        element: <AuthCallbackPage />,
       },
       {
         element: (
@@ -102,6 +116,10 @@ const router = createBrowserRouter([
           {
             path: "/dashboard",
             element: <Dashboard />
+          },
+          {
+            path: "/notifications",
+            element: <NotificationsPage />
           }
         ]
       },
@@ -117,4 +135,4 @@ export const AppRouter = () => {
   return <RouterProvider router={router} />;
 };
 
-export default router; 
+export default router;

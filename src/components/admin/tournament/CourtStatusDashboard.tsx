@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Clock, WifiOff, Wrench, CheckCircle2, Play } from 'lucide-react';
 import { cn } from "@/lib/utils"; // Assuming you have a utility for class names
-import { supabase } from "@/lib/supabase"; // Import supabase client
-import { RealtimeChannel } from '@supabase/supabase-js'; // Import type
+
 
 interface CourtStatusDashboardProps {
   tournamentId: string;
@@ -79,25 +78,15 @@ export const CourtStatusDashboard: React.FC<CourtStatusDashboardProps> = ({ tour
       }
     };
 
-    channel = supabase
-      .channel('public:court_updates')
-      .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'courts' }, 
-          handleCourtUpdate
-      )
-      .subscribe((status, err) => {
-         if (status === 'SUBSCRIBED') {
-            console.log('Subscribed to court_updates channel!');
-         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            console.error('Court subscription error:', status, err);
-            setError('Realtime connection error for courts.');
-         }
-      });
+    // Using Appwrite real-time subscription instead of Supabase
+    const unsubscribe = realtime.subscribe(`databases.${APPWRITE_DATABASE_ID}.collections.${COLLECTIONS.COURTS}.documents`, (response) => {
+      handleCourtUpdate(response);
+    });
 
     // Cleanup function
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
+      if (unsubscribe) {
+        unsubscribe();
         console.log('Unsubscribed from court_updates channel');
       }
     };

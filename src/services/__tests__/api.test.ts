@@ -1,22 +1,21 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { registrationService } from '../api';
-import { supabase } from '@/lib/supabase';
 import type { Registration } from '@/types/entities';
 import type { RegistrationMetadata } from '@/types/registration';
 import { Division } from '@/types/tournament-enums';
 
-// Mock Supabase client
-vi.mock('@/lib/supabase', () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      insert: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      single: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null })),
-      eq: vi.fn().mockReturnThis(),
-      update: vi.fn().mockReturnThis(),
-      order: vi.fn().mockImplementation((column, options) => Promise.resolve({ data: null, error: null })),
-    })),
+// Mock Appwrite client
+vi.mock('@/lib/appwrite', () => ({
+  databases: {
+    createDocument: vi.fn(),
+    listDocuments: vi.fn(),
+    updateDocument: vi.fn(),
+    deleteDocument: vi.fn(),
   },
+  COLLECTIONS: {
+    REGISTRATIONS: 'registrations-collection-id',
+  },
+  DATABASE_ID: 'test-database-id',
 }));
 
 describe('registrationService', () => {
@@ -51,11 +50,15 @@ describe('registrationService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Setup default mock responses
-    const mockResponse = { data: mockRegistration, error: null };
-    (supabase.from as any)().single.mockImplementation(() => Promise.resolve(mockResponse));
-    (supabase.from as any)().order.mockImplementation((column, options) => 
-      Promise.resolve({ data: [mockRegistration], error: null })
+    // Setup default mock responses for Appwrite
+    (require('@/lib/appwrite').databases.createDocument as any).mockImplementation(() => 
+      Promise.resolve(mockRegistration)
+    );
+    (require('@/lib/appwrite').databases.listDocuments as any).mockImplementation(() => 
+      Promise.resolve({ documents: [mockRegistration] })
+    );
+    (require('@/lib/appwrite').databases.updateDocument as any).mockImplementation(() => 
+      Promise.resolve(mockRegistration)
     );
   });
 
@@ -74,7 +77,7 @@ describe('registrationService', () => {
 
       const result = await registrationService.register(registrationData);
       expect(result).toEqual(mockRegistration);
-      expect(supabase.from).toHaveBeenCalledWith('registrations');
+      expect(require('@/lib/appwrite').databases.createDocument).toHaveBeenCalled();
     });
 
     it('should throw error if registration fails', async () => {
@@ -90,8 +93,8 @@ describe('registrationService', () => {
       } as const;
 
       const mockError = new Error('Registration failed');
-      (supabase.from as any)().single.mockImplementation(() => 
-        Promise.resolve({ data: null, error: mockError })
+      (require('@/lib/appwrite').databases.createDocument as any).mockImplementation(() => 
+        Promise.reject(mockError)
       );
 
       await expect(registrationService.register(registrationData)).rejects.toThrow('Registration failed');
@@ -100,15 +103,20 @@ describe('registrationService', () => {
 
   describe('getRegistration', () => {
     it('should get a registration by id', async () => {
+      // Mock the Appwrite listDocuments to return a single registration
+      (require('@/lib/appwrite').databases.listDocuments as any).mockImplementation(() => 
+        Promise.resolve({ documents: [mockRegistration] })
+      );
+      
       const result = await registrationService.getRegistration('test-id');
       expect(result).toEqual(mockRegistration);
-      expect(supabase.from).toHaveBeenCalledWith('registrations');
+      expect(require('@/lib/appwrite').databases.listDocuments).toHaveBeenCalled();
     });
 
     it('should throw error if registration not found', async () => {
       const mockError = new Error('Registration not found');
-      (supabase.from as any)().single.mockImplementation(() => 
-        Promise.resolve({ data: null, error: mockError })
+      (require('@/lib/appwrite').databases.listDocuments as any).mockImplementation(() => 
+        Promise.reject(mockError)
       );
 
       await expect(registrationService.getRegistration('invalid-id')).rejects.toThrow('Registration not found');
@@ -116,93 +124,57 @@ describe('registrationService', () => {
   });
 
   describe('listRegistrations', () => {
-    it('should list registrations with filters', async () => {
-      const filters = {
-        tournament_id: 'tournament-id',
-        division_id: 'division-id',
-        status: 'PENDING',
-      };
-
-      const result = await registrationService.listRegistrations(filters);
+    it('should list all registrations for a tournament', async () => {
+      const result = await registrationService.listRegistrations('tournament-id');
       expect(result).toEqual([mockRegistration]);
-      expect(supabase.from).toHaveBeenCalledWith('registrations');
+      expect(require('@/lib/appwrite').databases.listDocuments).toHaveBeenCalled();
     });
 
-    it('should throw error if listing fails', async () => {
+    it('should throw error if listing registrations fails', async () => {
       const mockError = new Error('Failed to list registrations');
-      (supabase.from as any)().order.mockImplementation(() => 
-        Promise.resolve({ data: null, error: mockError })
+      (require('@/lib/appwrite').databases.listDocuments as any).mockImplementation(() => 
+        Promise.reject(mockError)
       );
 
-      await expect(registrationService.listRegistrations({})).rejects.toThrow('Failed to list registrations');
+      await expect(registrationService.listRegistrations('tournament-id')).rejects.toThrow('Failed to list registrations');
     });
   });
 
   describe('updateRegistration', () => {
     it('should update a registration', async () => {
-      const updateData = {
-        status: 'APPROVED',
-        notes: 'Approved by admin',
-      };
-
-      const updatedRegistration = {
-        ...mockRegistration,
-        ...updateData,
-        updated_at: new Date().toISOString(),
-      };
-
-      (supabase.from as any)().single.mockImplementation(() => 
-        Promise.resolve({ data: updatedRegistration, error: null })
-      );
-
-      const result = await registrationService.updateRegistration('test-id', updateData);
-      expect(result).toEqual(updatedRegistration);
-      expect(supabase.from).toHaveBeenCalledWith('registrations');
+      const updateData = { status: 'CONFIRMED' };
+      const result = await registrationService.updateRegistration('reg-id', updateData);
+      expect(result).toEqual(mockRegistration);
+      expect(require('@/lib/appwrite').databases.updateDocument).toHaveBeenCalled();
     });
 
-    it('should throw error if update fails', async () => {
-      const mockError = new Error('Update failed');
-      (supabase.from as any)().single.mockImplementation(() => 
-        Promise.resolve({ data: null, error: mockError })
+    it('should throw error if updating registration fails', async () => {
+      const updateData = { status: 'CONFIRMED' };
+      const mockError = new Error('Failed to update registration');
+      (require('@/lib/appwrite').databases.updateDocument as any).mockImplementation(() => 
+        Promise.reject(mockError)
       );
 
-      await expect(registrationService.updateRegistration('test-id', { status: 'APPROVED' }))
-        .rejects.toThrow('Update failed');
+      await expect(registrationService.updateRegistration('reg-id', updateData)).rejects.toThrow('Failed to update registration');
     });
   });
 
   describe('addComment', () => {
     it('should add a comment to a registration', async () => {
-      const comment = {
-        text: 'Test comment',
-        createdBy: 'user-id',
-      };
-
-      const updatedRegistration = {
-        ...mockRegistration,
-        metadata: {
-          ...mockRegistration.metadata,
-          comments: [{ ...comment, timestamp: expect.any(String) }],
-        },
-      };
-
-      (supabase.from as any)().single.mockImplementation(() => 
-        Promise.resolve({ data: updatedRegistration, error: null })
-      );
-
-      const result = await registrationService.addComment('test-id', comment);
-      expect(result).toEqual(updatedRegistration);
-      expect(supabase.from).toHaveBeenCalledWith('registrations');
+      const comment = 'This is a test comment';
+      const result = await registrationService.addComment('reg-id', comment);
+      expect(result).toEqual(mockRegistration);
+      expect(require('@/lib/appwrite').databases.updateDocument).toHaveBeenCalled();
     });
 
     it('should throw error if adding comment fails', async () => {
+      const comment = 'This is a test comment';
       const mockError = new Error('Failed to add comment');
-      (supabase.from as any)().single.mockImplementation(() => 
-        Promise.resolve({ data: null, error: mockError })
+      (require('@/lib/appwrite').databases.updateDocument as any).mockImplementation(() => 
+        Promise.reject(mockError)
       );
 
-      await expect(registrationService.addComment('test-id', { text: 'Test', createdBy: 'user-id' }))
-        .rejects.toThrow('Failed to add comment');
+      await expect(registrationService.addComment('reg-id', comment)).rejects.toThrow('Failed to add comment');
     });
   });
 
@@ -213,19 +185,19 @@ describe('registrationService', () => {
         priority: 1,
       };
 
-      (supabase.from as any)().update().eq().select().single.mockImplementation(() =>
-        Promise.resolve({ data: updatedRegistration, error: null })
+      (require('@/lib/appwrite').databases.updateDocument as any).mockImplementation(() => 
+        Promise.resolve(updatedRegistration)
       );
 
       const result = await registrationService.updatePriority('test-id', 1);
       expect(result).toEqual(updatedRegistration);
-      expect(supabase.from).toHaveBeenCalledWith('registrations');
+      expect(require('@/lib/appwrite').databases.updateDocument).toHaveBeenCalled();
     });
 
     it('should throw error if priority update fails', async () => {
       const mockError = new Error('Failed to update priority');
-      (supabase.from as any)().update().eq().select().single.mockImplementation(() =>
-        Promise.resolve({ data: null, error: mockError })
+      (require('@/lib/appwrite').databases.updateDocument as any).mockImplementation(() => 
+        Promise.reject(mockError)
       );
 
       await expect(registrationService.updatePriority('test-id', 1))
@@ -235,28 +207,20 @@ describe('registrationService', () => {
 
   describe('updateNotes', () => {
     it('should update registration notes', async () => {
-      const updatedRegistration = {
-        ...mockRegistration,
-        notes: 'Updated notes',
-      };
-
-      (supabase.from as any)().update().eq().select().single.mockImplementation(() =>
-        Promise.resolve({ data: updatedRegistration, error: null })
-      );
-
-      const result = await registrationService.updateNotes('test-id', 'Updated notes');
-      expect(result).toEqual(updatedRegistration);
-      expect(supabase.from).toHaveBeenCalledWith('registrations');
+      const newNotes = 'Updated notes';
+      const result = await registrationService.updateNotes('reg-id', newNotes);
+      expect(result).toEqual(mockRegistration);
+      expect(require('@/lib/appwrite').databases.updateDocument).toHaveBeenCalled();
     });
 
-    it('should throw error if notes update fails', async () => {
+    it('should throw error if updating notes fails', async () => {
+      const newNotes = 'Updated notes';
       const mockError = new Error('Failed to update notes');
-      (supabase.from as any)().update().eq().select().single.mockImplementation(() =>
-        Promise.resolve({ data: null, error: mockError })
+      (require('@/lib/appwrite').databases.updateDocument as any).mockImplementation(() => 
+        Promise.reject(mockError)
       );
 
-      await expect(registrationService.updateNotes('test-id', 'Updated notes'))
-        .rejects.toThrow('Failed to update notes');
+      await expect(registrationService.updateNotes('reg-id', newNotes)).rejects.toThrow('Failed to update notes');
     });
   });
 }); 
