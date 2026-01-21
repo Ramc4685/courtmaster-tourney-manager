@@ -10,44 +10,70 @@ const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY;
 const DATABASE_ID = process.env.APPWRITE_DATABASE_ID || 'courtmaster-db';
 const DATABASE_NAME = 'CourtMaster DB';
 
-// Collection IDs - Using the same IDs as in .env.local for consistency
-// Read from environment variables if available, otherwise use default string IDs
-const PROFILES_ID = process.env.VITE_APPWRITE_PROFILES_COLLECTION_ID || 'profiles';
-const TOURNAMENTS_ID = process.env.VITE_APPWRITE_TOURNAMENTS_COLLECTION_ID || '68922b290000e9ac3ec4'; // Using the ID from .env.local
-const DIVISIONS_ID = process.env.VITE_APPWRITE_DIVISIONS_COLLECTION_ID || 'divisions';
-const TEAMS_ID = process.env.VITE_APPWRITE_TEAMS_COLLECTION_ID || 'teams';
-const TEAM_MEMBERS_ID = process.env.VITE_APPWRITE_TEAM_MEMBERS_COLLECTION_ID || 'team_members';
-const REGISTRATIONS_ID = process.env.VITE_APPWRITE_REGISTRATIONS_COLLECTION_ID || 'registrations';
-const MATCHES_ID = process.env.VITE_APPWRITE_MATCHES_COLLECTION_ID || 'matches';
-const COURTS_ID = process.env.VITE_APPWRITE_COURTS_COLLECTION_ID || 'courts';
-const NOTIFICATIONS_ID = process.env.VITE_APPWRITE_NOTIFICATIONS_COLLECTION_ID || 'notifications';
-const TOURNAMENT_MESSAGES_ID = process.env.VITE_APPWRITE_TOURNAMENT_MESSAGES_COLLECTION_ID || 'tournament_messages';
-const PLAYER_HISTORY_ID = process.env.VITE_APPWRITE_PLAYER_HISTORY_COLLECTION_ID || 'player_history';
+// Helper function to get collection ID with backward compatibility
+// Checks for new APPWRITE_ prefix first, then falls back to VITE_ prefix for backward compatibility
+// If neither exists, generates a unique ID to prevent collisions
+function getCollectionId(collectionName) {
+    const appwriteKey = `APPWRITE_${collectionName}_COLLECTION_ID`;
+    const viteKey = `VITE_APPWRITE_${collectionName}_COLLECTION_ID`;
+
+    return process.env[appwriteKey] || process.env[viteKey] || ID.unique();
+}
+
+// Collection IDs - Using environment variables with backward compatibility
+// Prefers APPWRITE_ prefix, falls back to VITE_ prefix, then generates unique IDs
+const PROFILES_ID = getCollectionId('PROFILES');
+const TOURNAMENTS_ID = getCollectionId('TOURNAMENTS');
+const DIVISIONS_ID = getCollectionId('DIVISIONS');
+const CATEGORIES_ID = getCollectionId('CATEGORIES');
+const TEAMS_ID = getCollectionId('TEAMS');
+const TEAM_MEMBERS_ID = getCollectionId('TEAM_MEMBERS');
+const REGISTRATIONS_ID = getCollectionId('REGISTRATIONS');
+const MATCHES_ID = getCollectionId('MATCHES');
+const COURTS_ID = getCollectionId('COURTS');
+const NOTIFICATIONS_ID = getCollectionId('NOTIFICATIONS');
+const TOURNAMENT_MESSAGES_ID = getCollectionId('TOURNAMENT_MESSAGES');
+const PLAYER_HISTORY_ID = getCollectionId('PLAYER_HISTORY');
+
+// New collections for enhanced functionality
+const TOURNAMENT_TEMPLATES_ID = getCollectionId('TOURNAMENT_TEMPLATES');
+const ANNOUNCEMENTS_ID = getCollectionId('ANNOUNCEMENTS');
+const WAIVERS_ID = getCollectionId('WAIVERS');
+const AUDIT_LOGS_ID = getCollectionId('AUDIT_LOGS');
+const SYSTEM_SETTINGS_ID = getCollectionId('SYSTEM_SETTINGS');
+
+// Helper function to get collection permissions
+// Reads from environment variable or uses secure defaults
+function getCollectionPermissions() {
+    const envPerms = process.env.APPWRITE_COLLECTION_PERMS;
+    if (envPerms) {
+        return envPerms.split(',').map(p => p.trim());
+    }
+
+    // WARNING: These permissive settings are for development only!
+    // In production, use more restrictive permissions based on your security requirements
+    // Example production permissions: ['read("users")', 'create("users")', 'update("users")', 'delete("users")']
+    return [
+        'read("any")',    // Development only - allows anyone to read documents
+        'create("any")',  // Development only - allows anyone to create documents
+        'update("any")',  // Development only - allows anyone to update documents
+        'delete("any")'   // Development only - allows anyone to delete documents
+    ];
+}
 
 // Helper functions
 async function createCollection(databases, collectionId, collectionName, attributes) {
+    const permissions = getCollectionPermissions();
+
     try {
-        await databases.createCollection(DATABASE_ID, collectionId, collectionName, [
-            'read("any")', // Anyone can read documents
-            'create("any")', // Anyone can create documents
-            'update("any")', // Anyone can update documents
-            'delete("any")' // Anyone can delete documents
-        ]);
-        console.log(`Collection '${collectionName}' created successfully with open permissions.`);
-        for (const attr of attributes) {
-            await createAttribute(databases, collectionId, attr);
-        }
+        await databases.createCollection(DATABASE_ID, collectionId, collectionName, permissions);
+        console.log(`Collection '${collectionName}' created successfully.`);
     } catch (error) {
         if (error.code === 409) {
             console.log(`Collection '${collectionName}' already exists. Updating permissions...`);
             // Update permissions for existing collection
             try {
-                await databases.updateCollection(DATABASE_ID, collectionId, collectionName, [
-                    'read("any")', // Anyone can read documents
-                    'create("any")', // Anyone can create documents
-                    'update("any")', // Anyone can update documents
-                    'delete("any")' // Anyone can delete documents
-                ]);
+                await databases.updateCollection(DATABASE_ID, collectionId, collectionName, permissions);
                 console.log(`Permissions updated for collection '${collectionName}'.`);
             } catch (permError) {
                 console.error(`Error updating permissions for collection '${collectionName}':`, permError);
@@ -55,6 +81,11 @@ async function createCollection(databases, collectionId, collectionName, attribu
         } else {
             console.error(`Error creating collection '${collectionName}':`, error);
         }
+    }
+
+    // Create attributes regardless of whether collection was just created or already existed
+    for (const attr of attributes) {
+        await createAttribute(databases, collectionId, attr);
     }
 }
 
@@ -135,6 +166,12 @@ async function setupCollections(databases) {
         { key: 'venue', type: 'string', size: 255, required: false },
         { key: 'status', type: 'string', size: 50, required: true, default: 'draft' },
         { key: 'organizer_id', type: 'string', size: 255, required: false },
+        { key: 'sport_type', type: 'string', size: 255, required: false },
+        { key: 'format', type: 'string', size: 255, required: false },
+        { key: 'scoring_rules', type: 'string', size: 10000, required: false },
+        { key: 'schedule_settings', type: 'string', size: 10000, required: false },
+        { key: 'registration_settings', type: 'string', size: 10000, required: false },
+        { key: 'template_id', type: 'string', size: 255, required: false },
     ]);
     await createIndex(databases, TOURNAMENTS_ID, 'organizer_id_idx', 'key', ['organizer_id']);
 
@@ -149,6 +186,16 @@ async function setupCollections(databases) {
         { key: 'gender', type: 'string', size: 50, required: false },
     ]);
     await createIndex(databases, DIVISIONS_ID, 'tournament_id_idx', 'key', ['tournament_id']);
+
+    // 3b. Categories Collection
+    await createCollection(databases, CATEGORIES_ID, 'Categories', [
+        { key: 'division_id', type: 'string', size: 255, required: true },
+        { key: 'name', type: 'string', size: 255, required: true },
+        { key: 'type', type: 'string', size: 50, required: true },
+        { key: 'format', type: 'string', size: 50, required: false },
+        { key: 'capacity', type: 'integer', required: false },
+    ]);
+    await createIndex(databases, CATEGORIES_ID, 'division_id_idx', 'key', ['division_id']);
 
     // 4. Teams Collection
     await createCollection(databases, TEAMS_ID, 'Teams', [
@@ -221,8 +268,13 @@ async function setupCollections(databases) {
         { key: 'message', type: 'string', size: 10000, required: true },
         { key: 'type', type: 'string', size: 50, required: true },
         { key: 'read', type: 'boolean', required: false, default: false },
+        { key: 'related_entity_id', type: 'string', size: 255, required: false },
+        { key: 'related_entity_type', type: 'string', size: 50, required: false },
+        { key: 'channels', type: 'string', size: 1000, required: false },
+        { key: 'metadata', type: 'string', size: 10000, required: false },
     ]);
     await createIndex(databases, NOTIFICATIONS_ID, 'user_id_idx', 'key', ['user_id']);
+    await createIndex(databases, NOTIFICATIONS_ID, 'related_entity_idx', 'key', ['related_entity_id', 'related_entity_type']);
 
     // 10. Tournament Messages Collection
     await createCollection(databases, TOURNAMENT_MESSAGES_ID, 'Tournament Messages', [
@@ -245,6 +297,76 @@ async function setupCollections(databases) {
     ]);
     await createIndex(databases, PLAYER_HISTORY_ID, 'player_id_idx', 'key', ['player_id']);
 
+    // 12. Tournament Templates Collection
+    await createCollection(databases, TOURNAMENT_TEMPLATES_ID, 'Tournament Templates', [
+        { key: 'name', type: 'string', size: 255, required: true },
+        { key: 'description', type: 'string', size: 10000, required: false },
+        { key: 'sport_type', type: 'string', size: 50, required: true },
+        { key: 'created_by', type: 'string', size: 255, required: true },
+        { key: 'settings', type: 'string', size: 10000, required: true, default: '{}' },
+        { key: 'format', type: 'string', size: 255, required: false },
+        { key: 'categories', type: 'string', size: 1000, required: false, default: '[]' },
+        { key: 'is_public', type: 'boolean', required: false, default: false },
+        { key: 'usage_count', type: 'integer', required: false, default: 0 },
+        { key: 'tags', type: 'string', size: 1000, required: false, default: '[]' },
+    ]);
+    await createIndex(databases, TOURNAMENT_TEMPLATES_ID, 'sport_type_idx', 'key', ['sport_type']);
+    await createIndex(databases, TOURNAMENT_TEMPLATES_ID, 'created_by_idx', 'key', ['created_by']);
+    await createIndex(databases, TOURNAMENT_TEMPLATES_ID, 'is_public_idx', 'key', ['is_public']);
+    await createIndex(databases, TOURNAMENT_TEMPLATES_ID, 'name_idx', 'key', ['name']);
+
+    // 13. Announcements Collection
+    await createCollection(databases, ANNOUNCEMENTS_ID, 'Announcements', [
+        { key: 'tournament_id', type: 'string', size: 255, required: true },
+        { key: 'title', type: 'string', size: 255, required: true },
+        { key: 'message', type: 'string', size: 10000, required: true },
+        { key: 'created_by', type: 'string', size: 255, required: true },
+        { key: 'priority', type: 'string', size: 50, required: false, default: 'normal' },
+        { key: 'target_audience', type: 'string', size: 50, required: false, default: 'all' },
+        { key: 'target_division_id', type: 'string', size: 255, required: false },
+        { key: 'display_start', type: 'datetime', required: false },
+        { key: 'display_end', type: 'datetime', required: false },
+        { key: 'is_active', type: 'boolean', required: false, default: true },
+    ]);
+    await createIndex(databases, ANNOUNCEMENTS_ID, 'tournament_id_idx', 'key', ['tournament_id']);
+    await createIndex(databases, ANNOUNCEMENTS_ID, 'priority_idx', 'key', ['priority']);
+    await createIndex(databases, ANNOUNCEMENTS_ID, 'created_by_idx', 'key', ['created_by']);
+
+    // 14. Waivers Collection
+    await createCollection(databases, WAIVERS_ID, 'Waivers', [
+        { key: 'tournament_id', type: 'string', size: 255, required: true },
+        { key: 'title', type: 'string', size: 255, required: true },
+        { key: 'content', type: 'string', size: 10000, required: true },
+        { key: 'is_required', type: 'boolean', required: false, default: true },
+        { key: 'version', type: 'string', size: 50, required: false, default: '1.0' },
+    ]);
+    await createIndex(databases, WAIVERS_ID, 'tournament_id_idx', 'key', ['tournament_id']);
+
+    // 15. Audit Logs Collection
+    await createCollection(databases, AUDIT_LOGS_ID, 'Audit Logs', [
+        { key: 'user_id', type: 'string', size: 255, required: true },
+        { key: 'action', type: 'string', size: 255, required: true },
+        { key: 'entity_type', type: 'string', size: 255, required: true },
+        { key: 'entity_id', type: 'string', size: 255, required: false },
+        { key: 'details', type: 'string', size: 10000, required: false, default: '{}' },
+        { key: 'ip_address', type: 'string', size: 50, required: false },
+    ]);
+    await createIndex(databases, AUDIT_LOGS_ID, 'user_id_idx', 'key', ['user_id']);
+    await createIndex(databases, AUDIT_LOGS_ID, 'action_idx', 'key', ['action']);
+    await createIndex(databases, AUDIT_LOGS_ID, 'entity_idx', 'key', ['entity_type', 'entity_id']);
+
+    // 16. System Settings Collection
+    await createCollection(databases, SYSTEM_SETTINGS_ID, 'System Settings', [
+        { key: 'key', type: 'string', size: 255, required: true },
+        { key: 'value', type: 'string', size: 10000, required: true },
+        { key: 'category', type: 'string', size: 255, required: false, default: 'general' },
+        { key: 'description', type: 'string', size: 1000, required: false },
+        { key: 'is_public', type: 'boolean', required: false, default: false },
+        { key: 'last_updated_by', type: 'string', size: 255, required: false },
+    ]);
+    await createIndex(databases, SYSTEM_SETTINGS_ID, 'key_idx', 'key', ['key']);
+    await createIndex(databases, SYSTEM_SETTINGS_ID, 'category_idx', 'key', ['category']);
+
     console.log('All collections and attributes created successfully!');
 }
 
@@ -254,6 +376,15 @@ async function main() {
     if (!APPWRITE_API_KEY) {
         console.error("APPWRITE_API_KEY is missing. Please set it in your .env.local file.");
         return;
+    }
+
+    // Safety check: Require confirmation for potentially destructive operations
+    if (process.env.APPWRITE_MIGRATE_CONFIRM !== 'true') {
+        console.error('⚠️  Migration stopped for safety.');
+        console.error('This script will create or modify database collections and may affect data integrity.');
+        console.error('To confirm execution, set the environment variable: APPWRITE_MIGRATE_CONFIRM=true');
+        console.error('Example: APPWRITE_MIGRATE_CONFIRM=true npm run db:migrate');
+        process.exit(1);
     }
 
     const client = new Client()

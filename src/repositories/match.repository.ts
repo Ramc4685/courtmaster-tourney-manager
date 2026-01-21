@@ -1,11 +1,11 @@
 import { MatchDTO } from '@/types/dtos';
 import { Match } from '@/types/models';
 import { BaseRepository } from './base.repository';
-import { COLLECTIONS } from '@/lib/appwrite';
+import { COLLECTIONS, APPWRITE_DATABASE_ID } from '@/lib/appwrite';
 
 export class MatchRepository extends BaseRepository<MatchDTO, Match> {
   constructor() {
-    super(import.meta.env.VITE_APPWRITE_DATABASE_ID, COLLECTIONS.MATCHES);
+    super(APPWRITE_DATABASE_ID, COLLECTIONS.MATCHES);
   }
 
   protected toDomain(dto: MatchDTO): Match {

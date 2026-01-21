@@ -1,21 +1,24 @@
-import { databases } from "@/lib/appwrite";
+import { databases, APPWRITE_DATABASE_ID } from "@/lib/appwrite";
 import { Match } from "@/types/entities";
 import { Query } from "appwrite";
 import { COLLECTIONS } from "@/lib/appwrite";
+import { IMatchService, UpcomingMatchInfo } from "./IMatchService";
+import {
+  checkCollectionExists,
+  createPartialDataHandler,
+  createServiceLogger,
+  formatServiceError,
+  logServiceError,
+  safeServiceCall,
+} from "@/utils/serviceHelpers";
 
-// Define a type for the upcoming match data needed by the dashboard
-export interface UpcomingMatchInfo {
-  id: string;
-  tournamentId: string;
-  tournamentName: string;
-  roundNumber: number;
-  matchNumber: number;
-  scheduledTime: string | null;
-  opponentName: string | null;
-  courtName: string | null;
-}
+// Re-export the UpcomingMatchInfo type for external use
+export type { UpcomingMatchInfo };
 
-export class MatchService {
+export class MatchService implements IMatchService {
+  private readonly logger = createServiceLogger("MatchService");
+  private readonly databaseId = APPWRITE_DATABASE_ID;
+
 
   /**
    * Fetches a single match by ID
@@ -24,7 +27,7 @@ export class MatchService {
     console.log(`[MatchService] Fetching match data for ${matchId}`);
     try {
       const match = await databases.getDocument(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        this.databaseId,
         COLLECTIONS.MATCHES,
         matchId
       );
@@ -46,7 +49,7 @@ export class MatchService {
       const { id, ...updateData } = matchData as any;
       
       const updatedMatch = await databases.updateDocument(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        this.databaseId,
         COLLECTIONS.MATCHES,
         matchId,
         updateData
@@ -66,9 +69,7 @@ export class MatchService {
     return {
       id: doc.$id,
       tournamentId: doc.tournament_id,
-      tournament_id: doc.tournament_id,
       divisionId: doc.division_id,
-      division_id: doc.division_id,
       team1Id: doc.team1_id,
       team2Id: doc.team2_id,
       team1_player1: doc.team1_player1,
@@ -77,13 +78,9 @@ export class MatchService {
       team2_player2: doc.team2_player2,
       status: doc.status,
       scheduledTime: doc.scheduled_time,
-      scheduled_time: doc.scheduled_time,
       startTime: doc.start_time,
-      start_time: doc.start_time,
       endTime: doc.end_time,
-      end_time: doc.end_time,
       courtId: doc.court_id,
-      court_id: doc.court_id,
       courtNumber: doc.court_number,
       bracketRound: doc.round_number,
       bracketPosition: doc.bracket_position,
@@ -94,14 +91,11 @@ export class MatchService {
       loser: doc.loser_id,
       winner_id: doc.winner_id,
       loser_id: doc.loser_id,
-      winner_team: doc.winner_team,
       scorerName: doc.scorer_name,
       verified: doc.verified,
       groupName: doc.group_name,
       createdAt: doc.created_at,
       updatedAt: doc.updated_at,
-      created_at: doc.created_at,
-      updated_at: doc.updated_at,
       team1_name: doc.team1_name,
       team2_name: doc.team2_name,
     };
@@ -112,89 +106,135 @@ export class MatchService {
    * Includes matches where the user is player1, player2, or a member of team1 or team2.
    */
   async getUpcomingMatchesForUser(userId: string): Promise<UpcomingMatchInfo[]> {
-    console.log(`[MatchService] Fetching upcoming matches for user: ${userId}`);
+    this.logger.info('Fetching upcoming matches for user', { userId });
 
-    // 1. Get teams the user is a member of
+    try {
+      await Promise.all([
+        checkCollectionExists(COLLECTIONS.MATCHES, {
+          context: 'MatchService.getUpcomingMatchesForUser.MATCHES',
+        }),
+        checkCollectionExists(COLLECTIONS.TEAM_MEMBERS, {
+          context: 'MatchService.getUpcomingMatchesForUser.TEAM_MEMBERS',
+        }),
+        checkCollectionExists(COLLECTIONS.PROFILES, {
+          context: 'MatchService.getUpcomingMatchesForUser.PROFILES',
+        }),
+        checkCollectionExists(COLLECTIONS.TEAMS, {
+          context: 'MatchService.getUpcomingMatchesForUser.TEAMS',
+        }),
+        checkCollectionExists(COLLECTIONS.TOURNAMENTS, {
+          context: 'MatchService.getUpcomingMatchesForUser.TOURNAMENTS',
+        }),
+        checkCollectionExists(COLLECTIONS.COURTS, {
+          context: 'MatchService.getUpcomingMatchesForUser.COURTS',
+        }),
+      ]);
+    } catch (error) {
+      const message = formatServiceError(
+        `validate collections for upcoming matches (user ${userId})`,
+        error
+      );
+      logServiceError('MatchService', message, error, { userId });
+      const finalError = new Error(message);
+      (finalError as Error & { cause?: unknown }).cause = error;
+      throw finalError;
+    }
+
     let userTeamIds: string[] = [];
     try {
-      const teamMembersResponse = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        COLLECTIONS.TEAM_MEMBERS,
-        [Query.equal("user_id", userId)]
+      const teamMembersResponse = await safeServiceCall(
+        () =>
+          databases.listDocuments(
+            this.databaseId,
+            COLLECTIONS.TEAM_MEMBERS,
+            [Query.equal('user_id', userId)]
+          ),
+        {
+          retries: 1,
+          retryDelayMs: 300,
+          context: 'MatchService.getUpcomingMatchesForUser.teamMemberships',
+        }
       );
-      
-      userTeamIds = teamMembersResponse.documents.map((tm: any) => tm.team_id);
+      userTeamIds = teamMembersResponse.documents
+        .map((member: any) => member.team_id)
+        .filter((teamId: string | null) => Boolean(teamId));
     } catch (error) {
-      console.error("[MatchService] Error fetching user teams:", error);
+      this.logger.warn('Unable to fetch team memberships; continuing with singles-only context', {
+        userId,
+        message: error instanceof Error ? error.message : String(error),
+      });
     }
 
-    // 2. Build queries for matches
     const matchQueries = [
-      Query.equal("status", "scheduled"),
-      Query.greaterThan("scheduled_time", new Date().toISOString()),
-      Query.limit(100) // Appwrite has a limit of 100 documents per request
+      Query.equal('status', 'scheduled'),
+      Query.greaterThan('scheduled_time', new Date().toISOString()),
+      Query.limit(100),
     ];
 
-    // Add user-specific filters
-    const userFilters = [
-      Query.equal("player1_id", userId),
-      Query.equal("player2_id", userId)
-    ];
-    
+    const userFilters = [Query.equal('player1_id', userId), Query.equal('player2_id', userId)];
     if (userTeamIds.length > 0) {
-      userFilters.push(Query.equal("team1_id", userTeamIds));
-      userFilters.push(Query.equal("team2_id", userTeamIds));
+      userFilters.push(Query.equal('team1_id', userTeamIds));
+      userFilters.push(Query.equal('team2_id', userTeamIds));
     }
-    
+
     matchQueries.push(Query.or(userFilters));
 
-    // 3. Fetch matches
-    const matchesResponse = await databases.listDocuments(
-      import.meta.env.VITE_APPWRITE_DATABASE_ID,
-      COLLECTIONS.MATCHES,
-      matchQueries
+    const matchesResponse = await safeServiceCall(
+      () =>
+        databases.listDocuments(
+          this.databaseId,
+          COLLECTIONS.MATCHES,
+          matchQueries
+        ),
+      {
+        retries: 1,
+        retryDelayMs: 300,
+        timeoutMs: 15000,
+        context: 'MatchService.getUpcomingMatchesForUser.matches',
+      }
     );
 
-    // 4. Map data to UpcomingMatchInfo type
-    // Note: Appwrite doesn't support joins, so we'll need to fetch related data separately
+    const opponentFallbackHandler = createPartialDataHandler<string>({
+      serviceName: 'MatchService',
+      operation: `resolve opponent name for user ${userId}`,
+      fallbackValue: 'TBD',
+    });
+
     const upcomingMatches: UpcomingMatchInfo[] = [];
-    
+
     for (const match of matchesResponse.documents) {
-      let opponentName: string | null = null;
-      let tournamentName: string | null = null;
-      let courtName: string | null = null;
-      
-      // Determine opponent
-      if (match.player1_id && match.player2_id) { // Singles match
-        opponentName = match.player1_id === userId 
-          ? await this.getPlayerName(match.player2_id)
-          : await this.getPlayerName(match.player1_id);
-      } else if (match.team1_id && match.team2_id) { // Doubles/Team match
-        const isUserInTeam1 = userTeamIds.includes(match.team1_id);
-        opponentName = isUserInTeam1 
-          ? await this.getTeamName(match.team2_id)
-          : await this.getTeamName(match.team1_id);
+      let opponentName = 'TBD';
+
+      try {
+        if (match.player1_id && match.player2_id) {
+          opponentName = match.player1_id === userId
+            ? await this.getPlayerName(match.player2_id)
+            : await this.getPlayerName(match.player1_id);
+        } else if (match.team1_id && match.team2_id) {
+          const isUserInTeam1 = userTeamIds.includes(match.team1_id);
+          opponentName = isUserInTeam1
+            ? await this.getTeamName(match.team2_id)
+            : await this.getTeamName(match.team1_id);
+        }
+      } catch (error) {
+        opponentName = opponentFallbackHandler(error);
       }
 
-      // Get tournament name
-      tournamentName = await this.getTournamentName(match.tournament_id);
-
-      // Get court name
-      courtName = await this.getCourtName(match.court_id);
+      const tournamentName = await this.getTournamentName(match.tournament_id);
+      const courtName = await this.getCourtName(match.court_id);
 
       upcomingMatches.push({
         id: match.$id,
         tournamentId: match.tournament_id,
-        tournamentName: tournamentName || "Unknown Tournament",
+        tournamentName,
         roundNumber: match.round_number,
         matchNumber: match.match_number,
         scheduledTime: match.scheduled_time,
-        opponentName: opponentName,
-        courtName: courtName || "TBD",
+        opponentName,
+        courtName,
       });
     }
 
-    // Sort by scheduled time
     return upcomingMatches.sort((a, b) => {
       if (a.scheduledTime && b.scheduledTime) {
         return new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime();
@@ -203,76 +243,140 @@ export class MatchService {
     });
   }
 
-  private async getPlayerName(playerId: string): Promise<string | null> {
+  private async getPlayerName(playerId: string): Promise<string> {
+    if (!playerId) {
+      return 'TBD';
+    }
+
     try {
-      const response = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        COLLECTIONS.PROFILES,
-        [Query.equal("user_id", playerId), Query.limit(1)]
+      const response = await safeServiceCall(
+        () =>
+          databases.listDocuments(
+            this.databaseId,
+            COLLECTIONS.PROFILES,
+            [Query.equal('user_id', playerId), Query.limit(1)]
+          ),
+        {
+          retries: 1,
+          retryDelayMs: 300,
+          context: 'MatchService.getPlayerName',
+        }
       );
-      
+
       if (response.documents.length > 0) {
         const profile = response.documents[0];
-        return profile.display_name || profile.full_name || "Opponent";
+        return profile.display_name || profile.full_name || 'TBD';
       }
-      return null;
+
+      return 'TBD';
     } catch (error) {
-      console.error("[MatchService] Error fetching player name:", error);
-      return null;
+      this.logger.warn('Failed to resolve player name; using placeholder', {
+        playerId,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return 'TBD';
     }
   }
 
-  private async getTeamName(teamId: string): Promise<string | null> {
+  private async getTeamName(teamId: string): Promise<string> {
+    if (!teamId) {
+      return 'TBD';
+    }
+
     try {
-      const response = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        COLLECTIONS.TEAMS,
-        [Query.equal("$id", teamId), Query.limit(1)]
+      const response = await safeServiceCall(
+        () =>
+          databases.listDocuments(
+            this.databaseId,
+            COLLECTIONS.TEAMS,
+            [Query.equal('$id', teamId), Query.limit(1)]
+          ),
+        {
+          retries: 1,
+          retryDelayMs: 300,
+          context: 'MatchService.getTeamName',
+        }
       );
-      
+
       if (response.documents.length > 0) {
-        return response.documents[0].name || "Opponent Team";
+        return response.documents[0].name || 'TBD';
       }
-      return null;
+
+      return 'TBD';
     } catch (error) {
-      console.error("[MatchService] Error fetching team name:", error);
-      return null;
+      this.logger.warn('Failed to resolve team name; using placeholder', {
+        teamId,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return 'TBD';
     }
   }
 
-  private async getTournamentName(tournamentId: string): Promise<string | null> {
+  private async getTournamentName(tournamentId: string): Promise<string> {
+    if (!tournamentId) {
+      return 'Unknown Tournament';
+    }
+
     try {
-      const response = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        COLLECTIONS.TOURNAMENTS,
-        [Query.equal("$id", tournamentId), Query.limit(1)]
+      const response = await safeServiceCall(
+        () =>
+          databases.listDocuments(
+            this.databaseId,
+            COLLECTIONS.TOURNAMENTS,
+            [Query.equal('$id', tournamentId), Query.limit(1)]
+          ),
+        {
+          retries: 1,
+          retryDelayMs: 300,
+          context: 'MatchService.getTournamentName',
+        }
       );
-      
+
       if (response.documents.length > 0) {
-        return response.documents[0].name || "Unknown Tournament";
+        return response.documents[0].name || 'Unknown Tournament';
       }
-      return null;
+
+      return 'Unknown Tournament';
     } catch (error) {
-      console.error("[MatchService] Error fetching tournament name:", error);
-      return null;
+      this.logger.warn('Failed to resolve tournament name; using placeholder', {
+        tournamentId,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return 'Unknown Tournament';
     }
   }
 
-  private async getCourtName(courtId: string): Promise<string | null> {
+  private async getCourtName(courtId: string): Promise<string> {
+    if (!courtId) {
+      return 'TBD';
+    }
+
     try {
-      const response = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        COLLECTIONS.COURTS,
-        [Query.equal("$id", courtId), Query.limit(1)]
+      const response = await safeServiceCall(
+        () =>
+          databases.listDocuments(
+            this.databaseId,
+            COLLECTIONS.COURTS,
+            [Query.equal('$id', courtId), Query.limit(1)]
+          ),
+        {
+          retries: 1,
+          retryDelayMs: 300,
+          context: 'MatchService.getCourtName',
+        }
       );
-      
+
       if (response.documents.length > 0) {
-        return response.documents[0].name || "TBD";
+        return response.documents[0].name || 'TBD';
       }
-      return null;
+
+      return 'TBD';
     } catch (error) {
-      console.error("[MatchService] Error fetching court name:", error);
-      return null;
+      this.logger.warn('Failed to resolve court name; using placeholder', {
+        courtId,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return 'TBD';
     }
   }
 }

@@ -1,11 +1,11 @@
 import { NotificationDTO } from '@/types/dtos';
 import { Notification } from '@/types/models';
 import { BaseRepository } from './base.repository';
-import { COLLECTIONS } from '@/lib/appwrite';
+import { COLLECTIONS, APPWRITE_DATABASE_ID } from '@/lib/appwrite';
 
 export class NotificationRepository extends BaseRepository<NotificationDTO, Notification> {
   constructor() {
-    super(import.meta.env.VITE_APPWRITE_DATABASE_ID, COLLECTIONS.NOTIFICATIONS);
+    super(APPWRITE_DATABASE_ID, COLLECTIONS.NOTIFICATIONS);
   }
 
   protected toDomain(dto: NotificationDTO): Notification {

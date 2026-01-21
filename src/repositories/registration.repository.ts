@@ -1,11 +1,11 @@
 import { RegistrationDTO } from '@/types/dtos';
 import { Registration } from '@/types/models';
 import { BaseRepository } from './base.repository';
-import { COLLECTIONS } from '@/lib/appwrite';
+import { COLLECTIONS, APPWRITE_DATABASE_ID } from '@/lib/appwrite';
 
 export class RegistrationRepository extends BaseRepository<RegistrationDTO, Registration> {
   constructor() {
-    super(import.meta.env.VITE_APPWRITE_DATABASE_ID, COLLECTIONS.REGISTRATIONS);
+    super(APPWRITE_DATABASE_ID, COLLECTIONS.REGISTRATIONS);
   }
 
   protected toDomain(dto: RegistrationDTO): Registration {

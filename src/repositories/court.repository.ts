@@ -1,11 +1,11 @@
 import { CourtDTO } from '@/types/dtos';
 import { Court } from '@/types/models';
 import { BaseRepository } from './base.repository';
-import { COLLECTIONS } from '@/lib/appwrite';
+import { COLLECTIONS, APPWRITE_DATABASE_ID } from '@/lib/appwrite';
 
 export class CourtRepository extends BaseRepository<CourtDTO, Court> {
   constructor() {
-    super(import.meta.env.VITE_APPWRITE_DATABASE_ID, COLLECTIONS.COURTS);
+    super(APPWRITE_DATABASE_ID, COLLECTIONS.COURTS);
   }
 
   protected toDomain(dto: CourtDTO): Court {

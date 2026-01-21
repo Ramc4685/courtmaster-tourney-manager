@@ -54,6 +54,15 @@ async function main() {
         return;
     }
 
+    // Safety check: Require confirmation for potentially destructive operations
+    if (process.env.APPWRITE_MIGRATE_CONFIRM !== 'true') {
+        console.error('⚠️  Permission update stopped for safety.');
+        console.error('This script will modify database collection permissions and may affect data security.');
+        console.error('To confirm execution, set the environment variable: APPWRITE_MIGRATE_CONFIRM=true');
+        console.error('Example: APPWRITE_MIGRATE_CONFIRM=true npm run db:update-permissions');
+        process.exit(1);
+    }
+
     const client = new Client()
         .setEndpoint(APPWRITE_ENDPOINT)
         .setProject(APPWRITE_PROJECT_ID)

@@ -1,7 +1,8 @@
-import { account, databases, client } from '@/lib/appwrite';
+import { account, databases, client, APPWRITE_DATABASE_ID } from '@/lib/appwrite';
 import { ID, Query } from 'appwrite';
 import type { Profile } from '@/types/entities';
 import { UserRole } from '@/types/tournament-enums';
+import { mockAuthService } from './MockAuthService';
 
 export interface UserCredentials {
   email: string;
@@ -16,10 +17,56 @@ export interface TournamentUserRole {
 
 export class AppwriteAuthService {
   private tournamentRoles: TournamentUserRole[] = [];
-  private databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'default';
+  private databaseId = APPWRITE_DATABASE_ID;
   private profilesCollectionId = import.meta.env.VITE_APPWRITE_PROFILES_COLLECTION_ID || 'profiles';
+  private useMockService = false;
+
+  constructor() {
+    // Check if we should use mock service
+    const isDev = import.meta.env.DEV;
+    const isTest = import.meta.env.NODE_ENV === 'test' || import.meta.env.VITE_APP_ENV === 'test';
+    const forceMock = import.meta.env.VITE_USE_MOCK_AUTH === 'true';
+    const hasValidConfig = import.meta.env.VITE_APPWRITE_ENDPOINT && 
+                          import.meta.env.VITE_APPWRITE_PROJECT_ID && 
+                          import.meta.env.VITE_APPWRITE_DATABASE_ID;
+    
+    // Use mock service if:
+    // 1. Explicitly forced via environment variable
+    // 2. In test environment
+    // 3. In development without valid config
+    this.useMockService = forceMock || isTest || (isDev && !hasValidConfig);
+    
+    if (this.useMockService) {
+      console.log('🔧 Using Mock Auth Service for development/testing');
+      console.log('Reason:', { forceMock, isTest, isDev, hasValidConfig });
+    }
+  }
+
+  private convertAppwriteDocumentToProfile(doc: any): Profile {
+    return {
+      id: doc.$id,
+      full_name: doc.full_name || doc.name || '',
+      display_name: doc.display_name || doc.full_name || doc.name || '',
+      avatar_url: doc.avatar_url || '',
+      phone: doc.phone || '',
+      role: doc.role || UserRole.PLAYER,
+      created_at: doc.$createdAt || doc.created_at,
+      updated_at: doc.$updatedAt || doc.updated_at,
+      // Add camelCase versions for compatibility
+      fullName: doc.full_name || doc.name || '',
+      displayName: doc.display_name || doc.full_name || doc.name || '',
+      avatarUrl: doc.avatar_url || '',
+      createdAt: doc.$createdAt || doc.created_at,
+      updatedAt: doc.$updatedAt || doc.updated_at,
+      email: doc.email || '',
+    };
+  }
   
   async getCurrentUser(): Promise<Profile | null> {
+    if (this.useMockService) {
+      return mockAuthService.getCurrentUser();
+    }
+    
     try {
       console.log('[AppwriteAuthService] Attempting to get current user');
       
@@ -51,7 +98,7 @@ export class AppwriteAuthService {
             appwriteUser.$id
           );
           console.log('[AppwriteAuthService] Profile found directly:', directProfile.$id);
-          return directProfile as unknown as Profile;
+          return this.convertAppwriteDocumentToProfile(directProfile);
         } catch (directError) {
           console.log('[AppwriteAuthService] Direct profile lookup failed, trying by query');
           
@@ -67,7 +114,7 @@ export class AppwriteAuthService {
             return null; // No profile creation - this should only happen in registration
           } else {
             console.log('[AppwriteAuthService] Profile found via query:', profile.documents[0].$id);
-            return profile.documents[0] as unknown as Profile;
+            return this.convertAppwriteDocumentToProfile(profile.documents[0]);
           }
         }
       } catch (error) {
@@ -81,6 +128,10 @@ export class AppwriteAuthService {
   }
 
   async login(email: string, password: string): Promise<Profile | null> {
+    if (this.useMockService) {
+      return mockAuthService.login(email, password);
+    }
+    
     try {
       await account.createEmailPasswordSession(email, password);
       // Add a small delay after login to prevent rate limiting
@@ -92,7 +143,7 @@ export class AppwriteAuthService {
       // Enhance error handling for rate limiting
       if (error instanceof Error && error.message.includes('Rate limit')) {
         const enhancedError = new Error('Rate limit exceeded. Please wait a few minutes before trying again.');
-        // @ts-ignore - Adding custom property
+        // @ts-expect-error - Adding custom property
         enhancedError.type = 'RATE_LIMIT';
         throw enhancedError;
       }
@@ -102,6 +153,10 @@ export class AppwriteAuthService {
   }
 
   async register(userData: UserCredentials & { name: string }): Promise<Profile | null> {
+    if (this.useMockService) {
+      return mockAuthService.register(userData);
+    }
+    
     try {
       const { email, password, name: rawName } = userData;
       let userId: string;
@@ -179,7 +234,7 @@ export class AppwriteAuthService {
         // Check if the error is due to rate limiting
         if (error instanceof Error && error.message.includes('Rate limit')) {
           const enhancedError = new Error('Rate limit exceeded. Please wait a few minutes before trying again.');
-          // @ts-ignore - Adding custom property
+          // @ts-expect-error - Adding custom property
           enhancedError.type = 'RATE_LIMIT';
           throw enhancedError;
         }
@@ -201,6 +256,10 @@ export class AppwriteAuthService {
   }
 
   async logout(): Promise<void> {
+    if (this.useMockService) {
+      return mockAuthService.logout();
+    }
+    
     try {
       await account.deleteSession('current');
     } catch (error) {
@@ -210,6 +269,10 @@ export class AppwriteAuthService {
   }
 
   async resetPassword(email: string): Promise<void> {
+    if (this.useMockService) {
+      return mockAuthService.resetPassword(email);
+    }
+    
     try {
       await account.createRecovery(
         email,
@@ -222,6 +285,10 @@ export class AppwriteAuthService {
   }
 
   async updateUserProfile(user: Partial<Profile>): Promise<Profile | null> {
+    if (this.useMockService) {
+      return mockAuthService.updateUserProfile(user);
+    }
+    
     try {
       const currentUser = await this.getCurrentUser();
       

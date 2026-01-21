@@ -1,4 +1,4 @@
-import { databases, realtime, getUser } from '@/lib/appwrite';
+import { databases, realtime, getUser, APPWRITE_DATABASE_ID } from '@/lib/appwrite';
 import { ID, Query } from 'appwrite';
 import { Tournament } from '@/types/tournament';
 import { COLLECTIONS } from '@/lib/appwrite';
@@ -43,7 +43,7 @@ export class LocalStorageService implements StorageService {
 // Appwrite storage service implementation
 export class AppwriteStorageService implements StorageService {
   // Keep databaseId private but provide a getter
-  private databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'default';
+  private databaseId = APPWRITE_DATABASE_ID;
   
   // Getter for databaseId
   getDatabaseId(): string {

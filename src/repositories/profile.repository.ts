@@ -2,11 +2,11 @@ import { BaseRepository } from './base.repository';
 import { ProfileDTO } from '@/types/dtos';
 import { Profile } from '@/types/models';
 import { databases } from '@/lib/appwrite';
-import { COLLECTIONS } from '@/lib/appwrite';
+import { COLLECTIONS, APPWRITE_DATABASE_ID } from '@/lib/appwrite';
 
 export class ProfileRepository extends BaseRepository<ProfileDTO, Profile> {
   constructor() {
-    super(import.meta.env.VITE_APPWRITE_DATABASE_ID, COLLECTIONS.PROFILES);
+    super(APPWRITE_DATABASE_ID, COLLECTIONS.PROFILES);
   }
 
   protected toDomain(dto: ProfileDTO): Profile {

@@ -1,8 +1,8 @@
 // Appwrite configuration
-import { COLLECTIONS } from '@/lib/appwrite';
+import { COLLECTIONS, APPWRITE_DATABASE_ID } from '@/lib/constants';
 
 export const APPWRITE_CONFIG = {
-  databaseId: import.meta.env.VITE_APPWRITE_DATABASE_ID || 'default',
+  databaseId: APPWRITE_DATABASE_ID,
   profilesCollectionId: COLLECTIONS.PROFILES,
   tournamentsCollectionId: COLLECTIONS.TOURNAMENTS,
   divisionsCollectionId: COLLECTIONS.DIVISIONS,

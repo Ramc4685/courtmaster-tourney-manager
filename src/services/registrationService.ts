@@ -1,8 +1,16 @@
-import { databases } from "@/lib/appwrite";
+import { databases, APPWRITE_DATABASE_ID } from "@/lib/appwrite";
 import { PlayerRegistration, TeamRegistration, RegistrationStatus } from "@/types/registration";
 import { Tournament } from "@/types/tournament"; // Import Tournament type
 import { COLLECTIONS } from "@/lib/appwrite";
 import { Query, ID } from "appwrite";
+import {
+  checkCollectionExists,
+  createPartialDataHandler,
+  createServiceLogger,
+  formatServiceError,
+  logServiceError,
+  safeServiceCall,
+} from "@/utils/serviceHelpers";
 
 // Combined type for user registrations (can be player or team)
 export interface UserRegistration {
@@ -18,6 +26,9 @@ export interface UserRegistration {
 }
 
 export class RegistrationService {
+  private readonly logger = createServiceLogger("RegistrationService");
+  private readonly databaseId = APPWRITE_DATABASE_ID;
+
   /**
    * Fetches player registrations for a specific tournament.
    * Includes profile information for the registered user.
@@ -27,7 +38,7 @@ export class RegistrationService {
     
     try {
       const response = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        APPWRITE_DATABASE_ID,
         COLLECTIONS.REGISTRATIONS,
         [Query.equal("tournament_id", tournamentId), Query.orderAsc("$createdAt")]
       );
@@ -60,7 +71,7 @@ export class RegistrationService {
     
     try {
       const response = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        APPWRITE_DATABASE_ID,
         COLLECTIONS.REGISTRATIONS,
         [Query.equal("tournament_id", tournamentId), Query.orderAsc("$createdAt")]
       );
@@ -94,7 +105,7 @@ export class RegistrationService {
     
     try {
       const response = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        APPWRITE_DATABASE_ID,
         COLLECTIONS.REGISTRATIONS,
         [
           Query.equal("tournament_id", tournamentId),
@@ -127,98 +138,183 @@ export class RegistrationService {
    * Joins with the tournaments table to get tournament details.
    */
   async getUserRegistrations(userId: string): Promise<UserRegistration[]> {
-    console.log(`[RegService] Fetching registrations for user: ${userId}`);
-    
+    this.logger.info(`Fetching registrations for user`, { userId });
+
     try {
-      // Fetch player registrations where user is directly registered
-      const playerRegsResponse = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        COLLECTIONS.REGISTRATIONS,
-        [Query.equal("user_id", userId), Query.orderDesc("$createdAt")]
+      await Promise.all([
+        checkCollectionExists(COLLECTIONS.REGISTRATIONS, {
+          context: 'RegistrationService.getUserRegistrations.REGISTRATIONS',
+        }),
+        checkCollectionExists(COLLECTIONS.TEAM_MEMBERS, {
+          context: 'RegistrationService.getUserRegistrations.TEAM_MEMBERS',
+        }),
+        checkCollectionExists(COLLECTIONS.TOURNAMENTS, {
+          context: 'RegistrationService.getUserRegistrations.TOURNAMENTS',
+        }),
+      ]);
+    } catch (error) {
+      const message = formatServiceError(
+        `validate required collections for user ${userId}`,
+        error
       );
-      
-      // Fetch team memberships to find team registrations where user is a member
-      const teamMembersResponse = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        COLLECTIONS.TEAM_MEMBERS,
-        [Query.equal("user_id", userId)]
+      logServiceError('RegistrationService', message, error, { userId });
+      const finalError = new Error(message);
+      (finalError as Error & { cause?: unknown }).cause = error;
+      throw finalError;
+    }
+
+    try {
+      const playerRegsResponse = await safeServiceCall(
+        () =>
+          databases.listDocuments(
+            this.databaseId,
+            COLLECTIONS.REGISTRATIONS,
+            [Query.equal('user_id', userId), Query.orderDesc('$createdAt')]
+          ),
+        {
+          retries: 1,
+          retryDelayMs: 300,
+          context: 'RegistrationService.getUserRegistrations.playerRegistrations',
+        }
       );
-      
-      // Extract team IDs where user is a member
-      const teamIds = teamMembersResponse.documents.map((member: any) => member.team_id);
-      
-      let teamRegsData: any[] = [];
-      
-      // If user is part of any teams, fetch team registrations
-      if (teamIds.length > 0) {
-        const teamRegsResponse = await databases.listDocuments(
-          import.meta.env.VITE_APPWRITE_DATABASE_ID,
-          COLLECTIONS.REGISTRATIONS,
-          [Query.equal("team_id", teamIds), Query.orderDesc("$createdAt")]
+
+      let teamMembersDocuments: any[] = [];
+      try {
+        const teamMembersResponse = await safeServiceCall(
+          () =>
+            databases.listDocuments(
+              this.databaseId,
+              COLLECTIONS.TEAM_MEMBERS,
+              [Query.equal('user_id', userId)]
+            ),
+          {
+            retries: 1,
+            retryDelayMs: 300,
+            context: 'RegistrationService.getUserRegistrations.teamMembers',
+          }
         );
-        
-        teamRegsData = teamRegsResponse.documents;
+        teamMembersDocuments = teamMembersResponse.documents;
+      } catch (error) {
+        this.logger.warn('Unable to resolve team memberships; continuing without team registrations', {
+          userId,
+          message: error instanceof Error ? error.message : String(error),
+        });
       }
-      
-      // Fetch tournament details for all registrations
+
+      const teamIds = teamMembersDocuments
+        .map((member: any) => member.team_id)
+        .filter((teamId: string | null) => Boolean(teamId));
+
+      let teamRegistrationsDocuments: any[] = [];
+
+      if (teamIds.length > 0) {
+        try {
+          const teamRegsResponse = await safeServiceCall(
+            () =>
+              databases.listDocuments(
+                this.databaseId,
+                COLLECTIONS.REGISTRATIONS,
+                [Query.equal('team_id', teamIds), Query.orderDesc('$createdAt')]
+              ),
+            {
+              retries: 1,
+              retryDelayMs: 300,
+              context: 'RegistrationService.getUserRegistrations.teamRegistrations',
+            }
+          );
+          teamRegistrationsDocuments = teamRegsResponse.documents;
+        } catch (error) {
+          this.logger.warn('Unable to resolve team registrations; continuing with player registrations only', {
+            userId,
+            teamCount: teamIds.length,
+            message: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
       const tournamentIds = [
         ...playerRegsResponse.documents.map((reg: any) => reg.tournament_id),
-        ...teamRegsData.map((reg: any) => reg.tournament_id)
-      ].filter((id, index, self) => self.indexOf(id) === index); // Remove duplicates
-      
-      const tournamentsResponse = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        COLLECTIONS.TOURNAMENTS,
-        [Query.equal("$id", tournamentIds)]
-      );
-      
-      const tournamentsMap: Record<string, any> = {};
-      tournamentsResponse.documents.forEach((tournament: any) => {
-        tournamentsMap[tournament.$id] = tournament;
+        ...teamRegistrationsDocuments.map((reg: any) => reg.tournament_id),
+      ].filter((id, index, self) => id && self.indexOf(id) === index);
+
+      const tournamentsFallbackHandler = createPartialDataHandler<Record<string, any>>({
+        serviceName: 'RegistrationService',
+        operation: `fetch tournaments for user ${userId}`,
+        fallbackValue: {},
+        metadata: { userId, tournamentIdsCount: tournamentIds.length },
       });
-      
-      // Map player registrations to UserRegistration type
+
+      let tournamentsMap: Record<string, any> = {};
+      if (tournamentIds.length > 0) {
+        try {
+          const tournamentsResponse = await safeServiceCall(
+            () =>
+              databases.listDocuments(
+                this.databaseId,
+                COLLECTIONS.TOURNAMENTS,
+                [Query.equal('$id', tournamentIds)]
+              ),
+            {
+              retries: 1,
+              retryDelayMs: 300,
+              context: 'RegistrationService.getUserRegistrations.tournaments',
+            }
+          );
+
+          tournamentsMap = tournamentsResponse.documents.reduce((acc: Record<string, any>, tournament: any) => {
+            acc[tournament.$id] = tournament;
+            return acc;
+          }, {});
+        } catch (error) {
+          tournamentsMap = tournamentsFallbackHandler(error);
+        }
+      }
+
       const playerRegistrations = playerRegsResponse.documents.map((reg: any) => {
         const tournament = tournamentsMap[reg.tournament_id] || {};
         return {
           id: reg.$id,
           tournamentId: reg.tournament_id,
-          tournamentName: tournament.name || "Unknown Tournament",
-          tournamentStartDate: tournament.start_date || "",
-          tournamentEndDate: tournament.end_date || "",
+          tournamentName: tournament.name || 'Unknown Tournament',
+          tournamentStartDate: tournament.start_date || '',
+          tournamentEndDate: tournament.end_date || '',
           status: reg.status as RegistrationStatus,
           registeredAt: reg.$createdAt,
           isTeamRegistration: false,
           paymentStatus: reg.payment_status || 'pending',
-          waitlistPosition: reg.waitlist_position
+          waitlistPosition: reg.waitlist_position,
         };
       });
-      
-      // Map team registrations to UserRegistration type
-      const teamRegistrations = teamRegsData.map((reg: any) => {
+
+      const teamRegistrations = teamRegistrationsDocuments.map((reg: any) => {
         const tournament = tournamentsMap[reg.tournament_id] || {};
         return {
           id: reg.$id,
           tournamentId: reg.tournament_id,
-          tournamentName: tournament.name || "Unknown Tournament",
-          tournamentStartDate: tournament.start_date || "",
-          tournamentEndDate: tournament.end_date || "",
+          tournamentName: tournament.name || 'Unknown Tournament',
+          tournamentStartDate: tournament.start_date || '',
+          tournamentEndDate: tournament.end_date || '',
           status: reg.status as RegistrationStatus,
           registeredAt: reg.$createdAt,
           isTeamRegistration: true,
-          teamName: reg.team_name || "Unknown Team",
+          teamName: reg.team_name || 'Unknown Team',
           paymentStatus: reg.payment_status || 'pending',
-          waitlistPosition: reg.waitlist_position
+          waitlistPosition: reg.waitlist_position,
         };
       });
-      
-      // Combine and sort by registration date (newest first)
+
       return [...playerRegistrations, ...teamRegistrations].sort(
         (a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime()
       );
     } catch (error) {
-      console.error("[RegService] Error fetching user registrations:", error);
-      throw error;
+      const message = formatServiceError(
+        `fetch registrations for user ${userId}`,
+        error
+      );
+      logServiceError('RegistrationService', message, error, { userId });
+      const finalError = new Error(message);
+      (finalError as Error & { cause?: unknown }).cause = error;
+      throw finalError;
     }
   }
 
@@ -239,14 +335,14 @@ export class RegistrationService {
       if (status === RegistrationStatus.WAITLISTED) {
         // Get the registration to find the tournament and category
         const registration = await databases.getDocument(
-          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          APPWRITE_DATABASE_ID,
           COLLECTIONS.REGISTRATIONS,
           id
         );
         
         // Count existing waitlisted registrations in the same category
         const waitlistedResponse = await databases.listDocuments(
-          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          APPWRITE_DATABASE_ID,
           COLLECTIONS.REGISTRATIONS,
           [
             Query.equal("tournament_id", registration.tournament_id),
@@ -264,7 +360,7 @@ export class RegistrationService {
       
       // Update the registration
       await databases.updateDocument(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        APPWRITE_DATABASE_ID,
         COLLECTIONS.REGISTRATIONS,
         id,
         updatePayload
@@ -292,14 +388,14 @@ export class RegistrationService {
       if (status === RegistrationStatus.WAITLISTED) {
         // Get the registration to find the tournament and category
         const registration = await databases.getDocument(
-          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          APPWRITE_DATABASE_ID,
           COLLECTIONS.REGISTRATIONS,
           id
         );
         
         // Count existing waitlisted registrations in the same category
         const waitlistedResponse = await databases.listDocuments(
-          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          APPWRITE_DATABASE_ID,
           COLLECTIONS.REGISTRATIONS,
           [
             Query.equal("tournament_id", registration.tournament_id),
@@ -318,7 +414,7 @@ export class RegistrationService {
       
       // Update the registration
       await databases.updateDocument(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        APPWRITE_DATABASE_ID,
         COLLECTIONS.REGISTRATIONS,
         id,
         updatePayload
@@ -349,7 +445,7 @@ export class RegistrationService {
         
         // Get all registrations to find their tournaments and categories
         const registrationsResponse = await databases.listDocuments(
-          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          APPWRITE_DATABASE_ID,
           COLLECTIONS.REGISTRATIONS,
           [Query.equal("$id", ids)]
         );
@@ -373,7 +469,7 @@ export class RegistrationService {
           
           // Count existing waitlisted registrations in this category
           const waitlistedResponse = await databases.listDocuments(
-            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            APPWRITE_DATABASE_ID,
             COLLECTIONS.REGISTRATIONS,
             [
               Query.equal("tournament_id", tournamentId),
@@ -393,7 +489,7 @@ export class RegistrationService {
             
             updatePromises.push(
               databases.updateDocument(
-                import.meta.env.VITE_APPWRITE_DATABASE_ID,
+                APPWRITE_DATABASE_ID,
                 COLLECTIONS.REGISTRATIONS,
                 reg.$id,
                 regUpdatePayload
@@ -407,7 +503,7 @@ export class RegistrationService {
         // If not waitlisted, we can update all at once with the same payload
         const updatePromises = ids.map(id => 
           databases.updateDocument(
-            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            APPWRITE_DATABASE_ID,
             COLLECTIONS.REGISTRATIONS,
             id,
             {
@@ -445,7 +541,7 @@ export class RegistrationService {
         
         // Get all registrations to find their tournaments and categories
         const registrationsResponse = await databases.listDocuments(
-          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          APPWRITE_DATABASE_ID,
           COLLECTIONS.REGISTRATIONS,
           [Query.equal("$id", ids)]
         );
@@ -469,7 +565,7 @@ export class RegistrationService {
           
           // Count existing waitlisted team registrations in this category
           const waitlistedResponse = await databases.listDocuments(
-            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            APPWRITE_DATABASE_ID,
             COLLECTIONS.REGISTRATIONS,
             [
               Query.equal("tournament_id", tournamentId),
@@ -490,7 +586,7 @@ export class RegistrationService {
             
             updatePromises.push(
               databases.updateDocument(
-                import.meta.env.VITE_APPWRITE_DATABASE_ID,
+                APPWRITE_DATABASE_ID,
                 COLLECTIONS.REGISTRATIONS,
                 reg.$id,
                 regUpdatePayload
@@ -504,7 +600,7 @@ export class RegistrationService {
         // If not waitlisted, we can update all at once with the same payload
         const updatePromises = ids.map(id => 
           databases.updateDocument(
-            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            APPWRITE_DATABASE_ID,
             COLLECTIONS.REGISTRATIONS,
             id,
             {
@@ -543,7 +639,7 @@ export class RegistrationService {
       
       // Check if registration already exists
       const existingResponse = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        APPWRITE_DATABASE_ID,
         COLLECTIONS.REGISTRATIONS,
         [
           Query.equal("tournament_id", payload.tournament_id),
@@ -558,7 +654,7 @@ export class RegistrationService {
       
       // Check if category has reached capacity
       const tournament = await databases.getDocument(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        APPWRITE_DATABASE_ID,
         COLLECTIONS.TOURNAMENTS,
         payload.tournament_id
       );
@@ -570,7 +666,7 @@ export class RegistrationService {
       if (categoryCapacity > 0) {
         // Count approved registrations in this category
         const approvedResponse = await databases.listDocuments(
-          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          APPWRITE_DATABASE_ID,
           COLLECTIONS.REGISTRATIONS,
           [
             Query.equal("tournament_id", payload.tournament_id),
@@ -585,7 +681,7 @@ export class RegistrationService {
           
           // Calculate waitlist position
           const waitlistedResponse = await databases.listDocuments(
-            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            APPWRITE_DATABASE_ID,
             COLLECTIONS.REGISTRATIONS,
             [
               Query.equal("tournament_id", payload.tournament_id),
@@ -600,7 +696,7 @@ export class RegistrationService {
       
       // Create the registration
       const response = await databases.createDocument(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        APPWRITE_DATABASE_ID,
         COLLECTIONS.REGISTRATIONS,
         ID.unique(),
         registrationData
@@ -639,7 +735,7 @@ export class RegistrationService {
       
       // Check if registration already exists
       const existingResponse = await databases.listDocuments(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        APPWRITE_DATABASE_ID,
         COLLECTIONS.REGISTRATIONS,
         [
           Query.equal("tournament_id", payload.tournament_id),
@@ -654,7 +750,7 @@ export class RegistrationService {
       
       // Check if category has reached capacity
       const tournament = await databases.getDocument(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        APPWRITE_DATABASE_ID,
         COLLECTIONS.TOURNAMENTS,
         payload.tournament_id
       );
@@ -666,7 +762,7 @@ export class RegistrationService {
       if (categoryCapacity > 0) {
         // Count approved registrations in this category
         const approvedResponse = await databases.listDocuments(
-          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          APPWRITE_DATABASE_ID,
           COLLECTIONS.REGISTRATIONS,
           [
             Query.equal("tournament_id", payload.tournament_id),
@@ -682,7 +778,7 @@ export class RegistrationService {
           
           // Calculate waitlist position
           const waitlistedResponse = await databases.listDocuments(
-            import.meta.env.VITE_APPWRITE_DATABASE_ID,
+            APPWRITE_DATABASE_ID,
             COLLECTIONS.REGISTRATIONS,
             [
               Query.equal("tournament_id", payload.tournament_id),
@@ -698,7 +794,7 @@ export class RegistrationService {
       
       // Create the registration
       const response = await databases.createDocument(
-        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        APPWRITE_DATABASE_ID,
         COLLECTIONS.REGISTRATIONS,
         ID.unique(),
         registrationData

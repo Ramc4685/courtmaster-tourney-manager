@@ -2,7 +2,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TournamentService } from '../TournamentService';
 import { storageService } from '@/services/storage/StorageService';
 import { Tournament } from '@/types/tournament';
-import { TournamentFormat, GameType, TournamentStatus, TournamentStage, CourtStatus } from '@/types/tournament-enums';
+import { TournamentFormat, GameType, TournamentStatus, TournamentStageEnum, CourtStatus } from '@/types/tournament-enums';
 
 // Mock the storage service
 vi.mock('@/services/storage/StorageService', () => ({
@@ -26,7 +26,7 @@ describe('TournamentService', () => {
     maxTeams: 8,
     format: TournamentFormat.SINGLE_ELIMINATION,
     status: TournamentStatus.DRAFT,
-    currentStage: TournamentStage.REGISTRATION,
+    currentStage: TournamentStageEnum.REGISTRATION,
     matches: [],
     teams: [],
     courts: [],
@@ -121,7 +121,7 @@ describe('TournamentService', () => {
       expect(tournament).toMatchObject({
         ...tournamentData,
         matches: [],
-        currentStage: TournamentStage.REGISTRATION,
+        currentStage: TournamentStageEnum.REGISTRATION,
       });
       expect(tournament.id).toBeDefined();
       expect(tournament.createdAt).toBeInstanceOf(Date);
@@ -177,7 +177,7 @@ describe('TournamentService', () => {
       expect(tournament).toMatchObject({
         ...tournamentData,
         matches: [],
-        currentStage: TournamentStage.REGISTRATION,
+        currentStage: TournamentStageEnum.REGISTRATION,
       });
       expect(tournament.id).toBeDefined();
       expect(tournament.createdAt).toBeInstanceOf(Date);
