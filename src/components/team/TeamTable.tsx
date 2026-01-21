@@ -74,7 +74,7 @@ const TeamTable: React.FC<TeamTableProps> = ({ teams, onTeamUpdate }) => {
                   )}
                 </TableCell>
                 <TableCell>
-                  {team.players.map((player) => player.name).join(", ")}
+                  {team.players?.map((player) => player.name).join(", ") || "No players"}
                 </TableCell>
                 <TableCell>{team.seed || "-"}</TableCell>
                 <TableCell>{team.initialRanking || "-"}</TableCell>

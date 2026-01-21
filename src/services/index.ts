@@ -12,4 +12,16 @@ export {
 };
 
 // Export service types
-export type { TournamentService, APIService }; 
+export type { TournamentService, APIService };
+
+// === MATCH SERVICE CONDITIONAL EXPORTS ===
+// Export common interfaces
+export type { IMatchService, UpcomingMatchInfo } from "./IMatchService";
+
+// Backend selection based on environment variables or build config
+// Currently defaulting to Appwrite implementation
+export { matchService, MatchService } from "./matchService.appwrite";
+
+// Future backends can be added here with a factory pattern:
+// const BACKEND = process.env.REACT_APP_BACKEND || 'appwrite';
+// Export the appropriate service based on backend configuration 

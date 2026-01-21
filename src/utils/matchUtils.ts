@@ -112,46 +112,126 @@ export const updateBracketProgression = (tournament: Tournament, match: Match): 
     return updatedTournament;
   }
 
-  // Find matches that depend on this match's result
-  const nextMatches = matches.filter(m => 
-    m.bracketPosition && (
-      m.bracketPosition.includes(`W${match.bracketPosition}`) ||
-      m.bracketPosition.includes(`L${match.bracketPosition}`)
-    )
-  );
+  console.log(`[updateBracketProgression] Processing match ${match.id}, winner: ${match.winner?.name || match.winner?.id}`);
 
-  // Update the next matches with this match's winner/loser as appropriate
-  nextMatches.forEach(nextMatch => {
-    const updatedMatch = { ...nextMatch };
-    
-    if (updatedMatch.bracketPosition?.includes(`W${match.bracketPosition}`)) {
-      // Winner advances
-      if (updatedMatch.bracketPosition.startsWith('W')) {
+  // Method 1: Handle progression.nextMatchId pattern (used by SingleEliminationFormat)
+  if (match.progression?.nextMatchId) {
+    const nextMatch = matches.find(m => m.id === match.progression?.nextMatchId);
+    if (nextMatch) {
+      const updatedMatch = { ...nextMatch };
+
+      // Place winner in the correct position
+      if (match.progression.nextMatchPosition === 'team1') {
         updatedMatch.team1 = match.winner;
-        updatedMatch.team1Id = match.winner.id;
+        if (match.winner.id) {
+          updatedMatch.team1Id = match.winner.id;
+        }
       } else {
         updatedMatch.team2 = match.winner;
-        updatedMatch.team2Id = match.winner.id;
-      }
-    } else if (updatedMatch.bracketPosition?.includes(`L${match.bracketPosition}`)) {
-      // Loser advances to loser's bracket (double elimination)
-      if (match.loser) {
-        if (updatedMatch.bracketPosition?.startsWith('W')) {
-          updatedMatch.team1 = match.loser;
-          updatedMatch.team1Id = match.loser.id;
-        } else {
-          updatedMatch.team2 = match.loser;
-          updatedMatch.team2Id = match.loser.id;
+        if (match.winner.id) {
+          updatedMatch.team2Id = match.winner.id;
         }
       }
-    }
 
-    // Update the match in the tournament
-    const matchIndex = matches.findIndex(m => m.id === nextMatch.id);
-    if (matchIndex !== -1) {
-      matches[matchIndex] = updatedMatch;
+      // Update the match in the tournament
+      const matchIndex = matches.findIndex(m => m.id === nextMatch.id);
+      if (matchIndex !== -1) {
+        matches[matchIndex] = updatedMatch;
+        console.log(`[updateBracketProgression] Advanced winner to match ${nextMatch.id} as ${match.progression.nextMatchPosition}`);
+      }
     }
-  });
+  }
+
+  // Method 2: Handle bracketRound/bracketPosition pattern (alternative approach)
+  if (match.bracketRound && match.bracketPosition) {
+    // Find the next round match based on bracket position
+    const nextRound = match.bracketRound + 1;
+    const nextPosition = Math.ceil(match.bracketPosition / 2);
+
+    const nextMatch = matches.find(m =>
+      m.bracketRound === nextRound &&
+      m.bracketPosition === nextPosition &&
+      m.categoryId === match.categoryId
+    );
+
+    if (nextMatch && !match.progression?.nextMatchId) {
+      const updatedMatch = { ...nextMatch };
+
+      // Odd positions go to team1, even positions go to team2
+      const isOddPosition = match.bracketPosition % 2 === 1;
+
+      if (isOddPosition) {
+        updatedMatch.team1 = match.winner;
+        if (match.winner.id) {
+          updatedMatch.team1Id = match.winner.id;
+        }
+      } else {
+        updatedMatch.team2 = match.winner;
+        if (match.winner.id) {
+          updatedMatch.team2Id = match.winner.id;
+        }
+      }
+
+      // Update the match in the tournament
+      const matchIndex = matches.findIndex(m => m.id === nextMatch.id);
+      if (matchIndex !== -1) {
+        matches[matchIndex] = updatedMatch;
+        console.log(`[updateBracketProgression] Advanced winner to round ${nextRound}, position ${nextPosition}`);
+      }
+    }
+  }
+
+  // Method 3: Handle string-based bracketPosition pattern (legacy approach)
+  if (typeof match.bracketPosition === 'string') {
+    const nextMatches = matches.filter(m =>
+      typeof m.bracketPosition === 'string' && (
+        m.bracketPosition.includes(`W${match.bracketPosition}`) ||
+        m.bracketPosition.includes(`L${match.bracketPosition}`)
+      )
+    );
+
+    nextMatches.forEach(nextMatch => {
+      const updatedMatch = { ...nextMatch };
+
+      if (typeof updatedMatch.bracketPosition === 'string') {
+        if (updatedMatch.bracketPosition.includes(`W${match.bracketPosition}`)) {
+          // Winner advances
+          if (updatedMatch.bracketPosition.startsWith('W')) {
+            updatedMatch.team1 = match.winner;
+            if (match.winner.id) {
+              updatedMatch.team1Id = match.winner.id;
+            }
+          } else {
+            updatedMatch.team2 = match.winner;
+            if (match.winner.id) {
+              updatedMatch.team2Id = match.winner.id;
+            }
+          }
+        } else if (updatedMatch.bracketPosition.includes(`L${match.bracketPosition}`)) {
+          // Loser advances to loser's bracket (double elimination)
+          if (match.loser) {
+            if (updatedMatch.bracketPosition.startsWith('W')) {
+              updatedMatch.team1 = match.loser;
+              if (match.loser.id) {
+                updatedMatch.team1Id = match.loser.id;
+              }
+            } else {
+              updatedMatch.team2 = match.loser;
+              if (match.loser.id) {
+                updatedMatch.team2Id = match.loser.id;
+              }
+            }
+          }
+        }
+      }
+
+      // Update the match in the tournament
+      const matchIndex = matches.findIndex(m => m.id === nextMatch.id);
+      if (matchIndex !== -1) {
+        matches[matchIndex] = updatedMatch;
+      }
+    });
+  }
 
   return updatedTournament;
 };

@@ -2,6 +2,7 @@ import { camelCase, snakeCase } from 'lodash';
 
 /**
  * Transforms an object's keys from snake_case to camelCase, recursively.
+ * Also handles Appwrite's special fields that start with $ (e.g., $id, $createdAt)
  */
 export const camelizeKeys = (obj: Record<string, any>): Record<string, any> => {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj;
@@ -9,7 +10,15 @@ export const camelizeKeys = (obj: Record<string, any>): Record<string, any> => {
   const result: Record<string, any> = {};
 
   Object.entries(obj).forEach(([key, value]) => {
-    const newKey = camelCase(key);
+    // Handle Appwrite's special $ prefixed fields
+    let newKey: string;
+    if (key.startsWith('$')) {
+      // Remove $ prefix and convert to camelCase (e.g., $id -> id, $createdAt -> createdAt)
+      newKey = camelCase(key.slice(1)) || key.slice(1).toLowerCase();
+    } else {
+      newKey = camelCase(key) || key;
+    }
+    
     // Transform nested objects
     if (value !== null && typeof value === 'object') {
       if (Array.isArray(value)) {

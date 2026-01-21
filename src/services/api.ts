@@ -3,10 +3,10 @@
 import { RegistrationService } from './registrationService';
 import { ProfileService } from './profileService';
 import { courtService } from './courtService';
-import { matchService } from './matchService';
+import { matchService } from './index';
 import { NotificationService } from './notificationService';
 import { EmailService, emailService } from './emailService';
-import { TournamentService } from './tournament/TournamentService';
+import { tournamentService } from './index';
 import { APIService } from './APIService'; // Import the APIService
 
 // Registration Service
@@ -19,10 +19,9 @@ export const profileService = new ProfileService();
 export { courtService };
 
 // Match Service
-export { matchService };
+export { matchService, tournamentService };
 
 // Tournament Service
-export const tournamentService = new TournamentService();
 
 // Notification Service
 export const notificationService = new NotificationService();
