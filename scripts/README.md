@@ -439,3 +439,148 @@ This command:
    - For subtasks, provides a link to view the parent task
 
 This command is particularly useful when you need to examine a specific task in detail before implementing it or when you want to check the status and details of a particular task.
+
+## Performance and Pilot Validation Scripts
+
+In addition to the meta-development script, this directory contains automation scripts for pilot readiness:
+
+### Performance Audit Script
+
+The `performance-audit.js` script runs comprehensive performance audits to ensure the application meets pilot deployment standards:
+
+```bash
+# Run complete performance audit
+npm run audit:perf
+
+# Or directly
+node scripts/performance-audit.js
+```
+
+**Features:**
+- **Lighthouse CI**: Runs desktop and mobile audits on key application routes
+- **Bundle Analysis**: Analyzes build output, chunk sizes, and dependencies
+- **Core Web Vitals**: Measures performance metrics (LCP, FID, CLS, etc.)
+- **Performance Baselines**: Records baseline metrics for comparison
+- **Recommendations**: Provides actionable optimization suggestions
+
+**Output:**
+- JSON reports saved to `reports/perf/`
+- Console summary with performance scores and recommendations
+- Baseline data for tracking performance regression
+
+### Pilot Validation Script
+
+The `pilot-validation.js` script validates pilot deployment readiness by testing critical functionality:
+
+```bash
+# Run pilot validation
+npm run validate:pilot
+
+# Or directly
+node scripts/pilot-validation.js
+```
+
+**Features:**
+- **Container Health**: Checks Docker container status and HTTP endpoints
+- **Service Worker**: Validates PWA functionality and offline capabilities
+- **Database Connectivity**: Tests CRUD operations and performance
+- **Real-time Subscriptions**: Verifies WebSocket connections and live updates
+- **Critical Workflows**: Tests tournament creation, scoring, and management flows
+- **Offline Synchronization**: Validates offline queue and sync mechanisms
+
+**Output:**
+- JSON reports saved to `reports/pilot/`
+- Pass/fail status for pilot readiness
+- Detailed remediation hints for any issues found
+
+### Environment Configuration
+
+Both scripts can be configured via environment variables:
+
+```bash
+# Base URLs for validation
+PILOT_URL=http://localhost:3000
+APPWRITE_URL=http://localhost:8080
+WORKER_URL=http://localhost:3001
+
+# Performance audit settings
+LIGHTHOUSE_TIMEOUT=30000
+BUNDLE_SIZE_LIMIT=1000000
+
+# Pilot validation settings
+VALIDATION_TIMEOUT=10000
+HEALTH_CHECK_RETRIES=3
+```
+
+### Usage in CI/CD
+
+These scripts are designed to be integrated into CI/CD pipelines:
+
+```yaml
+# Example GitHub Actions integration
+- name: Performance Audit
+  run: npm run audit:perf
+
+- name: Pilot Validation
+  run: npm run validate:pilot
+
+- name: Upload Reports
+  uses: actions/upload-artifact@v2
+  with:
+    name: pilot-reports
+    path: reports/
+```
+
+The pilot validation script exits with code 0 for success and code 1 for failure, making it suitable for automated deployment gates.
+
+## Database Seeding Scripts
+
+### Comprehensive Data Seeding
+
+The `seed-complete.js` script provides comprehensive sample data for development and testing:
+
+```bash
+# Seed the database with complete sample data
+npm run seed:complete
+
+# Get help about the seeding script
+npm run seed:help
+```
+
+**What gets created:**
+- **12 Player Profiles**: Realistic players with stats, avatars, and skill levels
+- **2 Tournaments**: Summer Mixed Doubles Tournament (active) and Fall Singles Championship (draft)
+- **2 Divisions**: Open Mixed Doubles and Advanced Mixed Doubles categories
+- **6 Teams**: Mixed doubles pairs with creative team names (Thunder Smash, Net Ninjas, etc.)
+- **12 Team Members**: Player-to-team associations for doubles play
+- **6 Registrations**: Tournament registrations with partner pairings and payment status
+- **4 Courts**: Named courts with different availability status
+- **3 Sample Matches**: Scheduled matches with some completed games and scores
+
+**Features:**
+- Uses only existing database schema attributes (compatibility tested)
+- Realistic data with proper relationships between entities
+- Mixed doubles tournament format with partner pairings
+- Proper tournament status and registration flow
+- Sample matches with realistic scheduling and scoring
+- Avatar generation using DiceBear API
+- Player statistics and skill level tracking
+
+**Prerequisites:**
+1. Database collections must exist (run `npm run db:migrate` first)
+2. Environment variables must be configured (`.env.development`)
+3. Valid Appwrite API key required
+
+**Example Usage:**
+```bash
+# 1. Ensure database schema is up to date
+APPWRITE_MIGRATE_CONFIRM=true npm run db:migrate
+
+# 2. Seed with comprehensive sample data
+npm run seed:complete
+
+# 3. Start the application to see the data
+npm run dev
+```
+
+This replaces all previous seed scripts and provides a single, reliable source for populating the development database with realistic tournament data.

@@ -1,296 +1,351 @@
-# CourtMaster Tournament Manager Architecture
+# Technical Architecture
 
-## System Overview
+## System Architecture Overview
 
-CourtMaster is a tournament management system built with a modern web architecture, focusing on real-time updates, scalability, and user experience. The system supports multiple tournament formats, real-time scoring, and comprehensive tournament management features.
+CourtMaster Tournament Management System is a production-ready tournament management platform built using modern React architecture patterns. The system has evolved from MVP requirements into a comprehensive solution supporting multiple sports, real-time scoring, offline functionality, and PWA capabilities.
 
-## High-Level Architecture
+## Current Feature Matrix
 
-```mermaid
-graph TD
-    UI[User Interface Layer] --> Store[State Management Layer]
-    Store --> Service[Service Layer]
-    Service --> Repository[Repository Layer]
-    Repository --> Persistence[Persistence Layer]
-    
-    UI --> Components[Component Library]
-    Components --> Store
-    
-    Service --> Integration[Integration Layer]
-    Integration --> External[External Services]
-    
-    Store --> Cache[Cache Layer]
-    Cache --> Store
+| Feature Category | MVP Requirement | Current Implementation | Status |
+|------------------|-----------------|------------------------|---------|
+| **Sports Support** | Single sport (Badminton) | Multi-sport (Badminton, Tennis, Volleyball) | ✅ Enhanced |
+| **Tournament Formats** | Single Elimination | Single Elimination + Round Robin | ✅ Enhanced |
+| **Scoring System** | Basic scoring | Sport-specific rules + Real-time updates | ✅ Enhanced |
+| **User Management** | Basic auth | Role-based access + Profile management | ✅ Enhanced |
+| **Offline Support** | Not required | Full offline functionality + Sync | ✅ Added |
+| **PWA Features** | Not required | Installable app + Push notifications | ✅ Added |
+| **Real-time Updates** | Basic | WebSocket + Event-driven architecture | ✅ Enhanced |
+| **Mobile Support** | Responsive | Touch-optimized + Native-like experience | ✅ Enhanced |
+| **Analytics** | Not required | Comprehensive tournament analytics | ✅ Added |
+| **Multi-tenancy** | Single tournament | Multiple concurrent tournaments | ✅ Enhanced |
+
+## Frontend Architecture
+
+### Component Structure
+- **Presentation Components**: Pure UI components without business logic
+- **Container Components**: Business logic and state management
+- **Layout Components**: Page structure and navigation
+- **Feature Components**: Domain-specific functionality
+
+### State Management
+- **React Context**: Application-wide state (auth, tournaments, notifications)
+- **Custom Hooks**: Encapsulated business logic and data access
+- **Local State**: Component-specific state using useState/useReducer
+- **Event Bus**: Decoupled component communication
+
+### Sport-Specific Architecture
+
+The system implements a sophisticated rules engine supporting multiple sports:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Sport Rules Factory                      │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │ Badminton   │  │   Tennis    │  │ Volleyball  │         │
+│  │   Rules     │  │    Rules    │  │    Rules    │         │
+│  │             │  │             │  │             │         │
+│  │ • 21 points │  │ • 6 games   │  │ • 25 points │         │
+│  │ • Win by 2  │  │ • Win by 2  │  │ • Win by 2  │         │
+│  │ • Max 30    │  │ • Tiebreak  │  │ • Max 30    │         │
+│  │ • Best of 3 │  │ • Best of 3 │  │ • Best of 5 │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Core Flows
-
-### 1. Tournament Lifecycle Flow
-
-```mermaid
-stateDiagram-v2
-    [*] --> Registration
-    Registration --> Seeding: Teams Complete
-    Seeding --> GroupStage: Seeding Complete
-    Seeding --> EliminationRound: Direct Elimination
-    GroupStage --> EliminationRound: Groups Complete
-    EliminationRound --> ThirdPlace: Semi-Finals Complete
-    EliminationRound --> Finals: Elimination Complete
-    ThirdPlace --> Finals: 3rd Place Complete
-    Finals --> Completed: Champion Determined
-    Completed --> [*]
+### Service Layer
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Components    │    │   Services      │    │   Repositories  │
+│                 │────│                 │────│                 │
+│ - UI Logic      │    │ - Business      │    │ - Data Access   │
+│ - User Events   │    │   Logic         │    │ - API Calls     │
+│ - Presentation  │    │ - Validation    │    │ - Caching       │
+│ - Sport Rules   │    │ - Tournament    │    │ - Offline Sync  │
+│ - Real-time UI  │    │   Management    │    │ - Real-time     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-### 2. Registration Flow
+### Component Hierarchy
 
-```mermaid
-graph LR
-    A[Player/Team] -->|Register| B[Registration Form]
-    B -->|Submit| C[Validation]
-    C -->|Valid| D[Create Registration]
-    D -->|Success| E[Send Confirmation]
-    D -->|Waitlist| F[Add to Waitlist]
-    F -->|Spot Opens| G[Promote from Waitlist]
-    G -->|Accept| D
+```
+src/components/
+├── scoring/
+│   ├── ScoreEntry.tsx           # Individual score input
+│   ├── ScoringInterface.tsx     # Complete scoring workflow
+│   ├── MatchCard.tsx           # Match display component
+│   └── LiveScoreboard.tsx      # Real-time score display
+├── tournament/
+│   ├── TournamentDashboard.tsx # Tournament overview
+│   ├── BracketView.tsx         # Tournament bracket
+│   ├── StandingsTable.tsx      # Team standings
+│   └── MatchSchedule.tsx       # Match scheduling
+├── admin/
+│   ├── TournamentManager.tsx   # Admin controls
+│   ├── UserManagement.tsx      # User administration
+│   └── SystemSettings.tsx      # System configuration
+└── shared/
+    ├── LoadingSpinner.tsx      # Loading states
+    ├── ErrorBoundary.tsx       # Error handling
+    └── OfflineIndicator.tsx    # Offline status
 ```
 
-### 3. Match Progression Flow
+## Backend Integration
 
-```mermaid
-graph TD
-    A[Match Created] -->|Schedule| B[Scheduled]
-    B -->|Teams Ready| C[Ready]
-    C -->|Start Match| D[In Progress]
-    D -->|Update Score| E[Score Updated]
-    E -->|Complete Match| F[Completed]
-    F -->|Update Bracket| G[Progress Winners]
-    G -->|Generate Next| H[Create Next Matches]
-```
+### Appwrite Integration
+- **Authentication**: User management and session handling
+- **Database**: Real-time data operations with Appwrite Database
+- **Storage**: File uploads and asset management
+- **Real-time**: WebSocket connections for live updates
 
-## Layer Details
+### Data Layer
+- **Repository Pattern**: Abstracted data access layer
+- **Service Pattern**: Business logic encapsulation
+- **Factory Pattern**: Sport-specific rule implementations
 
-### 1. User Interface Layer
-- React components for tournament management
-- Real-time updates using WebSocket connections
-- Responsive design for mobile and desktop
-- Component library for consistent UI elements
-- Progressive Web App (PWA) support
-- Offline-first capabilities
+## Event-Driven Architecture
 
-### 2. State Management Layer (Zustand)
-- Centralized state management
-- Real-time state synchronization
-- Optimistic updates for better UX
-- Persistent state for offline capabilities
-- Migration from Context API (70% complete)
-- Type-safe store implementations
-
-### 3. Service Layer
-Key Services:
-- **TournamentService**: Manages tournament lifecycle
-- **RegistrationService**: Handles player/team registration
-- **MatchService**: Controls match progression
-- **BracketService**: Manages tournament brackets
-- **NotificationService**: Handles system notifications
-- **SchedulingService**: Manages court assignments
-- **FormatService**: Handles tournament format logic
-- **ValidationService**: Validates tournament rules
-
-### 4. Repository Layer
-- Abstract base repository pattern
-- Type-safe database operations
-- Optimistic concurrency control
-- Cache management
-- Error handling middleware
-- Transaction support
-
-### 5. Persistence Layer (Supabase)
-- PostgreSQL database
-- Real-time subscriptions
-- Row-level security
-- Built-in authentication
-- Backup and recovery
-- Data migration tools
-
-## Key Features
-
-### 1. Tournament Management
-- Multiple tournament formats support
-- Flexible bracket generation
-- Real-time score updates
-- Court scheduling
-- Player/team management
-- Tournament templates
-- Custom scoring rules
-
-### 2. Registration System
-- Player/team registration
-- Waitlist management
-- Division assignments
-- Category management
-- Bulk registration support
-- Registration deadlines
-- Payment integration
-
-### 3. Match Management
-- Score tracking
-- Match scheduling
-- Court assignments
-- Official assignments
-- Match history
-- Score validation
-- Match statistics
-
-### 4. Bracket System
-- Single elimination
-- Double elimination
-- Round robin
-- Swiss system
-- Group stage + knockout
-- Multi-stage formats
-- Custom formats
-- Seeding support
-
-## Data Models
-
-### Core Entities
-```typescript
-Tournament {
-  id: string
-  name: string
-  format: TournamentFormat
-  status: TournamentStatus
-  stages: TournamentStage[]
-  divisions: Division[]
-  categories: Category[]
-  metadata: TournamentMetadata
-  scoring: ScoringSettings
-}
-
-Registration {
-  id: string
-  tournamentId: string
-  playerId: string
-  status: RegistrationStatus
-  metadata: RegistrationMetadata
-  category: Category
-  division: Division
-}
-
-Match {
-  id: string
-  tournamentId: string
-  stage: TournamentStage
-  teams: [Team, Team]
-  scores: Score[]
-  status: MatchStatus
-  progression: MatchProgression
-  courtAssignment: CourtAssignment
-  scheduledTime: Date
+### Event Bus System
+```ts
+interface EventBus {
+  emit<T extends keyof EventMap>(event: T, payload: EventMap[T]): void;
+  on<T extends keyof EventMap>(event: T, handler: (payload: EventMap[T]) => void): void;
+  off<T extends keyof EventMap>(event: T, handler: (payload: EventMap[T]) => void): void;
 }
 ```
 
-## State Management
+### Event Flow
+1. User action triggers component event
+2. Component emits domain event through event bus
+3. Services listen to events and execute business logic
+4. State updates trigger component re-renders
+5. Real-time updates propagate to other users
 
-### Zustand Stores
-- **tournamentStore**: Tournament state and operations
-- **registrationStore**: Registration management
-- **matchStore**: Match state and scoring
-- **bracketStore**: Bracket progression
-- **uiStore**: UI state management
-- **notificationStore**: System notifications
-- **userStore**: User preferences and settings
+## Offline Architecture
 
-## Security Model
+### Data Synchronization
+- **IndexedDB**: Local data persistence
+- **Operation Queue**: Offline action storage
+- **Conflict Resolution**: Merge strategies for concurrent edits
+- **Background Sync**: Automatic synchronization when online
 
-### Authentication
-- JWT-based authentication
-- Role-based access control
-- Session management
-- OAuth integration
-- Two-factor authentication support
+### Sync Strategy
+```
+Online State:
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Client    │────│  Appwrite   │────│  Database   │
+│   State     │    │   API       │    │             │
+└─────────────┘    └─────────────┘    └─────────────┘
 
-### Authorization
-- Tournament-level permissions
-- Match-level access control
-- Administrative functions protection
-- API rate limiting
-- Resource-based permissions
+Offline State:
+┌─────────────┐    ┌─────────────┐
+│   Client    │────│  IndexedDB  │
+│   State     │    │   Queue     │
+└─────────────┘    └─────────────┘
+```
 
-## Integration Points
+## Performance Optimizations
 
-### External Services
-- Email service for notifications
-- Payment processing
-- Document generation
-- Analytics integration
-- Social media sharing
-- Calendar integration
+### Code Splitting
+- Route-based code splitting
+- Feature-based lazy loading
+- Dynamic imports for heavy components
 
-## Development Guidelines
+### Caching Strategy
+- Service Worker for static assets
+- IndexedDB for application data
+- React Query for server state management
 
-### Code Organization
-- Feature-based directory structure
-- Shared utilities and hooks
-- Common types and interfaces
-- Reusable components
-- Testing utilities
-- Documentation standards
+### Bundle Optimization
+- Tree shaking for unused code elimination
+- Webpack optimizations for production builds
+- Asset compression and minification
+
+## Security Architecture
+
+### Authentication Flow
+1. User credentials validated against Appwrite Auth
+2. JWT tokens stored securely in httpOnly cookies
+3. Token refresh handled automatically
+4. Role-based access control enforced
+
+### Data Security
+- Input validation at component and service levels
+- XSS prevention through React's built-in protections
+- CSRF protection via secure token handling
+- Secure API communication over HTTPS
+
+## Testing Architecture
+
+The system implements comprehensive testing with 80% coverage target:
+
+### Test Pyramid
+```
+        /\
+       /  \    E2E Tests (5%)
+      /____\   - Critical user journeys
+     /      \  - Cross-browser compatibility
+    /__________\ Integration Tests (20%)
+                - Service interactions
+                - Workflow testing
+                - Multi-sport scenarios
+    ____________________________________________
+    Unit Tests (75%)
+    - Business logic (Sport rules, scoring)
+    - Utility functions (Tournament utils)
+    - Component behavior (UI interactions)
+    - Service methods (API calls, data handling)
+```
+
+### Test Coverage by Domain
+- **Sport Rules**: 90%+ (Critical business logic)
+- **Scoring Logic**: 95%+ (Core functionality)
+- **Tournament Formats**: 85%+ (Bracket generation)
+- **Service Layer**: 80%+ (API interactions)
+- **UI Components**: 75%+ (User interactions)
+
+### Test Infrastructure
+```
+src/test/
+├── unit/
+│   ├── rules/                  # Sport rules testing
+│   ├── utils/                  # Utility function tests
+│   ├── formats/                # Tournament format tests
+│   ├── services/               # Service layer tests
+│   └── components/             # Component tests
+├── integration/
+│   ├── tournament-scoring-workflow.test.tsx
+│   └── multi-sport-tournament.test.tsx
+├── utils.ts                    # Test utilities and mocks
+├── setup.ts                    # Global test setup
+└── mvp-setup.ts               # MVP-specific test configuration
+```
+
+## PWA Architecture
+
+### Progressive Web App Features
+- **Offline-First**: Full functionality without internet
+- **Installable**: Native app-like experience
+- **Push Notifications**: Real-time tournament updates
+- **Background Sync**: Automatic data synchronization
+
+### Service Worker Strategy
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   App Shell     │    │ Service Worker  │    │   IndexedDB     │
+│                 │────│                 │────│                 │
+│ - UI Framework  │    │ - Cache API     │    │ - Tournament    │
+│ - Core Logic    │    │ - Background    │    │   Data          │
+│ - Routing       │    │   Sync          │    │ - User Prefs    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+## Real-time Synchronization Architecture
+
+### Event-Driven Updates
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Client A  │    │  Appwrite   │    │   Client B  │
+│             │────│  Realtime   │────│             │
+│ Score: 15-12│    │   Server    │    │ Score: 15-12│
+└─────────────┘    └─────────────┘    └─────────────┘
+       │                   │                   │
+       │                   │                   │
+       ▼                   ▼                   ▼
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│ Local State │    │ Database    │    │ Local State │
+│   Update    │    │   Update    │    │   Update    │
+└─────────────┘    └─────────────┘    └─────────────┘
+```
+
+### Conflict Resolution
+- **Last-Write-Wins**: For simple score updates
+- **Operational Transform**: For complex tournament state changes
+- **Manual Resolution**: For critical conflicts requiring user input
+
+## Performance Optimizations
+
+### Current Optimizations
+- **Code Splitting**: Route and feature-based lazy loading
+- **Service Worker Caching**: Static assets and API responses
+- **IndexedDB**: Local data persistence and offline support
+- **React Query**: Server state management and caching
+- **Bundle Analysis**: Tree shaking and dead code elimination
+- **Image Optimization**: WebP format and lazy loading
+- **Critical CSS**: Above-the-fold content prioritization
+
+### Performance Metrics
+- **First Contentful Paint**: < 1.5s
+- **Largest Contentful Paint**: < 2.5s
+- **Time to Interactive**: < 3.5s
+- **Cumulative Layout Shift**: < 0.1
+- **First Input Delay**: < 100ms
 
 ## Deployment Architecture
 
+### Multi-Environment Setup
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Development   │    │     Pilot       │    │   Production    │
+│                 │    │                 │    │                 │
+│ - Local DB      │    │ - Shared DB     │    │ - Dedicated DB  │
+│ - Hot Reload    │    │ - Feature Test  │    │ - CDN           │
+│ - Debug Mode    │    │ - User Testing  │    │ - Monitoring    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Build Process
+```
+Source Code → TypeScript Compilation → Webpack Bundling → 
+PWA Manifest → Service Worker → Asset Optimization → 
+Docker Container → Cloud Deployment
+```
+
 ### Infrastructure
-- Vercel for frontend hosting
-- Supabase for backend services
-- CloudFlare for CDN
-- GitHub Actions for CI/CD
-- Docker for local development
+- **Frontend**: Vercel/Netlify with CDN
+- **Backend**: Appwrite Cloud with auto-scaling
+- **Database**: Distributed across regions
+- **Storage**: Global CDN for assets
+- **Monitoring**: Real-time error tracking and performance metrics
 
-### Environments
-- Development
-- Staging
-- Production
-- QA/Testing
+### Deployment Strategies
+- **Blue-Green Deployment**: Zero-downtime releases
+- **Feature Flags**: Gradual feature rollout
+- **A/B Testing**: User experience optimization
+- **Rollback Capability**: Quick reversion for issues
 
-## Performance Considerations
+## Security Architecture
 
-### Optimizations
-- Code splitting
-- Lazy loading
-- Image optimization
-- Cache strategies
-- Database indexing
-- Real-time updates batching
+### Enhanced Security Measures
+- **Role-Based Access Control**: Granular permissions system
+- **JWT Token Management**: Secure authentication flow
+- **Input Validation**: Client and server-side validation
+- **XSS Prevention**: Content Security Policy implementation
+- **CSRF Protection**: Token-based request validation
+- **Data Encryption**: End-to-end encryption for sensitive data
+- **Audit Logging**: Comprehensive activity tracking
 
-### Scalability
-- Horizontal scaling
-- Load balancing
-- Connection pooling
-- Rate limiting
-- Resource optimization
+### Privacy Compliance
+- **GDPR Compliance**: User data protection and rights
+- **Data Minimization**: Collect only necessary information
+- **Consent Management**: Clear user consent mechanisms
+- **Data Retention**: Automated cleanup of old data
 
 ## Monitoring and Analytics
 
-### Key Metrics
-- User engagement
-- System performance
-- Error rates
-- API response times
-- Real-time connections
-- Database performance
+### System Monitoring
+- **Error Tracking**: Sentry integration for error monitoring
+- **Performance Monitoring**: Web Vitals and custom metrics
+- **Uptime Monitoring**: 24/7 availability tracking
+- **Resource Usage**: CPU, memory, and bandwidth monitoring
 
-### Logging
-- Application logs
-- Error tracking
-- User actions
-- Performance metrics
-- Security events
-- Audit trail
+### Business Analytics
+- **Tournament Metrics**: Participation rates, completion times
+- **User Engagement**: Feature usage and retention rates
+- **Performance Analytics**: Score update latency, sync success rates
+- **Mobile Usage**: PWA installation and usage patterns
 
-### Analytics
-- User behavior
-- Tournament statistics
-- Match analytics
-- System usage
-- Performance trends
-- Feature adoption 
+---
+
+*Architecture documentation last updated: 2025-09-17*
+*System has evolved significantly beyond original MVP scope into a production-ready platform*
