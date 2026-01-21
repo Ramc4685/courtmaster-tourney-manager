@@ -1,0 +1,87 @@
+<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="47.521209000000006">
+<testsuite name="tests/01-simulation-badminton-doubles.spec.ts" timestamp="2026-01-21T07:23:59.101Z" hostname="chromium" tests="1" failures="1" skipped="0" time="40.759" errors="0">
+<testcase name="Badminton Tournament Simulation: Doubles &amp; Mixed › should run full badminton tournament with Doubles and Mixed Doubles" classname="tests/01-simulation-badminton-doubles.spec.ts" time="40.759">
+<failure message="01-simulation-badminton-doubles.spec.ts:30:5 should run full badminton tournament with Doubles and Mixed Doubles" type="FAILURE">
+<![CDATA[  [chromium] › tests/01-simulation-badminton-doubles.spec.ts:30:5 › Badminton Tournament Simulation: Doubles & Mixed › should run full badminton tournament with Doubles and Mixed Doubles 
+
+    TimeoutError: page.waitForURL: Timeout 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation until "load"
+    ============================================================
+
+      126 |         // Wait for redirection to a valid tournament UUID (not 'new')
+      127 |         // This regex ensures we have at least 10 chars of UUID-like pattern
+    > 128 |         await page.waitForURL(/\/tournaments\/[0-9a-f-]{10,}/, { timeout: 30000 });
+          |                    ^
+      129 |
+      130 |         if (page.url().endsWith('/new')) {
+      131 |             console.log('❌ Still on /new after creation!');
+        at /Users/ramc/Documents/Code/courtmaster-tourney-manager/e2e/tests/01-simulation-badminton-doubles.spec.ts:128:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/tests-01-simulation-badmin-66f32-h-Doubles-and-Mixed-Doubles-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/tests-01-simulation-badmin-66f32-h-Doubles-and-Mixed-Doubles-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/tests-01-simulation-badmin-66f32-h-Doubles-and-Mixed-Doubles-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[🔧 [E2E AUTH BYPASS] Starting authentication bypass for testing
+🔧 [E2E AUTH BYPASS] Current URL after navigation: http://localhost:3000/tournaments
+✅ [E2E AUTH BYPASS] Successfully bypassed authentication
+🚀 Starting Badminton Doubles Simulation
+✅ Navigated to tournaments page
+✅ Navigated to tournament creation page
+🏆 Creating Tournament...
+PAGE LOG: [.WebGL-0x13c04bb8f00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+PAGE LOG: [.WebGL-0x13c04bbb200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+🏸 Setting up Categories...
+✅ Applied Standard Badminton Template
+✅ 5 Categories verified
+   - Waiting for Next button...
+   - Button Text: "Nextarrow_forward"
+📝 Skipping Registration...
+⚡ Verifying Scoring...
+✅ Creating...
+PAGE LOG: [TournamentWizard] handleCreateTournament called
+PAGE LOG: Submitting tournament payload: {name: Badminton Masters 1768980246496, description: , start_date: 2026-01-21, end_date: 2026-01-22, registration_deadline: undefined}
+PAGE LOG: Attempting to insert tournament. Payload: {name: Badminton Masters 1768980246496, description: , start_date: 2026-01-21, end_date: 2026-01-22, registration_deadline: undefined}
+PAGE LOG: Payload organizer_id: demo-admin-1
+PAGE LOG: Failed to load resource: the server responded with a status of 404 ()
+PAGE LOG: [ServiceHelpers] TournamentService.checkCollectionExists: Required Appwrite collection "tournaments" is missing or inaccessible. | metadata={"collectionId":"tournaments"} AppwriteException: Route not found. Please ensure the endpoint is configured correctly and that the API route is valid for this SDK version. Refer to the API docs for more details.
+    at _Client.<anonymous> (http://localhost:3000/node_modules/.vite/deps/appwrite.js?v=d3501703:524:15)
+    at Generator.next (<anonymous>)
+    at fulfilled (http://localhost:3000/node_modules/.vite/deps/appwrite.js?v=d3501703:13:24)
+PAGE LOG: Error creating tournament in service: Error: TournamentService.checkCollectionExists: Required Appwrite collection "tournaments" is missing or inaccessible. Route not found. Please ensure the endpoint is configured correctly and that the API route is valid for this SDK version. Refer to the API docs for more details.
+    at checkCollectionExists (http://localhost:3000/src/utils/serviceHelpers.ts:77:28)
+    at async TournamentService.checkCollectionExists (http://localhost:3000/src/services/tournament/TournamentService.ts:26:9)
+    at async TournamentService.createTournament (http://localhost:3000/src/services/tournament/TournamentService.ts:40:13)
+    at async handleCreateTournament (http://localhost:3000/src/components/admin/tournament/wizard/TournamentWizard.tsx:653:37)
+    at async handleNext (http://localhost:3000/src/components/admin/tournament/wizard/TournamentWizard.tsx:394:9)
+PAGE LOG: [TournamentWizard] Error creating tournament: Error: TournamentService.checkCollectionExists: Required Appwrite collection "tournaments" is missing or inaccessible. Route not found. Please ensure the endpoint is configured correctly and that the API route is valid for this SDK version. Refer to the API docs for more details.
+    at checkCollectionExists (http://localhost:3000/src/utils/serviceHelpers.ts:77:28)
+    at async TournamentService.checkCollectionExists (http://localhost:3000/src/services/tournament/TournamentService.ts:26:9)
+    at async TournamentService.createTournament (http://localhost:3000/src/services/tournament/TournamentService.ts:40:13)
+    at async handleCreateTournament (http://localhost:3000/src/components/admin/tournament/wizard/TournamentWizard.tsx:653:37)
+    at async handleNext (http://localhost:3000/src/components/admin/tournament/wizard/TournamentWizard.tsx:394:9)
+PAGE LOG: Failed to create tournament: Error: TournamentService.checkCollectionExists: Required Appwrite collection "tournaments" is missing or inaccessible. Route not found. Please ensure the endpoint is configured correctly and that the API route is valid for this SDK version. Refer to the API docs for more details.
+    at checkCollectionExists (http://localhost:3000/src/utils/serviceHelpers.ts:77:28)
+    at async TournamentService.checkCollectionExists (http://localhost:3000/src/services/tournament/TournamentService.ts:26:9)
+    at async TournamentService.createTournament (http://localhost:3000/src/services/tournament/TournamentService.ts:40:13)
+    at async handleCreateTournament (http://localhost:3000/src/components/admin/tournament/wizard/TournamentWizard.tsx:653:37)
+    at async handleNext (http://localhost:3000/src/components/admin/tournament/wizard/TournamentWizard.tsx:394:9)
+
+[[ATTACHMENT|../test-results/tests-01-simulation-badmin-66f32-h-Doubles-and-Mixed-Doubles-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/tests-01-simulation-badmin-66f32-h-Doubles-and-Mixed-Doubles-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/tests-01-simulation-badmin-66f32-h-Doubles-and-Mixed-Doubles-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

@@ -1,8 +1,8 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { registrationService } from '../api';
-import type { Registration } from '@/types/entities';
-import type { RegistrationMetadata } from '@/types/registration';
-import { Division } from '@/types/tournament-enums';
+import type { PlayerRegistration, TeamRegistration } from '@/types/registration';
+import { RegistrationStatus } from '@/types/tournament-enums';
+import { databases } from '@/lib/appwrite';
 
 // Mock Appwrite client
 vi.mock('@/lib/appwrite', () => ({
@@ -11,216 +11,184 @@ vi.mock('@/lib/appwrite', () => ({
     listDocuments: vi.fn(),
     updateDocument: vi.fn(),
     deleteDocument: vi.fn(),
+    getDocument: vi.fn(),
+  },
+  account: {
+    getSession: vi.fn(),
+    get: vi.fn(),
+    createEmailPasswordSession: vi.fn(),
+    create: vi.fn(),
+    deleteSession: vi.fn(),
+  },
+  client: {
+    subscribe: vi.fn(() => vi.fn())
   },
   COLLECTIONS: {
     REGISTRATIONS: 'registrations-collection-id',
+    TOURNAMENTS: 'tournaments-collection-id',
+    TEAMS: 'teams-collection-id',
+    MATCHES: 'matches-collection-id',
+    PROFILES: 'profiles-collection-id',
   },
-  DATABASE_ID: 'test-database-id',
+  APPWRITE_DATABASE_ID: 'test-database-id',
+  APPWRITE_ENDPOINT: 'https://test.appwrite.io/v1',
+  APPWRITE_PROJECT_ID: 'test-project-id',
 }));
 
 describe('registrationService', () => {
-  const mockMetadata: RegistrationMetadata = {
+  const mockPlayerRegistration: PlayerRegistration = {
+    id: 'reg-id',
+    tournamentId: 'tournament-id',
+    userId: 'user-id',
+    categoryId: 'category-id',
+    status: RegistrationStatus.PENDING,
+    registeredAt: new Date().toISOString(),
     playerName: 'John Doe',
-    teamSize: 1,
-    division: Division.ADVANCED,
-    contactEmail: 'john@example.com',
-    contactPhone: '123-456-7890',
-    emergencyContact: {
-      name: 'Jane Doe',
-      phone: '098-765-4321',
-      relationship: 'Spouse'
-    },
-    waiverSigned: true,
-    paymentStatus: 'PENDING'
+    playerEmail: 'john@example.com',
+    waiverAccepted: true,
+    paymentStatus: 'pending',
+    waitlistPosition: null
   };
 
-  const mockRegistration: Registration = {
-    id: 'reg-id',
-    tournament_id: 'tournament-id',
-    division_id: 'division-id',
-    player_id: 'player-id',
-    partner_id: null,
-    status: 'PENDING',
-    metadata: mockMetadata,
-    notes: '',
-    priority: 0,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+  const mockTeamRegistration: TeamRegistration = {
+    id: 'team-reg-id',
+    tournamentId: 'tournament-id',
+    teamId: 'team-id',
+    divisionId: 'division-id',
+    categoryId: 'category-id',
+    status: RegistrationStatus.PENDING,
+    registeredAt: new Date().toISOString(),
+    teamName: 'Test Team',
+    captainId: 'captain-id',
+    waiverAccepted: true,
+    paymentStatus: 'pending',
+    waitlistPosition: null
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     // Setup default mock responses for Appwrite
-    (require('@/lib/appwrite').databases.createDocument as any).mockImplementation(() => 
-      Promise.resolve(mockRegistration)
-    );
-    (require('@/lib/appwrite').databases.listDocuments as any).mockImplementation(() => 
-      Promise.resolve({ documents: [mockRegistration] })
-    );
-    (require('@/lib/appwrite').databases.updateDocument as any).mockImplementation(() => 
-      Promise.resolve(mockRegistration)
-    );
+    vi.mocked(databases.createDocument).mockResolvedValue({ 
+      $id: 'reg-id', 
+      tournament_id: 'tournament-id', 
+      user_id: 'user-id' 
+    } as any);
+    
+    vi.mocked(databases.listDocuments).mockResolvedValue({ 
+      documents: [{ 
+        $id: 'reg-id', 
+        tournament_id: 'tournament-id', 
+        user_id: 'user-id', 
+        $createdAt: new Date().toISOString() 
+      }] 
+    } as any);
+    
+    vi.mocked(databases.updateDocument).mockResolvedValue({ 
+      $id: 'reg-id', 
+      status: 'APPROVED' 
+    } as any);
+    
+    vi.mocked(databases.getDocument).mockResolvedValue({ 
+      $id: 'tournament-id',
+      name: 'Test Tournament',
+      categories: []
+    } as any);
   });
 
-  describe('register', () => {
-    it('should create a new registration', async () => {
-      const registrationData = {
+  describe('getPlayerRegistrations', () => {
+    it('should get player registrations for a tournament', async () => {
+      const result = await registrationService.getPlayerRegistrations('tournament-id');
+      expect(result).toBeDefined();
+      expect(databases.listDocuments).toHaveBeenCalled();
+    });
+
+    it('should throw error if getting player registrations fails', async () => {
+      const mockError = new Error('Failed to get player registrations');
+      vi.mocked(databases.listDocuments).mockRejectedValue(mockError);
+
+      await expect(registrationService.getPlayerRegistrations('tournament-id')).rejects.toThrow('Failed to get player registrations');
+    });
+  });
+
+  describe('getTeamRegistrations', () => {
+    it('should get team registrations for a tournament', async () => {
+      const result = await registrationService.getTeamRegistrations('tournament-id');
+      expect(result).toBeDefined();
+      expect(databases.listDocuments).toHaveBeenCalled();
+    });
+
+    it('should throw error if getting team registrations fails', async () => {
+      const mockError = new Error('Failed to get team registrations');
+      vi.mocked(databases.listDocuments).mockRejectedValue(mockError);
+
+      await expect(registrationService.getTeamRegistrations('tournament-id')).rejects.toThrow('Failed to get team registrations');
+    });
+  });
+
+  describe('updatePlayerRegistrationStatus', () => {
+    it('should update player registration status', async () => {
+      await registrationService.updatePlayerRegistrationStatus('reg-id', RegistrationStatus.APPROVED);
+      expect(databases.updateDocument).toHaveBeenCalled();
+    });
+
+    it('should throw error if updating player registration status fails', async () => {
+      const mockError = new Error('Failed to update status');
+      vi.mocked(databases.updateDocument).mockRejectedValue(mockError);
+
+      await expect(registrationService.updatePlayerRegistrationStatus('reg-id', RegistrationStatus.APPROVED))
+        .rejects.toThrow('Failed to update status');
+    });
+  });
+
+  describe('updateTeamRegistrationStatus', () => {
+    it('should update team registration status', async () => {
+      await registrationService.updateTeamRegistrationStatus('reg-id', RegistrationStatus.APPROVED);
+      expect(databases.updateDocument).toHaveBeenCalled();
+    });
+
+    it('should throw error if updating team registration status fails', async () => {
+      const mockError = new Error('Failed to update status');
+      vi.mocked(databases.updateDocument).mockRejectedValue(mockError);
+
+      await expect(registrationService.updateTeamRegistrationStatus('reg-id', RegistrationStatus.APPROVED))
+        .rejects.toThrow('Failed to update status');
+    });
+  });
+
+  describe('createPlayerRegistration', () => {
+    it('should create a new player registration', async () => {
+      const payload = {
         tournament_id: 'tournament-id',
-        division_id: 'division-id',
-        player_id: 'player-id',
-        partner_id: null,
-        status: 'PENDING',
-        metadata: mockMetadata,
-        notes: '',
-        priority: 0
-      } as const;
-
-      const result = await registrationService.register(registrationData);
-      expect(result).toEqual(mockRegistration);
-      expect(require('@/lib/appwrite').databases.createDocument).toHaveBeenCalled();
-    });
-
-    it('should throw error if registration fails', async () => {
-      const registrationData = {
-        tournament_id: 'tournament-id',
-        division_id: 'division-id',
-        player_id: 'player-id',
-        partner_id: null,
-        status: 'PENDING',
-        metadata: mockMetadata,
-        notes: '',
-        priority: 0
-      } as const;
-
-      const mockError = new Error('Registration failed');
-      (require('@/lib/appwrite').databases.createDocument as any).mockImplementation(() => 
-        Promise.reject(mockError)
-      );
-
-      await expect(registrationService.register(registrationData)).rejects.toThrow('Registration failed');
-    });
-  });
-
-  describe('getRegistration', () => {
-    it('should get a registration by id', async () => {
-      // Mock the Appwrite listDocuments to return a single registration
-      (require('@/lib/appwrite').databases.listDocuments as any).mockImplementation(() => 
-        Promise.resolve({ documents: [mockRegistration] })
-      );
-      
-      const result = await registrationService.getRegistration('test-id');
-      expect(result).toEqual(mockRegistration);
-      expect(require('@/lib/appwrite').databases.listDocuments).toHaveBeenCalled();
-    });
-
-    it('should throw error if registration not found', async () => {
-      const mockError = new Error('Registration not found');
-      (require('@/lib/appwrite').databases.listDocuments as any).mockImplementation(() => 
-        Promise.reject(mockError)
-      );
-
-      await expect(registrationService.getRegistration('invalid-id')).rejects.toThrow('Registration not found');
-    });
-  });
-
-  describe('listRegistrations', () => {
-    it('should list all registrations for a tournament', async () => {
-      const result = await registrationService.listRegistrations('tournament-id');
-      expect(result).toEqual([mockRegistration]);
-      expect(require('@/lib/appwrite').databases.listDocuments).toHaveBeenCalled();
-    });
-
-    it('should throw error if listing registrations fails', async () => {
-      const mockError = new Error('Failed to list registrations');
-      (require('@/lib/appwrite').databases.listDocuments as any).mockImplementation(() => 
-        Promise.reject(mockError)
-      );
-
-      await expect(registrationService.listRegistrations('tournament-id')).rejects.toThrow('Failed to list registrations');
-    });
-  });
-
-  describe('updateRegistration', () => {
-    it('should update a registration', async () => {
-      const updateData = { status: 'CONFIRMED' };
-      const result = await registrationService.updateRegistration('reg-id', updateData);
-      expect(result).toEqual(mockRegistration);
-      expect(require('@/lib/appwrite').databases.updateDocument).toHaveBeenCalled();
-    });
-
-    it('should throw error if updating registration fails', async () => {
-      const updateData = { status: 'CONFIRMED' };
-      const mockError = new Error('Failed to update registration');
-      (require('@/lib/appwrite').databases.updateDocument as any).mockImplementation(() => 
-        Promise.reject(mockError)
-      );
-
-      await expect(registrationService.updateRegistration('reg-id', updateData)).rejects.toThrow('Failed to update registration');
-    });
-  });
-
-  describe('addComment', () => {
-    it('should add a comment to a registration', async () => {
-      const comment = 'This is a test comment';
-      const result = await registrationService.addComment('reg-id', comment);
-      expect(result).toEqual(mockRegistration);
-      expect(require('@/lib/appwrite').databases.updateDocument).toHaveBeenCalled();
-    });
-
-    it('should throw error if adding comment fails', async () => {
-      const comment = 'This is a test comment';
-      const mockError = new Error('Failed to add comment');
-      (require('@/lib/appwrite').databases.updateDocument as any).mockImplementation(() => 
-        Promise.reject(mockError)
-      );
-
-      await expect(registrationService.addComment('reg-id', comment)).rejects.toThrow('Failed to add comment');
-    });
-  });
-
-  describe('updatePriority', () => {
-    it('should update registration priority', async () => {
-      const updatedRegistration = {
-        ...mockRegistration,
-        priority: 1,
+        user_id: 'user-id',
+        category_id: 'category-id'
       };
 
-      (require('@/lib/appwrite').databases.updateDocument as any).mockImplementation(() => 
-        Promise.resolve(updatedRegistration)
-      );
+      // Mock the duplicate check to return no existing registrations
+      vi.mocked(databases.listDocuments).mockResolvedValueOnce({ 
+        documents: [] // No existing registrations
+      } as any);
 
-      const result = await registrationService.updatePriority('test-id', 1);
-      expect(result).toEqual(updatedRegistration);
-      expect(require('@/lib/appwrite').databases.updateDocument).toHaveBeenCalled();
+      const result = await registrationService.createPlayerRegistration(payload);
+      expect(result).toBeDefined();
+      expect(databases.createDocument).toHaveBeenCalled();
     });
 
-    it('should throw error if priority update fails', async () => {
-      const mockError = new Error('Failed to update priority');
-      (require('@/lib/appwrite').databases.updateDocument as any).mockImplementation(() => 
-        Promise.reject(mockError)
-      );
+    it('should throw error if creating player registration fails', async () => {
+      const payload = {
+        tournament_id: 'tournament-id',
+        user_id: 'user-id',
+        category_id: 'category-id'
+      };
 
-      await expect(registrationService.updatePriority('test-id', 1))
-        .rejects.toThrow('Failed to update priority');
-    });
-  });
+      // Mock the duplicate check to return no existing registrations
+      vi.mocked(databases.listDocuments).mockResolvedValueOnce({ 
+        documents: [] // No existing registrations
+      } as any);
 
-  describe('updateNotes', () => {
-    it('should update registration notes', async () => {
-      const newNotes = 'Updated notes';
-      const result = await registrationService.updateNotes('reg-id', newNotes);
-      expect(result).toEqual(mockRegistration);
-      expect(require('@/lib/appwrite').databases.updateDocument).toHaveBeenCalled();
-    });
+      const mockError = new Error('Failed to create registration');
+      vi.mocked(databases.createDocument).mockRejectedValue(mockError);
 
-    it('should throw error if updating notes fails', async () => {
-      const newNotes = 'Updated notes';
-      const mockError = new Error('Failed to update notes');
-      (require('@/lib/appwrite').databases.updateDocument as any).mockImplementation(() => 
-        Promise.reject(mockError)
-      );
-
-      await expect(registrationService.updateNotes('reg-id', newNotes)).rejects.toThrow('Failed to update notes');
+      await expect(registrationService.createPlayerRegistration(payload)).rejects.toThrow('Failed to create registration');
     });
   });
 }); 
