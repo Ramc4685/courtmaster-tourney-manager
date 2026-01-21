@@ -34,14 +34,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TeamRegistrationWithStatus, TournamentRegistrationStatus } from "@/types/registration";
+import { TeamRegistrationWithStatus } from "@/types/registration";
+import { RegistrationStatus } from "@/types/tournament-enums";
 import { MoreVertical, Users, ArrowUpDown, Search } from "lucide-react";
 import { format } from "date-fns";
 
 interface TeamRegistrationListProps {
   registrations: TeamRegistrationWithStatus[];
-  onUpdateStatus: (id: string, status: TournamentRegistrationStatus) => Promise<void>;
-  onBulkUpdateStatus?: (ids: string[], status: TournamentRegistrationStatus) => Promise<void>;
+  onUpdateStatus: (id: string, status: RegistrationStatus) => Promise<void>;
+  onBulkUpdateStatus?: (ids: string[], status: RegistrationStatus) => Promise<void>;
 }
 
 export const TeamRegistrationList: React.FC<TeamRegistrationListProps> = ({
@@ -51,21 +52,21 @@ export const TeamRegistrationList: React.FC<TeamRegistrationListProps> = ({
 }): JSX.Element => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<TournamentRegistrationStatus | "ALL">("ALL");
+  const [statusFilter, setStatusFilter] = useState<RegistrationStatus | "ALL">("ALL");
   const [sortField, setSortField] = useState<"name" | "date">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  const getStatusColor = (status: TournamentRegistrationStatus) => {
+  const getStatusColor = (status: RegistrationStatus) => {
     switch (status) {
-      case "APPROVED":
+      case RegistrationStatus.APPROVED:
         return "bg-green-500/10 text-green-500";
-      case "REJECTED":
+      case RegistrationStatus.REJECTED:
         return "bg-red-500/10 text-red-500";
-      case "WAITLIST":
+      case RegistrationStatus.WAITLIST:
         return "bg-yellow-500/10 text-yellow-500";
-      case "CHECKED_IN":
+      case RegistrationStatus.CHECKED_IN:
         return "bg-blue-500/10 text-blue-500";
-      case "WITHDRAWN":
+      case RegistrationStatus.WITHDRAWN:
         return "bg-gray-500/10 text-gray-500";
       default:
         return "bg-gray-500/10 text-gray-500";
@@ -82,12 +83,16 @@ export const TeamRegistrationList: React.FC<TeamRegistrationListProps> = ({
     .sort((a, b) => {
       if (sortField === "name") {
         return sortDirection === "asc"
-          ? a.teamName.localeCompare(b.teamName)
-          : b.teamName.localeCompare(a.teamName);
+          ? (a.teamName || '').localeCompare(b.teamName || '')
+          : (b.teamName || '').localeCompare(a.teamName || '');
       } else {
+        // Handle cases where createdAt might be undefined or a string
+        const dateA = a.createdAt ? (typeof a.createdAt === 'string' ? new Date(a.createdAt) : a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? (typeof b.createdAt === 'string' ? new Date(b.createdAt) : b.createdAt) : new Date(0);
+        
         return sortDirection === "asc"
-          ? a.createdAt.getTime() - b.createdAt.getTime()
-          : b.createdAt.getTime() - a.createdAt.getTime();
+          ? dateA.getTime() - dateB.getTime()
+          : dateB.getTime() - dateA.getTime();
       }
     });
 
@@ -110,7 +115,7 @@ export const TeamRegistrationList: React.FC<TeamRegistrationListProps> = ({
     );
   };
 
-  const handleBulkAction = async (status: TournamentRegistrationStatus) => {
+  const handleBulkAction = async (status: RegistrationStatus) => {
     if (onBulkUpdateStatus && selectedIds.length > 0) {
       await onBulkUpdateStatus(selectedIds, status);
       setSelectedIds([]);
@@ -151,7 +156,7 @@ export const TeamRegistrationList: React.FC<TeamRegistrationListProps> = ({
         </div>
         <Select
           value={statusFilter}
-          onValueChange={(value) => setStatusFilter(value as TournamentRegistrationStatus | "ALL")}
+          onValueChange={(value) => setStatusFilter(value as RegistrationStatus | "ALL")}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by status" />
@@ -175,7 +180,7 @@ export const TeamRegistrationList: React.FC<TeamRegistrationListProps> = ({
               <DropdownMenuLabel>Update Status</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {bulkActions.map((action) => (
-                <DropdownMenuItem key={action.value} onClick={() => handleBulkAction(action.value as TournamentRegistrationStatus)}>
+                <DropdownMenuItem key={action.value} onClick={() => handleBulkAction(action.value as RegistrationStatus)}>
                   {action.label}
                 </DropdownMenuItem>
               ))}
@@ -227,7 +232,7 @@ export const TeamRegistrationList: React.FC<TeamRegistrationListProps> = ({
                   <SheetTrigger asChild>
                     <Button variant="ghost" size="sm" className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
-                      {registration.members.length} members
+                      {registration.members?.length || 0} members
                     </Button>
                   </SheetTrigger>
                   <SheetContent>
@@ -246,7 +251,7 @@ export const TeamRegistrationList: React.FC<TeamRegistrationListProps> = ({
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {registration.members.map((member, index) => (
+                          {registration.members?.map((member, index) => (
                             <TableRow key={index}>
                               <TableCell>{member.name}</TableCell>
                               <TableCell>{member.email}</TableCell>
@@ -258,9 +263,14 @@ export const TeamRegistrationList: React.FC<TeamRegistrationListProps> = ({
                   </SheetContent>
                 </Sheet>
               </TableCell>
-              <TableCell>{format(registration.createdAt, "MMM d, yyyy")}</TableCell>
               <TableCell>
-                <Badge className={getStatusColor(registration.status)}>
+                {registration.createdAt 
+                  ? format(typeof registration.createdAt === 'string' ? new Date(registration.createdAt) : registration.createdAt, "MMM d, yyyy")
+                  : "-"
+                }
+              </TableCell>
+              <TableCell>
+                <Badge className={getStatusColor(registration.status as RegistrationStatus)}>
                   {registration.status}
                 </Badge>
               </TableCell>
@@ -274,16 +284,16 @@ export const TeamRegistrationList: React.FC<TeamRegistrationListProps> = ({
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onUpdateStatus(registration.id, "APPROVED")}>
+                    <DropdownMenuItem onClick={() => onUpdateStatus(registration.id, RegistrationStatus.APPROVED)}>
                       Approve
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onUpdateStatus(registration.id, "REJECTED")}>
+                    <DropdownMenuItem onClick={() => onUpdateStatus(registration.id, RegistrationStatus.REJECTED)}>
                       Reject
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onUpdateStatus(registration.id, "WAITLIST")}>
+                    <DropdownMenuItem onClick={() => onUpdateStatus(registration.id, RegistrationStatus.WAITLIST)}>
                       Move to Waitlist
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onUpdateStatus(registration.id, "CHECKED_IN")}>
+                    <DropdownMenuItem onClick={() => onUpdateStatus(registration.id, RegistrationStatus.CHECKED_IN)}>
                       Check In
                     </DropdownMenuItem>
                   </DropdownMenuContent>

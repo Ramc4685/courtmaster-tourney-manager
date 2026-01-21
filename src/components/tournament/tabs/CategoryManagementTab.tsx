@@ -19,17 +19,17 @@ export default function CategoryManagementTab({
 }: CategoryManagementTabProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
-  const currentCategory = tournament.categories.find(c => c.id === selectedCategory);
-  const teamsInCategory = currentCategory ? tournament.teams.filter(team => 
+  const currentCategory = tournament.categories?.find(c => c.id === selectedCategory);
+  const teamsInCategory = currentCategory ? (tournament.teams || []).filter(team =>
     team.categories?.includes(currentCategory.id)
   ) : [];
 
-  const availableTeams = tournament.teams.filter(team => 
+  const availableTeams = (tournament.teams || []).filter(team =>
     !team.categories?.includes(selectedCategory)
   );
 
   const handleAddTeam = (teamId: string) => {
-    const team = tournament.teams.find(t => t.id === teamId);
+    const team = (tournament.teams || []).find(t => t.id === teamId);
     if (team && selectedCategory) {
       onAddTeamToCategory(selectedCategory, team);
     }

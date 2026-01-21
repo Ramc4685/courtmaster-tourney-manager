@@ -228,7 +228,10 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
     setCurrentTournament: async (tournament) => {
       set({ currentTournament: tournament });
       await storageService.setItem('currentTournament', tournament);
-      realtimeTournamentService.publishTournamentUpdate(tournament);
+      realtimeTournamentService.publishTournamentUpdate(tournament.id, {
+        type: 'tournament',
+        data: tournament
+      });
     },
 
     // Create tournament
@@ -251,7 +254,10 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
         currentTournament: newTournament 
       });
 
-      realtimeTournamentService.publishTournamentUpdate(newTournament);
+      realtimeTournamentService.publishTournamentUpdate(newTournament.id, {
+        type: 'tournament',
+        data: newTournament
+      });
       return newTournament;
     },
 
@@ -272,7 +278,10 @@ export const useTournamentStore = create<TournamentStore>((set, get) => {
       
       if (updatedCurrentTournament?.id === tournament.id) {
         storageService.setItem('currentTournament', tournament);
-        realtimeTournamentService.publishTournamentUpdate(tournament);
+        realtimeTournamentService.publishTournamentUpdate(tournament.id, {
+          type: 'tournament',
+          data: tournament
+        });
       }
       
       set({ 
@@ -588,4 +597,3 @@ const generateFinalMatches = (tournament: Tournament): Match[] => {
 const generateMatchId = () => {
   return Math.random().toString(36).substring(2, 15);
 };
-

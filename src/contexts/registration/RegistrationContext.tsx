@@ -1,27 +1,51 @@
 
 import React, { createContext, useContext } from 'react';
-import { useRegistration } from './useRegistration';
-import { PlayerRegistrationWithStatus, TeamRegistrationWithStatus } from '@/types/registration';
+import { useRegistrationService } from './useRegistrationService';
+import { RegistrationWithStatus } from '@/types/registration';
 import { RegistrationStatus } from '@/types/tournament-enums';
+import { WaiverData } from './useRegistrationService';
 
 interface RegistrationContextValue {
-  playerRegistrations: PlayerRegistrationWithStatus[];
-  teamRegistrations: TeamRegistrationWithStatus[];
+  // Registration collections
+  registrations: RegistrationWithStatus[];
+  playerRegistrations: RegistrationWithStatus[];
+  teamRegistrations: RegistrationWithStatus[];
+  
+  // Status indicators
   isLoading: boolean;
   error: string;
+  isOnline: boolean;
+  pendingRegistrations: number;
+  
+  // Core registration operations
   fetchRegistrations: (tournamentId: string) => Promise<void>;
-  updatePlayerStatus: (id: string, status: RegistrationStatus) => Promise<void>;
-  updateTeamStatus: (id: string, status: RegistrationStatus) => Promise<void>;
-  bulkUpdateStatus: (ids: string[], status: RegistrationStatus, type: 'player' | 'team') => Promise<void>;
-  notifyWaitlisted: (id: string) => Promise<boolean>;
-  registerPlayer: (data: any) => Promise<void>;
-  registerTeam: (data: any) => Promise<void>;
+  createRegistration: (data: any) => Promise<string | null>;
+  updateRegistrationStatus: (id: string, status: RegistrationStatus) => Promise<boolean>;
+  updateRegistration: (id: string, data: Partial<any>) => Promise<boolean>;
+  getRegistration: (id: string) => Promise<RegistrationWithStatus | null>;
+  getPlayerRegistrations: (playerId: string) => Promise<RegistrationWithStatus[]>;
+  
+  // Specialized operations
+  bulkUpdateStatus: (ids: string[], status: RegistrationStatus, type: 'player' | 'team') => Promise<boolean>;
+  checkIn: (id: string, userId?: string) => Promise<boolean>;
+  submitWaiver: (registrationId: string, waiverData: WaiverData) => Promise<boolean>;
+  
+  // Sport-specific helpers
+  getSportRequirements: (sportType: string) => {
+    isTeamSport: boolean;
+    teamSize: number;
+    divisions: any[];
+    requiredFields: string[];
+  };
+  
+  // Offline synchronization
+  syncNow: () => Promise<void>;
 }
 
 const RegistrationContext = createContext<RegistrationContextValue | null>(null);
 
 export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const registrationService = useRegistration();
+  const registrationService = useRegistrationService();
 
   return (
     <RegistrationContext.Provider value={registrationService}>

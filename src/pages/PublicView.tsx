@@ -9,14 +9,83 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Trophy, Clock, Users2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Match } from '@/types/tournament';
-import { DivisionType } from '@/types/tournament-enums';
+import type { Match } from '@/types/tournament';
+import { MatchStatus } from '@/types/tournament-enums';
+
+interface MatchCardProps {
+  match: Match;
+  statusVariantMap: Record<string, 'default' | 'secondary' | 'outline'>;
+  statusLabelMap: Record<string, string>;
+}
+
+const MatchCard: React.FC<MatchCardProps> = ({ match, statusVariantMap, statusLabelMap }) => {
+  return (
+    <Card key={match.id} className="overflow-hidden">
+      <div className="bg-muted px-4 py-2 flex justify-between items-center">
+        <span className="text-sm font-medium">
+          {match.team1?.name || 'TBD'} vs {match.team2?.name || 'TBD'}
+        </span>
+        {(() => {
+          const normalizedStatus = match.status?.toLowerCase() || '';
+          const variant = statusVariantMap[normalizedStatus] || 'outline';
+          const label = statusLabelMap[normalizedStatus] || match.status || 'Unknown';
+          return (
+            <Badge variant={variant}>
+              {label}
+            </Badge>
+          );
+        })()}
+      </div>
+      <CardContent className="p-4">
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <p className="text-sm text-muted-foreground">Time:</p>
+            <p className="text-sm font-medium">
+              {match.scheduledTime ? format(new Date(match.scheduledTime), 'PPp') : 'Not scheduled'}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Court:</p>
+            <p className="text-sm font-medium">
+              {match.courtNumber ? `Court ${match.courtNumber}` : 'Not assigned'}
+            </p>
+          </div>
+          {match.scores && match.scores.length > 0 && (
+            <div className="col-span-2 mt-2">
+              <p className="text-sm text-muted-foreground">Score:</p>
+              <div className="flex space-x-2">
+                {match.scores.map((score, idx) => (
+                  <Badge key={`${match.id}-set-${idx}`} variant="outline" className="text-xs">
+                    Set {idx + 1}: {score.team1Score}-{score.team2Score}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 const PublicView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { tournaments, currentTournament } = useTournament();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("schedule");
+
+  // Badge variant mappings for match status
+  const statusVariantMap: Record<string, 'default' | 'secondary' | 'outline'> = {
+    [MatchStatus.COMPLETED.toLowerCase()]: 'default',
+    [MatchStatus.IN_PROGRESS.toLowerCase()]: 'secondary',
+    [MatchStatus.SCHEDULED.toLowerCase()]: 'outline',
+  };
+
+  const statusLabelMap: Record<string, string> = {
+    [MatchStatus.COMPLETED.toLowerCase()]: 'Completed',
+    [MatchStatus.IN_PROGRESS.toLowerCase()]: 'In Progress',
+    [MatchStatus.SCHEDULED.toLowerCase()]: 'Scheduled',
+  };
 
   useEffect(() => {
     // Find the tournament on mount
@@ -57,10 +126,13 @@ const PublicView: React.FC = () => {
     );
   }
 
-  // Divide matches by status
-  const scheduledMatches = currentTournament.matches.filter(m => m.status === 'SCHEDULED');
-  const inProgressMatches = currentTournament.matches.filter(m => m.status === 'IN_PROGRESS');
-  const completedMatches = currentTournament.matches.filter(m => m.status === 'COMPLETED');
+  // Divide matches by status with case-insensitive comparison
+  const scheduledMatches = currentTournament.matches.filter(m => 
+    m.status?.toLowerCase() === MatchStatus.SCHEDULED.toLowerCase());
+  const inProgressMatches = currentTournament.matches.filter(m => 
+    m.status?.toLowerCase() === MatchStatus.IN_PROGRESS.toLowerCase());
+  const completedMatches = currentTournament.matches.filter(m => 
+    m.status?.toLowerCase() === MatchStatus.COMPLETED.toLowerCase());
 
   const renderMatchList = (matches: Match[]) => {
     if (!matches || matches.length === 0) {
@@ -74,48 +146,12 @@ const PublicView: React.FC = () => {
     return (
       <div className="space-y-4">
         {matches.map(match => (
-          <Card key={match.id} className="overflow-hidden">
-            <div className="bg-muted px-4 py-2 flex justify-between items-center">
-              <span className="text-sm font-medium">
-                {match.team1?.name || 'TBD'} vs {match.team2?.name || 'TBD'}
-              </span>
-              <Badge variant={
-                match.status === 'COMPLETED' ? 'default' : 
-                match.status === 'IN_PROGRESS' ? 'secondary' : 
-                'outline'
-              }>
-                {match.status}
-              </Badge>
-            </div>
-            <CardContent className="p-4">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Time:</p>
-                  <p className="text-sm font-medium">
-                    {match.scheduledTime ? format(new Date(match.scheduledTime), 'PPp') : 'Not scheduled'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Court:</p>
-                  <p className="text-sm font-medium">
-                    {match.courtNumber ? `Court ${match.courtNumber}` : 'Not assigned'}
-                  </p>
-                </div>
-                {match.scores && match.scores.length > 0 && (
-                  <div className="col-span-2 mt-2">
-                    <p className="text-sm text-muted-foreground">Score:</p>
-                    <div className="flex space-x-2">
-                      {match.scores.map((score, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          Set {idx + 1}: {score.team1Score}-{score.team2Score}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <MatchCard
+            key={match.id}
+            match={match}
+            statusVariantMap={statusVariantMap}
+            statusLabelMap={statusLabelMap}
+          />
         ))}
       </div>
     );

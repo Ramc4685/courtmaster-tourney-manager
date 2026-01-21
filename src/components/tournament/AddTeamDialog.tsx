@@ -5,9 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FormDescription } from "@/components/ui/form";
-import { useTournament } from "@/contexts/tournament/useTournament";
-import { Team, Player } from "@/types/tournament";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+import { useTournament } from "@/contexts/tournament/TournamentContext";
+import { Team, Player, TournamentCategory } from "@/types/tournament";
+import { Division, PlayType } from "@/types/tournament-enums";
 import { useToast } from "@/hooks/use-toast";
 import { generateTeamName, generateCreativeTeamName } from "@/utils/teamNameUtils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -19,12 +21,29 @@ interface AddTeamDialogProps {
 }
 
 const AddTeamDialog: React.FC<AddTeamDialogProps> = ({ open, onOpenChange, tournamentId }) => {
-  const { addTeam } = useTournament();
+  const { addTeam, currentTournament } = useTournament();
   const { toast } = useToast();
   const [teamName, setTeamName] = useState("");
-  const [players, setPlayers] = useState<Player[]>([{ id: "player-1", name: "" }]);
+  const [players, setPlayers] = useState<Player[]>([
+    { id: "player-1", name: "", createdAt: new Date(), updatedAt: new Date() },
+    { id: "player-2", name: "", createdAt: new Date(), updatedAt: new Date() }
+  ]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [isTeamNameManuallyEdited, setIsTeamNameManuallyEdited] = useState(false);
   const [showNameLengthAlert, setShowNameLengthAlert] = useState(false);
+
+  const availableCategories = currentTournament?.categories?.length
+    ? currentTournament.categories
+    : (currentTournament?.divisions || []).map((division: any) => ({
+        id: division.id,
+        name: division.name,
+        type: division.type,
+        division: division.type || Division.OPEN,
+        playType: division.playType
+      }));
+  const categoryOptions = (availableCategories || []) as Array<
+    TournamentCategory & { playType?: PlayType }
+  >;
 
   // Update team name when player names change
   useEffect(() => {
@@ -57,7 +76,11 @@ const AddTeamDialog: React.FC<AddTeamDialogProps> = ({ open, onOpenChange, tourn
     if (open) {
       setIsTeamNameManuallyEdited(false);
       setTeamName("");
-      setPlayers([{ id: "player-1", name: "" }]);
+      setPlayers([
+        { id: "player-1", name: "", createdAt: new Date(), updatedAt: new Date() },
+        { id: "player-2", name: "", createdAt: new Date(), updatedAt: new Date() }
+      ]);
+      setSelectedCategoryId("");
       setShowNameLengthAlert(false);
     }
   }, [open]);
@@ -65,7 +88,7 @@ const AddTeamDialog: React.FC<AddTeamDialogProps> = ({ open, onOpenChange, tourn
   const handleAddPlayer = () => {
     setPlayers([
       ...players,
-      { id: `player-${players.length + 1}`, name: "" }
+      { id: `player-${players.length + 1}`, name: "", createdAt: new Date(), updatedAt: new Date() }
     ]);
   };
 
@@ -106,25 +129,43 @@ const AddTeamDialog: React.FC<AddTeamDialogProps> = ({ open, onOpenChange, tourn
       return;
     }
     
-    // Validate player names
-    const isValid = players.every(player => player.name.trim() !== "");
-    if (!isValid) {
+    if (!selectedCategoryId) {
       toast({
         title: "Error",
-        description: "All players must have names",
+        description: "Category selection is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const selectedCategory = categoryOptions.find(category => category.id === selectedCategoryId);
+    const requiredPlayers = selectedCategory?.playType === PlayType.DOUBLES || selectedCategory?.playType === PlayType.MIXED ? 2 : 1;
+    const filledPlayers = players.filter(player => player.name.trim() !== "");
+    if (filledPlayers.length < requiredPlayers) {
+      toast({
+        title: "Error",
+        description: `Enter at least ${requiredPlayers} player${requiredPlayers > 1 ? 's' : ''}`,
         variant: "destructive",
       });
       return;
     }
     
     // Create the team
+    const now = new Date();
     const newTeam: Team = {
       id: `team-${Date.now()}`,
       name: teamName,
-      players: players.map(player => ({
+      players: filledPlayers.map(player => ({
         ...player,
-        id: player.id.includes("temp-") ? `player-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` : player.id
-      }))
+        id: player.id.includes("temp-") ? `player-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` : player.id,
+        createdAt: player.createdAt || now,
+        updatedAt: now
+      })),
+      categoryId: selectedCategoryId,
+      category: selectedCategory,
+      division: selectedCategory?.division || Division.OPEN,
+      createdAt: now,
+      updatedAt: now
     };
     
     // Add the team to the tournament
@@ -132,7 +173,11 @@ const AddTeamDialog: React.FC<AddTeamDialogProps> = ({ open, onOpenChange, tourn
     
     // Reset form and close dialog
     setTeamName("");
-    setPlayers([{ id: "player-1", name: "" }]);
+    setPlayers([
+      { id: "player-1", name: "", createdAt: new Date(), updatedAt: new Date() },
+      { id: "player-2", name: "", createdAt: new Date(), updatedAt: new Date() }
+    ]);
+    setSelectedCategoryId("");
     setIsTeamNameManuallyEdited(false);
     
     toast({
@@ -176,13 +221,14 @@ const AddTeamDialog: React.FC<AddTeamDialogProps> = ({ open, onOpenChange, tourn
                     <Input
                       value={player.name}
                       onChange={(e) => handlePlayerChange(index, "name", e.target.value)}
-                      placeholder="Player name"
+                      placeholder={`Player ${index + 1}`}
                     />
                   </div>
                   <Input
                     value={player.email || ""}
                     onChange={(e) => handlePlayerChange(index, "email", e.target.value)}
-                    placeholder="Email (optional)"
+                    placeholder="Email"
+                    type="email"
                     className="mt-1"
                   />
                 </div>
@@ -216,6 +262,7 @@ const AddTeamDialog: React.FC<AddTeamDialogProps> = ({ open, onOpenChange, tourn
             <div className="flex space-x-2">
               <Input
                 id="teamName"
+                name="name"
                 value={teamName}
                 onChange={handleTeamNameChange}
                 placeholder="Enter team name"
@@ -231,9 +278,25 @@ const AddTeamDialog: React.FC<AddTeamDialogProps> = ({ open, onOpenChange, tourn
                 Inspire
               </Button>
             </div>
-            <FormDescription className="text-xs">
+            <p className="text-xs text-muted-foreground">
               Auto-generated from player names. You can edit it or click "Inspire" for a creative name.
-            </FormDescription>
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+              <SelectTrigger id="category">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categoryOptions.map(category => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="flex justify-end space-x-2 pt-4">

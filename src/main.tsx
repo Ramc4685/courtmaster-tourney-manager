@@ -1,10 +1,21 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { toast } from 'sonner'
-import { TournamentProvider } from './contexts/tournament/TournamentContext'
-import { LocalizationProvider } from '@mui/x-date-pickers'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
+
+// Initialize error tracking and monitoring (side-effect imports)
+// import '@/lib/monitoring/sentry' // Disabled for development
+import '@/lib/monitoring/ErrorTracker'
+import '@/lib/monitoring/PerformanceMonitorClean'
+import '@/lib/network/fetchWrapper'
+
+// Import and expose EnhancedOfflineManager for testing
+import { enhancedOfflineManager } from '@/lib/offline/EnhancedOfflineManager'
+
+// Expose for testing/debugging in development
+if (import.meta.env.DEV || import.meta.env.NODE_ENV === 'test') {
+  (window as any).enhancedOfflineManager = enhancedOfflineManager;
+  console.log('🔧 EnhancedOfflineManager exposed globally for testing');
+}
 
 // Add more detailed debugging
 console.log('Application starting...');
@@ -22,11 +33,7 @@ if (!rootElement) {
     const root = createRoot(rootElement);
     console.log('Root created successfully');
     root.render(
-      <TournamentProvider>
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <App />
-        </LocalizationProvider>
-      </TournamentProvider>
+      <App />
     );
     console.log('App rendered successfully');
   } catch (error) {

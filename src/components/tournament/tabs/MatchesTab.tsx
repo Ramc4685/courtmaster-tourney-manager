@@ -77,9 +77,9 @@ const MatchesTab: React.FC<MatchesTabProps> = ({
             <Plus className="h-4 w-4 mr-2" />
             Schedule One Match
           </Button>
-          <Button onClick={onAutoScheduleClick} className="flex items-center">
+          <Button data-testid="auto-schedule-btn" onClick={onAutoScheduleClick} className="flex items-center">
             <Calendar className="h-4 w-4 mr-2" />
-            {matches.length === 0 ? "Generate Brackets" : "Assign Courts and Start"}
+            {matches.length === 0 ? "Generate Brackets" : "Assign Courts"}
           </Button>
         </div>
       </div>

@@ -90,7 +90,7 @@ const useTournamentStore = create<TournamentStore>((set, get) => ({
         id: crypto.randomUUID(),
         name: data.name,
         description: data.description || '',
-        format: TournamentFormat.SINGLE_ELIMINATION,
+        format: data.format || TournamentFormat.SINGLE_ELIMINATION,
         formatConfig: format,
         status: TournamentStatus.REGISTRATION,
         organizer_id: user?.id,
@@ -377,7 +377,7 @@ export const useTournament = () => {
 };
 
 const createTournamentFormat = (data: TournamentFormValues): TournamentFormatConfig => ({
-  type: TournamentFormat.SINGLE_ELIMINATION,
+  type: data.format || TournamentFormat.SINGLE_ELIMINATION,
   stages: [
     TournamentStageEnum.REGISTRATION,
     TournamentStageEnum.SEEDING,

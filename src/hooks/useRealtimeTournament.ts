@@ -50,8 +50,10 @@ export const useRealtimeTournament = (tournamentId?: string) => {
     // Subscribe to real-time updates
     const unsubscribeTournament = realtimeTournamentService.subscribeTournament(
       tournamentId,
-      (updatedTournament) => {
-        setTournament(updatedTournament);
+      (update) => {
+        if (update.type === 'tournament') {
+          setTournament(update.data);
+        }
       }
     );
 

@@ -3,7 +3,7 @@ import { useStore } from '@/stores/store';
 import { useAuth } from '@/contexts/auth/AuthContext';
 import { notificationService } from '@/services/notificationService';
 import { subscribeToNotifications } from '@/lib/appwrite';
-import { Notification } from '@/types/notification';
+import { Notification } from '@/types/entities';
 import { toast } from 'sonner';
 
 /**
@@ -16,7 +16,7 @@ export const useNotifications = () => {
   // Fetch notifications on mount and when user changes
   useEffect(() => {
     const fetchNotifications = async () => {
-      if (!user) return;
+      if (!user?.id) return;
       
       try {
         const userNotifications = await notificationService.getNotifications(user.id);
@@ -27,11 +27,11 @@ export const useNotifications = () => {
     };
 
     fetchNotifications();
-  }, [user, setNotifications]);
+  }, [user?.id, setNotifications]);
 
   // Subscribe to real-time notifications
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
     // Subscribe to real-time notifications using Appwrite
     const unsubscribe = subscribeToNotifications(user.id, (payload: any) => {

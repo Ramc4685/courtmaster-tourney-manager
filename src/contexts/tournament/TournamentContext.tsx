@@ -1,6 +1,5 @@
 import React, { createContext, useState, useEffect, PropsWithChildren, useCallback } from 'react'; // Import useCallback
 import { Tournament, Match, Court, Team, TournamentCategory } from "@/types/tournament";
-import { ScoringSettings } from "@/types/scoring";
 import { 
   TournamentFormat, 
   TournamentStatus, 
@@ -18,6 +17,7 @@ import { toast } from '@/components/ui/use-toast';
 import { TournamentContextType, SchedulingOptions, SchedulingResult } from './types';
 import { schedulingService } from '@/services/tournament/SchedulingService';
 import { format as formatDate } from 'date-fns';
+import { updateBracketProgression, determineMatchWinnerAndLoser, getDefaultScoringSettings } from '@/utils/matchUtils';
 
 export const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
 
@@ -121,7 +121,7 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     }
   };
 
-  const updateTournament = async (tournament: Tournament) => {
+  const updateTournament = useCallback(async (tournament: Tournament) => {
     try {
       await tournamentService.updateTournament(tournament);
       setTournaments(prevTournaments =>
@@ -133,9 +133,9 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     } catch (error) {
       console.error("Error updating tournament:", error);
     }
-  };
+  }, [currentTournament?.id]);
 
-  const deleteTournament = async (tournamentId: string) => {
+  const deleteTournament = useCallback(async (tournamentId: string) => {
     try {
       await tournamentService.deleteTournament(tournamentId);
       setTournaments(prevTournaments =>
@@ -146,17 +146,18 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       }
     } catch (error) {
       console.error("Error deleting tournament:", error);
+      throw error; // Re-throw error so component can handle it
     }
-  };
+  }, [currentTournament?.id]);
 
-  const setCurrentTournament = async (tournament: Tournament) => {
+  const setCurrentTournament = useCallback(async (tournament: Tournament) => {
     try {
       setCurrentTournamentState(tournament);
       await tournamentService.saveCurrentTournament(tournament);
     } catch (error) {
       console.error("Error setting current tournament:", error);
     }
-  };
+  }, []);
 
   const startMatch = async (matchId: string) => {
     if (!currentTournament) return;
@@ -227,18 +228,72 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) return;
 
     try {
-      // Update local state
-      const updatedMatches = currentTournament.matches.map(match => 
-        match.id === matchId ? { ...match, status: "COMPLETED" as MatchStatus } : match
+      // Find the match
+      const match = currentTournament.matches.find(m => m.id === matchId);
+      if (!match) {
+        console.error(`Match with ID ${matchId} not found`);
+        return;
+      }
+
+      // Get scoring settings
+      const scoringSettings = currentTournament.scoring || getDefaultScoringSettings();
+
+      // Determine winner and loser
+      const { winner, loser } = determineMatchWinnerAndLoser(match, { setsToWin: scoringSettings.setsToWin || 2 });
+
+      // Create updated match with winner and status
+      const completedMatch: Match = {
+        ...match,
+        status: MatchStatus.COMPLETED,
+        winner: winner || undefined,
+        loser: loser || undefined
+      };
+
+      // Update local matches
+      let updatedMatches = currentTournament.matches.map(m =>
+        m.id === matchId ? completedMatch : m
       );
-      
-      const updatedTournament = { ...currentTournament, matches: updatedMatches };
+
+      // Create intermediate tournament for bracket progression
+      let updatedTournament = { ...currentTournament, matches: updatedMatches };
+
+      // Update bracket progression if there's a winner
+      if (winner) {
+        console.log(`[completeMatch] Winner determined: ${winner.name || winner.id}`);
+        updatedTournament = updateBracketProgression(updatedTournament, completedMatch);
+      }
+
+      // Check if tournament is complete
+      const allMatchesComplete = updatedTournament.matches.every(
+        m => m.status === MatchStatus.COMPLETED || m.status === MatchStatus.CANCELLED
+      );
+
+      if (allMatchesComplete && updatedTournament.matches.length > 0) {
+        updatedTournament = {
+          ...updatedTournament,
+          status: TournamentStatus.COMPLETED,
+          updatedAt: new Date()
+        };
+        console.log("[completeMatch] All matches complete - tournament finished!");
+        toast({
+          title: "Tournament Complete!",
+          description: "All matches have been completed."
+        });
+      }
+
+      // Persist to state and backend
       await updateTournament(updatedTournament);
-      
-      // Update backend
+
+      // Update backend match
       await matchService.completeMatch(currentTournament.id, matchId);
+
     } catch (error) {
       console.error("Error completing match:", error);
+      toast({
+        title: "Error",
+        description: "Failed to complete match",
+        variant: "destructive"
+      });
     }
   };
 
@@ -251,8 +306,12 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       
       if (!match || !court) return;
       
-      // Update match with court
-      const updatedMatch = { ...match, courtNumber: court.number };
+      // Update match with court (use both courtId and courtNumber for compatibility)
+      const updatedMatch = {
+        ...match,
+        courtId: courtId,
+        courtNumber: court.number
+      };
       
       // Update court status
       const updatedCourt = { ...court, status: "IN_USE" as CourtStatus, currentMatch: updatedMatch };
@@ -310,6 +369,33 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       await updateTournament(updatedTournament);
     } catch (error) {
       console.error("Error freeing court:", error);
+    }
+  };
+
+  const addCourt = async (name?: string, description?: string) => {
+    if (!currentTournament) return;
+
+    try {
+      const nextNumber = currentTournament.courts.length > 0
+        ? Math.max(...currentTournament.courts.map(court => court.number)) + 1
+        : 1;
+      const now = new Date();
+      const newCourt: Court = {
+        id: generateId(),
+        name: name || `Court ${nextNumber}`,
+        number: nextNumber,
+        status: CourtStatus.AVAILABLE,
+        description,
+        createdAt: now,
+        updatedAt: now
+      };
+      const updatedTournament = {
+        ...currentTournament,
+        courts: [...currentTournament.courts, newCourt]
+      };
+      await updateTournament(updatedTournament);
+    } catch (error) {
+      console.error("Error adding court:", error);
     }
   };
 
@@ -500,7 +586,7 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     if (!currentTournament) {
       return { success: false, message: "No tournament selected" };
     }
-    
+
     try {
       const result = await schedulingService.scheduleMatches(currentTournament, options);
       if (result.success && result.tournament) {
@@ -513,10 +599,213 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
     }
   };
 
-  // Load initial data on mount
-  useEffect(() => {
-    loadTournaments();
-  }, [loadTournaments]); // Dependency array now correctly includes the stable loadTournaments
+  // Generate brackets for the tournament
+  const generateBrackets = async (): Promise<number> => {
+    if (!currentTournament) {
+      toast({
+        title: "Error",
+        description: "No tournament selected",
+        variant: "destructive"
+      });
+      return 0;
+    }
+
+    try {
+      const result = await schedulingService.generateBrackets(currentTournament);
+      if (result.matchesCreated > 0) {
+        await updateTournament(result.tournament);
+        toast({
+          title: "Brackets Generated",
+          description: `Created ${result.matchesCreated} matches`
+        });
+      } else {
+        toast({
+          title: "No Matches Created",
+          description: "Ensure teams are assigned to categories (need at least 2 teams per category)",
+          variant: "destructive"
+        });
+      }
+      return result.matchesCreated;
+    } catch (error) {
+      console.error("Error generating brackets:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate brackets",
+        variant: "destructive"
+      });
+      return 0;
+    }
+  };
+
+  // Generate multi-stage tournament (wrapper for generateBrackets with validation)
+  const generateMultiStageTournament = async (): Promise<void> => {
+    if (!currentTournament) {
+      toast({
+        title: "Error",
+        description: "No tournament selected",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate tournament has teams
+    if (!currentTournament.teams || currentTournament.teams.length < 2) {
+      toast({
+        title: "Cannot Generate Tournament",
+        description: "Add at least 2 teams before generating brackets",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if matches already exist
+    if (currentTournament.matches && currentTournament.matches.length > 0) {
+      toast({
+        title: "Brackets Already Exist",
+        description: "This tournament already has matches. Delete existing matches first if you want to regenerate.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    await generateBrackets();
+  };
+
+  // Advance tournament to next stage
+  const advanceToNextStage = async (): Promise<void> => {
+    if (!currentTournament) {
+      toast({
+        title: "Error",
+        description: "No tournament selected",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if current stage is complete
+    const incompleteMatches = (currentTournament.matches || []).filter(
+      m => m.status !== MatchStatus.COMPLETED && m.status !== MatchStatus.CANCELLED
+    );
+
+    if (incompleteMatches.length > 0) {
+      toast({
+        title: "Cannot Advance",
+        description: `${incompleteMatches.length} matches still in progress. Complete all matches first.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Determine next stage
+    const currentStage = currentTournament.currentStage;
+    let nextStage = currentStage;
+
+    switch (currentStage) {
+      case TournamentStageEnum.REGISTRATION:
+        nextStage = TournamentStageEnum.SEEDING;
+        break;
+      case TournamentStageEnum.SEEDING:
+        nextStage = TournamentStageEnum.INITIAL_ROUND;
+        break;
+      case TournamentStageEnum.INITIAL_ROUND:
+        nextStage = TournamentStageEnum.ELIMINATION_ROUND;
+        break;
+      case TournamentStageEnum.ELIMINATION_ROUND:
+        nextStage = TournamentStageEnum.FINALS;
+        break;
+      case TournamentStageEnum.FINALS:
+        // Tournament is complete
+        const completedTournament = {
+          ...currentTournament,
+          status: TournamentStatus.COMPLETED,
+          updatedAt: new Date()
+        };
+        await updateTournament(completedTournament);
+        toast({
+          title: "Tournament Complete!",
+          description: "All stages have been completed."
+        });
+        return;
+    }
+
+    // Update tournament stage
+    const updatedTournament = {
+      ...currentTournament,
+      currentStage: nextStage,
+      updatedAt: new Date()
+    };
+
+    await updateTournament(updatedTournament);
+    toast({
+      title: "Stage Advanced",
+      description: `Tournament advanced to ${nextStage}`
+    });
+  };
+
+  // Update a single match
+  const updateMatch = async (match: Match): Promise<void> => {
+    if (!currentTournament) return;
+
+    try {
+      // Update in local state
+      const updatedMatches = currentTournament.matches.map(m =>
+        m.id === match.id ? match : m
+      );
+
+      const updatedTournament = { ...currentTournament, matches: updatedMatches };
+      await updateTournament(updatedTournament);
+
+      // Also update in backend if match service supports it
+      if (match.id) {
+        await matchService.updateMatch(match.id, match, {});
+      }
+    } catch (error) {
+      console.error("Error updating match:", error);
+    }
+  };
+
+  // Check and update tournament status based on match states
+  const checkAndUpdateTournamentStatus = async (): Promise<void> => {
+    if (!currentTournament) return;
+
+    const matches = currentTournament.matches || [];
+    if (matches.length === 0) return;
+
+    const completedMatches = matches.filter(m => m.status === MatchStatus.COMPLETED);
+    const inProgressMatches = matches.filter(m => m.status === MatchStatus.IN_PROGRESS);
+
+    // If all matches are completed, mark tournament as complete
+    if (completedMatches.length === matches.length) {
+      if (currentTournament.status !== TournamentStatus.COMPLETED) {
+        const completedTournament = {
+          ...currentTournament,
+          status: TournamentStatus.COMPLETED,
+          updatedAt: new Date()
+        };
+        await updateTournament(completedTournament);
+        toast({
+          title: "Tournament Complete!",
+          description: "All matches have been completed."
+        });
+      }
+    }
+    // If any match has started and tournament is still DRAFT, move to IN_PROGRESS
+    else if (inProgressMatches.length > 0 || completedMatches.length > 0) {
+      if (currentTournament.status === TournamentStatus.DRAFT) {
+        const updatedTournament = {
+          ...currentTournament,
+          status: TournamentStatus.IN_PROGRESS,
+          updatedAt: new Date()
+        };
+        await updateTournament(updatedTournament);
+      }
+    }
+  };
+
+  // Load initial data on mount - TEMPORARILY DISABLED to fix blank screen
+  // useEffect(() => {
+  //   loadTournaments();
+  // }, [loadTournaments]); // Dependency array now correctly includes the stable loadTournaments
 
   return (
     <TournamentContext.Provider value={{
@@ -533,6 +822,7 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       updateMatchStatus,
       updateMatchScore,
       completeMatch,
+      addCourt,
       assignCourt,
       freeCourt,
       autoAssignCourts,
@@ -545,7 +835,11 @@ export const TournamentProvider: React.FC<PropsWithChildren> = ({ children }) =>
       addCategory,
       updateCategory,
       deleteCategory,
-      scheduleMatches
+      scheduleMatches,
+      generateBrackets,
+      generateMultiStageTournament,
+      advanceToNextStage,
+      updateMatch
     }}>
       {children}
     </TournamentContext.Provider>
@@ -562,4 +856,3 @@ export const useTournament = () => {
   }
   return context;
 };
-

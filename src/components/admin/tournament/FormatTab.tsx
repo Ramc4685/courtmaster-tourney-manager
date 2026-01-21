@@ -27,8 +27,9 @@ interface FormatTabProps {
 }
 
 const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
-  // Get current format for conditional fields
+  // Get current values for conditional fields
   const gameType = form.watch("gameType");
+  const format = form.watch("format");
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -37,11 +38,11 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
         name="gameType"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Tournament Format</FormLabel>
+            <FormLabel>Sport Type</FormLabel>
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <FormControl>
                 <SelectTrigger className="input-focus">
-                  <SelectValue placeholder="Select a tournament format" />
+                  <SelectValue placeholder="Select a sport type" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
@@ -66,6 +67,46 @@ const FormatTab: React.FC<FormatTabProps> = ({ form }) => {
                 "Standard squash tournament with customizable scoring rules."}
               {gameType === GameType.TABLE_TENNIS && 
                 "Standard table tennis tournament with customizable scoring rules."}
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="format"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Tournament Format</FormLabel>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormControl>
+                <SelectTrigger className="input-focus">
+                  <SelectValue placeholder="Select tournament format" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value={TournamentFormat.SINGLE_ELIMINATION}>Single Elimination</SelectItem>
+                <SelectItem value={TournamentFormat.DOUBLE_ELIMINATION}>Double Elimination</SelectItem>
+                <SelectItem value={TournamentFormat.ROUND_ROBIN}>Round Robin</SelectItem>
+                <SelectItem value={TournamentFormat.SWISS}>Swiss System</SelectItem>
+                <SelectItem value={TournamentFormat.GROUP_KNOCKOUT}>Group + Knockout</SelectItem>
+                <SelectItem value={TournamentFormat.MULTI_STAGE}>Multi-Stage</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormDescription>
+              {format === TournamentFormat.SINGLE_ELIMINATION && 
+                "Teams are eliminated after one loss. Fast and exciting format."}
+              {format === TournamentFormat.DOUBLE_ELIMINATION && 
+                "Teams must lose twice to be eliminated. More matches, more chances."}
+              {format === TournamentFormat.ROUND_ROBIN && 
+                "Every team plays every other team. Most comprehensive format."}
+              {format === TournamentFormat.SWISS && 
+                "Teams with similar records play each other. Balanced competition."}
+              {format === TournamentFormat.GROUP_KNOCKOUT && 
+                "Group stage followed by knockout rounds. Best of both worlds."}
+              {format === TournamentFormat.MULTI_STAGE && 
+                "Custom multi-stage tournament with flexible progression."}
             </FormDescription>
             <FormMessage />
           </FormItem>

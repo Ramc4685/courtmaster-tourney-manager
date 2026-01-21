@@ -62,11 +62,22 @@ const MatchTable: React.FC<MatchTableProps> = ({
   };
 
   const getScoreSummary = (match: Match) => {
-    if (!match.scores || match.scores.length === 0) {
+    let scores = match.scores;
+
+    // Handle JSON string scores
+    if (typeof scores === 'string') {
+      try {
+        scores = JSON.parse(scores);
+      } catch {
+        return "No scores";
+      }
+    }
+
+    if (!Array.isArray(scores) || scores.length === 0) {
       return "No scores";
     }
-    
-    return match.scores.map((score, index) => (
+
+    return scores.map((score, index) => (
       `Set ${index + 1}: ${score.team1Score}-${score.team2Score}`
     )).join(", ");
   };
@@ -105,7 +116,7 @@ const MatchTable: React.FC<MatchTableProps> = ({
               </TableRow>
             ) : (
               matches.map((match) => (
-                <TableRow key={match.id}>
+                <TableRow key={match.id} className="match-card">
                   <TableCell>
                     <span className="font-mono text-xs">
                       {match.matchNumber || match.id.substring(0, 8)}

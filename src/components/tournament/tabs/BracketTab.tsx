@@ -14,20 +14,16 @@ interface BracketTabProps {
 const BracketTab: React.FC<BracketTabProps> = ({ tournament, category }) => {
   const [currentDivision, setCurrentDivision] = useState<string>("DIVISION_1");
   
-  // Check if tournament has moved to the playoff stage
-  const hasPlayoffMatches = tournament.matches.some(m => String(m.stage) === "PLAYOFF_KNOCKOUT");
-  
-  // Add debugging for category props
-  console.log("BracketTab rendering with category:", category?.name);
-  console.log("Tournament has playoff matches:", hasPlayoffMatches);
-  
-  if (!hasPlayoffMatches) {
+  // Check if tournament has matches to display
+  const hasMatches = tournament.matches && tournament.matches.length > 0;
+
+  if (!hasMatches) {
     return (
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Bracket view will be available after completing the Division Placement stage.
-          Current tournament stage: {tournament.currentStage}.
+          No matches found for bracket display. Add teams and schedule matches to view the bracket.
+          Current tournament stage: {tournament.currentStage || 'INITIAL_ROUND'}.
           {category && ` Category: ${category.name}`}
         </AlertDescription>
       </Alert>

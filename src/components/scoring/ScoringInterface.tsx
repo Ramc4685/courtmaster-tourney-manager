@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Match, MatchScores, ScoreSet, MatchStatus } from "@/types/entities"; 
+import { UIMatch, MatchScores, ScoreSet, getParticipantNames, getCurrentScore, updateMatchScores } from '@/utils/adapters/matchAdapter';
+import { MatchStatus } from "@/types/entities"; 
 import { NotificationType } from "@/types/tournament-enums"; 
 import { matchService, profileService, notificationService } from "@/services/api"; 
-import { realtime, COLLECTIONS } from '@/lib/appwrite';
+import { realtime, COLLECTIONS, APPWRITE_DATABASE_ID } from '@/lib/appwrite';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,8 +16,8 @@ import { calculateMatchWinner, calculateSetWinner, isMatchComplete, isSetComplet
 
 interface ScoringInterfaceProps {
   matchId: string;
-  tournament: Tournament; 
-  onMatchComplete?: (match: Match) => void;
+  tournament: Tournament;
+  onMatchComplete?: (match: UIMatch) => void;
 }
 
 const getInitialScores = (): MatchScores => ({
@@ -55,22 +56,30 @@ export const ScoringInterface: React.FC<ScoringInterfaceProps> = ({
       setActiveMatch(fetchedMatch); 
       
       try {
-        if (fetchedMatch.team1_player1) {
-          const p1Profile = await profileService.getProfile(fetchedMatch.team1_player1);
-          if (p1Profile) setParticipant1Name(p1Profile.full_name || p1Profile.display_name || 'Player 1');
-        }
-        if (fetchedMatch.team2_player1) {
-          const p2Profile = await profileService.getProfile(fetchedMatch.team2_player1);
-          if (p2Profile) setParticipant2Name(p2Profile.full_name || p2Profile.display_name || 'Player 2');
-        }
-        // Handle team names if needed
-        if (fetchedMatch.team1Id) {
-          // TODO: Fetch team name from team service
-          setParticipant1Name(`Team ${fetchedMatch.team1Id.substring(0, 5)}`);
-        }
-        if (fetchedMatch.team2Id) {
-          // TODO: Fetch team name from team service
-          setParticipant2Name(`Team ${fetchedMatch.team2Id.substring(0, 5)}`);
+        // Determine match type: singles vs team
+        const isSinglesMatch = fetchedMatch.team1_player1 && fetchedMatch.team2_player1;
+        const isTeamMatch = fetchedMatch.team1Id && fetchedMatch.team2Id;
+
+        if (isSinglesMatch) {
+          // Singles match - prefer player profiles
+          if (fetchedMatch.team1_player1) {
+            const p1Profile = await profileService.getProfile(fetchedMatch.team1_player1);
+            if (p1Profile) setParticipant1Name(p1Profile.full_name || p1Profile.display_name || 'Player 1');
+          }
+          if (fetchedMatch.team2_player1) {
+            const p2Profile = await profileService.getProfile(fetchedMatch.team2_player1);
+            if (p2Profile) setParticipant2Name(p2Profile.full_name || p2Profile.display_name || 'Player 2');
+          }
+        } else if (isTeamMatch) {
+          // Team match - fetch team names (or use placeholder)
+          if (fetchedMatch.team1Id) {
+            // TODO: Fetch team name from team service
+            setParticipant1Name(`Team ${fetchedMatch.team1Id.substring(0, 5)}`);
+          }
+          if (fetchedMatch.team2Id) {
+            // TODO: Fetch team name from team service
+            setParticipant2Name(`Team ${fetchedMatch.team2Id.substring(0, 5)}`);
+          }
         }
       } catch (nameError) {
          console.error("[ScoringInterface] Error fetching participant names:", nameError);
@@ -98,14 +107,13 @@ export const ScoringInterface: React.FC<ScoringInterfaceProps> = ({
         console.log(`[ScoringInterface] Realtime update for current match ${matchId}, updating store...`);
         const currentStoreMatch = useScoringStore.getState().activeMatchData;
         if (JSON.stringify(payload.payload) !== JSON.stringify(currentStoreMatch)) {
-             setActiveMatch(payload.payload as Match);
+             setActiveMatch(payload.payload as UIMatch);
         } else {
              console.log(`[ScoringInterface] Realtime update identical to current state, skipping store update.`);
         }
       }
     };
 
-    const APPWRITE_DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'default';
     const unsubscribe = realtime.subscribe(`databases.${APPWRITE_DATABASE_ID}.collections.${COLLECTIONS.MATCHES}.documents.${matchId}`, (response) => {
       if (response.events && response.events.includes('database.documents.update')) {
         handleMatchUpdate(response);
@@ -145,10 +153,17 @@ export const ScoringInterface: React.FC<ScoringInterfaceProps> = ({
   }, [fetchMatchData, toast]);
 
   const handleScore = async (teamIndex: 1 | 2) => {
-    if (!match || !tournament?.scoring) return; 
+    if (!match) return;
 
-    const currentScores = match.scores ? JSON.parse(JSON.stringify(match.scores)) : getInitialScores();
-    const scoringSettings = tournament.scoring; 
+    const scoringSettings = (tournament as any)?.scoringRules ?? tournament?.scoring ?? {
+      pointsToWinSet: 21,
+      setsToWinMatch: 2,
+      maxSets: 3,
+      mustWinByTwo: true,
+      maxPointsPerSet: 30
+    };
+
+    const currentScores = match.scores ? JSON.parse(JSON.stringify(match.scores)) : getInitialScores(); 
 
     if (match.status === MatchStatus.COMPLETED || currentScores.sets[currentScores.current_set - 1]?.completed) {
         toast({ variant: "default", title: "Info", description: "Match or current set already completed." });
@@ -157,7 +172,7 @@ export const ScoringInterface: React.FC<ScoringInterfaceProps> = ({
 
     addScoreHistory(currentScores);
 
-    let updatedScores = currentScores;
+    const updatedScores = currentScores;
     const currentSetIndex = updatedScores.current_set - 1;
     
     // Increment score
@@ -308,10 +323,10 @@ export const ScoringInterface: React.FC<ScoringInterfaceProps> = ({
     }
   };
 
-  // --- Render Logic --- 
+  // --- Render Logic ---
   if (isLoading && !match) return <div>Loading scoring interface...</div>;
   if (error) return <div className="text-red-500">Error: {error}</div>;
-  if (!match || !tournament) return <div>Match data or tournament not found.</div>;
+  if (!match) return <div>Match data not found.</div>;
 
   const scores = match.scores || getInitialScores();
   const currentSetIndex = scores.current_set - 1;

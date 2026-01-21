@@ -1,0 +1,282 @@
+/**
+ * Sentry Integration for CourtMaster
+ * 
+ * Provides Sentry error tracking and performance monitoring with environment guards
+ */
+
+// Dynamic import to handle cases where Sentry is not available
+let Sentry: any = null;
+
+// Try to import Sentry dynamically - only in production with valid DSN
+async function loadSentry() {
+  try {
+    if (import.meta.env.MODE === 'production' && import.meta.env.VITE_SENTRY_DSN) {
+      // Only import in production with valid DSN - disabled for development
+      // const sentryModule = await import('@sentry/react').catch(() => null);
+      // if (sentryModule) {
+      //   Sentry = sentryModule;
+      //   initializeSentry();
+      // }
+      console.log('Sentry integration disabled - package not installed');
+    }
+  } catch (error) {
+    // Sentry is optional - silently fail in development
+    console.debug('Sentry not available in development mode');
+  }
+}
+
+// Load Sentry if conditions are met
+if (typeof window !== 'undefined') {
+  loadSentry();
+}
+
+interface SentryConfig {
+  dsn?: string;
+  environment: string;
+  release?: string;
+  sampleRate: number;
+  tracesSampleRate: number;
+  replaysSessionSampleRate: number;
+  replaysOnErrorSampleRate: number;
+  enabled: boolean;
+}
+
+/**
+ * Initialize Sentry with environment-based configuration
+ */
+export function initializeSentry(): void {
+  const config: SentryConfig = {
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE || 'development',
+    release: import.meta.env.VITE_SENTRY_RELEASE || import.meta.env.VITE_BUILD_VERSION,
+    sampleRate: parseFloat(import.meta.env.VITE_SENTRY_SAMPLE_RATE || '1.0'),
+    tracesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || '0.1'),
+    replaysSessionSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE || '0.1'),
+    replaysOnErrorSampleRate: parseFloat(import.meta.env.VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE || '1.0'),
+    enabled: !!import.meta.env.VITE_SENTRY_DSN && import.meta.env.MODE === 'production'
+  };
+
+  // Only initialize Sentry in production with valid DSN
+  if (!config.enabled || !config.dsn) {
+    console.log('Sentry disabled: Missing DSN or not in production mode');
+    return;
+  }
+
+  try {
+    Sentry.init({
+      dsn: config.dsn,
+      environment: config.environment,
+      release: config.release,
+      sampleRate: config.sampleRate,
+      tracesSampleRate: config.tracesSampleRate,
+      
+      integrations: [
+        new Sentry.BrowserTracing({
+          // Set up automatic route change tracking for React Router
+          routingInstrumentation: Sentry.reactRouterV6Instrumentation(
+            React.useEffect,
+            useLocation,
+            useNavigationType,
+            createRoutesFromChildren,
+            matchRoutes
+          ),
+        }),
+        new Sentry.Replay({
+          // Capture sessions based on configuration
+          sessionSampleRate: config.replaysSessionSampleRate,
+          errorSampleRate: config.replaysOnErrorSampleRate,
+        }),
+      ],
+
+      // Capture console errors
+      beforeSend(event, hint) {
+        // Filter out development-only errors
+        if (config.environment === 'development') {
+          return null;
+        }
+
+        // Add custom context
+        if (event.exception) {
+          const error = hint.originalException;
+          if (error instanceof Error) {
+            // Add tournament context if available
+            const tournamentContext = getTournamentContext();
+            if (tournamentContext) {
+              event.contexts = {
+                ...event.contexts,
+                tournament: tournamentContext
+              };
+            }
+          }
+        }
+
+        return event;
+      },
+
+      // Set user context
+      initialScope: {
+        tags: {
+          component: 'courtmaster-web'
+        }
+      }
+    });
+
+    console.log(`Sentry initialized for ${config.environment} environment`);
+  } catch (error) {
+    console.error('Failed to initialize Sentry:', error);
+  }
+}
+
+/**
+ * Set user context in Sentry
+ */
+export function setSentryUser(user: {
+  id?: string;
+  email?: string;
+  username?: string;
+  role?: string;
+}): void {
+  if (!isSentryEnabled()) return;
+
+  Sentry.setUser({
+    id: user.id,
+    email: user.email,
+    username: user.username,
+    role: user.role
+  });
+}
+
+/**
+ * Set tournament context in Sentry
+ */
+export function setSentryTournamentContext(context: {
+  tournamentId?: string;
+  tournamentName?: string;
+  phase?: string;
+  participantCount?: number;
+}): void {
+  if (!isSentryEnabled()) return;
+
+  Sentry.setContext('tournament', context);
+}
+
+/**
+ * Set match context in Sentry
+ */
+export function setSentryMatchContext(context: {
+  matchId?: string;
+  tournamentId?: string;
+  teams?: string[];
+  round?: number;
+}): void {
+  if (!isSentryEnabled()) return;
+
+  Sentry.setContext('match', context);
+}
+
+/**
+ * Capture an exception with Sentry
+ */
+export function captureSentryException(error: Error, context?: Record<string, any>): string | undefined {
+  if (!isSentryEnabled()) return undefined;
+
+  return Sentry.captureException(error, {
+    contexts: context ? { custom: context } : undefined
+  });
+}
+
+/**
+ * Capture a message with Sentry
+ */
+export function captureSentryMessage(message: string, level: string = 'info'): string | undefined {
+  if (!isSentryEnabled()) return undefined;
+
+  return Sentry.captureMessage(message, level);
+}
+
+/**
+ * Add breadcrumb to Sentry
+ */
+export function addSentryBreadcrumb(breadcrumb: {
+  message: string;
+  category?: string;
+  level?: string;
+  data?: Record<string, any>;
+}): void {
+  if (!isSentryEnabled()) return;
+
+  Sentry.addBreadcrumb({
+    message: breadcrumb.message,
+    category: breadcrumb.category || 'custom',
+    level: breadcrumb.level || 'info',
+    data: breadcrumb.data
+  });
+}
+
+/**
+ * Start a Sentry transaction for performance monitoring
+ */
+export function startSentryTransaction(name: string, op: string): any | undefined {
+  if (!isSentryEnabled()) return undefined;
+
+  return Sentry.startTransaction({
+    name,
+    op
+  });
+}
+
+/**
+ * Check if Sentry is enabled and initialized
+ */
+export function isSentryEnabled(): boolean {
+  return !!import.meta.env.VITE_SENTRY_DSN && 
+         import.meta.env.MODE === 'production' && 
+         Sentry && 
+         Sentry.getCurrentHub && 
+         Sentry.getCurrentHub().getClient() !== undefined;
+}
+
+/**
+ * Get current tournament context from global state
+ */
+function getTournamentContext(): Record<string, any> | null {
+  try {
+    // Try to get tournament context from global state or local storage
+    const tournamentData = localStorage.getItem('current-tournament');
+    if (tournamentData) {
+      const tournament = JSON.parse(tournamentData);
+      return {
+        id: tournament.id,
+        name: tournament.name,
+        phase: tournament.status,
+        participantCount: tournament.teams?.length || 0
+      };
+    }
+  } catch (error) {
+    // Ignore context capture errors
+  }
+  return null;
+}
+
+// Import React Router dependencies for Sentry integration
+import React, { useEffect } from 'react';
+import {
+  useLocation,
+  useNavigationType,
+  createRoutesFromChildren,
+  matchRoutes,
+} from 'react-router-dom';
+
+// Sentry is initialized by loadSentry() function above
+
+export default {
+  initializeSentry,
+  setSentryUser,
+  setSentryTournamentContext,
+  setSentryMatchContext,
+  captureSentryException,
+  captureSentryMessage,
+  addSentryBreadcrumb,
+  startSentryTransaction,
+  isSentryEnabled
+};

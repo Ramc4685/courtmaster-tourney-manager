@@ -81,6 +81,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshSession = useCallback(async () => {
     try {
       setIsLoading(true);
+      
+      // BYPASS AUTH FOR TESTING - Auto-login demo admin user
+      const bypassAuth = import.meta.env.VITE_BYPASS_AUTH === 'true' || import.meta.env.DEV;
+      
+      if (bypassAuth) {
+        console.log('🔧 [AUTH BYPASS] Auto-authenticating demo admin user for testing');
+        const demoUser = {
+          id: 'demo-admin-1',
+          email: 'demoadmin@example.com',
+          full_name: 'Demo Admin',
+          display_name: 'Demo Admin',
+          role: 'ADMIN' as any,
+          avatar_url: '',
+          phone: '',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        setUser(demoUser);
+        setSessionChecked(true);
+        setIsLoading(false);
+        return;
+      }
+      
       const profile = await appwriteAuthService.getCurrentUser();
       setUser(profile);
     } catch (err) {
@@ -111,6 +134,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       const profile = await appwriteAuthService.getCurrentUser();
       setUser(profile);
+      
+      // Navigate to tournaments page after successful login
+      navigate('/tournaments');
+      
       return profile;
     } catch (err) {
       console.error('Error signing in:', err);
@@ -120,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [navigate]);
 
   const signInWithGoogle = useCallback(async () => {
     try {

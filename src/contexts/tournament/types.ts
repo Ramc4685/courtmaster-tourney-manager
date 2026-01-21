@@ -11,7 +11,6 @@ import {
   CourtStatus,
   MatchStatus
 } from "@/types/tournament-enums";
-import { ScoringSettings } from "@/types/scoring";
 
 // Define SchedulingOptions and SchedulingResult types to match the services implementation
 export interface SchedulingOptions {
@@ -61,6 +60,7 @@ export interface TournamentContextType {
   updateMatch: (match: Match) => Promise<void>;
   
   // Court operations
+  addCourt: (name?: string, description?: string) => Promise<void>;
   assignCourt: (matchId: string, courtId: string) => Promise<void>;
   freeCourt: (courtNumber: number) => Promise<void>;
   autoAssignCourts: () => Promise<number>;

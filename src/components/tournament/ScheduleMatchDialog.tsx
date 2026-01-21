@@ -18,8 +18,8 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { Team, Court, TournamentCategory, Division } from "@/types/tournament";
-import { useTournament } from "@/contexts/tournament/useTournament";
+import { Team, Court, TournamentCategory } from "@/types/tournament";
+import { useTournament } from "@/contexts/tournament/TournamentContext";
 
 export interface ScheduleMatchDialogProps {
   open: boolean;
@@ -46,7 +46,7 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
   // Update selected category when categoryId changes
   useEffect(() => {
     if (categoryId && currentTournament) {
-      const category = currentTournament.categories.find(c => c.id === categoryId) || null;
+      const category = currentTournament.categories?.find(c => c.id === categoryId) || null;
       setSelectedCategory(category);
     } else {
       setSelectedCategory(null);
@@ -78,7 +78,21 @@ const ScheduleMatchDialog: React.FC<ScheduleMatchDialogProps> = ({
 
   const availableTeams = currentTournament?.teams || [];
   const availableCourts = currentTournament?.courts.filter(court => court.status === "AVAILABLE") || [];
-  const availableCategories = currentTournament?.categories || [];
+  // Use categories if available, otherwise use divisions as fallback
+  const availableCategories = (currentTournament?.categories?.length > 0
+    ? currentTournament.categories
+    : ((currentTournament?.divisions as any[])?.map(division => ({
+        id: division.id,
+        name: division.name,
+        type: division.type || 'MIXED',
+        division: division.division || 'OPEN',
+        format: division.format
+      })) || [])) as Array<TournamentCategory & { format?: string }>;
+
+  // Debug logging
+  console.log('Current tournament:', currentTournament);
+  console.log('Available categories:', availableCategories);
+  console.log('Tournament divisions:', currentTournament?.divisions);
 
   // Filter out team2 options to prevent selecting the same team
   const team2Options = availableTeams.filter(team => team.id !== team1Id);

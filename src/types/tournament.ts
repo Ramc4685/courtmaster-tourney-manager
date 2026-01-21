@@ -18,6 +18,7 @@ export interface Tournament {
   name: string;
   description?: string;
   location: string;
+  venue?: string;
   startDate: string;
   endDate: string;
   registrationDeadline?: Date;
@@ -32,12 +33,15 @@ export interface Tournament {
   teams: Team[];
   matches: Match[];
   courts: Court[];
+  participants?: Team[];
+  registrations?: any[];
   createdAt: string;
   updatedAt: string;
   organizer_id?: string;
+  organizerId?: string;
   currentStage?: TournamentStageEnum;
   divisions: Division[];
-  stages: TournamentStage[];
+  stages: TournamentStageEnum[];
   metadata?: Record<string, any>;
 }
 
@@ -56,6 +60,10 @@ export interface Team {
   createdAt: Date;
   updatedAt: Date;
   division: Division;
+  divisionId?: string;
+  categoryId?: string;
+  category?: TournamentCategory;
+  categories?: string[];
 }
 
 export interface Player {
@@ -103,7 +111,7 @@ export interface Match {
   endTime?: Date;
   courtId?: string;
   courtNumber?: number;
-  winner?: number;
+  winner?: Team | number;
   groupName?: string;
   matchNumber?: string;
   scorerName?: string;

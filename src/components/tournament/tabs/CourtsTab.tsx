@@ -24,7 +24,7 @@ const CourtsTab: React.FC<CourtsTabProps> = ({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Courts</h2>
-        <Button onClick={onAddCourtClick}>
+        <Button data-testid="add-court-btn" onClick={onAddCourtClick}>
           <Plus className="h-4 w-4 mr-2" />
           Add Court
         </Button>

@@ -36,7 +36,7 @@ export const CourtStatusDashboard: React.FC<CourtStatusDashboardProps> = ({ tour
 
   useEffect(() => {
     if (!tournamentId) return;
-    let channel: RealtimeChannel | null = null;
+    const channel: RealtimeChannel | null = null;
 
     const fetchCourts = async () => {
       setIsLoading(true);

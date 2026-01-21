@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Users, LayoutGrid, PlaySquare, Shuffle, Trophy } from 'lucide-react';
 import { format } from 'date-fns';
 import TournamentSettings from '@/components/tournament/TournamentSettings';
+import FormatEditor from '@/components/tournament/FormatEditor';
 
 export interface OverviewTabProps {
   tournament: Tournament;
@@ -38,44 +39,14 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     }
   };
 
-  const getFormatLabel = (format: any) => {
-    if (typeof format === 'string') {
-      switch (format) {
-        case 'SINGLE_ELIMINATION': return 'Single Elimination';
-        case 'DOUBLE_ELIMINATION': return 'Double Elimination';
-        case 'ROUND_ROBIN': return 'Round Robin';
-        case 'SWISS': return 'Swiss System';
-        case 'GROUP_KNOCKOUT': return 'Group + Knockout';
-        case 'MULTI_STAGE': return 'Multi-Stage';
-        default: return format;
-      }
-    }
-    // Handle the new format object structure
-    if (format?.type) {
-      return getFormatLabel(format.type);
-    }
-    return 'Unknown Format';
-  };
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              <div className="flex items-center">
-                <Trophy className="h-4 w-4 mr-2 text-muted-foreground" />
-                Tournament Format
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{getFormatLabel(tournament.format)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {tournament.currentStage && `Current Stage: ${tournament.currentStage.replace(/_/g, ' ')}`}
-            </p>
-          </CardContent>
-        </Card>
+        <FormatEditor 
+          tournament={tournament} 
+          onUpdate={(updates) => onUpdateTournament({ ...tournament, ...updates })} 
+        />
         
         <Card>
           <CardHeader className="pb-2">
@@ -121,8 +92,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="font-medium">Status:</span>
-              <Badge className={getStatusColor(tournament.status)}>
-                {tournament.status}
+              <Badge className={getStatusColor(tournament.status || 'DRAFT')}>
+                {tournament.status || 'DRAFT'}
               </Badge>
             </div>
             

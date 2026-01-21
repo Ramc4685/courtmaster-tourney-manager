@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { TournamentFormat, Division, GameType, PlayType, TournamentStatus, TournamentStageEnum } from '@/types/tournament-enums';
+import { TournamentFormat, Division, GameType, PlayType, TournamentStatus, TournamentStageEnum, CategoryType as EnumCategoryType } from '@/types/tournament-enums';
 
 // Define the main category types as a const object
 const CATEGORY_TYPES = {
@@ -19,7 +19,7 @@ const DIVISION_LEVELS = {
 } as const;
 
 // Export the types derived from the const objects
-export type CategoryType = typeof CATEGORY_TYPES[keyof typeof CATEGORY_TYPES];
+export type LocalCategoryType = typeof CATEGORY_TYPES[keyof typeof CATEGORY_TYPES];
 export type DivisionLevel = typeof DIVISION_LEVELS[keyof typeof DIVISION_LEVELS];
 
 // Export the const objects for use in the application
@@ -30,11 +30,12 @@ export const categorySchema = z.object({
   id: z.string(),
   name: z.string().min(1, "Category name is required"),
   // division: z.string(), // Removed, division info is in the parent structure
-  type: z.string().default('standard'), // e.g., 'standard', 'championship'
+  type: z.nativeEnum(EnumCategoryType).default(EnumCategoryType.STANDARD), // Using the CategoryType from tournament-enums
   playType: z.nativeEnum(PlayType).default(PlayType.SINGLES),
   format: z.nativeEnum(TournamentFormat).default(TournamentFormat.SINGLE_ELIMINATION),
   seeded: z.boolean().optional().default(false),
   maxTeams: z.number().int().positive().optional(), // Max teams specific to this category
+  capacity: z.number().int().positive().optional(), // Maximum capacity for the category
   // teams: z.array(z.any()).optional() // We'll type this properly when needed
 });
 
@@ -43,7 +44,12 @@ export const divisionSchema = z.object({
   name: z.string().min(1, "Division name is required"),
   type: z.nativeEnum(Division), // e.g., MENS, WOMENS, OPEN
   level: z.string().optional(), // e.g., ADVANCED, INTERMEDIATE, or custom string
-  categories: z.array(categorySchema).min(1, "At least one category is required per division").default([]),
+  minAge: z.number().int().nonnegative().optional(), // Minimum age requirement
+  maxAge: z.number().int().positive().optional(), // Maximum age requirement
+  gender: z.string().optional(), // Gender requirement if applicable
+  capacity: z.number().int().positive().optional(), // Maximum capacity for the division
+  skillLevel: z.string().optional(), // Skill level description
+  categories: z.array(categorySchema).default([]),
 });
 
 export interface DivisionInterface {
@@ -89,13 +95,16 @@ export const tournamentFormSchema = z.object({
   
   // Format & Structure
   format: z.nativeEnum(TournamentFormat).default(TournamentFormat.SINGLE_ELIMINATION), // Overall tournament format if not category-specific
-  divisionDetails: z.array(divisionSchema).min(1, "At least one division is required").default([]),
+  divisionDetails: z.array(divisionSchema).optional().default([]),
   
   // Registration
   registration: registrationSettingsSchema.default({}),
   
   // Scoring
   scoringRules: scoringRulesSchema.default({}),
+
+  // UI State Management
+  isSubmitting: z.boolean().optional().default(false),
   
 }).refine(
   (data) => {
@@ -152,3 +161,64 @@ export type DivisionFormValues = z.infer<typeof divisionSchema>;
 export type ScoringRules = z.infer<typeof scoringRulesSchema>;
 export type RegistrationSettings = z.infer<typeof registrationSettingsSchema>;
 
+export type ValidationSeverity = 'warning' | 'error';
+
+export interface ValidationIssue {
+  level: ValidationSeverity;
+  message: string;
+  path: (string | number)[];
+}
+
+export interface SubmissionValidationResult {
+  success: boolean;
+  warnings: ValidationIssue[];
+  errors: ValidationIssue[];
+}
+
+export const validateForSubmission = (values: TournamentFormValues): SubmissionValidationResult => {
+  const warnings: ValidationIssue[] = [];
+  const errors: ValidationIssue[] = [];
+
+  const schemaResult = tournamentFormSchema.safeParse(values);
+  if (!schemaResult.success) {
+    schemaResult.error.issues.forEach(issue => {
+      errors.push({
+        level: 'error',
+        message: issue.message,
+        path: issue.path,
+      });
+    });
+  }
+
+  if (!values.divisionDetails || values.divisionDetails.length === 0) {
+    errors.push({
+      level: 'error',
+      message: 'Add at least one division before creating the tournament.',
+      path: ['divisionDetails'],
+    });
+  } else {
+    values.divisionDetails.forEach((division, index) => {
+      if (!division || !division.categories || division.categories.length === 0) {
+        errors.push({
+          level: 'error',
+          message: `${division?.name || `Division ${index + 1}`} must include at least one category.`,
+          path: ['divisionDetails', index, 'categories'],
+        });
+      }
+    });
+  }
+
+  if (!values.description || values.description.trim().length === 0) {
+    warnings.push({
+      level: 'warning',
+      message: 'Adding a description helps participants understand the event context.',
+      path: ['description'],
+    });
+  }
+
+  return {
+    success: errors.length === 0,
+    warnings,
+    errors,
+  };
+};

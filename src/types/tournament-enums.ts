@@ -105,6 +105,9 @@ export enum TournamentStageEnum {
   SEEDING = 'SEEDING'
 }
 
+// Alias for backward compatibility
+export const TournamentStage = TournamentStageEnum;
+
 // Define RegistrationStatus here as the canonical source
 export enum RegistrationStatus {
   PENDING = 'PENDING',

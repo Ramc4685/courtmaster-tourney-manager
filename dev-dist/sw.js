@@ -67,8 +67,9 @@ if (!self.define) {
     });
   };
 }
-define(['./workbox-e755d862'], (function (workbox) { 'use strict';
+define(['./workbox-a959eb95'], (function (workbox) { 'use strict';
 
+  importScripts("/sw.js");
   self.skipWaiting();
   workbox.clientsClaim();
 
@@ -82,7 +83,7 @@ define(['./workbox-e755d862'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.s7qjja2tgqo"
+    "revision": "0.djhck1l90n8"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
@@ -90,11 +91,45 @@ define(['./workbox-e755d862'], (function (workbox) { 'use strict';
   }));
   workbox.registerRoute(/^https?:\/\/.*\/api\/.*/i, new workbox.NetworkFirst({
     "cacheName": "api-cache",
+    "networkTimeoutSeconds": 3,
     plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 100,
+      maxEntries: 200,
       maxAgeSeconds: 86400
     }), new workbox.CacheableResponsePlugin({
       statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^https?:\/\/.*\/v1\/.*/i, new workbox.NetworkFirst({
+    "cacheName": "appwrite-cache",
+    "networkTimeoutSeconds": 3,
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 300,
+      maxAgeSeconds: 7200
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^https?:\/\/.*\/(tournaments|teams|matches|registrations).*/i, new workbox.CacheFirst({
+    "cacheName": "tournament-data",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 500,
+      maxAgeSeconds: 3600
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^https?:\/\/.*\.(png|jpg|jpeg|svg|gif|webp|ico)$/i, new workbox.CacheFirst({
+    "cacheName": "images-cache",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 100,
+      maxAgeSeconds: 2592000
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^https:\/\/fonts\.googleapis\.com\/.*/i, new workbox.CacheFirst({
+    "cacheName": "google-fonts-cache",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 10,
+      maxAgeSeconds: 31536000
     })]
   }), 'GET');
 

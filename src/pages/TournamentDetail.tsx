@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useTournament } from "@/contexts/tournament/TournamentContext"; // Corrected import path
+import { useTournament as useTournamentContext } from "@/contexts/tournament/TournamentContext"; // Corrected import path
 import { useAuth } from "@/contexts/auth/AuthContext";
-import { Tournament, Team, Match, Court } from "@/types/tournament";
+import { Tournament, Team, Match } from "@/types/tournament";
 import TournamentHeader from "@/components/tournament/TournamentHeader";
 import TournamentSettings from "@/components/tournament/TournamentSettings";
 import AddTeamDialog from "@/components/tournament/AddTeamDialog";
@@ -34,15 +34,18 @@ export const TournamentDetail = () => {
     setCurrentTournament, // Use setCurrentTournament from context
     updateTournament, 
     deleteTournament, 
+    addCourt,
     addTeam, 
     importTeams,
+    generateBrackets,
+    autoAssignCourts,
     generateMultiStageTournament,
     advanceToNextStage,
     updateMatch,
     updateMatchStatus,
     assignCourt,
     // refreshTournament, // refreshTournament might not be defined, handle manually if needed
-  } = useTournament();
+  } = useTournamentContext();
   
   const [isLoading, setIsLoading] = useState(true); // Add loading state
   const [error, setError] = useState<string | null>(null); // Add error state
@@ -58,10 +61,10 @@ export const TournamentDetail = () => {
     setError(null);
     try {
       const fetchedTournament = await tournamentService.getTournament(tournamentId);
-      if (fetchedTournament) {
-        console.log("[TournamentDetail] Tournament fetched successfully, setting current tournament.");
-        await setCurrentTournament(fetchedTournament);
-      } else {
+        if (fetchedTournament) {
+          console.log("[TournamentDetail] Tournament fetched successfully, setting current tournament.");
+          await setCurrentTournament(fetchedTournament);
+        } else {
         console.error(`[TournamentDetail] Tournament with ID ${tournamentId} not found via service.`);
         setError("Tournament not found.");
         // Optionally navigate back or show a more prominent error
@@ -171,14 +174,35 @@ export const TournamentDetail = () => {
     updateMatchStatus(matchId, "IN_PROGRESS");
   };
 
-  const handleCourtUpdate = (court: Court) => {
+  const handleCourtUpdate = (court: any) => {
     // TODO: Implement court update via context or service
     console.log('Updating court:', court);
   };
 
-  const handleAddCourt = () => {
-    // TODO: Implement add court via context or service
-    console.log('Adding new court');
+  const handleAddCourt = async () => {
+    await addCourt();
+    toast({
+      title: "Court added",
+      description: "A new court is available for scheduling"
+    });
+  };
+
+  const handleAutoSchedule = async () => {
+    if (!currentTournament) return;
+
+    if (currentTournament.matches.length > 0) {
+      const assignedCount = await autoAssignCourts();
+      toast({
+        title: assignedCount > 0 ? "Courts assigned" : "No courts assigned",
+        description: assignedCount > 0
+          ? `Assigned ${assignedCount} court${assignedCount > 1 ? 's' : ''}`
+          : "Add courts before assigning matches",
+        variant: assignedCount > 0 ? "default" : "destructive"
+      });
+      return;
+    }
+
+    await generateBrackets();
   };
 
   const handleRefresh = async () => {
@@ -267,7 +291,7 @@ export const TournamentDetail = () => {
   if (error || !currentTournament) {
     return (
       <div className="container mx-auto py-6 text-center">
-        <Typography variant="h5" color="error">{error || "Tournament not found."}</Typography>
+        <h5 className="text-lg font-medium text-destructive">{error || "Tournament not found."}</h5>
         <Button variant="outline" onClick={() => navigate("/tournaments")} className="mt-4">
           Back to Tournaments
         </Button>
@@ -291,9 +315,9 @@ export const TournamentDetail = () => {
         <TournamentHeader tournament={{
           name: currentTournament.name,
           startDate: startDateStr,
-          location: currentTournament.location || 'N/A',
-          status: currentTournament.status,
-          // participants: { length: currentTournament.teams?.length || 0 } // Assuming teams are loaded
+          location: currentTournament.location || currentTournament.venue || 'N/A',
+          status: currentTournament.status || 'Unknown',
+          participants: currentTournament.participants || currentTournament.registrations || []
         }} />
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => navigate("/tournaments")}>
@@ -352,7 +376,7 @@ export const TournamentDetail = () => {
 
         {/* TODO: Add organizer check for these buttons */}  
         <div className="space-y-2">
-          <Button onClick={() => setIsAddTeamDialogOpen(true)}>Add Team</Button>
+          <Button data-testid="add-team-btn" onClick={() => setIsAddTeamDialogOpen(true)}>Add Team</Button>
           <Button onClick={() => setIsImportTeamsDialogOpen(true)}>Import Teams</Button>
           <Button onClick={() => setIsScheduleMatchesDialogOpen(true)}>Schedule Matches</Button>
         </div>
@@ -363,7 +387,7 @@ export const TournamentDetail = () => {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="bracket">Bracket</TabsTrigger>
           <TabsTrigger value="matches">Matches</TabsTrigger>
-          <TabsTrigger value="teams">Teams</TabsTrigger>
+          <TabsTrigger value="participants">Participants</TabsTrigger>
           <TabsTrigger value="courts">Courts</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="team-management">Team Management</TabsTrigger>
@@ -371,12 +395,11 @@ export const TournamentDetail = () => {
         </TabsList>
 
         <TabsContent value="overview">
-          <OverviewTab 
-            tournament={currentTournament} 
+          <OverviewTab
+            tournament={currentTournament}
             onUpdateTournament={handleUpdateTournament}
-            // Pass required functions if available in context
-            // onGenerateMultiStageTournament={generateMultiStageTournament} 
-            // onAdvanceToNextStage={advanceToNextStage}
+            onGenerateMultiStageTournament={generateMultiStageTournament}
+            onAdvanceToNextStage={advanceToNextStage}
             onScheduleDialogOpen={() => setIsScheduleMatchesDialogOpen(true)}
           />
         </TabsContent>
@@ -392,16 +415,16 @@ export const TournamentDetail = () => {
             onCourtAssign={handleCourtAssign}
             onStartMatch={handleStartMatch}
             onAddMatchClick={() => setIsScheduleMatchesDialogOpen(true)}
-            onAutoScheduleClick={() => {/* TODO: Implement auto schedule */}}
+            onAutoScheduleClick={handleAutoSchedule}
           />
         </TabsContent>
-        <TabsContent value="teams">
+        <TabsContent value="participants">
           <TeamsTab tournament={currentTournament} />
         </TabsContent>
         <TabsContent value="courts">
           <CourtsTab 
-            courts={currentTournament.courts || []}
-            onCourtUpdate={handleCourtUpdate}
+            courts={(currentTournament.courts || []) as any}
+            onCourtUpdate={handleCourtUpdate as any}
             onAddCourtClick={handleAddCourt}
           />
         </TabsContent>
@@ -468,4 +491,3 @@ export const TournamentDetail = () => {
 };
 
 export default TournamentDetail;
-

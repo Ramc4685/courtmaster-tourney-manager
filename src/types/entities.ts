@@ -27,6 +27,15 @@ export {
   NotificationType // Export NotificationType
 };
 
+// Import standardized Match types first
+export type { StandardMatch as Match, MatchScores, ScoreSet } from './match';
+
+// Import Tournament type from tournament.d.ts
+export type { Tournament } from './tournament';
+
+// Import the Match type for use in interfaces
+import type { StandardMatch as Match } from './match';
+
 // Create a consistent interface mapping between snake_case backend and camelCase frontend
 export interface Court {
   id: string;
@@ -44,66 +53,6 @@ export interface Court {
   updatedAt: Date;
 }
 
-export interface Match {
-  id: string;
-  tournamentId: string;
-  tournament_id?: string;
-  divisionId?: string;
-  division_id?: string;
-  team1Id?: string;
-  team2Id?: string;
-  team1_player1?: string;
-  team2_player1?: string;
-  team1_player2?: string;
-  team2_player2?: string;
-  status: MatchStatus;
-  scheduledTime?: Date | string;
-  scheduled_time?: Date | string;
-  startTime?: Date | string;
-  start_time?: Date | string;
-  endTime?: Date | string;
-  end_time?: Date | string;
-  courtId?: string;
-  court_id?: string;
-  courtNumber?: number;
-  court?: { id: string; name: string; number: number; };
-  bracketRound: number;
-  bracketPosition: number;
-  matchNumber: string;
-  progression: string | { winnerGoesTo?: string; loserGoesTo?: string; };
-  scores?: MatchScores; // Use MatchScores type
-  winner?: string | number;
-  loser?: string | number;
-  winner_id?: string | null; // Added for consistency
-  loser_id?: string | null; // Added for consistency
-  winner_team?: number;
-  scorerName?: string;
-  verified?: boolean;
-  groupName?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  created_at?: Date;
-  updated_at?: Date;
-  division?: string | Division;
-  // Add fields for participants if needed directly on match
-  team1_name?: string;
-  team2_name?: string;
-}
-
-// Define ScoreSet and MatchScores types
-export interface ScoreSet {
-  team1: number;
-  team2: number;
-  completed?: boolean; // Optional: Mark if the set itself is complete
-  winner?: 1 | 2 | null; // Optional: Winner of the set
-}
-
-export interface MatchScores {
-  sets: ScoreSet[];
-  current_set: number; // Index of the current set being played (0-based)
-  serving?: 1 | 2 | null; // Which team is serving
-  // Add other score-related metadata if needed
-}
 
 
 export interface RolePermissions {

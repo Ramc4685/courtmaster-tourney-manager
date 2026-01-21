@@ -75,15 +75,19 @@ export const PlayerRegistrationList: React.FC<PlayerRegistrationListProps> = ({
     })
     .sort((a, b) => {
       if (sortField === "name") {
-        const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
-        const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+        const nameA = `${a.firstName || ''} ${a.lastName || ''}`.toLowerCase();
+        const nameB = `${b.firstName || ''} ${b.lastName || ''}`.toLowerCase();
         return sortDirection === "asc" 
           ? nameA.localeCompare(nameB)
           : nameB.localeCompare(nameA);
       } else {
+        // Handle cases where createdAt might be undefined or a string
+        const dateA = a.createdAt ? (typeof a.createdAt === 'string' ? new Date(a.createdAt) : a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? (typeof b.createdAt === 'string' ? new Date(b.createdAt) : b.createdAt) : new Date(0);
+        
         return sortDirection === "asc"
-          ? a.createdAt.getTime() - b.createdAt.getTime()
-          : b.createdAt.getTime() - a.createdAt.getTime();
+          ? dateA.getTime() - dateB.getTime()
+          : dateB.getTime() - dateA.getTime();
       }
     });
 
@@ -221,9 +225,14 @@ export const PlayerRegistrationList: React.FC<PlayerRegistrationListProps> = ({
               </TableCell>
               <TableCell>{registration.email}</TableCell>
               <TableCell>{registration.phone || "-"}</TableCell>
-              <TableCell>{format(registration.createdAt, "MMM d, yyyy")}</TableCell>
               <TableCell>
-                <Badge className={getStatusColor(registration.status)}>
+                {registration.createdAt 
+                  ? format(typeof registration.createdAt === 'string' ? new Date(registration.createdAt) : registration.createdAt, "MMM d, yyyy")
+                  : "-"
+                }
+              </TableCell>
+              <TableCell>
+                <Badge className={getStatusColor(registration.status as RegistrationStatus)}>
                   {registration.status}
                 </Badge>
               </TableCell>
