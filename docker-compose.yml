@@ -1,0 +1,110 @@
+# CourtMaster Tournament Manager - Base Docker Compose Configuration
+# This file contains the base service definitions for all environments
+# Use docker-compose.override.yml for local development overrides
+# Use docker-compose.production.yml for production-specific settings
+
+version: '3.8'
+
+services:
+  # Frontend Web Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ${BUILD_TARGET:-development}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - VITE_APPWRITE_ENDPOINT=${VITE_APPWRITE_ENDPOINT}
+      - VITE_APPWRITE_PROJECT_ID=${VITE_APPWRITE_PROJECT_ID}
+      - VITE_APPWRITE_DATABASE_ID=${VITE_APPWRITE_DATABASE_ID}
+      - VITE_WORKER_URL=${VITE_WORKER_URL}
+      - VITE_OFFLINE_MODE=${VITE_OFFLINE_MODE:-true}
+      - VITE_BYPASS_AUTH=${VITE_BYPASS_AUTH:-false}
+    volumes:
+      # Development only - will be overridden in production
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      worker:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - courtmaster-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Background Worker Service
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    ports:
+      - "${WORKER_PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - APPWRITE_ENDPOINT=${APPWRITE_ENDPOINT}
+      - APPWRITE_PROJECT_ID=${APPWRITE_PROJECT_ID}
+      - APPWRITE_DATABASE_ID=${APPWRITE_DATABASE_ID}
+      - APPWRITE_API_KEY=${APPWRITE_API_KEY}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - SYNC_INTERVAL=${SYNC_INTERVAL:-30000}
+      - CONFLICT_RESOLUTION_STRATEGY=${CONFLICT_RESOLUTION_STRATEGY:-last_write_wins}
+      - MAX_RETRY_ATTEMPTS=${MAX_RETRY_ATTEMPTS:-3}
+      - NOTIFICATION_ENABLED=${NOTIFICATION_ENABLED:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      # Development only - will be overridden in production
+      - ./worker:/app
+      - /app/node_modules
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - courtmaster-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Redis Cache and Queue Storage
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: >
+      redis-server
+      --save 20 1
+      --loglevel warning
+      --requirepass "${REDIS_PASSWORD:-dev-redis-password}"
+      --maxmemory ${REDIS_MAX_MEMORY:-256mb}
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - courtmaster-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  courtmaster-network:
+    driver: bridge
+    name: ${DOCKER_NETWORK:-courtmaster-network}
+
+volumes:
+  redis-data:
+    name: ${COMPOSE_PROJECT_NAME:-courtmaster}-redis-data

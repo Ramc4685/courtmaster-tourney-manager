@@ -1,0 +1,231 @@
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior in CourtMaster
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the information below to help us understand and reproduce the issue.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify these items before submitting your bug report
+      options:
+        - label: I have searched existing issues to ensure this bug hasn't been reported
+          required: true
+        - label: I have tested this on the latest version
+          required: true
+        - label: I can reproduce this issue consistently
+          required: false
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity Level
+      description: How severe is this bug?
+      options:
+        - Critical (System unusable, data loss, security issue)
+        - High (Major feature broken, significant impact)
+        - Medium (Feature partially broken, workaround available)
+        - Low (Minor issue, cosmetic problem)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which part of CourtMaster is affected?
+      options:
+        - Tournament Management
+        - Player Registration
+        - Scoring System
+        - Bracket Generation
+        - Analytics/Reports
+        - User Authentication
+        - Offline Functionality
+        - PWA Features
+        - Admin Panel
+        - API/Backend
+        - UI/UX
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: tournament_context
+    attributes:
+      label: Tournament Context
+      description: What type of tournament were you managing? (e.g., "16-player single elimination tennis tournament")
+      placeholder: "32-player double elimination basketball tournament"
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: "When I try to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Detailed steps to reproduce the behavior
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: "I expected..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: "Instead, what happened was..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      description: Which browser are you using?
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Mobile Safari (iOS)
+        - Chrome Mobile (Android)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: browser_version
+    attributes:
+      label: Browser Version
+      description: What version of the browser?
+      placeholder: "e.g., Chrome 118.0.5993.88"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: What operating system are you using?
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS Sonoma (14.x)
+        - macOS Ventura (13.x)
+        - macOS Monterey (12.x)
+        - Ubuntu 22.04
+        - Ubuntu 20.04
+        - iOS 17
+        - iOS 16
+        - Android 14
+        - Android 13
+        - Other Linux
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment Type
+      description: How are you accessing CourtMaster?
+      options:
+        - Local Development (npm run dev)
+        - Local Docker (docker-compose)
+        - Pilot Environment
+        - Production Environment
+        - PWA (Installed App)
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network Condition
+      description: What was your network condition when the bug occurred?
+      options:
+        - Online (Good connection)
+        - Online (Slow connection)
+        - Offline (PWA mode)
+        - Intermittent connection
+        - Unknown
+    validations:
+      required: false
+
+  - type: textarea
+    id: console_logs
+    attributes:
+      label: Console Logs
+      description: Any relevant console errors or logs (press F12 to open developer tools)
+      render: shell
+      placeholder: "Paste console errors here..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots/Videos
+      description: If applicable, add screenshots or videos to help explain the problem
+      placeholder: "Drag and drop images/videos here or paste URLs..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here
+      placeholder: "Any additional information that might be helpful..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: data_impact
+    attributes:
+      label: Data Impact
+      description: Does this bug affect data integrity?
+      options:
+        - label: This bug may cause data loss
+        - label: This bug may corrupt existing data
+        - label: This bug affects tournament results
+        - label: No data impact
+
+  - type: input
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Is there a workaround for this issue?
+      placeholder: "Describe any workaround you've found..."
+    validations:
+      required: false

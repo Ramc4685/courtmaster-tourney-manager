@@ -1,0 +1,303 @@
+name: ⚡ Performance Issue
+description: Report performance problems in CourtMaster
+title: "[PERFORMANCE] "
+labels: ["performance", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a performance issue! Performance is crucial for tournament management, so please provide detailed information to help us identify and resolve the problem.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify these items before submitting your performance issue
+      options:
+        - label: I have tested this on multiple devices/browsers
+          required: false
+        - label: I have cleared browser cache and tried again
+          required: true
+        - label: I have checked if this occurs in both online and offline modes
+          required: false
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Performance Impact
+      description: How severe is the performance issue?
+      options:
+        - Critical (System unusable, timeouts, crashes)
+        - High (Significant delays affecting tournament operations)
+        - Medium (Noticeable delays but workable)
+        - Low (Minor performance degradation)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: performance_type
+    attributes:
+      label: Performance Issue Type
+      description: What type of performance problem are you experiencing?
+      options:
+        - Page Load Time
+        - Application Startup
+        - User Interaction Response
+        - Data Loading/Sync
+        - Search/Filter Performance
+        - Bracket Generation
+        - Report Generation
+        - Memory Usage
+        - Battery Drain (Mobile)
+        - Network Usage
+        - Bundle Size
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: tournament_size
+    attributes:
+      label: Tournament Size
+      description: How many participants were in the tournament when this occurred?
+      placeholder: "e.g., 64 players, 16 teams, 128 participants"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: tournament_format
+    attributes:
+      label: Tournament Format
+      description: What tournament format were you using?
+      options:
+        - Single Elimination
+        - Double Elimination
+        - Round Robin
+        - Swiss System
+        - Pool Play
+        - Mixed Format
+        - Other
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Performance Issue Description
+      description: Describe the performance problem in detail
+      placeholder: "When I try to... the system becomes slow/unresponsive..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Detailed steps to reproduce the performance issue
+      placeholder: |
+        1. Go to '...'
+        2. Load tournament with X participants
+        3. Click on '...'
+        4. Notice slow response/delay
+    validations:
+      required: true
+
+  - type: input
+    id: response_time
+    attributes:
+      label: Response Time
+      description: How long did the action take? (if measurable)
+      placeholder: "e.g., 10 seconds, 2 minutes, never completed"
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected_performance
+    attributes:
+      label: Expected Performance
+      description: What response time did you expect?
+      placeholder: "I expected this to complete in..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: device_type
+    attributes:
+      label: Device Type
+      description: What type of device are you using?
+      options:
+        - Desktop Computer
+        - Laptop
+        - Tablet (iPad)
+        - Tablet (Android)
+        - Smartphone (iOS)
+        - Smartphone (Android)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: device_specs
+    attributes:
+      label: Device Specifications
+      description: What are your device specifications?
+      placeholder: "e.g., MacBook Pro M2, iPhone 14, Samsung Galaxy S23, Windows 11 i7-12700K 16GB RAM"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      description: Which browser are you using?
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Mobile Safari (iOS)
+        - Chrome Mobile (Android)
+        - PWA (Installed App)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: browser_version
+    attributes:
+      label: Browser Version
+      description: What version of the browser?
+      placeholder: "e.g., Chrome 118.0.5993.88"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: network_condition
+    attributes:
+      label: Network Condition
+      description: What was your network condition?
+      options:
+        - WiFi (Fast)
+        - WiFi (Slow)
+        - 5G Mobile
+        - 4G Mobile
+        - 3G Mobile
+        - Offline Mode
+        - Intermittent Connection
+        - Unknown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment_type
+    attributes:
+      label: Deployment Type
+      description: How are you accessing CourtMaster?
+      options:
+        - Local Development
+        - Local Docker
+        - Pilot Environment
+        - Production Environment
+        - PWA (Installed)
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Application Mode
+      description: Were you using the app online or offline?
+      options:
+        - Online
+        - Offline (PWA)
+        - Mixed (switching between online/offline)
+        - Unknown
+    validations:
+      required: false
+
+  - type: textarea
+    id: performance_tools
+    attributes:
+      label: Performance Tools Data
+      description: If you used browser dev tools, please share performance data
+      render: shell
+      placeholder: |
+        Paste data from:
+        - Network tab timings
+        - Performance tab recordings
+        - Memory usage
+        - Console performance logs
+    validations:
+      required: false
+
+  - type: textarea
+    id: console_errors
+    attributes:
+      label: Console Errors/Warnings
+      description: Any console errors or warnings during the performance issue?
+      render: shell
+      placeholder: "Paste console output here..."
+    validations:
+      required: false
+
+  - type: input
+    id: memory_usage
+    attributes:
+      label: Memory Usage
+      description: Did you notice high memory usage? (check browser task manager)
+      placeholder: "e.g., 2GB RAM usage, memory leak observed"
+    validations:
+      required: false
+
+  - type: textarea
+    id: comparison
+    attributes:
+      label: Performance Comparison
+      description: How does this compare to previous versions or other similar actions?
+      placeholder: "This used to be faster... or compared to action X, this is much slower..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: affects_tournament
+    attributes:
+      label: Tournament Impact
+      description: How does this performance issue affect tournament operations?
+      options:
+        - label: Delays tournament start/progression
+        - label: Affects real-time scoring
+        - label: Impacts participant check-in
+        - label: Slows down bracket updates
+        - label: Affects report generation
+        - label: No direct tournament impact
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Have you found any workarounds for this performance issue?
+      placeholder: "I found that... helps improve performance"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Any other relevant information about the performance issue
+      placeholder: "Any additional details that might help..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: testing_help
+    attributes:
+      label: Testing Assistance
+      description: Can you help with testing performance improvements?
+      options:
+        - label: I can test performance fixes
+        - label: I can provide access to my test environment
+        - label: I can help with performance profiling

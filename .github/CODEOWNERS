@@ -1,0 +1,142 @@
+# CourtMaster Code Ownership
+# This file defines code ownership for different parts of the application
+# Code owners are automatically requested for review when someone opens a pull request
+
+# Global fallback - all files require review from core team
+* @courtmaster-team
+
+# Critical Configuration Files
+/.github/ @courtmaster-team @devops-team
+/docker/ @courtmaster-team @devops-team
+/scripts/ @courtmaster-team @devops-team
+package.json @courtmaster-team @tech-lead
+package-lock.json @courtmaster-team @tech-lead
+tsconfig*.json @courtmaster-team @tech-lead
+vite.config.ts @courtmaster-team @tech-lead
+tailwind.config.ts @courtmaster-team @frontend-team
+
+# Environment and Security Files
+.env* @courtmaster-team @security-team
+*.key @courtmaster-team @security-team
+*.pem @courtmaster-team @security-team
+/appwrite-migration/ @courtmaster-team @backend-team
+
+# CI/CD and Deployment
+/.github/workflows/ @courtmaster-team @devops-team @ci-team
+/docker/ @courtmaster-team @devops-team
+Dockerfile* @courtmaster-team @devops-team
+docker-compose*.yml @courtmaster-team @devops-team
+nginx.conf @courtmaster-team @devops-team
+vercel.json @courtmaster-team @devops-team
+
+# Documentation
+/docs/ @courtmaster-team @documentation-team
+README.md @courtmaster-team @documentation-team
+*.md @documentation-team
+
+# Frontend Core
+/src/ @courtmaster-team @frontend-team
+/src/components/ @frontend-team
+/src/pages/ @frontend-team
+/src/styles/ @frontend-team @design-team
+/src/assets/ @frontend-team @design-team
+
+# Backend and API
+/src/services/ @courtmaster-team @backend-team
+/src/repositories/ @courtmaster-team @backend-team
+/src/config/ @courtmaster-team @backend-team
+/worker/ @courtmaster-team @backend-team
+
+# State Management
+/src/contexts/ @courtmaster-team @frontend-team
+/src/stores/ @courtmaster-team @frontend-team
+/src/hooks/ @courtmaster-team @frontend-team
+
+# Tournament Management Core
+/src/components/tournament/ @courtmaster-team @tournament-experts
+/src/pages/tournament/ @courtmaster-team @tournament-experts
+/src/services/tournament/ @courtmaster-team @tournament-experts @backend-team
+
+# Scoring System
+/src/components/scoring/ @courtmaster-team @scoring-experts
+/src/services/scoring/ @courtmaster-team @scoring-experts @backend-team
+
+# Player Registration
+/src/components/registration/ @courtmaster-team @registration-experts
+/src/services/registration/ @courtmaster-team @registration-experts @backend-team
+
+# Analytics and Reporting
+/src/components/analytics/ @courtmaster-team @analytics-team
+/src/services/analytics/ @courtmaster-team @analytics-team @backend-team
+
+# Admin Panel
+/src/components/admin/ @courtmaster-team @admin-experts @security-team
+/src/pages/admin/ @courtmaster-team @admin-experts @security-team
+
+# Authentication and Security
+/src/contexts/auth/ @courtmaster-team @security-team @backend-team
+/src/services/auth/ @courtmaster-team @security-team @backend-team
+
+# Offline and PWA Features
+/src/services/offline/ @courtmaster-team @pwa-experts @backend-team
+/public/sw.js @courtmaster-team @pwa-experts
+/public/manifest.json @courtmaster-team @pwa-experts @frontend-team
+
+# Testing
+/src/**/*.test.* @courtmaster-team @qa-team
+/src/**/*.spec.* @courtmaster-team @qa-team
+/src/test/ @courtmaster-team @qa-team
+vitest.config.* @courtmaster-team @qa-team
+jest.config.* @courtmaster-team @qa-team
+
+# Database and Migrations
+/supabase/ @courtmaster-team @database-team @backend-team
+/appwrite-migration/ @courtmaster-team @database-team @backend-team
+
+# Performance Critical Files
+/src/utils/performance/ @courtmaster-team @performance-team
+/scripts/performance-audit.js @courtmaster-team @performance-team
+
+# Mobile and Responsive
+/src/components/mobile/ @courtmaster-team @mobile-team
+/src/styles/mobile/ @courtmaster-team @mobile-team @design-team
+
+# Internationalization
+/src/locales/ @courtmaster-team @i18n-team
+/src/i18n/ @courtmaster-team @i18n-team
+
+# Build and Bundling
+vite.config.ts @courtmaster-team @build-team @performance-team
+rollup.config.* @courtmaster-team @build-team
+webpack.config.* @courtmaster-team @build-team
+
+# Specific High-Impact Files (Require multiple approvals)
+/src/App.tsx @courtmaster-team @tech-lead @frontend-team
+/src/main.tsx @courtmaster-team @tech-lead @frontend-team
+/src/config/appwrite.ts @courtmaster-team @tech-lead @backend-team @security-team
+
+# Legal and Compliance
+LICENSE @courtmaster-team @legal-team
+/docs/legal/ @courtmaster-team @legal-team
+/docs/privacy/ @courtmaster-team @legal-team @security-team
+
+# Release and Versioning
+CHANGELOG.md @courtmaster-team @release-team
+/scripts/release/ @courtmaster-team @release-team @devops-team
+
+# Backup and Recovery
+/scripts/backups/ @courtmaster-team @backup-team @devops-team
+/backups/ @courtmaster-team @backup-team
+
+# Monitoring and Logging
+/src/utils/monitoring/ @courtmaster-team @monitoring-team
+/src/utils/logging/ @courtmaster-team @monitoring-team
+
+# Third-party Integrations
+/src/services/integrations/ @courtmaster-team @integrations-team @backend-team
+
+# Emergency Contacts (for critical issues)
+# These users will be notified for any changes to critical infrastructure
+/.github/workflows/deploy-*.yml @emergency-contacts @devops-team
+/docker/Dockerfile.production @emergency-contacts @devops-team
+/scripts/pilot-deploy.sh @emergency-contacts @devops-team

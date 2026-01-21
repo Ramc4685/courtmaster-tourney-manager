@@ -1,0 +1,124 @@
+# CourtMaster Production Docker Compose Override
+# This file contains production-specific overrides for the base docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.production.yml up
+
+version: '3.8'
+
+services:
+  # Frontend Web Application - Production Overrides
+  web:
+    build:
+      target: production
+    volumes: []  # Remove development volumes
+    environment:
+      - NODE_ENV=production
+      - VITE_BYPASS_AUTH=false
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Background Worker Service - Production Overrides
+  worker:
+    volumes: []  # Remove development volumes
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+    secrets:
+      - appwrite_api_key
+      - redis_password
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Cache - Production Overrides
+  redis:
+    command: >
+      redis-server
+      --save 60 1000
+      --loglevel notice
+      --requirepass_file /run/secrets/redis_password
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+    secrets:
+      - redis_password
+    volumes:
+      - redis-data:/data
+      - redis-config:/usr/local/etc/redis
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Nginx Reverse Proxy (Production Only)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - static-files:/var/www/html:ro
+    depends_on:
+      - web
+      - worker
+    networks:
+      - courtmaster-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Docker Secrets for Production
+secrets:
+  appwrite_api_key:
+    external: true
+  redis_password:
+    external: true
+
+volumes:
+  redis-config:
+    name: ${COMPOSE_PROJECT_NAME:-courtmaster}-redis-config
+  static-files:
+    name: ${COMPOSE_PROJECT_NAME:-courtmaster}-static-files

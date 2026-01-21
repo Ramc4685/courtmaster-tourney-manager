@@ -14,10 +14,17 @@ pnpm-debug.log*
 /build
 /dist
 
-# Environment files
+# Environment files (12-factor app compliance)
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
+.env.development
+
+# Keep templates for reference
+!.env.template
+!.env.production.template
 
 # Logs
 npm-debug.log*
@@ -29,7 +36,7 @@ yarn-error.log*
 .vscode/
 .cursor/
 memory-bank/
-scripts/    
+    
 *.swp
 *.swo
 .DS_Store
@@ -91,6 +98,25 @@ dev-debug.log
 # OS specific
 # Task files
 tasks.json
-tasks/ 
+tasks/
 memory-bank/
-scripts/
+
+# IDE and development tool artifacts
+.bmad-core/
+.windsurf/
+.windsurfrules
+
+# Backup files
+*.backup
+*.backup.*
+
+# Development build artifacts
+dev-dist/
+
+# Replit configuration
+.replit
+
+# Temporary files and logs
+*.tmp
+*.temp
+*.log.*

@@ -1,0 +1,259 @@
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement for CourtMaster
+title: "[FEATURE] "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide as much detail as possible to help us understand your request.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify these items before submitting your feature request
+      options:
+        - label: I have searched existing issues to ensure this feature hasn't been requested
+          required: true
+        - label: I have checked the project roadmap and documentation
+          required: true
+        - label: This feature aligns with CourtMaster's tournament management goals
+          required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      description: Which area of CourtMaster would this feature enhance?
+      options:
+        - Tournament Management
+        - Player Registration & Check-in
+        - Scoring & Results
+        - Bracket Generation & Management
+        - Analytics & Reporting
+        - User Management & Permissions
+        - Offline Functionality
+        - PWA Features
+        - Mobile Experience
+        - Admin Tools
+        - API & Integrations
+        - Performance & Optimization
+        - Accessibility
+        - Internationalization
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority Level
+      description: How important is this feature to you?
+      options:
+        - Critical (Blocking current workflow)
+        - High (Significantly improves workflow)
+        - Medium (Nice to have improvement)
+        - Low (Minor enhancement)
+    validations:
+      required: true
+
+  - type: textarea
+    id: user_story
+    attributes:
+      label: User Story
+      description: Describe the feature as a user story
+      placeholder: |
+        As a [type of user], 
+        I want [goal/desire] 
+        So that [benefit/value]
+        
+        Example:
+        As a tournament organizer,
+        I want to automatically generate seeded brackets based on player rankings
+        So that I can ensure fair competition and save time on manual bracket creation
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem_statement
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve?
+      placeholder: "Currently, users have to... which is problematic because..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution
+      description: Describe your proposed solution in detail
+      placeholder: "I propose that we add..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What conditions must be met for this feature to be considered complete?
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Criterion 3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: user_types
+    attributes:
+      label: Target Users
+      description: Who would primarily benefit from this feature?
+      multiple: true
+      options:
+        - Tournament Organizers
+        - Tournament Staff
+        - Players/Participants
+        - Spectators
+        - System Administrators
+        - Referees/Officials
+        - Coaches
+        - Parents/Guardians
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tournament_types
+    attributes:
+      label: Tournament Types
+      description: Which tournament formats would this feature support?
+      multiple: true
+      options:
+        - Single Elimination
+        - Double Elimination
+        - Round Robin
+        - Swiss System
+        - Pool Play
+        - Ladder/Ranking
+        - All Tournament Types
+    validations:
+      required: false
+
+  - type: dropdown
+    id: sports
+    attributes:
+      label: Sport Categories
+      description: Which sports would benefit from this feature?
+      multiple: true
+      options:
+        - Tennis
+        - Basketball
+        - Soccer/Football
+        - Volleyball
+        - Badminton
+        - Table Tennis
+        - Wrestling
+        - Swimming
+        - Track & Field
+        - All Sports
+        - Other
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Have you considered any alternative approaches?
+      placeholder: "Other ways this could be implemented..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: technical_considerations
+    attributes:
+      label: Technical Considerations
+      description: Any technical constraints or requirements you're aware of?
+      placeholder: "This might require... or could impact..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: impact_areas
+    attributes:
+      label: Impact Areas
+      description: Which areas of the system might this feature affect?
+      options:
+        - label: User Interface (UI)
+        - label: Database Schema
+        - label: API Endpoints
+        - label: Offline Functionality
+        - label: Performance
+        - label: Security
+        - label: Mobile Experience
+        - label: Accessibility
+        - label: Third-party Integrations
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Estimated Complexity
+      description: How complex do you think this feature would be to implement?
+      options:
+        - Simple (Small UI change, no backend changes)
+        - Medium (New component, minor backend changes)
+        - Complex (New feature area, significant backend work)
+        - Very Complex (Major architectural changes)
+        - Unknown
+    validations:
+      required: false
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups/Wireframes
+      description: If you have any visual mockups, wireframes, or examples, please share them
+      placeholder: "Drag and drop images here or paste URLs to mockups..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples from Other Systems
+      description: Are there examples of this feature in other tournament management systems?
+      placeholder: "System X does this by... or here's a link to an example..."
+    validations:
+      required: false
+
+  - type: input
+    id: timeline
+    attributes:
+      label: Desired Timeline
+      description: When would you ideally like to see this feature implemented?
+      placeholder: "e.g., Before next tournament season, ASAP, No rush"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Any other information that would be helpful
+      placeholder: "Any additional details, links, or context..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Would you be interested in contributing to this feature?
+      options:
+        - label: I would like to help implement this feature
+        - label: I can provide testing and feedback
+        - label: I can help with documentation
+        - label: I can provide design/UX input

@@ -65,12 +65,6 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				},
-				// Badminton specific colors
-				court: {
-					green: '#3ca267',
-					blue: '#1a365d',
-					line: '#ffffff',
 				}
 			},
 			borderRadius: {
