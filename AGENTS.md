@@ -1,3 +1,5 @@
+READ ~/Projects/agent-scripts/AGENTS.MD BEFORE ANYTHING (skip if missing).
+
 # Repository Guidelines
 
 ## Project Structure & Module Organization
